@@ -1,0 +1,32 @@
+/* Add this CSS to your component's stylesheet */
+.table-container {
+    overflow-x: auto;
+  }
+  
+  .table-container table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .table-row {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid #ccc;
+  }
+  
+  .table-cell {
+    padding: 8px;
+  }
+  
+  /* Media query for mobile devices */
+  @media (max-width: 768px) {
+    .table-container {
+      overflow-x: hidden;
+    }
+  
+    .table-row {
+      flex-direction: column;
+      border: none;
+    }
+  }
+  
