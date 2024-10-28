@@ -9,8 +9,8 @@ module.exports = {
         'maincolor': '# ',
       },
       fontFamily: {
-        sans: ['"Lucida Sans Unicode"', '"Lucida Grande"', 'sans-serif'],
-      },
+        montserrat: ['Montserrat', 'Lucida Sans Unicode', 'Lucida Grande', 'sans-serif'],
+      },  
       
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
