@@ -5,7 +5,7 @@ import wall5 from '../../assets/wall5.jpg';
 import wall6 from '../../assets/wall6.jpg';
 import LoadingBar from "react-top-loading-bar";
 import { useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
+import toast, { ToastBar } from "react-hot-toast";
 import useToggle from "../../helper/useToggle";
 import { VscEye, VscEyeClosed } from "react-icons/vsc";
 import { DEFAULT_COOKIE_SETTER } from "../../helper/Cookie";
@@ -13,6 +13,7 @@ import postApi from "../../helper/postApi";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import ToasterGen from "../../helper/Toaster";
 const Login = () => {
   const [progress, setProgress] = useState(0);
   const push = useNavigate();
@@ -28,7 +29,7 @@ const Login = () => {
         const nextIndex = (currentIndex + 1) % images.length;
         return images[nextIndex];
       });
-    }, 3000); // Change image every 3 seconds
+    }, 3000); 
 
     return () => clearInterval(intervalId);
   }, [images]);
@@ -37,8 +38,8 @@ const Login = () => {
 
     email: z.string().email().min(1, { message: "Email is Required!" }),
 
-    password : z.any()
-    
+    password: z.any()
+
 
   });
 
@@ -54,49 +55,41 @@ const Login = () => {
     resolver: zodResolver(formSchema),
   });
   const onSubmit = async (payload: LoginSchema) => {
-    console.log(payload);
-    
+
     setProgress(progress + 10)
-  
-    try
-    {
-   
-    const {data,error}:any = await postApi("auth/getLogin", payload);
-    setProgress((prevProgress) => progress + 20);
-    console.log("success", data)
-     
-    if (data && data.message!="" && error.message  == undefined) {
-     
 
-      // localStorage.setItem(
-      //   "Activation-Token",
-      //   data && data?.activationToken?.token
-      // );
+    try {
 
-       localStorage.setItem("user_data",JSON.stringify(data.user))
-      await DEFAULT_COOKIE_SETTER("access_token",data.accessToken,false);
-      await DEFAULT_COOKIE_SETTER("user",JSON.stringify({email: data.user.email,name:data.user.name}),false);
-        
+      const { data, error }: any = await postApi("auth/getLogin", payload);
+      setProgress((prevProgress) => progress + 20);
+      console.log("success", data)
 
-      toast.success(data.message);
+      if (data && data.message != "" && error.message == undefined) {
 
-      setProgress(progress + 30);
+    
+        localStorage.setItem("user_data", JSON.stringify(data.user))
+        await DEFAULT_COOKIE_SETTER("access_token", data.accessToken, false);
+        await DEFAULT_COOKIE_SETTER("user", JSON.stringify({ email: data.user.email, name: data.user.name }), false);
 
-      push ("/dashboard");
 
-      setProgress(100);
-    }
-    else{
-      toast.error(error.message);
-      setProgress(100);
-    }
+        toast.success(data.message);
+
+        setProgress(progress + 30);
+
+        push("/dashboard");
+
+        setProgress(100);
+      }
+      else {
+        console.log("asdjhaskjhdsajk")
+
+        toast.error(error.message);
+        setProgress(100);
+      }
 
     }
-    catch (err)
-    {
+    catch (err) {
       toast.error("Network Error!");
-
-
     }
 
 
@@ -104,9 +97,10 @@ const Login = () => {
   };
 
 
-  
+
   return (
     <React.Fragment>
+      <ToasterGen></ToasterGen>
       <LoadingBar
         color="rgb(95,126,220)"
         progress={progress}
@@ -134,19 +128,19 @@ const Login = () => {
                   <div className="flex flex-col justify-center w-full md:p-14">
                     <div className="flex justify-center self-center items-center">
                       <form className="w-full max-w-md"
-                          onSubmit={handleSubmit(onSubmit)}
+                        onSubmit={handleSubmit(onSubmit)}
                       >
                         <h1 className="text-4xl font-bold" >Welcome to Woodland  </h1>
                         <h1 className="text-2xl  font-Overpass text-gray-600">
-                          Login to Admin 
+                          Login to Admin
                         </h1>
-                       
+
                         <div className="py-1 w-full">
                           <span className="mb-2 text-md font-Overpass font-normal text-xs text-gray-600">
                             Email
                           </span>
                           <input
-                                    {...register("email")}
+                            {...register("email")}
                             id="email"
                             type="email"
                             className="w-full h-12 bg-transparent border-b-2 border-b-solid text-black border-b-gray-200 font-Overpass text-line placeholder:font-Overpass text-center placeholder:font-light focus:border-b-[#c8ccc7] focus:border-b-2 focus:border-b-solid placeholder:font-Overpass text-xs focus:outline-none"
@@ -160,7 +154,7 @@ const Login = () => {
                           </span>
                           <div className="flex items-center rounded-xl bg-transparent relative">
                             <input
-                                      {...register("password")}
+                              {...register("password")}
                               id="password"
                               type={isPasswordHideShow ? "text" : "password"}
                               className="w-full h-12 bg-transparent border-b-2 border-b-solid text-black border-b-gray-200 font-Overpass text-line placeholder:font-Overpass text-center placeholder:font-light focus:border-b-[#c8ccc7] focus:border-b-2 focus:border-b-solid placeholder:font-Overpass text-xs focus:outline-none"

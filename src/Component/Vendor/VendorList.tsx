@@ -50,8 +50,8 @@ const VendorList = () => {
 
           {renderStepLines()}
 
-          <div className="text-lg font-semibold">Personal information</div>
-          <div className="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md">
+     
+          <div className="flex w-full mx-auto bg-white p-6 rounded-lg shadow-md">
             {tabs[activeTab].content}
           </div>
         </div>

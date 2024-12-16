@@ -14,7 +14,7 @@ import { PageContext } from '../../utils/contexts';
 
 import DetailSummary from '../../Component/DetailSummary/DetailSummary';
 import Settings from '../Settings/Settings';
-import SummaryDetail from '../Data/SummaryDetail';
+
 import { DEFAULT_COOKIE_DELETE, DEFAULT_COOKIE_GETTER } from '../../helper/Cookie';
 import getApi from '../../helper/getApi';
 import { useNavigate } from 'react-router-dom';
@@ -83,7 +83,7 @@ return ()=>clearInterval(interval);
      
         {pages == "1"?  
           <VendorList></VendorList>:
-            pages ==  "2" ? <DetailSummary></DetailSummary>:pages == "3" && (JSON.parse (localStorage.getItem("user_data") || '{}').role == "Admin" ) ? <><Settings></Settings></> : pages==  "4" ?<SummaryDetail></SummaryDetail>: pages == "5" ? <EmailPlan></EmailPlan> :<></> 
+            pages ==  "2" ? <></>:pages == "3" && (JSON.parse (localStorage.getItem("user_data") || '{}').role == "Admin" ) ? <><Settings></Settings></> : pages==  "4" ?<></>: pages == "5" ? <EmailPlan></EmailPlan> :<></> 
 
           }
       </div>
