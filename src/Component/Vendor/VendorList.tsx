@@ -4,14 +4,81 @@ import InternalInfo from './InternalInfo';
 import BankDetails from './BankDetails';
 import WebLogin from './WebLogin';
 import Attachments from './Attachments';
-
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
 const VendorList = () => {
   const [activeTab, setActiveTab] = useState(0);
+  const  titles = ['Mr', 'Mrs', 'Mr & Mrs','Ms','Dr','Sir','Other'];
+  // const salutaions = ['First Name', 'Last Name', 'Full Name', 'Title + First Name', 'Title + Last Name', 'Title + First Name'
+  
+  // ]
+  
+  const formSchema = z.object({
+    landlord: z.boolean().optional(),
+    vendor: z.boolean().optional(),
+    type: z.enum(['Individual', 'Company'], {
+      errorMap: () => ({ message: 'Invalid Type value. Please select one of the following options: "Company, Individual".' }),
+    }),
+    title: z.enum(['mr', 'mrs', 'miss', 'ms', 'dr', 'prof'], {
+      errorMap: () => ({ message: 'Invalid title value. Please select one of the following options: "mr", "mrs", "miss", "ms", "dr", "prof".' }),
+    }),
+    firstName: z.string().nonempty('First Name is required'),
+    lastName: z.string().nonempty('Last Name is required'),
+    company: z.string().optional(),
+    salutation: z.string().optional(),
+    postCode: z.string().nonempty('Post Code is required'),
+    addressLine: z.string().nonempty('Address Line is required'),
+    addressLine2: z.string(),
+    town: z.string(),
+    country: z.string(),
+    phoneHome: z.string(),
+    phoneMobile: z.string(),
+    fax: z.string(),
+    email: z.string(),
+    webste: z.string(),
+  
+    pager: z.string(),
+    birthplace: z.string(),
+    nationality: z.string(),
+    passportNumber: z.string(),
+    acceptLHA: z.string(),
+    label: z.string(),
+    status: z.string(),
+    branch:z.string(),
+    source:z.string(),
+    dnrvfn:z.boolean()  , 
+    ldhor:z.boolean()   ,
+    sales_fee:z.string(),
+    management_fee:z.string(),
+    finders_fee:z.string(),
+    sales_fee_a:z.string(),
+    management_fee_a:z.string(),
+    finders_fee_a:z.string(),
+    nrl_ref:z.string(),
+    nrl_rate:z.string(),
+  
+    vat_number:z.string(),
+    landlord_full_name:z.string(),
+    landlord_contact:z.string(),
+    bank_body:z.string(),
+  });
+  
+  
+    
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    resolver: zodResolver(formSchema),
+  });
+  
+  const onSubmit = (data: any) => {
+    console.log('Form Data:', data);
+  };
 
+  
   const tabs = [
-    { label: "Standard Info", content: <StandardInfo /> },
-    { label: "Internal Info", content: <InternalInfo /> },
-    { label: "Bank Details", content: <BankDetails /> },
+    { label: "Standard Info", content: <StandardInfo  register = {register} errors = {errors}/> },
+    { label: "Internal Info", content: <InternalInfo register = {register} errors = {errors} /> },
+    { label: "Bank Details", content: <BankDetails  register = {register} errors = {errors}  /> },
     { label: "Web Login", content: <WebLogin /> },
     { label: "Attachments", content: <Attachments /> },
   ];

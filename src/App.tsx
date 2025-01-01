@@ -1,19 +1,16 @@
 import React from 'react';
-import logo from './logo.svg';
-
-import './App.css';
-import { Route, RouterProvider } from 'react-router-dom';
+import { RouterProvider } from 'react-router-dom';
+import { ThemeProvider } from './ThemeContext';
 import router from './utils/router';
+import './App.css';
 
 function App() {
   return (
-
-    <div className="App">
-    <>
-    <RouterProvider router={router}></RouterProvider>
-
-    </>
-    </div>
+    <ThemeProvider>
+      <div className="App dark:bg-gray-900 min-h-screen transition-colors duration-200">
+        <RouterProvider router={router} />
+      </div>
+    </ThemeProvider>
   );
 }
 

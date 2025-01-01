@@ -16,39 +16,40 @@ import { FcViewDetails } from "react-icons/fc";
 import { CiSettings } from "react-icons/ci";
 import { useNavigate } from "react-router-dom";
 import { MdEmail } from "react-icons/md";
-
 const SideMenu = () => {
   const [isCollapsed, setIsCollapsed] = useState(true);
-  const userRole = JSON.parse(localStorage.getItem("user_data") || '{}').role;
+  const userRole = JSON.parse(localStorage.getItem("user_data") || "{}").role;
   const isAdmin = userRole === "Admin";
   const {pages,setPages,setCollapse}  = useContext<any>(PageContext)
   
-  const push:any  = useNavigate();
+  const navigate = useNavigate();
 
   const ProfileMenu = [
     {
       name: "Summary",
-      icon: <FaDatabase className={` ${isCollapsed ? "w-7 h-7" : ""} `} />,
+      icon: <FaDatabase className="text-lg" />,
     },
     {
       name: "Summary Details",
-      icon: <FcViewDetails className={` ${isCollapsed ? "w-7 h-7" : ""} `} />,
+      icon: <FcViewDetails className="text-lg" />,
     },
-    ...(isAdmin ? [{
-      name: "Settings",
-      icon: <CiSettings className={` ${isCollapsed ? "w-7 h-7" : ""} `} />,
-    }] : []),
+    ...(isAdmin
+      ? [
+          {
+            name: "Settings",
+            icon: <CiSettings className="text-lg" />,
+          },
+        ]
+      : []),
     {
       name: "Summary Data",
-      icon: <AiFillDatabase className={` ${isCollapsed ? "w-7 h-7" : ""} `} />,
+      icon: <AiFillDatabase className="text-lg" />,
     },
     {
       name: "Email Plan",
-      icon: <MdEmail className={` ${isCollapsed ? "w-7 h-7" : ""} `} />,
+      icon: <MdEmail className="text-lg" />,
     },
-
   ];
-
 
   const handleCollapseToggle = () => {
     setIsCollapsed(!isCollapsed);
@@ -56,66 +57,57 @@ const SideMenu = () => {
   };
 
   return (
-    <>
-      <div
-        className={`filter lg:h-screen h-screen bg-[#c8ccc7] border-st p-10 bg-opacity-95 ${
-          isCollapsed ? "w-39" : "w-full"
-        } transition-width duration-300 ease-in-out`}
-      >
-         {/* {!isCollapsed && (
-            <img src={logo} alt={"logo"} className="w-20 h-20 ml-4" />
-          )} */}
-        <button
-          className="mb-4 text-black justify-end  flex right-0 float-end"
-          onClick={handleCollapseToggle}
-        >
-
-          {!isCollapsed ? (
-            <TbLayoutSidebarLeftCollapseFilled className="text-white font-semibold w-7 h-7" />
-          ) : (
-            <TbLayoutSidebarRightCollapseFilled className="text-white font-semibold w-7 h-7" />
-          )}
-        </button>
-        <hr className="w-full mt-7 "></hr>
-
-        <div className="bg-opacity-85 mt-16">
-         
-          {ProfileMenu.map((element, index) => (
-            <div className="bg-opacity-65" key={index}>
-
-              <button
-                type="button"
-                onClick={()=>{
-                 
-    // Update pages state
-    setPages((index + 1).toString());
-
-    // Check if the current URL is not the dashboard
-    if (window.location.pathname !== '/dashboard') {
-      // Redirect to dashboard
-      push('/dashboard');
-    }
-
-                }}
-                className={`text-white hover:border-solid hover:border-1 hover:rounded-2xl hover:border-[#5C5C5C] hover:text-[#5C5C5C] hover:bg-white font-Overpass h-12 focus:outline-none w-full font-medium rounded-lg text-lg text-center inline-flex items-center mb-2 
-    ${
-      isCollapsed
-        ? "justify-center "
-        : "justify-start flex left-2 float-start justify-items-start    py-2.5   md:left-9 "
-    }`}
-              >
-                <div className={` ${!isCollapsed ? "mx-2 " : ""} `}>
-                  {element.icon}
-                </div>
-                {!isCollapsed && <span  className=" block md:block md:break-words ">{element.name}</span>}
-
-
-              </button>
-            </div>
-          ))}
-        </div>
+    <div
+      className={`filter h-screen bg-gray-800 text-white border-r p-5 transition-all duration-300 ease-in-out ${
+        isCollapsed ? "w-16" : "w-64"
+      }`}
+    >
+      {/* Logo Section */}
+      <div className={`flex items-center justify-center mb-6 ${isCollapsed ? "hidden" : "block"}`}>
+        <img src={logo} alt="Logo" className="w-20 h-20" />
       </div>
-    </>
+
+      {/* Collapse Button */}
+      <button
+        className="mb-4 flex justify-end w-full"
+        onClick={handleCollapseToggle}
+      >
+        {isCollapsed ? (
+          <TbLayoutSidebarRightCollapseFilled className="text-2xl" />
+        ) : (
+          <TbLayoutSidebarLeftCollapseFilled className="text-2xl" />
+        )}
+      </button>
+
+      <hr className="border-gray-700 my-4" />
+
+      {/* Menu Items */}
+      <div className="flex flex-col gap-4">
+        {ProfileMenu.map((item, index) => (
+          <button
+            key={index}
+            onClick={() => {
+              setPages((index + 1).toString());
+              if (window.location.pathname !== "/dashboard") {
+                navigate("/dashboard");
+              }
+            }}
+            className={`flex items-center gap-4 px-4 py-2 rounded-lg transition-all duration-200 hover:bg-gray-700 ${
+              isCollapsed ? "justify-center" : "justify-start"
+            }`}
+          >
+            <span>{item.icon}</span>
+            {!isCollapsed && <span className="text-base font-medium">{item.name}</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* Footer Section */}
+      <div className="absolute bottom-4 left-0 w-full px-4">
+        <hr className="border-gray-700 mb-4" />
+        {!isCollapsed && <p className="text-sm text-center">© 2025 Your Company</p>}
+      </div>
+    </div>
   );
 };
 

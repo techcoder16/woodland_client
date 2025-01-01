@@ -45,12 +45,12 @@ const FormContent = ({register,errors}:any) => {
   ];
 
 
-  return (
+  return (   <div className='lg:w-1/2 w-full'>
     <form  className="p-4 w-full">
         <div className="text-lg font-medium text-gray-600 flex justify-start underline  p-5 ">Personal information</div>
       {/* Landlord and Vendor Checkbox */}
-      <div className="flex flex-col mb-4 mx-2 bg-[#F4F4F4] p-6 rounded-sm">
-        <div className="flex items-center w-full">
+      <div className="flex flex-col w-full mb-4 mx-2 bg-[#F4F4F4] p-6 rounded-sm">
+        <div className="lg:flex items-center lg:w-full">
           <label className="text-gray-700 font-medium mr-4 w-32">Vendor</label>
           <input type="checkbox" className="p-2 border border-gray-300 rounded" {...register('vendor')} />
           <label className="text-gray-700 font-medium mr-4 w-32">Landlord</label>
@@ -112,7 +112,7 @@ const FormContent = ({register,errors}:any) => {
 
     
     
-    </form>
+    </form></div>
   );
 };
 
