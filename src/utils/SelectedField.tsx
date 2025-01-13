@@ -1,11 +1,12 @@
-import React from 'react';
-import { FieldValues, UseFormRegister } from 'react-hook-form';
+import React from "react";
+import { UseFormRegister } from "react-hook-form";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
 interface SelectFieldProps {
   label: string;
   name: string;
-  options: any[];
-  register: UseFormRegister<FieldValues>;
+  options: { label: string; value: string }[]; 
+  register: UseFormRegister<any>;  // Use react-hook-form register
   error?: string;
   defaultValue?: string;
   onChange?: (value: string) => void;  // Add onChange callback as a prop
@@ -17,39 +18,40 @@ const SelectField: React.FC<SelectFieldProps> = ({
   options,
   register,
   error,
-  defaultValue = '',
-  onChange,  // Destructure the onChange prop
+  defaultValue = "",
+  onChange,
 }) => {
-
-  // Handle the change event, if an onChange function is passed
-  const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = event.target.value;
+  // Handle the value change
+  const handleChange = (value: string) => {
     if (onChange) {
-      onChange(value);  // Call the passed onChange function with the selected value
+      onChange(value);  // Trigger the passed onChange function
+    
     }
   };
 
   return (
-    <div className="flex flex-col mb-4 mx-2 bg-[#F4F4F4] p-3 rounded-sm">
+    <div className="p-3 rounded-sm">
       <div className="flex items-center w-full">
         <label className="text-gray-700 font-medium mr-4 w-32">{label}</label>
-        
-        <select
-          className="p-2 border border-gray-300 rounded flex w-full"
-          {...register(name)} 
+        <Select
+          {...register(name)}  // Register the field with react-hook-form
           defaultValue={defaultValue}
-          onChange={handleChange}  // Attach the onChange handler
+          onValueChange={handleChange}  // Trigger onChange on selection change
         >
-          {defaultValue && <option value="">{defaultValue}</option>}
-          {options.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger className="p-2 border border-gray-300 rounded flex w-full">
+            <SelectValue placeholder="Select an option" />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
-      
-      {error && <p className="text-red-500 mt-1 mx-2">{error}</p>}
+
+      {error && <p className="text-red-500 mt-1 mx-2 justify-center flex">{error}</p>}
     </div>
   );
 };

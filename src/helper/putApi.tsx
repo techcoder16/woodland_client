@@ -6,11 +6,12 @@ import env from "react-dotenv";
 export default async function postApi(url: string, values: string,headers: object) {
   let data: any = {};
   let error: any = {};
+  const API_URL = import.meta.env.VITE_API_URL;  // Accessing the environment variable
 
   try {
   
 
-    const response = await axios.put(`${env.API_URL}${url}/${values}`,{} ,{headers:headers});
+    const response = await axios.put(`${API_URL}${url}/${values}`,{} ,{headers:headers});
 
     // Checking response status
     if (response.status === 200 || response.status === 201) {

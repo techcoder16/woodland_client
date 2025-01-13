@@ -4,11 +4,12 @@ export default async function postApi(url: string, values: object,headers:any = 
   let data: any = {};
   let error: any = {};
   
-
+  
+  const API_URL = import.meta.env.VITE_API_URL;  // Accessing the environment variable
 
   try {
-    
-    const response = await axios.post(`${env.API_URL}${url}` ,values,{headers});
+      
+    const response = await axios.post(`${API_URL}${url}` ,values,{headers});
 
     // Checking response status
     if (response.status === 200 || response.status === 201) {
@@ -26,6 +27,7 @@ export default async function postApi(url: string, values: object,headers:any = 
       error.message = "Server is currently unavailable. Please try again later.";
     } else {
       error.message = "An error occurred while fetching data.";
+      console.log(e)
     }
   }
 

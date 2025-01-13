@@ -1,7 +1,7 @@
 // InputField.tsx
 import React from 'react';
 import { FieldValues, UseFormRegister } from 'react-hook-form';
-
+import { Textarea } from '@/components/ui/textarea';
 interface InputFieldProps {
   label: string;
   name: string;
@@ -30,10 +30,10 @@ const InputField: React.FC<InputFieldProps> = ({
   
  return (
 
-  <div className="flex flex-col mb-4 mx-2 bg-[#F4F4F4] p-3 rounded-sm">
+  <div className=" p-3 rounded-sm">
     <div className="flex items-center w-full">
       <label className="text-gray-700 font-medium mr-4 w-32">{label}</label>
-      <textarea 
+      <Textarea 
      
         className="p-2 border border-gray-300 rounded flex-grow"
         {...register(name)}
