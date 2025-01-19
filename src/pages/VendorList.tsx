@@ -29,30 +29,21 @@ import {
 import { Input } from "@/components/ui/input";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import getApi from "@/helper/getApi";
-interface VendorData {
-  id: string;
-  landlord: boolean | null;
-  vendor: boolean | null;
-  type: string;
-  title: string;
-  firstName: string;
-  lastName: string;
-  company: string | null;
-  salutation: string | null;
-  postCode: string;
-  addressLine1: string;
-  addressLine2: string | null;
-  town: string | null;
-  country: string | null;
- 
-}
+import deleteApi from "@/helper/deleteApi";
+import { useToast } from "@/components/ui/use-toast";
+
+
 
 const VendorList = () => {
   const [vendors, setVendors] = useState<any>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [deleted,setDeleted] = useState(true);
   const itemsPerPage = 10;
+    const { toast } = useToast();
+  
+
   const fetchVendors = async () => {
     try {
       const  access_token = await DEFAULT_COOKIE_GETTER("access_token")
@@ -72,11 +63,56 @@ const VendorList = () => {
       console.error("Error fetching vendors:", error);
     }
   };
+ async function  handleDeleteVendor(id:string)
+ {  
+  const params = {
+    id : id
+  }
 
+  try{
+  const  access_token = await DEFAULT_COOKIE_GETTER("access_token")
+  const headers = {
+
+    Authorization: `Bearer ${access_token}`, // Replace with actual token logic
+  };
+
+
+  
+const data: any = await deleteApi(`vendor/delete/${id}`, headers);
+
+  console.log(data.vendors)
+    if (data)
+    {
+    
+      toast({
+        title: "Success",
+        description: data.message || "Successfully Deleted!",
+        
+      });
+      
+      setDeleted((prev)=>!prev);
+      
+    }
+    } catch (error) {
+
+      toast({
+        title: "Error",
+        description: error.message || "Network Error!",
+        variant: "destructive",
+      });
+      
+
+
+
+
+    console.error("Error Deleting vendors:", error);
+    }
+
+ }
 
   useEffect(() => {
     fetchVendors();
-  }, [currentPage, searchTerm]);
+  }, [currentPage, searchTerm,deleted]);
 
   const handlePageChange = (page:any) => {
     setCurrentPage(page);
@@ -122,21 +158,28 @@ const VendorList = () => {
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-muted/50">
-                <TableHead className="text-muted-foreground">Name</TableHead>
+              <TableHead className="text-muted-foreground">Title</TableHead>
+                
+                <TableHead className="text-muted-foreground">First Name</TableHead>
+
+
                 <TableHead className="text-muted-foreground">Last Name</TableHead>
+                <TableHead className="text-muted-foreground">Address Line 1</TableHead>
+                <TableHead className="text-muted-foreground">Address Line 2</TableHead>
                 <TableHead className="text-muted-foreground">Town</TableHead>
-                <TableHead className="text-muted-foreground">Properties</TableHead>
-                <TableHead className="text-muted-foreground">Status</TableHead>
-                <TableHead className="text-right text-muted-foreground">Actions</TableHead>
+                <TableHead className="text-right text-muted-foreground">City</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {vendors && vendors.map((vendor:any) => (
                 <TableRow key={vendor.id} className="hover:bg-muted/50">
-                  <TableCell className="font-medium">{vendor.name}</TableCell>
-                  <TableCell>{vendor.email}</TableCell>
-                  <TableCell>{vendor.phone}</TableCell>
-                  <TableCell>{vendor.properties}</TableCell>
+                  <TableCell className="font-medium">{vendor.firstName}</TableCell>
+                  <TableCell>{vendor.lastName}</TableCell>
+                  <TableCell>{vendor.addressLine1}</TableCell>
+                  <TableCell>{vendor.addressLine2}</TableCell>
+                  <TableCell>{vendor.town}</TableCell>
+                  <TableCell>{vendor.city}</TableCell>
+                  
                   <TableCell>
                     <span
                       className={cn(
@@ -161,6 +204,7 @@ const VendorList = () => {
                         variant="ghost"
                         size="icon"
                         className="hover:text-destructive hover:bg-muted"
+                        onClick={() => handleDeleteVendor(vendor.id)}
                       >
                         <Trash className="h-4 w-4" />
                       </Button>

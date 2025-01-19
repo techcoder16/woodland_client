@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { FieldValues, UseFormRegister } from "react-hook-form";
+import { FieldValues, UseFormRegister, UseFormSetValue } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 
 interface InputFieldProps {
@@ -7,6 +7,7 @@ interface InputFieldProps {
   name: string;
   type?: string;
   register: UseFormRegister<FieldValues>;
+  setValue: UseFormSetValue<FieldValues>; // React Hook Form's setValue
   error?: string;
   placeholder?: string;
   onChange?: (value: string) => void;
@@ -17,41 +18,40 @@ const InputField: React.FC<InputFieldProps> = ({
   name,
   type = "text",
   register,
+  setValue,
   error,
   placeholder = "",
   onChange,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
-    if (onChange) {
-      onChange(value); // Call the passed onChange function with the selected value
-    }
-  };
-
-  // Handle autofill changes
   useEffect(() => {
-    const handleAutofillEvent = () => {
+    const handleAutofill = () => {
       const value = inputRef.current?.value;
-      if (onChange && value !== undefined) {
-        onChange(value); // Trigger onChange for autofill values
+      if (value !== undefined) {
+        setValue(name, value); // Update the form value in React Hook Form
+        if (onChange) {
+          onChange(value); // Call the optional onChange callback
+        }
       }
     };
 
     const input = inputRef.current;
     if (input) {
-      input.addEventListener("change", handleAutofillEvent);
-      input.addEventListener("input", handleAutofillEvent); // Handles modern autofill scenarios
+      input.addEventListener("change", handleAutofill);
+      input.addEventListener("input", handleAutofill);
     }
+
+    // Trigger autofill handling immediately on mount
+    handleAutofill();
 
     return () => {
       if (input) {
-        input.removeEventListener("change", handleAutofillEvent);
-        input.removeEventListener("input", handleAutofillEvent);
+        input.removeEventListener("change", handleAutofill);
+        input.removeEventListener("input", handleAutofill);
       }
     };
-  }, [onChange]);
+  }, [name, setValue, onChange]);
 
   return (
     <div className="p-3 rounded-sm">
@@ -59,11 +59,10 @@ const InputField: React.FC<InputFieldProps> = ({
         <label className="text-gray-700 font-medium mr-4 w-32">{label}</label>
         <Input
           type={type}
-          ref={inputRef} // Attach ref to the input
+          ref={inputRef}
           className="p-2 border border-gray-300 rounded lg:flex-grow"
           {...register(name)}
           placeholder={placeholder}
-          onChange={handleChange} // Attach the onChange handler
         />
       </div>
       {error && <p className="text-red-500 mt-1 mx-2 justify-center flex">{error}</p>}

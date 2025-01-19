@@ -87,8 +87,10 @@ const Login = () => {
         title: "Error",
         description: error.message || "Network Error!",
         variant: "destructive",
-      }); 
+      });
+       
       // toast.error(error.message || "Network Error!");
+
       setProgress(100);
     }
   };

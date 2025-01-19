@@ -23,10 +23,21 @@ export default async function postApi(url: string, values: object,headers:any = 
       error.message = "Server is currently unavailable. Please try again later.";
     } else if (e.response && e.response.status === 401) {
       error.message = e.response.data.message || "Unauthorized";
-    } else if (e.code === "ECONNREFUSED" || e.code === "ERR_NETWORK") {
+
+    } 
+    
+    else if (e.response && e.response.status === 400) {
+      console.log(e.response);
+
+            error.message = e.response.data.message || "Unauthorized";
+
+    } 
+    
+    
+    else if (e.code === "ECONNREFUSED" || e.code === "ERR_NETWORK") {
       error.message = "Server is currently unavailable. Please try again later.";
     } else {
-      error.message = "An error occurred while fetching data.";
+      error.message = "An error occurred while updating data.";
       console.log(e)
     }
   }

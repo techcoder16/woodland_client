@@ -33,8 +33,9 @@ import postApiImage from "@/helper/postApiImage";
 
 
 const formSchema = z.object({
-  landlord: z.boolean().optional(),
-  vendor: z.boolean().optional(),
+  landlord: z.boolean(),
+  vendor: z.boolean(),
+
   type: z.enum(['Individual', 'Company'], {
     errorMap: () => ({ message: 'Invalid Type value. Please select one of the following options: "Company, Individual".' }),
   }),
@@ -101,14 +102,16 @@ const formSchema = z.object({
 
 
 
-  // Fields from Attachments component
   attachments: z
     .array(
       z.instanceof(File).refine((file) => file.type.startsWith("image/"), {
         message: "Only image files are allowed.",
       })
-    ),
+    ).refine((files) => files.every((file) => file instanceof File), {
+      message: "Only files are allowed.",
+    }),
   // Common fields (if any)
+
   
 }).refine(
   (data) => {
@@ -118,6 +121,11 @@ const formSchema = z.object({
     if (data.accountOption === 'existingAccount') {
       return data.existingUsername;
     }
+    console.log(data.attachments);
+    if (data.attachments !== undefined && !Array.isArray(data.attachments)) {
+      throw new Error('Attachments must be an array.');
+
+    }
     return true;
   },
   {
@@ -125,6 +133,7 @@ const formSchema = z.object({
     path: ['accountOption'], // This attaches the error to the accountOption field
   }
 );
+
 type FormData = z.infer<typeof formSchema>;
 
 const AddVendor = () => {
@@ -145,94 +154,79 @@ const AddVendor = () => {
   const onSubmit = async (data: FormData) => {
     setProgress(30);
     setIsSubmitting(true); // Prevent interactions during submission
-
+  
     try {
-
-      const accessToken = await DEFAULT_COOKIE_GETTER("access_token")
+      // Retrieve access token
+      const accessToken = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = {
         Authorization: `Bearer ${accessToken}`, // Add token to Authorization header
-        "Content-Type":`application/x-www-form-urlencoded`
-
+        "Content-Type": "application/x-www-form-urlencoded",
       };
-      data.email = "";  
-      console.log(headers);
-      console.log(data.attachments);
-      console.log(typeof(data.vendor))
-
+  
       const formData = new FormData();
-
-// Dynamically append all fields from `data`
-for (const [key, value] of Object.entries(data)) {
-  if (key === "attachments" && Array.isArray(value)) {
-    // Handle attachments array (assumes value contains File objects)
- 
-  } else if (typeof value === "boolean") {
-    // Convert boolean to string
-    formData.append(key, value.toString());
-  } else if (value !== null && value !== undefined ) {
-    // Append all other values as strings
-    formData.append(key, String(value));
-
-  }
-}
-data.attachments.forEach((file) => {
-  formData.append("attachments", file); // Append each file individually
-});
-
-console.log(formData,"jgg")
-// Debugging FormData content (optional)
-for (let pair of formData.entries()) {
-  console.log(pair[0], pair[1]);
-}
-
-
-
-      
-        const response = await postApi("vendor/create", formData,headers);
+  
+      // Dynamically append all fields from `data`
+      for (const [key, value] of Object.entries(data)) {
+        if (key === "attachments" && Array.isArray(value)) {
+          // Handle attachments array
+          value.forEach((file) => {
+            if (file instanceof File) {
+              formData.append("attachments", file); // Append each file individually
+            }
+          });
+        } else if (typeof value === "boolean") {
+          formData.append(key, value.toString()); // Convert boolean to string
+        } else if (value !== null && value !== undefined) {
+          formData.append(key, String(value)); // Append all other values as strings
+        }
+      }
+  
+      // Debugging FormData content (optional)
+      for (let pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
+      }
+  
+      // Call postApi with FormData and headers
+      const { data: apiData, error } = await postApi("vendor/create", formData, headers);
       setProgress(60);
-
-      console.log(response)
-    if (response.error && response.error.length> 0)
-    { 
-      console.log("furqanj")
-    
-
-      toast({
-        title: "Error",
-        description: response.error.message || "Failed to create vendor.",
-        variant: "destructive",
-      });
-
-    }
-
-
-      if (response?.data && response.data.length > 0) {
-        console.log("furqan")
+  
+      if (error && error.message) {
+        
+        toast({
+          title: "Error",
+          description: error.message || "Failed to create vendor.",
+          variant: "destructive",
+        });
+        return; // Exit early on error
+      }
+  
+      // Ensure `response.data.vendor` is parsed correctly
+      const vendorId = apiData?.vendor?.id;
+          
+      if (vendorId && vendorId.length > 0) {
+  
         toast({
           title: "Success",
-          description: response.data.message,
+          description: apiData.message || "Vendor created successfully!",
         });
+  
         setProgress(100);
       } else {
-
-
-        throw new Error(response?.error?.message || "Unknown error occurred");
+        throw new Error("Invalid vendor ID or unexpected response format.");
       }
     } catch (error: any) {
+      console.error("Error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to create vendor.",
         variant: "destructive",
       });
-
-      setProgress(100);
-    }
-    finally {
+    } finally {
       setIsSubmitting(false); // Allow interactions after completion
     }
-
   };
-
+  
+  
 
 const steps = [
   { label: "Standard Info", component: <StandardInfo register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
@@ -249,10 +243,10 @@ const isLastStep = currentStep === steps.length - 1;
 const [savedData, setSavedData] = useState<Record<number, any>>({});
 const handleNext = async () => {
   const currentStepFields = Object.keys(form.getValues()) as Array<keyof typeof form.getValues>;
-
+    
   // Trigger validation only for current step fields
-  const isValid = await form.trigger(currentStepFields);
-  console.log(isValid)
+  const isValid = await form.trigger(currentStepFields, { shouldFocus: true });
+    console.log(isValid);
   if (isValid) {
     setSavedData((prev) => ({
       ...prev,
@@ -262,7 +256,8 @@ const handleNext = async () => {
     setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
   } else {
     // If validation fails, log errors
-    console.log(form.formState.errors);
+    
+    
   }
 };
 
@@ -309,7 +304,6 @@ const handlePrevious = () => {
     <div className="container mx-auto max-w-3xl py-8">
       <h1 className="text-4xl font-bold mb-8">Add New Vendor</h1>
 
-      {/* Progress Indicator */}
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
           {steps.map((step, index) => (
@@ -327,7 +321,6 @@ const handlePrevious = () => {
         <Progress value={((currentStep + 1) / steps.length) * 100} className="h-2" />
       </div>
 
-      {/* Form */}
       <Card className="p-6 shadow-md">
      
 
