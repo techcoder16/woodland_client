@@ -97,9 +97,9 @@ const StandardInfo = ({ register, errors, setValue, clearErrors }: any) => {
           onChange={(value) => handleSelectChange('title', value)} // Added onChange
         />
 
-        <InputField label="First Name" name="firstName" register={register} error={errors.firstName?.message?.toString()} />
-        <InputField label="Last Name" name="lastName" register={register} error={errors.lastName?.message?.toString()} />
-        <InputField label="Company" name="company" register={register} error={errors.company?.message?.toString()} />
+        <InputField setValue={setValue}  label="First Name" name="firstName" register={register} error={errors.firstName?.message?.toString()} />
+        <InputField setValue={setValue}  label="Last Name" name="lastName" register={register} error={errors.lastName?.message?.toString()} />
+        <InputField setValue={setValue}  label="Company" name="company" register={register} error={errors.company?.message?.toString()} />
         <SelectField
           label="Salutation"
           name="salutation"
@@ -114,10 +114,10 @@ const StandardInfo = ({ register, errors, setValue, clearErrors }: any) => {
 
       <div className="mt-3">
         <div className="text-lg font-medium flex justify-start underline p-5">Correspondence Address</div>
-        <InputField label="Post Code" name="postCode" register={register} error={errors.postCode?.message?.toString()} />
-        <InputField label="Address Line 1" name="addressLine1" register={register} error={errors.addressLine1?.message?.toString()} />
-        <InputField label="Address Line 2" name="addressLine2" register={register} error={errors.addressLine2?.message?.toString()} />
-        <InputField label="Town" name="town" register={register} error={errors.addressLine?.message?.toString()} />
+        <InputField setValue={setValue} label="Post Code" name="postCode" register={register} error={errors.postCode?.message?.toString()} />
+        <InputField setValue={setValue} label="Address Line 1" name="addressLine1" register={register} error={errors.addressLine1?.message?.toString()} />
+        <InputField setValue={setValue} label="Address Line 2" name="addressLine2" register={register} error={errors.addressLine2?.message?.toString()} />
+        <InputField setValue={setValue} label="Town" name="town" register={register} error={errors.addressLine?.message?.toString()} />
         <SelectField
           label="Country"
           name="country"
@@ -132,22 +132,22 @@ const StandardInfo = ({ register, errors, setValue, clearErrors }: any) => {
 
       <div>
         <div className="text-lg font-medium flex justify-start underline p-5">Contact Info</div>
-        <InputField label="Phone Home" name="phoneHome" register={register} error={errors.phoneHome?.message?.toString()} />
-        <InputField label="Phone Work" name="phoneWork" register={register} error={errors.phoneWork?.message?.toString()} />
-        <InputField label="Phone Mobile" name="phoneMobile" register={register} error={errors.phoneMobile?.message?.toString()} />
-        <InputField label="Fax" name="fax" register={register} error={errors.fax?.message?.toString()} />
-        <InputField label="Email" name="email" register={register} error={errors.email?.message?.toString()} />
+        <InputField setValue={setValue}  label="Phone Home" name="phoneHome" register={register} error={errors.phoneHome?.message?.toString()} />
+        <InputField setValue={setValue} label="Phone Work" name="phoneWork" register={register} error={errors.phoneWork?.message?.toString()} />
+        <InputField setValue={setValue} label="Phone Mobile" name="phoneMobile" register={register} error={errors.phoneMobile?.message?.toString()} />
+        <InputField setValue={setValue} label="Fax" name="fax" register={register} error={errors.fax?.message?.toString()} />
+        <InputField setValue={setValue} label="Email" name="email" register={register} error={errors.email?.message?.toString()} />
       </div>
 
       <hr />
 
       <div>
         <div className="text-lg font-medium flex justify-start underline p-5">More Info</div>
-        <InputField label="Website" name="website" register={register} error={errors.website?.message?.toString()} />
-        <InputField label="Pager" name="pager" register={register} error={errors.pager?.message?.toString()} />
-        <InputField label="Birthplace" name="birthplace" register={register} error={errors.birthplace?.message?.toString()} />
-        <InputField label="Nationality" name="nationality" register={register} error={errors.nationality?.message?.toString()} />
-        <InputField label="Passport No" name="passportNumber" register={register} error={errors.passportNumber?.message?.toString()} />
+        <InputField setValue={setValue} label="Website" name="website" register={register} error={errors.website?.message?.toString()} />
+        <InputField setValue={setValue} label="Pager" name="pager" register={register} error={errors.pager?.message?.toString()} />
+        <InputField setValue={setValue} label="Birthplace" name="birthplace" register={register} error={errors.birthplace?.message?.toString()} />
+        <InputField setValue={setValue} label="Nationality" name="nationality" register={register} error={errors.nationality?.message?.toString()} />
+        <InputField setValue={setValue} label="Passport No" name="passportNumber" register={register} error={errors.passportNumber?.message?.toString()} />
         <SelectField
           label="Accept LHA/DWP"
           name="acceptLHA"

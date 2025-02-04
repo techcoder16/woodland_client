@@ -32,87 +32,43 @@ import getApi from "@/helper/getApi";
 import deleteApi from "@/helper/deleteApi";
 import { useToast } from "@/components/ui/use-toast";
 
+import { fetchVendors, deleteVendor } from "@/redux/dataStore/vendorSlice";
+import { useDispatch, useSelector } from "react-redux";
+
+import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks"; // ✅ Use typed hooks
+
+import { RootState } from "@/redux/store";
+
 
 
 const VendorList = () => {
-  const [vendors, setVendors] = useState<any>([]);
+  const dispatch = useAppDispatch(); // ✅ Use typed dispatch
+  const { vendors, totalPages, loading } = useAppSelector((state) => state.vendors);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+
   const [deleted,setDeleted] = useState(true);
   const itemsPerPage = 10;
     const { toast } = useToast();
   
 
-  const fetchVendors = async () => {
-    try {
-      const  access_token = await DEFAULT_COOKIE_GETTER("access_token")
-      const headers = {
 
-        Authorization: `Bearer ${access_token}`, // Replace with actual token logic
-      };
-      const params = `?page=${currentPage}&limit=${itemsPerPage}&search=${searchTerm}`;
-      const data:any = await getApi("vendor/getVendors", params, headers);
-      console.log(data.vendors)
-      if (data )
-      {
-      setVendors(data?.vendors ?? []);
-      setTotalPages(data?.totalPages ?? 1);
-      }
-    } catch (error) {
-      console.error("Error fetching vendors:", error);
-    }
-  };
- async function  handleDeleteVendor(id:string)
- {  
-  const params = {
-    id : id
-  }
-
-  try{
-  const  access_token = await DEFAULT_COOKIE_GETTER("access_token")
-  const headers = {
-
-    Authorization: `Bearer ${access_token}`, // Replace with actual token logic
-  };
-
-
-  
-const data: any = await deleteApi(`vendor/delete/${id}`, headers);
-
-  console.log(data.vendors)
-    if (data)
-    {
-    
-      toast({
-        title: "Success",
-        description: data.message || "Successfully Deleted!",
-        
-      });
-      
-      setDeleted((prev)=>!prev);
-      
-    }
-    } catch (error) {
-
-      toast({
-        title: "Error",
-        description: error.message || "Network Error!",
-        variant: "destructive",
-      });
-      
-
-
-
-
-    console.error("Error Deleting vendors:", error);
-    }
-
- }
 
   useEffect(() => {
-    fetchVendors();
-  }, [currentPage, searchTerm,deleted]);
+    dispatch(fetchVendors({ page: currentPage, search: searchTerm }));
+  }, [dispatch, currentPage, searchTerm]);
+
+  const handleDeleteVendor = async (id: string) => {
+    await dispatch(deleteVendor(id));
+    toast({ title: "Success", description: "Vendor deleted successfully!" });
+  };
+
+  
+
+  // useEffect(() => {
+  //   fetchVendors();
+    
+  // }, [currentPage, searchTerm,deleted]);
 
   const handlePageChange = (page:any) => {
     setCurrentPage(page);

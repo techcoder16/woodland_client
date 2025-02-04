@@ -243,8 +243,7 @@ const isLastStep = currentStep === steps.length - 1;
 const [savedData, setSavedData] = useState<Record<number, any>>({});
 const handleNext = async () => {
   const currentStepFields = Object.keys(form.getValues()) as Array<keyof typeof form.getValues>;
-    
-  // Trigger validation only for current step fields
+      console.log(form.getValues());
   const isValid = await form.trigger(currentStepFields, { shouldFocus: true });
     console.log(isValid);
   if (isValid) {
@@ -256,7 +255,8 @@ const handleNext = async () => {
     setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
   } else {
     // If validation fails, log errors
-    
+        console.log("Validation failed:", form.formState.errors);
+
     
   }
 };
@@ -268,6 +268,8 @@ const handlePrevious = () => {
     ...prev,
     [currentStep]: form.getValues(),
   }));
+
+  console.log(form.getValues())
 
   // Move to the previous step
   setCurrentStep((prev) => Math.max(prev - 1, 0));

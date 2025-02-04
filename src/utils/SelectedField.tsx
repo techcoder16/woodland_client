@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { UseFormRegister } from "react-hook-form";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
@@ -21,6 +21,11 @@ const SelectField: React.FC<SelectFieldProps> = ({
   defaultValue = "",
   onChange,
 }) => {
+
+  useEffect(()=>{
+
+    console.log(defaultValue,"default values");
+  },[]);
   // Handle the value change
   const handleChange = (value: string) => {
     if (onChange) {
@@ -36,6 +41,7 @@ const SelectField: React.FC<SelectFieldProps> = ({
         <Select
           {...register(name)}  // Register the field with react-hook-form
           defaultValue={defaultValue}
+          
           onValueChange={handleChange}  // Trigger onChange on selection change
         >
           <SelectTrigger className="p-2 border border-gray-300 rounded flex w-full">

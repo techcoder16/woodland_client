@@ -77,13 +77,13 @@ const InternalInfo = ({ register, errors, setValue, clearErrors }: any) => {
         error={errors.branch?.message?.toString()}
         onChange={(value) => handleSelectChange("branch", value)}
       />
-      <InputField
+      <InputField setValue={setValue}
         label="Negotiator"
         name="negotiater"
         register={register}
         error={errors.negotiater?.message?.toString()}
       />
-      <InputField
+      <InputField setValue={setValue}
         label="Source"
         name="source"
         register={register}
@@ -155,22 +155,25 @@ const InternalInfo = ({ register, errors, setValue, clearErrors }: any) => {
         error={errors.nrl_tax?.message?.toString()}
       />
       {nrlRate === "charge_tax" && (
-        <InputField
+        <InputField setValue={setValue}
           label="NRL Rate"
           name="nrl_rate"
+       
+
           register={register}
           error={errors.nrl_rate?.message?.toString()}
         />
       )}
       {nrlRate === "tax_exempt" && (
-        <InputField
+        <InputField setValue={setValue}
           label="NRL Ref"
+
           name="nrl_ref"
           register={register}
           error={errors.nrl_ref?.message?.toString()}
         />
       )}
-      <InputField
+      <InputField setValue={setValue}
         label="VAT Number"
         name="vat_number"
         register={register}
@@ -178,13 +181,13 @@ const InternalInfo = ({ register, errors, setValue, clearErrors }: any) => {
       />
 
       <div className="text-lg font-medium underline p-5">Landlord/Vendor 2</div>
-      <InputField
+      <InputField setValue={setValue}
         label="Full Name"
         name="landlord_full_name"
         register={register}
         error={errors.landlord_full_name?.message?.toString()}
       />
-      <InputField
+      <InputField setValue={setValue}
         label="Contact"
         name="landlord_contact"
         register={register}

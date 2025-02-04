@@ -3,8 +3,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import React, { useEffect, useState } from "react";
+import { Provider } from "react-redux"; // Import Redux Provider
+import store from "./redux/store"; // Import Redux store
 
+import React, { useEffect, useState } from "react";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import VendorList from "./pages/VendorList";
@@ -14,16 +16,7 @@ import ProtectedRoute from "@/components/ProtectedRoute"; // Import the Protecte
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 
 function App() {
-  const [queryClient] = useState(() =>
-    new QueryClient({
-      defaultOptions: {
-        queries: {
-          staleTime: 5 * 60 * 1000, // 5 minutes
-          retry: 1,
-        },
-      },
-    })
-  );
+  
 
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,29 +36,31 @@ function App() {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="light">
-        <TooltipProvider>
-          <Toaster /> {/* Single Toaster for toast notifications */}
-          <BrowserRouter>
-            <Routes>
-              <Route path="/login" element={<Login />} />
+    <Provider store={store}> {/* Redux Provider */}
+      
+        <ThemeProvider defaultTheme="light">
+          <TooltipProvider>
+            <Toaster /> {/* Single Toaster for toast notifications */}
+            <BrowserRouter>
+              <Routes>
+                <Route path="/login" element={<Login />} />
 
-              {/* Protected Routes */}
-              <Route element={<ProtectedRoute accessToken={accessToken} />}>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/vendors" element={<VendorList />} />
-                <Route path="/vendors/add" element={<AddVendor />} />
-                <Route path="/properties" element={<PropertyList />} />
-              </Route>
+                {/* Protected Routes */}
+                <Route element={<ProtectedRoute accessToken={accessToken} />}>
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/vendors" element={<VendorList />} />
+                  <Route path="/vendors/add" element={<AddVendor />} />
+                  <Route path="/properties" element={<PropertyList />} />
+                </Route>
 
-              {/* Redirect unknown routes to login */}
-              <Route path="*" element={<Navigate to="/login" replace />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+                {/* Redirect unknown routes to login */}
+                <Route path="*" element={<Navigate to="/login" replace />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </ThemeProvider>
+      
+    </Provider>
   );
 }
 
