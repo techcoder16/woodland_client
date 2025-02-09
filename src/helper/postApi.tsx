@@ -27,7 +27,7 @@ export default async function postApi(url: string, values: object,headers:any = 
     } 
     
     else if (e.response && e.response.status === 400) {
-      console.log(e.response);
+      
 
             error.message = e.response.data.message || "Unauthorized";
 

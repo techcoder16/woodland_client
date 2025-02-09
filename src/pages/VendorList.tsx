@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { MainNav } from "@/components/MainNav";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
+
 import {
   Table,
   TableBody,
@@ -46,6 +48,7 @@ const VendorList = () => {
   const { vendors, totalPages, loading } = useAppSelector((state) => state.vendors);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const navigate = useNavigate();
 
   const [deleted,setDeleted] = useState(true);
   const itemsPerPage = 10;
@@ -62,6 +65,14 @@ const VendorList = () => {
     await dispatch(deleteVendor(id));
     toast({ title: "Success", description: "Vendor deleted successfully!" });
   };
+
+
+  const handleEditVendor = (vendor:any) =>{
+    console.log(vendor,"vendors")
+    navigate(`/vendors/edit`, { state: { vendor } });
+
+
+  }
 
   
 
@@ -150,7 +161,7 @@ const VendorList = () => {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon" className="hover:bg-muted">
+                      <Button onClick={()=>{handleEditVendor(vendor)}} variant="ghost" size="icon" className="hover:bg-muted">
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="icon" className="hover:bg-muted">

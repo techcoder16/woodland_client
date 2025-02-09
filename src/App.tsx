@@ -14,6 +14,7 @@ import AddVendor from "./pages/AddVendor";
 import PropertyList from "./pages/PropertyList";
 import ProtectedRoute from "@/components/ProtectedRoute"; // Import the ProtectedRoute
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
+import EditVendor from "./pages/EditVendor";
 
 function App() {
   
@@ -51,6 +52,7 @@ function App() {
                   <Route path="/vendors" element={<VendorList />} />
                   <Route path="/vendors/add" element={<AddVendor />} />
                   <Route path="/properties" element={<PropertyList />} />
+                  <Route path="/vendors/edit" element={<EditVendor />} />
                 </Route>
 
                 {/* Redirect unknown routes to login */}

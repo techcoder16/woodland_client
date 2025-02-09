@@ -5,7 +5,7 @@ import env from "react-dotenv";
 export default async function getApi(url: string, params: any,headers:any = {}) {
   let getdata = {};
   const API_URL = import.meta.env.VITE_API_URL;  // Accessing the environment variable
-  console.log(headers)
+  
   try {
 
     getdata = await axios

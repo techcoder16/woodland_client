@@ -62,6 +62,7 @@ const InputField: React.FC<InputFieldProps> = ({
           ref={inputRef}
           className="p-2 border border-gray-300 rounded lg:flex-grow"
           {...register(name)}
+          
           placeholder={placeholder}
         />
       </div>

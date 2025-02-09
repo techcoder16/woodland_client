@@ -1,8 +1,26 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
-const Attachments = ({ register, clearErrors, setValue, errors }: any) => {
+const Attachments = ({ register, clearErrors, setValue, errors, watch }: any) => {
   const [previewImages, setPreviewImages] = useState<string[]>([]);
-  const [fileObjects, setFileObjects] = useState<File[]>([]); // To manage the actual file objects
+  const [fileObjects, setFileObjects] = useState<File[]>([]);
+
+  // Watch for the attachments field value from react-hook-form
+  const attachments = watch("attachments");
+
+  // When the attachments change (or when the component mounts), update local state
+  useEffect(() => {
+    if (attachments && attachments.length > 0) {
+      // Create preview URLs for each File object in attachments.
+      const previews = attachments.map((file: File) => URL.createObjectURL(file));
+      setPreviewImages(previews);
+      setFileObjects(attachments);
+      
+      // Optional cleanup: revoke created URLs when attachments change or component unmounts.
+      return () => {
+        previews.forEach(url => URL.revokeObjectURL(url));
+      };
+    }
+  }, [attachments]);
 
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -17,7 +35,7 @@ const Attachments = ({ register, clearErrors, setValue, errors }: any) => {
 
       // Update form state using setValue
       setValue("attachments", [...fileObjects, ...files], { shouldValidate: true });
-      clearErrors("attachments"); // Clear any existing validation errors
+      clearErrors("attachments");
     }
   };
 
@@ -30,21 +48,18 @@ const Attachments = ({ register, clearErrors, setValue, errors }: any) => {
       const imagePreviews = files.map((file) => URL.createObjectURL(file));
       setPreviewImages((prev) => [...prev, ...imagePreviews]);
       setFileObjects((prev) => [...prev, ...files]);
-
       // Update form state using setValue
       setValue("attachments", [...fileObjects, ...files], { shouldValidate: true });
-      clearErrors("attachments"); // Clear any existing validation errors
+      clearErrors("attachments");
     }
   };
 
   const handleRemoveImage = (index: number) => {
-    // Remove the selected image from both preview and file objects
     const updatedPreviews = previewImages.filter((_, i) => i !== index);
     const updatedFiles = fileObjects.filter((_, i) => i !== index);
 
     setPreviewImages(updatedPreviews);
     setFileObjects(updatedFiles);
-
     // Update form state
     setValue("attachments", updatedFiles, { shouldValidate: true });
   };
@@ -72,8 +87,7 @@ const Attachments = ({ register, clearErrors, setValue, errors }: any) => {
           accept="image/*"
           multiple
           className="hidden"
-          {...register("attachments")} // Register the field
-          onChange={handleFileInputChange} // Custom change handler
+          onChange={handleFileInputChange}
         />
       </div>
 
@@ -86,7 +100,6 @@ const Attachments = ({ register, clearErrors, setValue, errors }: any) => {
                 alt={`Preview ${index}`}
                 className="object-cover rounded-md shadow-sm"
               />
-              {/* Close button */}
               <button
                 type="button"
                 className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md"

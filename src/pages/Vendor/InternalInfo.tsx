@@ -4,8 +4,8 @@ import SelectField from "../../utils/SelectedField";
 import InputSelect from "../../utils/InputSelect";
 import TextAreaField from "../../utils/TextAreaField";
 
-const InternalInfo = ({ register, errors, setValue, clearErrors }: any) => {
-  const [nrlRate, setNRLRate] = useState<string>("");
+const InternalInfo = ({ register,watch, clearErrors, setValue, errors }: any) => {
+  const [nrlRate, setNRLRate] = useState<string>(watch("nrl_rate") || "");
 
   const labelOptions = [
     { label: "Not dealt with yet", value: "not_dealt_with_yet" },
@@ -37,7 +37,7 @@ const InternalInfo = ({ register, errors, setValue, clearErrors }: any) => {
     // Use setValue to update the form field value and clear any previous errors
     setValue(name, value); // Update the form field value
     clearErrors(name); // Clear any validation errors for the field
-    console.log(`${name} selected: ${value}`);
+    
   };
 
   return (
@@ -55,7 +55,11 @@ const InternalInfo = ({ register, errors, setValue, clearErrors }: any) => {
       </div>
       <SelectField
         label="Label"
+        watch={watch}
+          
         name="label"
+        setValue={setValue}
+          
         options={labelOptions}
         register={register}
         error={errors.label?.message?.toString()}
@@ -64,14 +68,23 @@ const InternalInfo = ({ register, errors, setValue, clearErrors }: any) => {
       <SelectField
         label="Status"
         name="status"
+        watch={watch}
+          
+        setValue={setValue}
+          
         options={statusOptions}
         register={register}
         error={errors.status?.message?.toString()}
         onChange={(value) => handleSelectChange("status", value)}
+        
       />
       <SelectField
         label="Branch"
         name="branch"
+        watch={watch}
+          
+        setValue={setValue}
+          
         options={branchOptions}
         register={register}
         error={errors.branch?.message?.toString()}
@@ -104,48 +117,78 @@ const InternalInfo = ({ register, errors, setValue, clearErrors }: any) => {
 
       <div className="text-lg font-medium underline p-5">Default Sole Agency Fee</div>
       <InputSelect
+      setValue={setValue}
+
         label="Sales Fee"
         name="sales_fee"
+        watch={watch}
+
         options={feeOptions}
         register={register}
       />
+
+      
       <InputSelect
+      setValue={setValue}
+      
         label="Finders Fee"
         name="finders_fee"
+        watch={watch}
+        
         options={feeOptions}
         register={register}
       />
       <InputSelect
+      setValue={setValue}
+      
         label="Management Fee"
         name="management_fee"
+        watch={watch}
+        
         options={feeOptions}
         register={register}
       />
 
       <div className="text-lg font-medium underline p-5">Default Multi Agency Fee</div>
       <InputSelect
+      setValue={setValue}
+      
         label="Sales Fee"
         name="sales_fee_a"
+        watch={watch}
+        
         options={feeOptions}
         register={register}
       />
       <InputSelect
+      setValue={setValue}
+      
         label="Finders Fee"
         name="finders_fee_a"
         options={feeOptions}
+        watch={watch}
+        
         register={register}
       />
       <InputSelect
+      setValue={setValue}
+      
         label="Management Fee"
         name="management_fee_a"
+        watch={watch}
+        
         options={feeOptions}
         register={register}
       />
 
       <div className="text-lg font-medium underline p-5">NRL and VAT</div>
       <SelectField
+      watch={watch}
+          
         label="NRL Tax"
         name="nrl_tax"
+        setValue={setValue}
+          
         options={nrlTaxOptions}
         register={register}
         onChange={(value) => {

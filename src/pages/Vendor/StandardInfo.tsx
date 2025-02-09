@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import InputField from '../../utils/InputField';
 import SelectField from '../../utils/SelectedField';
 
-const StandardInfo = ({ register, errors, setValue, clearErrors }: any) => {
+const StandardInfo = ({ register,watch, clearErrors, setValue, errors }: any) => {
   const [countries, setCountries] = useState<any>([]);
   const [selectedType, setSelectedType] = useState('');
   const [selectedTitle, setSelectedTitle] = useState('');
@@ -62,7 +62,7 @@ const StandardInfo = ({ register, errors, setValue, clearErrors }: any) => {
     clearErrors(name); // Clear any validation errors for the field
 
     // Optionally, log or do other side effects here
-    console.log(`${name} selected: ${value}`);
+    
   };
 
   return (
@@ -73,15 +73,26 @@ const StandardInfo = ({ register, errors, setValue, clearErrors }: any) => {
         <div className="flex flex-col w-full mb-4 mx-2 bg-[#F4F4F4] p-6 rounded-sm">
           <div className="flex items-center w-full">
             <label className="font-medium mr-4">Vendor</label>
-            <input type="checkbox" className="p-2 border mx-2 border-gray-300 rounded" {...register('vendor')} />
+            <input type="checkbox" className="p-2 border mx-2 border-gray-300 rounded" {...register('vendor')} 
+            
+            onChange={(e) => setValue("vendor", e.target.checked)} // Ensure boolean
+
+            />
             <label className="font-medium mr-4">Landlord</label>
-            <input type="checkbox" className="p-2 border border-gray-300 rounded" {...register('landlord')} />
+            <input type="checkbox" className="p-2 border border-gray-300 rounded" {...register('landlord')}
+              onChange={(e) => setValue("landlord", e.target.checked)} // Ensure boolean
+
+            />
           </div>
         </div>
 
         <SelectField
           label="Type"
+          watch={watch}
+
           name="type"
+          setValue={setValue}
+
           options={typeOptions}
           register={register}
           error={errors.type?.message?.toString()}
@@ -91,6 +102,10 @@ const StandardInfo = ({ register, errors, setValue, clearErrors }: any) => {
         <SelectField
           label="Title"
           name="title"
+watch={watch}
+          
+          setValue={setValue}
+          
           options={titleOptions}
           register={register}
           error={errors.title?.message?.toString()}
@@ -103,6 +118,10 @@ const StandardInfo = ({ register, errors, setValue, clearErrors }: any) => {
         <SelectField
           label="Salutation"
           name="salutation"
+          watch={watch}
+          
+          setValue={setValue}
+          
           options={salutationOptions}
           register={register}
           error={errors.salutation?.message?.toString()}
@@ -120,6 +139,10 @@ const StandardInfo = ({ register, errors, setValue, clearErrors }: any) => {
         <InputField setValue={setValue} label="Town" name="town" register={register} error={errors.addressLine?.message?.toString()} />
         <SelectField
           label="Country"
+          setValue={setValue}
+          watch={watch}
+          
+          
           name="country"
           options={countries}
           register={register}
@@ -151,6 +174,10 @@ const StandardInfo = ({ register, errors, setValue, clearErrors }: any) => {
         <SelectField
           label="Accept LHA/DWP"
           name="acceptLHA"
+          watch={watch}
+          
+          setValue={setValue}
+          
           options={[{ value: 'No', label: 'No' }, { value: 'Yes', label: 'Yes' }]}
           register={register}
           error={errors.acceptLHA?.message?.toString()}

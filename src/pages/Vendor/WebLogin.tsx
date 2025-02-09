@@ -2,8 +2,12 @@ import React, { useState, useEffect } from 'react';
 import InputField from '../../utils/InputField';
 import { VscEye, VscEyeClosed } from 'react-icons/vsc';
 
-const WebLogin = ({ register, errors, setValue, clearErrors }: any) => {
-  const [accountOption, setAccountOption] = useState<string>('noAccount');
+const WebLogin = ({ register, clearErrors, setValue, unregister, errors, watch }: any) => {
+  // Get the current value from the form state
+  const savedOption = watch("accountOption");
+  
+  // Initialize local state with the saved value if available, otherwise default to 'noAccount'
+  const [accountOption, setAccountOption] = useState<string>(savedOption || 'noAccount');
   const [isPasswordVisible, setPasswordVisible] = useState(false);
 
   // Register 'accountOption' field on mount
@@ -11,17 +15,28 @@ const WebLogin = ({ register, errors, setValue, clearErrors }: any) => {
     register('accountOption', { required: 'Please select an option' });
   }, [register]);
 
+  // Whenever the saved option changes (for example, when navigating back), update local state
+  useEffect(() => {
+    if (savedOption) {
+      setAccountOption(savedOption);
+    }
+  }, [savedOption]);
+
   const handleOptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setAccountOption(value);
     setValue('accountOption', value, { shouldValidate: true });
 
+    // Unregister fields from previous selections
     if (value === 'existingAccount') {
       clearErrors(['username', 'password']);
+      unregister(['username', 'password']); // Unregister unnecessary fields
     } else if (value === 'createAccount') {
       clearErrors(['existingUsername']);
+      unregister('existingUsername'); // Unregister the existing username field
     } else if (value === 'noAccount') {
       clearErrors(['username', 'password', 'existingUsername']);
+      unregister(['username', 'password', 'existingUsername']); // Unregister all input fields
     }
   };
 
@@ -43,6 +58,7 @@ const WebLogin = ({ register, errors, setValue, clearErrors }: any) => {
                 type="radio"
                 name="accountOption"
                 value={option.value}
+                {...register("accountOption")}
                 onChange={handleOptionChange}
                 checked={accountOption === option.value}
                 className="form-radio"
@@ -59,14 +75,16 @@ const WebLogin = ({ register, errors, setValue, clearErrors }: any) => {
       {/* Fields for Create Account */}
       {accountOption === 'createAccount' && (
         <div className="p-5">
-          <InputField setValue={setValue}
+          <InputField 
+            setValue={setValue}
             label="User Name"
             name="username"
             register={register}
             error={errors.username?.message?.toString()}
           />
           <div className="relative">
-            <InputField setValue={setValue}
+            <InputField 
+              setValue={setValue}
               name="password"
               label="Password"
               type={isPasswordVisible ? 'text' : 'password'}
@@ -88,7 +106,8 @@ const WebLogin = ({ register, errors, setValue, clearErrors }: any) => {
       {/* Fields for Existing Account */}
       {accountOption === 'existingAccount' && (
         <div className="p-5">
-          <InputField setValue={setValue}
+          <InputField 
+            setValue={setValue}
             label="Existing Username"
             name="existingUsername"
             register={register}

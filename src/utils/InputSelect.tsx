@@ -1,15 +1,24 @@
-import React, { useEffect, useRef } from 'react';
-import { FieldValues, UseFormRegister } from 'react-hook-form';
-import { Input } from '@/components/ui/input';
+import React, { useEffect } from "react";
+import {
+  FieldValues,
+  UseFormRegister,
+  UseFormWatch,
+  UseFormSetValue,
+  FieldError,
+} from "react-hook-form";
+import { Input } from "@/components/ui/input";
 
 interface SelectFieldProps {
   label: string;
   name: string;
-  options: any[];
+  options: { value: string; label: string }[];
   register: UseFormRegister<FieldValues>;
-  error?: string;
+  watch: UseFormWatch<FieldValues>;
+  setValue: UseFormSetValue<FieldValues>;
+  error?: FieldError;
   defaultValue?: string;
-  onChange?: (value: string) => void;  // onChange handler
+  rules?: Record<string, any>;
+  className?: string;
 }
 
 const InputSelect: React.FC<SelectFieldProps> = ({
@@ -17,74 +26,94 @@ const InputSelect: React.FC<SelectFieldProps> = ({
   name,
   options,
   register,
+  watch,
+  setValue,
   error,
-  defaultValue = '',
-  onChange,
+  defaultValue = "",
+  rules = {},
+  className = "",
 }) => {
+  const inputFieldName = `${name}_input`;
+  const selectFieldName = `${name}_select`;
 
-  const inputRef = useRef<HTMLInputElement>(null);
+  // Register input and select fields
+  const { ref: inputRef, ...inputRest } = register(inputFieldName);
+  const { ref: selectRef, ...selectRest } = register(selectFieldName);
 
-  // Handler for select and input field changes
-  const handleChange = (event: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
-    if (onChange) {
-      onChange(event.target.value); // Call the onChange prop if it exists
-    }
-  };
+  // Register main field for validation
+  const { ref: mainRef, ...mainRest } = register(name, rules);
 
+  // Watch both fields
+  const inputValue = watch(inputFieldName) || "";
+  const selectValue = watch(selectFieldName) || "";
+
+  // Combine values into the main field
   useEffect(() => {
-    const handleAutofillEvent = () => {
-      const value = inputRef.current?.value;
-      if (onChange && value !== undefined) {
-        onChange(value); // Trigger onChange for autofill values
-      }
-    };
+    const combinedValue = `${inputValue}${selectValue}`.trim();
+    setValue(name, combinedValue, { shouldValidate: true });
+  }, [inputValue, selectValue, setValue, name]);
 
-    const input = inputRef.current;
-    if (input) {
-      input.addEventListener("change", handleAutofillEvent);
-      input.addEventListener("input", handleAutofillEvent); // Handles modern autofill scenarios
+  // Set default values on mount
+  useEffect(() => {
+    if (defaultValue) {
+      const match = defaultValue.match(/(\d+)(%\D+)/);
+      if (match) {
+        setValue(inputFieldName, match[1]);
+        setValue(selectFieldName, match[2]);
+      }
     }
-
-    return () => {
-      if (input) {
-        input.removeEventListener("change", handleAutofillEvent);
-        input.removeEventListener("input", handleAutofillEvent);
-      }
-    };
-  }, [onChange]);
+  }, [defaultValue, setValue, inputFieldName, selectFieldName]);
 
   return (
-    <div className="p-3 rounded-sm">
-      <div className="flex items-center space-x-4"> {/* Updated layout using flex */}
-        {/* Input Field on Left */}
-        <label className="text-gray-700 font-medium mr-4">{label}</label>
+    <div className={`space-y-2 ${className}`}>
+      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      
+      <div className="flex gap-2">
+        {/* Text Input */}
         <Input
-          className="p-2 border border-gray-300 rounded w-32"
-          {...register(name)} // Use name directly for the input field
-          defaultValue={defaultValue}
-          placeholder=""
-          ref={inputRef} // Attach ref to the input
-          onChange={handleChange}  // Pass onChange for the input field
+          {...inputRest}
+          ref={(e) => {
+            inputRef(e);
+            // @ts-ignore
+            mainRef(e?.querySelector ? null : e); // Connect to main ref
+          }}
+          value={inputValue}
+          onChange={(e) => setValue(inputFieldName, e.target.value)}
+          className="w-1/3"
+          aria-invalid={error ? "true" : "false"}
         />
 
-        {/* Select Field on Right */}
-        <div className="flex-grow">
-          <select
-            className="p-2 border border-gray-300 rounded w-full"
-            {...register(name)} // Use name directly for the select field
-            defaultValue={defaultValue}
-            onChange={handleChange}  // Pass onChange for the select field
-          >
-            {defaultValue && <option value="">{defaultValue}</option>}
-            {options.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Select Dropdown */}
+        <select
+          {...selectRest}
+          ref={(e) => {
+            selectRef(e);
+            // @ts-ignore
+            mainRef(e?.querySelector ? null : e); // Connect to main ref
+          }}
+          value={selectValue}
+          onChange={(e) => setValue(selectFieldName, e.target.value)}
+          className="w-2/3 border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          aria-invalid={error ? "true" : "false"}
+        >
+          <option value="">Select unit...</option>
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+
+        {/* Hidden input for form validation */}
+        <input type="hidden" {...mainRest} ref={mainRef} />
       </div>
-      {error && <p className="text-red-500 mt-1 mx-2 justify-center flex">{error}</p>}
+
+      {/* Error Message */}
+      {error && (
+        <p className="text-red-600 text-sm mt-1" role="alert">
+          {error.message}
+        </p>
+      )}
     </div>
   );
 };
