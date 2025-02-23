@@ -1,6 +1,6 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Search, LogOut, Menu, Home, Users, Building2, Settings, Sun, Moon } from "lucide-react";
+import { Search, LogOut, Menu, Home, Users, Building2, Settings, Sun, Moon, Cookie } from "lucide-react";
 import { Input } from "./ui/input";
 import { ThemeToggle } from "./ThemeToggle";
 import { Button } from "./ui/button";
@@ -19,6 +19,7 @@ import {
 } from "./ui/dropdown-menu";
 import { useEffect, useState } from "react";
 import { useTheme } from "./ThemeProvider";
+import { DEFAULT_COOKIE_DELETE } from "@/helper/Cookie";
 
 const fontFamilies = [
   { label: "Montserrat", value: "font-montserrat" },
@@ -48,6 +49,7 @@ export function MainNav() {
 
   
 
+  const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [fontFamily, setFontFamily] = useState(initialFontFamily);
   const [themeColor, setThemeColor] = useState(initialThemeColor);
@@ -62,6 +64,10 @@ export function MainNav() {
 
   const handleLogout = () => {
     console.log("Logging out...");
+    DEFAULT_COOKIE_DELETE("access_token");
+    
+
+    navigate("/login");
   };
 
   const handleFontChange = (value: string) => {

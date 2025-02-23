@@ -15,6 +15,7 @@ import PropertyList from "./pages/PropertyList";
 import ProtectedRoute from "@/components/ProtectedRoute"; // Import the ProtectedRoute
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import EditVendor from "./pages/EditVendor";
+import AddProperty from "./pages/AddProperty";
 
 function App() {
   
@@ -27,6 +28,7 @@ function App() {
       const access_object = await DEFAULT_COOKIE_GETTER("access_token");
       setAccessToken(access_object);
       setLoading(false);
+      
     };
 
     fetchAccessToken();
@@ -51,6 +53,8 @@ function App() {
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/vendors" element={<VendorList />} />
                   <Route path="/vendors/add" element={<AddVendor />} />
+                  <Route path="/property/add" element={<AddProperty />} />
+                  
                   <Route path="/properties" element={<PropertyList />} />
                   <Route path="/vendors/edit" element={<EditVendor />} />
                 </Route>

@@ -1,23 +1,19 @@
+
 import React, { useEffect } from "react";
-import { UseFormRegister,UseFormWatch,UseFormSetValue } from "react-hook-form";
+import { UseFormRegister, UseFormWatch, UseFormSetValue } from "react-hook-form";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
 interface SelectFieldProps {
   label: string;
   name: string;
   options: { label: string; value: string }[]; 
-  register: UseFormRegister<any>;  // Use react-hook-form register
+  register: UseFormRegister<any>;
   error?: string;
   setValue: UseFormSetValue<any>;
-
   defaultValue?: string;
-  
-
-  watch: UseFormWatch<any>; // Watch form values to sync state
-
-  onChange?: (value: string) => void;  // Add onChange callback as a prop
+  watch: UseFormWatch<any>;
+  onChange?: (value: string) => void;
 }
-
 
 const SelectField: React.FC<SelectFieldProps> = ({
   label,
@@ -26,43 +22,59 @@ const SelectField: React.FC<SelectFieldProps> = ({
   register,
   error,
   setValue,
-
   watch,
   defaultValue = "",
   onChange,
 }) => {
-
-  const currentValue = watch(name); // Get the current value of the field
-
-
-
   
-  // Handle the value change
-  const handleChange = (value: string) => {
-    if (onChange) {
-      console.log(value);
-      onChange(value);  // Trigger the passed onChange function
+  const currentValue = watch(name); // Get the current value of the field
+ 
+  useEffect(() => {
     
+    if (defaultValue) {
+     
+      setValue(name, defaultValue);
+    }
+  }, [defaultValue, name, setValue]);
+
+  // Handle value change
+  const handleChange = (value: string) => {
+    if(name == "country" )
+      {
+    
+      }
+      if (currentValue )
+      { 
+    setValue(name, value); // Manually update form state
+      }
+
+    if (onChange) {
+      onChange(value);
     }
   };
 
-  return (
 
+
+  return (
     <div className="p-3 rounded-sm">
       <div className="flex items-center w-full">
         <label className="text-gray-700 font-medium mr-4 w-32">{label}</label>
         <Select
-          {...register(name)}  // Register the field with react-hook-form
-          // defaultValue={defaultValue}
-          defaultValue={defaultValue || currentValue}
-          
-          onValueChange={handleChange}  // Trigger onChange on selection change
+           {...register(name)}
+        value={currentValue || ""} onValueChange={handleChange}
+     
+        
         >
           <SelectTrigger className="p-2 border border-gray-300 rounded flex w-full">
-            <SelectValue placeholder="Select an option" />
+            <SelectValue placeholder="Select an option">
+            {currentValue
+    ? options && options.find(option => option.value === currentValue)?.label || "Unknown Field"
+    : "Select an option"}
+
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            {options.map((option) => (
+            {options && options.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
               </SelectItem>

@@ -22,7 +22,7 @@
   import LoadingBar from "react-top-loading-bar";
   import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
   import postApiImage from "@/helper/postApiImage";
-
+ 
 
   const formSchema = z.object({
     landlord: z.boolean(),
@@ -44,10 +44,13 @@
     town: z.string().nullable().optional(),
     country: z.string().nullable().optional(),
     phoneHome: z.string().nullable().optional(),
+    phoneWork: z.string().nullable().optional(),
+    negotiator:z.string().nullable().optional(),
+
     phoneMobile: z.string().nullable().optional(),
     fax: z.string().nullable().optional(),
     email: z.string().nullable().optional(),
-    webste: z.string().nullable().optional(),
+    website: z.string().nullable().optional(),
     pager: z.string().nullable().optional(),
     birthplace: z.string().nullable().optional(),
     nationality: z.string().nullable().optional(),
@@ -61,28 +64,33 @@
     source: z.string().nullable().optional(),
 
     ldhor: z.boolean().optional(),
-    sales_fee: z.string().nullable().optional(),
-    management_fee: z.string().nullable().optional(),
-    finders_fee: z.string().nullable().optional(),
-    sales_fee_a: z.string().nullable().optional(),
-    management_fee_a: z.string().nullable().optional(),
-    finders_fee_a: z.string().nullable().optional(),
-    nrl_ref: z.string().nullable().optional(),
-    nrl_rate: z.string().nullable().optional(),
-    vat_number: z.string().nullable().optional(),
-    landlord_full_name: z.string().nullable().optional(),
-    landlord_contact: z.string().nullable().optional(),
+    salesFee: z.string().nullable().optional(),
+    managementFee: z.string().nullable().optional(),
+    findersFee: z.string().nullable().optional(),
+    salesFeeA: z.string().nullable().optional(),
+    managementFeeA: z.string().nullable().optional(),
+    findersFeeA: z.string().nullable().optional(),
+    nrlTax: z.string().nullable().optional(),
+    
+    nrlRef: z.string().nullable().optional(),
+    nrlRate: z.string().nullable().optional(),
+    vatNumber: z.string().nullable().optional(),
+    landlordFullName: z.string().nullable().optional(),
+    landlordContact: z.string().nullable().optional(),
     comments:z.string().nullable().optional(),
-    other_info:z.string().nullable().optional(),
+    otherInfo:z.string().nullable().optional(),
 
-    bank_body: z.string().nullable().optional(),
 
-    bank_address_line_1: z.string().nullable().optional(),
-    bank_address_line_2: z.string().nullable().optional(),
-    bank_town: z.string().nullable().optional(),
-    bank_post_code: z.string().nullable().optional(),
-    bank_country: z.string().nullable().optional(),
-    bank_iban: z.string().nullable().optional(),
+
+
+    bankBody: z.string().nullable().optional(),
+
+    bankAddressLine1: z.string().nullable().optional(),
+    bankAddressLine2: z.string().nullable().optional(),
+    bankTown: z.string().nullable().optional(),
+    bankPostCode: z.string().nullable().optional(),
+    bankCountry: z.string().nullable().optional(),
+    bankIban: z.string().nullable().optional(),
     bic: z.string().nullable().optional(),
 
     nib: z.string().nullable().optional(),
@@ -95,12 +103,11 @@
 
 
     attachments: z.array(
-        z.instanceof(File).refine((file) => file.type.startsWith("image/"), {
-          message: "Only image files are allowed.",
-        })
-      ).refine((files) => files.every((file) => file instanceof File), {
-        message: "Only files are allowed.",
-      }),
+      z.string().regex(/^data:image\/[a-zA-Z+]+;base64,/, {
+        message: "Only valid image files in Base64 format are allowed.",
+      })
+    )
+
 
     // Common fields (if any)
 
@@ -139,12 +146,25 @@
 
 
 
+  const stepFields = [
+    // Standard Info (Step 0)
+    ['type', 'title', 'firstName', 'lastName', 'company', 'salutation', 'postCode', 'addressLine1', 'addressLine2', 'town', 'country', 'phoneHome','phoneWork', 'phoneMobile', 'fax', 'email', 'website', 'pager', 'birthplace', 'nationality', 'passportNumber', 'acceptLHA'],
+    // Internal Info (Step 1)
+    ['dnrvfn', 'label', 'status', 'branch', 'source', 'ldhor', 'salesFee', 'managementFee', 'findersFee', 'salesFeeA', 'managementFeeA', 'findersFeeA','nrlTax', 'nrlRef', 'nrlRate', 'vatNumber', 'landlordFullName', 'landlordContact', 'comments', 'otherInfo','negotiator'],
+    // Bank Details (Step 2)
+    ['bankBody', 'bankAddressLine1', 'bankAddressLine2', 'bankTown', 'bankPostCode', 'bankCountry', 'bankIban', 'bic', 'nib'],
+    // Web Login (Step 3)
+    ['accountOption', 'username', 'password', 'existingUsername'],
+    // Attachments (Step 4) - No fields to validate beyond the file input handled by the component
+    ['attachments'],
+  ];
     const [currentStep, setCurrentStep] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const navigate = useNavigate();
 
     
+
     const [progress, setProgress] = useState(0);
     const onSubmit = async (data: FormData) => {
       const isValid = await form.trigger(); // Validate all fields before final submission
@@ -168,9 +188,9 @@
         for (const [key, value] of Object.entries(data)) {
           if (key === "attachments" && Array.isArray(value)) {
             // Handle attachments array
-            value.forEach((file) => {
-              if (file instanceof File) {
-                formData.append("attachments", file); // Append each file individually
+            value.forEach((file:any,index) => {
+              if (file) {
+                formData.append(`attachments[${index}]`, file); // Append each file individually
               }
             });
           } else if (typeof value === "boolean") {
@@ -226,7 +246,7 @@
     
 
   const steps = [
-    { label: "Standard Info", component: <StandardInfo watch={watch} register={form.register}  errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
+    { label: "Standard Info", component: <StandardInfo  watch={watch} register={form.register}  errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
     { label: "Internal Info", component: <InternalInfo watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
     { label: "Bank Details", component: <BankDetails watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
     { label: "Web Login", component: <WebLogin unregister={form.unregister} watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
@@ -238,18 +258,6 @@
 
 
 
-  const stepFields = [
-    // Standard Info (Step 0)
-    ['type', 'title', 'firstName', 'lastName', 'company', 'salutation', 'postCode', 'addressLine1', 'addressLine2', 'town', 'country', 'phoneHome', 'phoneMobile', 'fax', 'email', 'webste', 'pager', 'birthplace', 'nationality', 'passportNumber', 'acceptLHA'],
-    // Internal Info (Step 1)
-    ['dnrvfn', 'label', 'status', 'branch', 'source', 'ldhor', 'sales_fee', 'management_fee', 'finders_fee', 'sales_fee_a', 'management_fee_a', 'finders_fee_a', 'nrl_ref', 'nrl_rate', 'vat_number', 'landlord_full_name', 'landlord_contact', 'comments', 'other_info'],
-    // Bank Details (Step 2)
-    ['bank_body', 'bank_address_line_1', 'bank_address_line_2', 'bank_town', 'bank_post_code', 'bank_country', 'bank_iban', 'bic', 'nib'],
-    // Web Login (Step 3)
-    ['accountOption', 'username', 'password', 'existingUsername'],
-    // Attachments (Step 4) - No fields to validate beyond the file input handled by the component
-    ['attachments'],
-  ];
   
   const [savedData, setSavedData] = useState<Record<number, any>>({});
   const handleNext = async () => {
@@ -259,7 +267,7 @@
       console.log(currentStepFields);
 
     const isValid = await form.trigger(currentStepFields, { shouldFocus: true });
-        console.log(isValid,"isvalud");
+    
     if (isValid) {
 
       setSavedData((prev) => ({
@@ -273,7 +281,7 @@
       }
 
       const nextStepData = savedData[currentStep + 1];
-        console.log(nextStepData,"next step data");
+
       if (nextStepData) {
         
         form.reset(nextStepData);

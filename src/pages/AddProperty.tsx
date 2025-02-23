@@ -5,7 +5,6 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
-import { useLocation } from "react-router-dom";
 
 
 import { Input } from "@/components/ui/input";
@@ -26,7 +25,6 @@ import postApiImage from "@/helper/postApiImage";
 
 
 const formSchema = z.object({
-  id :z.string(),
   landlord: z.boolean(),
   vendor: z.boolean(),
 
@@ -46,13 +44,13 @@ const formSchema = z.object({
   town: z.string().nullable().optional(),
   country: z.string().nullable().optional(),
   phoneHome: z.string().nullable().optional(),
-  phoneMobile: z.string().nullable().optional(),
   phoneWork: z.string().nullable().optional(),
-  
+  negotiator:z.string().nullable().optional(),
+
+  phoneMobile: z.string().nullable().optional(),
   fax: z.string().nullable().optional(),
   email: z.string().nullable().optional(),
   website: z.string().nullable().optional(),
-
   pager: z.string().nullable().optional(),
   birthplace: z.string().nullable().optional(),
   nationality: z.string().nullable().optional(),
@@ -72,15 +70,18 @@ const formSchema = z.object({
   salesFeeA: z.string().nullable().optional(),
   managementFeeA: z.string().nullable().optional(),
   findersFeeA: z.string().nullable().optional(),
-  nrlRef: z.string().nullable().optional(),
   nrlTax: z.string().nullable().optional(),
   
+  nrlRef: z.string().nullable().optional(),
   nrlRate: z.string().nullable().optional(),
-  vatumber: z.string().nullable().optional(),
+  vatNumber: z.string().nullable().optional(),
   landlordFullName: z.string().nullable().optional(),
   landlordContact: z.string().nullable().optional(),
   comments:z.string().nullable().optional(),
   otherInfo:z.string().nullable().optional(),
+
+
+
 
   bankBody: z.string().nullable().optional(),
 
@@ -101,12 +102,12 @@ const formSchema = z.object({
 
 
 
-
   attachments: z.array(
     z.string().regex(/^data:image\/[a-zA-Z+]+;base64,/, {
       message: "Only valid image files in Base64 format are allowed.",
     })
   )
+
 
   // Common fields (if any)
 
@@ -120,7 +121,10 @@ const formSchema = z.object({
       return data.existingUsername;
     }
     
-   
+    if (data.attachments !== undefined && !Array.isArray(data.attachments)) {
+      throw new Error('Attachments must be an array.');
+
+    }
     return true;
   },
   {
@@ -131,152 +135,40 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-const EditVendor = () => {
-
-  const location = useLocation();
-  const vendor = location.state?.vendor;
-
-
-
+const AddProperty = () => {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     mode: "onSubmit",
   });
-  
 const { toast } = useToast();
 
 const { watch } = form;
-  useEffect(() => {
-   
-    if (vendor) {
-
-      const splitFeeValue = (value: string) => {
-        if (!value) return { amount: '', type: '' };
-        const parts = value.split('-');
-        return {
-          amount: parts[0] || '',
-          type: parts[1] || ''
-        };
-      };
-  
-      const salesFeeParts = splitFeeValue(vendor.salesFee);
-      const managementFeeParts = splitFeeValue(vendor.managementFee);
-      const findersFeeParts = splitFeeValue(vendor.findersFee);
-      const salesFeeAParts = splitFeeValue(vendor.salesFeeA);
-      const managementFeeAParts = splitFeeValue(vendor.managementFeeA);
 
 
-      const transformedVendorData = {
-        id:vendor.id ?? "",
 
-        landlord: vendor.landlord ?? false,
-        vendor: vendor.vendor ?? false,
-        type: vendor.type || "Individual",
-        title: vendor.title || "mr",
-        firstName: vendor.firstName || "",
-        lastName: vendor.lastName || "",
-        company: vendor.company || "",
-        salutation: vendor.salutation || "",
-        postCode: vendor.postCode || "",
-        addressLine1: vendor.addressLine1 || "",
-        addressLine2: vendor.addressLine2 || "",
-        town: vendor.town || "",
-        country: vendor.country || "",
-
-        phoneHome: vendor.phoneHome || "",
-        phoneMobile: vendor.phoneMobile || "",
-        fax: vendor.fax || "",
-        email: vendor.email || "",
-        website: vendor.website || "",  // Note: Fix potential typo in API response vs. form schema
-        pager: vendor.pager || "",
-        birthplace: vendor.birthplace || "",
-        nationality: vendor.nationality || "",
-        passportNumber: vendor.passportNumber || "",
-        acceptLHA: vendor.acceptLHA || "",
-  
-        dnrvfn: vendor.dnrvfn ?? false,
-        label: vendor.label || "",
-        status: vendor.status || "",
-        branch: vendor.branch || "",
-        source: vendor.source || "",
-        negotiator:vendor.negotiator || "",
-  
-        ldhor: vendor.ldhor ?? false,
-        salesFee_input: salesFeeParts.amount,
-        salesFee_select: salesFeeParts.type,
-        salesFee: vendor.salesFee || "",
-  
-        managementFee_input: managementFeeParts.amount,
-        managementFee_select: managementFeeParts.type,
-        managementFee: vendor.managementFee || "",
-  
-        findersFee_input: findersFeeParts.amount,
-        findersFee_select: findersFeeParts.type,
-        findersFee: vendor.findersFee || "",
-  
-        salesFeeA_input: salesFeeAParts.amount,
-        salesFeeA_select: salesFeeAParts.type,
-        salesFeeA: vendor.salesFeeA || "",
-  
-        findersFeeA_input: findersFeeParts.amount,
-        findersFeeA_select: findersFeeParts.type,
-        findersFeeA: vendor.findersFee || "",
-        managementFeeA_input: managementFeeAParts.amount,
-        managementFeeA_select: managementFeeAParts.type,
-        managementFeeA: vendor.managementFeeA || "",
-      
-        
-
-        nrlRef: vendor.nrlRef || "",
-        nrlRate: vendor.nrlRate || "",
-        vatNumber: vendor.vatNumber || "",
-        landlordFullName: vendor.landlordFullName || "",
-        landlordContact: vendor.landlordContact || "",
-        comments: vendor.comments || "",
-        otherInfo: vendor.otherInfo || "",
-        phoneWork :vendor.phoneWork || "",
-        bankBody: vendor.bankBody || "",
-        bankAddressLine1: vendor.bankAddressLine1 || "",
-        bankAddressLine2: vendor.bankAddressLine2 || "",
-        bankTown: vendor.bankTown || "",
-        bankPostCode: vendor.bankPostCode || "",
-        bankCountry: vendor.bankCountry || "",
-        bankIban: vendor.bankIban || "",
-        bic: vendor.bic || "",
-        nib: vendor.nib || "",
-        nrlTax:vendor.nrlTax || "",
-    
-        accountOption: vendor.accountOption || "noAccount",
-
-        username: vendor.username || "",
-        password: vendor.password || "",
-        existingUsername: vendor.existingUsername || "",
-  
-        attachments: vendor.attachments
-          ? vendor.attachments.map((path: string) => path) // Placeholder files
-          : [],
-          
-      };
-      
-
-      console.log("Transformed vendor data:", transformedVendorData);
-      form.reset(transformedVendorData);
-      console.log("Form values after reset:", form.getValues());
-    }
-  }, [vendor, form]);
-  
-
-
+const stepFields = [
+  // Standard Info (Step 0)
+  ['type', 'title', 'firstName', 'lastName', 'company', 'salutation', 'postCode', 'addressLine1', 'addressLine2', 'town', 'country', 'phoneHome','phoneWork', 'phoneMobile', 'fax', 'email', 'website', 'pager', 'birthplace', 'nationality', 'passportNumber', 'acceptLHA'],
+  // Internal Info (Step 1)
+  ['dnrvfn', 'label', 'status', 'branch', 'source', 'ldhor', 'salesFee', 'managementFee', 'findersFee', 'salesFeeA', 'managementFeeA', 'findersFeeA','nrlTax', 'nrlRef', 'nrlRate', 'vatNumber', 'landlordFullName', 'landlordContact', 'comments', 'otherInfo','negotiator'],
+  // Bank Details (Step 2)
+  ['bankBody', 'bankAddressLine1', 'bankAddressLine2', 'bankTown', 'bankPostCode', 'bankCountry', 'bankIban', 'bic', 'nib'],
+  // Web Login (Step 3)
+  ['accountOption', 'username', 'password', 'existingUsername'],
+  // Attachments (Step 4) - No fields to validate beyond the file input handled by the component
+  ['attachments'],
+];
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-    
- 
+  const navigate = useNavigate();
+
   
+
   const [progress, setProgress] = useState(0);
   const onSubmit = async (data: FormData) => {
     const isValid = await form.trigger(); // Validate all fields before final submission
-    console.log("asdkjas")
+    console.log(isValid,"isValid");
     if (!isValid) return;
 
     setProgress(30);
@@ -291,13 +183,10 @@ const { watch } = form;
       };
   
       const formData = new FormData();
-      
+  
       // Dynamically append all fields from `data`
-      
       for (const [key, value] of Object.entries(data)) {
-      
         if (key === "attachments" && Array.isArray(value)) {
-    
           // Handle attachments array
           value.forEach((file:any,index) => {
             if (file) {
@@ -315,14 +204,14 @@ const { watch } = form;
   
   
       // Call postApi with FormData and headers
-      const { data: apiData, error } = await postApi("vendor/update", formData, headers);
+      const { data: apiData, error } = await postApi("vendor/create", formData, headers);
       setProgress(60);
   
       if (error && error.message) {
         
         toast({
           title: "Error",
-          description: error.message || "Failed to update vendor.",
+          description: error.message || "Failed to create vendor.",
           variant: "destructive",
         });
         return; // Exit early on error
@@ -335,7 +224,7 @@ const { watch } = form;
   
         toast({
           title: "Success",
-          description: apiData.message || "Vendor updated successfully!",
+          description: apiData.message || "Vendor created successfully!",
         });
   
         setProgress(100);
@@ -346,7 +235,7 @@ const { watch } = form;
       console.error("Error:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to update vendor.",
+        description: error.message || "Failed to create vendor.",
         variant: "destructive",
       });
     } finally {
@@ -357,7 +246,7 @@ const { watch } = form;
   
 
 const steps = [
-  { label: "Standard Info", component: <StandardInfo   type={"edit"} watch={watch} register={form.register}  errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
+  { label: "Standard Info", component: <StandardInfo  watch={watch} register={form.register}  errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
   { label: "Internal Info", component: <InternalInfo watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
   { label: "Bank Details", component: <BankDetails watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
   { label: "Web Login", component: <WebLogin unregister={form.unregister} watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
@@ -370,46 +259,43 @@ const isLastStep = currentStep === steps.length - 1;
 
 
 
-const stepFields = [
-  // Standard Info (Step 0)
-  ['type', 'title', 'firstName', 'lastName', 'company', 'salutation', 'postCode', 'addressLine1', 'addressLine2', 'town', 'country', 'phoneHome','phoneWork', 'phoneMobile', 'fax', 'email', 'website', 'pager', 'birthplace', 'nationality', 'passportNumber', 'acceptLHA'],
-  // Internal Info (Step 1)
-  ['dnrvfn', 'label', 'status', 'branch', 'source', 'ldhor', 'salesFee', 'managementFee', 'findersFee', 'salesFeeA', 'managementFeeA', 'findersFeeA','nrlTax', 'nrlRef', 'nrlRate', 'vatNumber', 'landlordFullName', 'landlordContact', 'comments', 'otherInfo','negotiator'],
-  // Bank Details (Step 2)
-  ['bankBody', 'bankAddressLine1', 'bankAddressLine2', 'bankTown', 'bankPostCode', 'bankCountry', 'bankIban', 'bic', 'nib'],
-  // Web Login (Step 3)
-  ['accountOption', 'username', 'password', 'existingUsername'],
-  // Attachments (Step 4) - No fields to validate beyond the file input handled by the component
-  ['attachments'],
-];
-
 const [savedData, setSavedData] = useState<Record<number, any>>({});
 const handleNext = async () => {
-  const currentStepFields = stepFields[currentStep]; // Validate only current step fields
+      
 
-  const isValid = await form.trigger(currentStepFields as any, { shouldFocus: true });
+  const currentStepFields = Object.keys(form.getValues()) as Array<keyof typeof form.getValues>;
+    console.log(currentStepFields);
 
+  const isValid = await form.trigger(currentStepFields, { shouldFocus: true });
+  
   if (isValid) {
+
     setSavedData((prev) => ({
       ...prev,
       [currentStep]: form.getValues(),
     }));
 
     if (currentStep < steps.length - 1) {
+
       setCurrentStep((prev) => prev + 1);
     }
 
     const nextStepData = savedData[currentStep + 1];
 
     if (nextStepData) {
+      
       form.reset(nextStepData);
     }
+
+
+    
   } else {
-    console.log("Validation failed:", form.formState.errors);
+    // If validation fails, log errors
+        console.log("Validation failed:", form.formState.errors);
+
+    
   }
 };
-
-
 
 
 const handlePrevious = () => {
@@ -454,9 +340,8 @@ const handlePrevious = () => {
       />
       
     <MainNav />
- 
     <div className="container mx-auto max-w-3xl py-8">
-      <h1 className="text-4xl font-bold mb-8">Edit Vendor</h1>
+      <h1 className="text-4xl font-bold mb-8">Add New Property</h1>
 
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
@@ -493,7 +378,7 @@ const handlePrevious = () => {
             </Button>
             
             {isLastStep ? (
-<Button  key="submit" type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
+<Button key="submit" type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
   Submit <Check className="ml-2 h-4 w-4" />
 </Button>
             ) : (
@@ -512,4 +397,4 @@ const handlePrevious = () => {
   );
 };
 
-export default EditVendor;
+export default AddProperty;

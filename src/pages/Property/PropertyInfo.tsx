@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import InputField from '../../utils/InputField';
 import SelectField from '../../utils/SelectedField';
 import countriesData from '../../data/counteries.json';
+import getApi from '@/helper/getApi';
 
 
 const StandardInfo = ({ register,watch, clearErrors, setValue, errors,type}: any) => {
@@ -13,7 +14,20 @@ const StandardInfo = ({ register,watch, clearErrors, setValue, errors,type}: any
   const [acceptLHA, setAcceptLHA] = useState('');
 
 
-  
+  useEffect(()=>{
+
+    async function getVendor(){
+
+
+   const response =    await  getApi ("api/vendors/",{});
+      
+
+      
+    }
+
+    getVendor();
+
+  });
 
 
   const salutationOptions = [
@@ -57,22 +71,8 @@ const StandardInfo = ({ register,watch, clearErrors, setValue, errors,type}: any
     <div className="w-full">
       {/* Personal Information Section */}
       <div className="p-4 w-full">
-        <div className="text-lg font-medium flex justify-start underline p-5">Personal Information</div>
-        <div className="flex flex-col w-full mb-4 mx-2 bg-[#F4F4F4] p-6 rounded-sm">
-          <div className="flex items-center w-full">
-            <label className="font-medium mr-4">Vendor</label>
-            <input type="checkbox" className="p-2 border mx-2 border-gray-300 rounded" {...register('vendor')} 
-            
-            onChange={(e) => setValue("vendor", e.target.checked)} // Ensure boolean
-
-            />
-            <label className="font-medium mr-4">Landlord</label>
-            <input type="checkbox" className="p-2 border border-gray-300 rounded" {...register('landlord')}
-              onChange={(e) => setValue("landlord", e.target.checked)} // Ensure boolean
-
-            />
-          </div>
-        </div>
+        <div className="text-lg font-medium flex justify-start underline p-5">Owner Info</div>
+        
 
         <SelectField
           label="Type"

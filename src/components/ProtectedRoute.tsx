@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 
 interface ProtectedRouteProps {
@@ -6,6 +6,9 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ accessToken }) => {
+  useEffect(()=>{
+
+  },[])
   return accessToken ? <Outlet /> : <Navigate to="/login" replace />;
 };
 

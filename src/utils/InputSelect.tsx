@@ -42,14 +42,15 @@ const InputSelect: React.FC<SelectFieldProps> = ({
 
   // Register main field for validation
   const { ref: mainRef, ...mainRest } = register(name, rules);
-
+  
   // Watch both fields
   const inputValue = watch(inputFieldName) || "";
   const selectValue = watch(selectFieldName) || "";
 
   // Combine values into the main field
   useEffect(() => {
-    const combinedValue = `${inputValue}${selectValue}`.trim();
+    const combinedValue = `${inputValue}-${selectValue}`.trim();
+ 
     setValue(name, combinedValue, { shouldValidate: true });
   }, [inputValue, selectValue, setValue, name]);
 

@@ -40,6 +40,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks"; // ✅ Use typed hooks
 
 import { RootState } from "@/redux/store";
+import VendorPdf from "./Vendor/VendorPdf";
 
 
 
@@ -68,7 +69,7 @@ const VendorList = () => {
 
 
   const handleEditVendor = (vendor:any) =>{
-    console.log(vendor,"vendors")
+
     navigate(`/vendors/edit`, { state: { vendor } });
 
 
@@ -122,65 +123,68 @@ const VendorList = () => {
         </div>
 
         <div className="rounded-md border border-input bg-card text-card-foreground shadow">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-muted/50">
-              <TableHead className="text-muted-foreground">Title</TableHead>
-                
-                <TableHead className="text-muted-foreground">First Name</TableHead>
+        <Table>
+  <TableHeader>
+    <TableRow className="hover:bg-muted/50">
+      <TableHead className="text-muted-foreground">Title</TableHead>
+      <TableHead className="text-muted-foreground">First Name</TableHead>
+      <TableHead className="text-muted-foreground">Last Name</TableHead>
+      <TableHead className="text-muted-foreground">Address Line 1</TableHead>
+      <TableHead className="text-muted-foreground">Address Line 2</TableHead>
+      <TableHead className="text-muted-foreground">Town</TableHead>
+      <TableHead className="text-muted-foreground">Country</TableHead>  {/* New Field */}
+      <TableHead className="text-muted-foreground">Post Code</TableHead>  {/* New Field */}
+      <TableHead className="text-muted-foreground">Phone Home</TableHead>  {/* New Field */}
+      <TableHead className="text-muted-foreground">Status</TableHead>
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    {vendors && vendors.map((vendor: any) => (
+      <TableRow key={vendor.id} className="hover:bg-muted/50">
+        <TableCell className="font-medium">{vendor.title}</TableCell> {/* Add title */}
+        <TableCell>{vendor.firstName}</TableCell>
+        <TableCell>{vendor.lastName}</TableCell>
+        <TableCell>{vendor.addressLine1}</TableCell>
+        <TableCell>{vendor.addressLine2}</TableCell>
+        <TableCell>{vendor.town}</TableCell>
+        <TableCell>{vendor.country}</TableCell> {/* Add country */}
+        <TableCell>{vendor.postCode}</TableCell> {/* Add postCode */}
+        <TableCell>{vendor.phoneHome}</TableCell> {/* Add phoneHome */}
+        
+        <TableCell>
+          <span
+            className={cn(
+              "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold",
+              vendor.status === "Active"
+                ? "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300"
+                : "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300"
+            )}
+          >
+            {vendor.status}
+          </span>
+        </TableCell>
+        <TableCell className="text-right">
+          <div className="flex justify-end gap-2">
+            <Button onClick={() => handleEditVendor(vendor)} variant="ghost" size="icon" className="hover:bg-muted">
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <VendorPdf vendor={vendor} />
 
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hover:text-destructive hover:bg-muted"
+              onClick={() => handleDeleteVendor(vendor.id)}
+            >
+              <Trash className="h-4 w-4" />
+            </Button>
+          </div>
+        </TableCell>
+      </TableRow>
+    ))}
+  </TableBody>
+</Table>
 
-                <TableHead className="text-muted-foreground">Last Name</TableHead>
-                <TableHead className="text-muted-foreground">Address Line 1</TableHead>
-                <TableHead className="text-muted-foreground">Address Line 2</TableHead>
-                <TableHead className="text-muted-foreground">Town</TableHead>
-                <TableHead className="text-right text-muted-foreground">City</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {vendors && vendors.map((vendor:any) => (
-                <TableRow key={vendor.id} className="hover:bg-muted/50">
-                  <TableCell className="font-medium">{vendor.firstName}</TableCell>
-                  <TableCell>{vendor.lastName}</TableCell>
-                  <TableCell>{vendor.addressLine1}</TableCell>
-                  <TableCell>{vendor.addressLine2}</TableCell>
-                  <TableCell>{vendor.town}</TableCell>
-                  <TableCell>{vendor.city}</TableCell>
-                  
-                  <TableCell>
-                    <span
-                      className={cn(
-                        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold",
-                        vendor.status === "Active"
-                          ? "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300"
-                          : "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300"
-                      )}
-                    >
-                      {vendor.status}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button onClick={()=>{handleEditVendor(vendor)}} variant="ghost" size="icon" className="hover:bg-muted">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="hover:bg-muted">
-                        <FileText className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="hover:text-destructive hover:bg-muted"
-                        onClick={() => handleDeleteVendor(vendor.id)}
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
         </div>
 
         <Pagination>

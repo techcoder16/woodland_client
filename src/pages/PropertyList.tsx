@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Building, MoreHorizontal, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Link } from 'react-router-dom';
 
 const mockProperties = [
   {
@@ -71,7 +72,7 @@ const PropertyList = () => {
             </Select>
             <Button className="w-full sm:w-auto">
               <Building className="mr-2 h-4 w-4" />
-              Add Property
+            <Link to="/property/add">  Add Property</Link>
             </Button>
           </div>
         </div>

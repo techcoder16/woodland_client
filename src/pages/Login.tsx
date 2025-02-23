@@ -53,18 +53,34 @@ const Login = () => {
     resolver: zodResolver(formSchema),
   });
 
-  const onSubmit = async (data: { email: string; password: string }) => {
+  const onSubmit = async (payload: { email: string; password: string }) => {
     setProgress(30);
 
     try {
 
-      const response = await postApi("auth/getLogin", data);
+      const response = await postApi("auth/getLogin", payload);
+      const {data,error} = response;
       
       setProgress(60);
 
       if (response?.data) {
         const { message, user, accessToken } = response.data;
+        if (!accessToken)
+        {
 
+        toast({
+        title: "Error",
+        description: error.message || "Network Error!",
+        variant: "destructive",
+      });
+       
+      // toast.error(error.message || "Network Error!");
+
+      setProgress(100);
+
+      return ;
+
+        }
         // Save user data and access token
         localStorage.setItem("user_data", JSON.stringify(user));
         await DEFAULT_COOKIE_SETTER("access_token", accessToken, false);
@@ -74,8 +90,10 @@ const Login = () => {
           title: "Success",
           description: message,
         });
-        navigate("/dashboard");
+        console.log("here login success");
         setProgress(100);
+
+        navigate("/dashboard");
 
    
       } else {
@@ -83,6 +101,7 @@ const Login = () => {
       }
     } catch (error: any) {
 
+    
       toast({
         title: "Error",
         description: error.message || "Network Error!",
@@ -133,7 +152,7 @@ const Login = () => {
                   className={`mt-1 ${errors.email ? "border-red-500" : "border-gray-300"}`}
                   placeholder="Enter your email"
                 />
-                {errors.email && <p className="text-red-500 text-sm mt-1">{errors?.email?.message}</p>}
+               
               </div>
 
               <div>
@@ -156,7 +175,7 @@ const Login = () => {
                     {isPasswordVisible ? <VscEye /> : <VscEyeClosed />}
                   </button>
                 </div>
-                {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>}
+              
               </div>
 
               <Button type="submit" className="w-full bg-blue-500 text-white py-3 rounded-lg font-medium hover:bg-blue-600 transition-colors">
