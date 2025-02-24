@@ -124,7 +124,8 @@ watch={watch}
         <InputField setValue={setValue} label="Post Code" name="postCode" register={register} error={errors.postCode?.message?.toString()} />
         <InputField setValue={setValue} label="Address Line 1" name="addressLine1" register={register} error={errors.addressLine1?.message?.toString()} />
         <InputField setValue={setValue} label="Address Line 2" name="addressLine2" register={register} error={errors.addressLine2?.message?.toString()} />
-        <InputField setValue={setValue} label="Town" name="town" register={register} error={errors.addressLine?.message?.toString()} />
+   
+        <InputField setValue={setValue} label="Town" name="town" register={register} error={errors.towm?.message?.toString()} />
        
         <SelectField
           label="Country"
@@ -175,6 +176,7 @@ watch={watch}
           error={errors.acceptLHA?.message?.toString()}
           onChange={(value) => handleSelectChange('acceptLHA', value)} // Added onChange
         />
+        
       </div>
     </div>
   );

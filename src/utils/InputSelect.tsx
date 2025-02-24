@@ -36,25 +36,18 @@ const InputSelect: React.FC<SelectFieldProps> = ({
   const inputFieldName = `${name}_input`;
   const selectFieldName = `${name}_select`;
 
-  // Register input and select fields
   const { ref: inputRef, ...inputRest } = register(inputFieldName);
   const { ref: selectRef, ...selectRest } = register(selectFieldName);
-
-  // Register main field for validation
   const { ref: mainRef, ...mainRest } = register(name, rules);
-  
-  // Watch both fields
+
   const inputValue = watch(inputFieldName) || "";
   const selectValue = watch(selectFieldName) || "";
 
-  // Combine values into the main field
   useEffect(() => {
     const combinedValue = `${inputValue}-${selectValue}`.trim();
- 
     setValue(name, combinedValue, { shouldValidate: true });
   }, [inputValue, selectValue, setValue, name]);
 
-  // Set default values on mount
   useEffect(() => {
     if (defaultValue) {
       const match = defaultValue.match(/(\d+)(%\D+)/);
@@ -66,9 +59,13 @@ const InputSelect: React.FC<SelectFieldProps> = ({
   }, [defaultValue, setValue, inputFieldName, selectFieldName]);
 
   return (
-    <div className={`space-y-2 ${className}`}>
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
-      
+    <div className={`lg:ml-4 flex items-center gap-2 ${className} my-2`}>
+      {/* Label */}
+      <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+        {label}
+      </label>
+
+      {/* Input & Select Wrapper */}
       <div className="flex gap-2">
         {/* Text Input */}
         <Input
@@ -76,11 +73,11 @@ const InputSelect: React.FC<SelectFieldProps> = ({
           ref={(e) => {
             inputRef(e);
             // @ts-ignore
-            mainRef(e?.querySelector ? null : e); // Connect to main ref
+            mainRef(e?.querySelector ? null : e);
           }}
           value={inputValue}
           onChange={(e) => setValue(inputFieldName, e.target.value)}
-          className="w-1/3"
+          className="w-1/4"
           aria-invalid={error ? "true" : "false"}
         />
 
@@ -90,14 +87,14 @@ const InputSelect: React.FC<SelectFieldProps> = ({
           ref={(e) => {
             selectRef(e);
             // @ts-ignore
-            mainRef(e?.querySelector ? null : e); // Connect to main ref
+            mainRef(e?.querySelector ? null : e);
           }}
           value={selectValue}
           onChange={(e) => setValue(selectFieldName, e.target.value)}
-          className="w-2/3 border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className=" border rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
           aria-invalid={error ? "true" : "false"}
         >
-          <option value="">Select unit...</option>
+          <option value="">Select...</option>
           {options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
@@ -111,7 +108,7 @@ const InputSelect: React.FC<SelectFieldProps> = ({
 
       {/* Error Message */}
       {error && (
-        <p className="text-red-600 text-sm mt-1" role="alert">
+        <p className="text-red-600 text-sm" role="alert">
           {error.message}
         </p>
       )}

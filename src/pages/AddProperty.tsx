@@ -22,6 +22,7 @@ import { MainNav } from "@/components/MainNav";
 import LoadingBar from "react-top-loading-bar";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import postApiImage from "@/helper/postApiImage";
+import PropertyInfo from "./Property/PropertyInfo";
 
 
 const formSchema = z.object({
@@ -246,7 +247,7 @@ const stepFields = [
   
 
 const steps = [
-  { label: "Standard Info", component: <StandardInfo  watch={watch} register={form.register}  errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
+  { label: "Standard Info", component: <PropertyInfo  watch={watch} register={form.register}  errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
   { label: "Internal Info", component: <InternalInfo watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
   { label: "Bank Details", component: <BankDetails watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
   { label: "Web Login", component: <WebLogin unregister={form.unregister} watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
