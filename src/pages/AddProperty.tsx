@@ -23,117 +23,132 @@ import LoadingBar from "react-top-loading-bar";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import postApiImage from "@/helper/postApiImage";
 import PropertyInfo from "./Property/PropertyInfo";
+import Description from "./Property/Descriptions";
+import MoreInfo from "./Property/MoreInfo";
+import PhotosFloorFPCPlan from "./Property/PhotosFloorFPCPlanProps";
 
-
-const formSchema = z.object({
-  landlord: z.boolean(),
-  vendor: z.boolean(),
-
-  type: z.enum(['Individual', 'Company'], {
-    errorMap: () => ({ message: 'Invalid Type value. Please select one of the following options: "Company, Individual".' }),
-  }),
-  title: z.enum(['mr', 'mrs', 'miss', 'ms', 'dr', 'prof'], {
-    errorMap: () => ({ message: 'Invalid title value. Please select one of the following options: "mr", "mrs", "miss", "ms", "dr", "prof".' }),
-  }),
-  firstName: z.string().nonempty('First Name is required'),
-  lastName: z.string().nonempty('Last Name is required'),
-  company: z.string().nullable().optional(),
-  salutation: z.string().nullable().optional(),
-  postCode: z.string().nonempty('Post Code is required'),
-  addressLine1: z.string().nonempty('Address Line is required'),
-  addressLine2: z.string().nullable().optional(),
-  town: z.string().nullable().optional(),
-  country: z.string().nullable().optional(),
-  phoneHome: z.string().nullable().optional(),
-  phoneWork: z.string().nullable().optional(),
-  negotiator:z.string().nullable().optional(),
-
-  phoneMobile: z.string().nullable().optional(),
-  fax: z.string().nullable().optional(),
-  email: z.string().nullable().optional(),
-  website: z.string().nullable().optional(),
-  pager: z.string().nullable().optional(),
-  birthplace: z.string().nullable().optional(),
-  nationality: z.string().nullable().optional(),
-  passportNumber: z.string().nullable().optional(),
-  acceptLHA: z.string().nullable().optional(),
-
-  dnrvfn: z.boolean().optional(),
-  label: z.string().nullable().optional(),
-  status: z.string().nullable().optional(),
-  branch: z.string().nullable().optional(),
-  source: z.string().nullable().optional(),
-
-  ldhor: z.boolean().optional(),
-  salesFee: z.string().nullable().optional(),
-  managementFee: z.string().nullable().optional(),
-  findersFee: z.string().nullable().optional(),
-  salesFeeA: z.string().nullable().optional(),
-  managementFeeA: z.string().nullable().optional(),
-  findersFeeA: z.string().nullable().optional(),
-  nrlTax: z.string().nullable().optional(),
-  
-  nrlRef: z.string().nullable().optional(),
-  nrlRate: z.string().nullable().optional(),
-  vatNumber: z.string().nullable().optional(),
-  landlordFullName: z.string().nullable().optional(),
-  landlordContact: z.string().nullable().optional(),
-  comments:z.string().nullable().optional(),
-  otherInfo:z.string().nullable().optional(),
-
-
-
-
-  bankBody: z.string().nullable().optional(),
-
-  bankAddressLine1: z.string().nullable().optional(),
-  bankAddressLine2: z.string().nullable().optional(),
-  bankTown: z.string().nullable().optional(),
-  bankPostCode: z.string().nullable().optional(),
-  bankCountry: z.string().nullable().optional(),
-  bankIban: z.string().nullable().optional(),
-  bic: z.string().nullable().optional(),
-
-  nib: z.string().nullable().optional(),
-
-  accountOption: z.enum(['noAccount', 'createAccount', 'existingAccount']),
-  username: z.string().min(1, 'Username is required').nullable().optional(),
-  password: z.string().min(1, 'Password is required').nullable().optional(),
-  existingUsername: z.string().min(1, 'Existing Username is required').nullable().optional(),
-
-
-
-  attachments: z.array(
-    z.string().regex(/^data:image\/[a-zA-Z+]+;base64,/, {
-      message: "Only valid image files in Base64 format are allowed.",
-    })
-  )
-
-
-  // Common fields (if any)
+const roomSchema = z.object({
+  title: z.string(),
+  description: z.string().nullable(),
+  dimensions: z.string().nullable(),
+});
 
   
-}).refine(
-  (data) => {
-    if (data.accountOption === 'createAccount') {
-      return data.username && data.password;
-    }
-    if (data.accountOption === 'existingAccount') {
-      return data.existingUsername;
-    }
+  const formSchema = z.object({
+    id: z.string(),
+    for: z.string().nullable(),
+    category: z.string().nullable(),
+    propertyType: z.string().nullable(),
+    internalReference: z.string().nullable(),
+    price: z.string().nullable(),
+    priceQualifier: z.string().nullable(),
+    tenure: z.string().nullable(),
+    contractType: z.string().nullable(),
+    salesFee: z.string().nullable(),
+    postCode: z.string(),
+    propertyNo: z.string().nullable(),
+    propertyName: z.string().nullable(),
+    addressLine1: z.string().nullable(),
+    addressLine2: z.string().nullable(),
+    town: z.string().nullable(),
+    county: z.string().nullable(),
+    country: z.string(),
+    latitude: z.string().nullable(),
+    longitude: z.string().nullable(),
+    development: z.string().nullable(),
+    yearOfBuild: z.string().nullable(),
+    parking: z.string().nullable(),
+    garden: z.string().nullable(),
+    livingFloorSpace: z.string().nullable(),
+    meetingRooms: z.string().nullable(),
+    workStation: z.string().nullable(),
+    landSize: z.string().nullable(),
+    outBuildings: z.string().nullable(),
+    propertyFeature: z.array(z.string()),
+    Tags: z.string().nullable(),
+    shortSummary: z.string().nullable(),
+    fullDescription: z.string().nullable(),
+    GuaranteedRentLandlord: z.string().nullable(),
+    Branch: z.string().nullable(),
+    Negotiator: z.string().nullable(),
+    whodoesviewings: z.string().nullable(),
+    comments: z.string().nullable(),
+    sva: z.string().nullable(),
+    tenureA: z.string().nullable(),
+    customGarden: z.string().nullable(),
+    customParking: z.string().nullable(),
+    pets: z.string().nullable(),
+    train: z.string().nullable(),
+    occupant: z.string().nullable(),
+    occupantEmail: z.string().nullable(),
+    occupatMobile: z.string().nullable(),
     
-    if (data.attachments !== undefined && !Array.isArray(data.attachments)) {
-      throw new Error('Attachments must be an array.');
+    council: z.string().nullable(),
+    councilBrand:z.string().nullable(),
+    
+    freeholder: z.string().nullable(),
+    freeholderContract: z.string().nullable(),
+    freeholderAddress: z.string().nullable(),
+    nonGasProperty: z.boolean().nullable(),
+   
+    photographs: z.any().optional(), // use z.any() or a custom file validator if needed
+   floorPlans: z.any().optional(),
 
-    }
-    return true;
-  },
-  {
-    message: 'Please fill all the required fields.',
-    path: ['accountOption'], // This attaches the error to the accountOption field
-  }
-);
+  // EPC Chart Options
+    epcChartOption: z.enum(["ratings", "upload"]),
+    // If "ratings" is selected, these fields should be provided (you can add refinements later)
+    currentEERating: z.string().optional(),
+    potentialEERating: z.string().optional(),
+    // If "upload" is selected, this field is used
+    epcChartFile: z.any().optional(),
 
+    // EPC/Home Report Options
+    epcReportOption: z.enum(["uploadReport", "urlReport"]),
+    epcReportFile: z.any().optional(),   // for PDF upload
+    epcReportURL: z.string().url().optional(),
+
+    // Video Tour Section
+    videoTourDescription: z.string().optional(),
+
+    // Show on Website (checkbox) – a simple boolean field
+    showOnWebsite: z.boolean(),
+
+
+    attachements: z.array(z.string()),
+    publishOnWeb: z.string().nullable(),
+    status: z.string().nullable(),
+    detailPageUrl: z.string().nullable(),
+    publishOnPortals: z.string().nullable(),
+    portalStatus: z.string().nullable(),
+    forA: z.string().nullable(),
+    propertyTypeA: z.string().nullable(),
+    newHome: z.boolean().nullable(),
+    offPlan: z.boolean().nullable(),
+    virtualTour: z.string().nullable(),
+    enterUrl: z.string().nullable(),
+    virtualTour2: z.string().nullable(),
+    enterUrl2: z.string().nullable(),
+    propertyBoucherUrl: z.string().nullable(),
+    AdminFee: z.string().nullable(),
+    ServiceCharges: z.string().nullable(),
+    minimmumTermForLet: z.string().nullable(),
+    annualGroundRent: z.string().nullable(),
+    lengthOfLease: z.string().nullable(),
+    shortSummaryForPortals: z.string().nullable(),
+    fullDescriptionforPortals: z.string().nullable(),
+    sendtoBoomin: z.boolean().nullable(),
+    CustomDisplayAddress: z.string().nullable(),
+    transactionType: z.string().nullable(),
+    sendOntheMarket: z.boolean().nullable(),
+    newsAndExclusive: z.string().nullable(),
+    selectPortals: z.array(z.string()),
+    vendor: z.string().nullable(),
+    rooms: z.array(roomSchema), // Add rooms as an array of objects
+ 
+
+  
+  
+});
 type FormData = z.infer<typeof formSchema>;
 
 const AddProperty = () => {
@@ -147,18 +162,6 @@ const { watch } = form;
 
 
 
-const stepFields = [
-  // Standard Info (Step 0)
-  ['type', 'title', 'firstName', 'lastName', 'company', 'salutation', 'postCode', 'addressLine1', 'addressLine2', 'town', 'country', 'phoneHome','phoneWork', 'phoneMobile', 'fax', 'email', 'website', 'pager', 'birthplace', 'nationality', 'passportNumber', 'acceptLHA'],
-  // Internal Info (Step 1)
-  ['dnrvfn', 'label', 'status', 'branch', 'source', 'ldhor', 'salesFee', 'managementFee', 'findersFee', 'salesFeeA', 'managementFeeA', 'findersFeeA','nrlTax', 'nrlRef', 'nrlRate', 'vatNumber', 'landlordFullName', 'landlordContact', 'comments', 'otherInfo','negotiator'],
-  // Bank Details (Step 2)
-  ['bankBody', 'bankAddressLine1', 'bankAddressLine2', 'bankTown', 'bankPostCode', 'bankCountry', 'bankIban', 'bic', 'nib'],
-  // Web Login (Step 3)
-  ['accountOption', 'username', 'password', 'existingUsername'],
-  // Attachments (Step 4) - No fields to validate beyond the file input handled by the component
-  ['attachments'],
-];
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -248,10 +251,17 @@ const stepFields = [
 
 const steps = [
   { label: "Standard Info", component: <PropertyInfo  watch={watch} register={form.register}  errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
-  { label: "Internal Info", component: <InternalInfo watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
-  { label: "Bank Details", component: <BankDetails watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
-  { label: "Web Login", component: <WebLogin unregister={form.unregister} watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
+  { label: "Description", component: <Description watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
+  { label: "More Info", component: <MoreInfo watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
+  { label: "Photos/Floor/FPC Plan", component: <PhotosFloorFPCPlan watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
+ 
   { label: "Attachments", component: <Attachments watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
+ 
+  
+  // { label: "Bank Details", component: <BankDetails watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
+  // { label: "Web Login", component: <WebLogin unregister={form.unregister} watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
+  // { label: "Attachments", component: <Attachments watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
+
 ]; 
 
 

@@ -1,4 +1,4 @@
-  import React, { useEffect, useState } from 'react';
+  import React, { useCallback, useEffect, useState } from 'react';
   import InputField from '../../utils/InputField';
   import SelectField from '../../utils/SelectedField';
   import countriesData from '../../data/counteries.json';
@@ -11,6 +11,7 @@
 import InputSelect from '@/utils/InputSelect';
 import FeatureSelection from '@/utils/FeatureSelection';
 import { RegisterOptions, FieldValues, UseFormRegisterReturn } from 'react-hook-form';
+import TextAreaField from '@/utils/TextAreaField';
 
 
 
@@ -30,11 +31,7 @@ import { RegisterOptions, FieldValues, UseFormRegisterReturn } from 'react-hook-
 
     const [selectedVendor, setSelectedVendor] = useState("");
 
-    useEffect(()=>{
 
-  console.log(vendors);
-
-    });
 
     
 
@@ -49,14 +46,13 @@ import { RegisterOptions, FieldValues, UseFormRegisterReturn } from 'react-hook-
       label: vendor.firstName, // Assuming vendors have a 'name' field
     }));
 
-    console.log(vendorOptions)
-    const handleSelectChange = (name: string, value: string) => {
-      console.log(value);
+    const handleSelectChange = useCallback((name: string, value: string) => {
+  
       if (name === "vendor") setSelectedVendor(value);
       setValue(name, value);
       clearErrors(name);
-    };
-
+    }, [setValue, clearErrors]);
+  
 
     const salutationOptions = [
       { value: 'firstName', label: 'First Name' },
@@ -612,8 +608,17 @@ const feeOptions = [
       register={register} 
       setValue={setValue} 
       selectedFeatures={[]} 
-      setSelectedFeatures={(features) => console.log(features)} // Handle selected features
+      watch={watch}
+
+      setSelectedFeatures={(features) => features} // Handle selected features
+      
     />
+       <TextAreaField
+        label="Tags"
+        name="tags"
+        register={register}
+        error={errors.Tags?.message?.toString()}
+      />
 
         <hr />
 

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { FieldValues, UseFormRegister, UseFormSetValue } from "react-hook-form";
-import InputField from "./InputField";
+import { FieldValues, UseFormRegister, UseFormSetValue, UseFormWatch } from "react-hook-form";
 
 interface FeatureSelectionProps {
     features: string[];
     register: UseFormRegister<FieldValues>;
     setValue: UseFormSetValue<FieldValues>;
+    watch: UseFormWatch<FieldValues>; // Added watch
     selectedFeatures: string[];
     setSelectedFeatures: (features: string[]) => void;
 }
@@ -14,27 +14,33 @@ const FeatureSelection: React.FC<FeatureSelectionProps> = ({
     features,
     register,
     setValue,
+    watch,
     selectedFeatures,
     setSelectedFeatures,
 }) => {
-
-    let [filteredFeatures, setFilteredFeatures] = useState<any>(features);
+    const [filteredFeatures, setFilteredFeatures] = useState<string[]>(features);
     const [searchTerm, setSearchTerm] = useState("");
-    useEffect(() => {
-        filteredFeatures = features
-            .filter((feature) => typeof feature === "string") // Ensure it's a string
-            .filter((feature) =>
-                feature.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-    }, [searchTerm]);
 
+    useEffect(() => {
+        const updatedFeatures = features.filter(
+            (feature) => typeof feature === "string" && feature.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        setFilteredFeatures(updatedFeatures);
+    }, [searchTerm, features]);
+
+    // Watching the "features" field in react-hook-form
+    const watchedFeatures = watch("features", selectedFeatures);
+
+    useEffect(() => {
+        setSelectedFeatures(watchedFeatures || []);
+    }, [watchedFeatures]);
 
     const handleFeatureToggle = (feature: string) => {
-        let updatedFeatures: any;
-        if (selectedFeatures.includes(feature)) {
-            updatedFeatures = selectedFeatures.filter((f) => f !== feature);
+        let updatedFeatures;
+        if (watchedFeatures.includes(feature)) {
+            updatedFeatures = watchedFeatures.filter((f) => f !== feature);
         } else {
-            updatedFeatures = [...selectedFeatures, feature];
+            updatedFeatures = [...watchedFeatures, feature];
         }
         setSelectedFeatures(updatedFeatures);
         setValue("features", updatedFeatures);
@@ -42,21 +48,18 @@ const FeatureSelection: React.FC<FeatureSelectionProps> = ({
 
     return (
         <div className="p-4 border rounded-md shadow-md">
-            <InputField
-                label="Search Features"
+            <input
                 name="search"
-                register={register}
-
-                setValue={setValue}
+                className="p-2 border border-gray-300 rounded lg:flex-grow"
                 placeholder="Search features..."
-                onChange={setSearchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
             />
             <div className="mt-2 max-h-60 overflow-y-auto border p-2 rounded-md">
-                {filteredFeatures && filteredFeatures.map((feature) => (
+                {filteredFeatures.map((feature) => (
                     <label key={feature} className="flex items-center space-x-2 p-2">
                         <input
                             type="checkbox"
-                            checked={selectedFeatures.includes(feature)}
+                            checked={watchedFeatures.includes(feature)} // Using watched state
                             onChange={() => handleFeatureToggle(feature)}
                         />
                         <span>{feature}</span>
@@ -67,4 +70,4 @@ const FeatureSelection: React.FC<FeatureSelectionProps> = ({
     );
 };
 
-export default FeatureSelection;
+export default React.memo(FeatureSelection);
