@@ -53,6 +53,7 @@ const InputField: React.FC<InputFieldProps> = ({
     };
   }, [name, setValue, onChange]);
 
+
   return (
     <div className="p-3 rounded-sm">
       <div className="flex items-center lg:w-full">

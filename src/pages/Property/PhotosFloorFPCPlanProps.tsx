@@ -1,7 +1,8 @@
-import React from 'react';
-import InputField from '../../utils/InputField';
-import SelectField from '../../utils/SelectedField';
-import TextAreaField from '@/utils/TextAreaField';
+import React, { useEffect } from "react";
+import InputField from "../../utils/InputField";
+import FileUploadField from "../../utils/FileUploadField"; // adjust the path as needed
+import SelectField from "../../utils/SelectedField";
+import TextAreaField from "@/utils/TextAreaField";
 
 interface PhotosFloorFPCPlanProps {
   register: any;
@@ -10,130 +11,142 @@ interface PhotosFloorFPCPlanProps {
   setValue: any;
   errors: any;
   type?: string;
+  unregister:any;
 }
 
-/**
- * A reusable file upload UI that shows a drag-and-drop area
- * and a "Browse Files" button. It uses the react-hook-form register.
- *
- * @param fieldName - The name of the field (e.g. "photographs" or "floorPlans")
- * @param accept - The accepted file types (e.g. "image/*" or "image/*,application/pdf")
- * @param registerFn - The register function from react-hook-form.
- */
-const FileUploadUI = ({
-  fieldName,
-  accept,
-  registerFn,
-}: {
-  fieldName: string;
-  accept: string;
-  registerFn: any;
-}) => {
-  // These handlers provide a better UX.
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    // You can extend this to process the dropped files.
-  };
+const PhotosFloorFPCPlan = ({
+  register,
+  watch,
+  clearErrors,
+  setValue,
+  unregister,
+  errors,
+}: PhotosFloorFPCPlanProps) => {
+  // Use watch with default values
+  const epcChartOption = watch("epcChartOption", "ratings");
+  const epcReportOption = watch("epcReportOption", "uploadReport");
 
-  const handleFileInputClick = () => {
-    const input = document.getElementById(`${fieldName}Input`);
-    input?.click();
-  };
+  // Ensure default values are set if the watched value is empty
+  console.log(epcChartOption,epcReportOption)
+  useEffect(() => {
+    if (!watch("epcChartOption")) {
+      setValue("epcChartOption", "ratings", { shouldValidate: true });
+    }
+    if (!watch("epcReportOption")) {
+      setValue("epcReportOption", "uploadReport", { shouldValidate: true });
+    }
+  }, [setValue, watch]);
 
+  useEffect(() => {
+    if (epcChartOption === "ratings") {
+      // Clear file upload error and reset file field
+      unregister("epcChartFile");
+   
+    } else if (epcChartOption === "upload") {
+      // Clear rating errors and reset rating fields
+      unregister(["currentEERating", "potentialEERating"]);
+
+    }
+  }, [epcChartOption]);
+  
+  useEffect(() => {
+    console.log(epcReportOption)
+    if (epcReportOption === "uploadReport") {
+      clearErrors("epcReportURL");
+      unregister(['epcReportURL']); // Unregister unnecessary fields
+
+
+    } else if (epcReportOption === "urlReport") {
+      
+      unregister(['epcReportFile']); // Unregister unnecessary fields
+      
+
+    }
+  }, [epcReportOption]);
   return (
-    <div className="space-y-4">
-      <div
-        className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50 text-center cursor-pointer hover:bg-gray-100 transition-colors"
-        onDrop={handleDrop}
-        onDragOver={(e) => e.preventDefault()}
-        onClick={handleFileInputClick}
-      >
-        <p className="text-gray-500">Drag and drop your files here</p>
-        <p className="text-sm text-gray-400">or click to browse</p>
-        <input
-          id={`${fieldName}Input`}
-          type="file"
-          accept={accept}
-          multiple
-          className="hidden"
-          {...registerFn(fieldName)}
-        />
-      </div>
-      <button
-        type="button"
-        onClick={handleFileInputClick}
-        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors"
-      >
-        Browse Files
-      </button>
-    </div>
-  );
-};
+    <div>
+      <h2 className="text-2xl font-semibold text-gray-800 border-b border-gray-300 pb-2 mb-4">
+        Photos, Floor Plans, and EPC/Home Report
+      </h2>
 
-const PhotosFloorFPCPlan = ({ register, watch, clearErrors, setValue, errors, type }: PhotosFloorFPCPlanProps) => {
-  // Generate options 0-100 for energy efficiency ratings
-  const energyRatingOptions = Array.from({ length: 101 }, (_, i) => ({
-    value: i.toString(),
-    label: i.toString(),
-  }));
-
-  // Watch the EPC chart and EPC report option radio values
-  const epcChartOption = watch("epcChartOption");
-  const epcReportOption = watch("epcReportOption");
-
-  return (
-    <div className="w-full max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6 space-y-8">
       {/* Photographs Section */}
-      <div>
-        <h2 className="text-2xl font-semibold text-gray-800 border-b border-gray-300 pb-2 mb-4">Photographs</h2>
-        <FileUploadUI
-          fieldName="photographs"
+      <div className="mb-6">
+        <h3 className="text-xl font-medium mb-2">Photographs</h3>
+        <FileUploadField
+          label="Upload Photographs"
+          name="photographs"
           accept="image/*"
-          registerFn={register}
+          register={register}
+          setValue={setValue}
+          watch={watch}
+          error={errors.photographs?.message}
+          multiple={true}
         />
-        {errors.photographs && <p className="text-red-500 text-sm mt-1">{errors.photographs.message}</p>}
       </div>
 
       {/* Floor Plans Section */}
-      <div>
-        <h2 className="text-2xl font-semibold text-gray-800 border-b border-gray-300 pb-2 mb-4">Floor Plans</h2>
-        <FileUploadUI
-          fieldName="floorPlans"
+      <div className="mb-6">
+        <h3 className="text-xl font-medium mb-2">Floor Plans</h3>
+        <FileUploadField
+          label="Upload Floor Plans (Images or PDF)"
+          name="floorPlans"
           accept="image/*,application/pdf"
-          registerFn={register}
+          register={register}
+          setValue={setValue}
+          watch={watch}
+          error={errors.floorPlans?.message}
+          multiple={true}
         />
-        {errors.floorPlans && <p className="text-red-500 text-sm mt-1">{errors.floorPlans.message}</p>}
       </div>
 
       {/* EPC/Home Report Section */}
-      <div>
-        <h2 className="text-2xl font-semibold text-gray-800 border-b border-gray-300 pb-2 mb-4">EPC/Home Report</h2>
-        
+      <div className="mb-6">
+        <h3 className="text-xl font-medium mb-2">EPC/Home Report</h3>
         {/* EPC Chart Option */}
-        <div className="mb-6">
-          <label className="block text-gray-700 font-medium mb-2">EPC Chart Option</label>
-          <div className="flex space-x-6 mb-4">
-            <label className="flex items-center space-x-2">
-              <input type="radio" value="ratings" {...register("epcChartOption")} className="form-radio text-blue-600" />
-              <span className="text-gray-700">Provide Ratings</span>
+        <div className="mb-4">
+          <p className="mb-2 font-medium text-gray-700">EPC Chart Option</p>
+          <div className="flex space-x-4">
+            <label className="flex items-center">
+              <input
+                type="radio"
+                value="ratings"
+                {...register("epcChartOption")}
+                className="mr-2"
+                defaultChecked={epcChartOption === "ratings"}
+              />
+              Provide Ratings
             </label>
-            <label className="flex items-center space-x-2">
-              <input type="radio" value="upload" {...register("epcChartOption")} className="form-radio text-blue-600" />
-              <span className="text-gray-700">Upload EPC Chart (.jpg)</span>
+            <label className="flex items-center">
+              <input
+                type="radio"
+                value="upload"
+                {...register("epcChartOption")}
+                className="mr-2"
+                defaultChecked={epcChartOption === "upload"}
+              />
+              Upload EPC Chart (.jpg)
             </label>
           </div>
-          {epcChartOption === "ratings" && (
-            <div className="space-y-4">
+        </div>
+        {epcChartOption === "ratings" && (
+          <div className="mb-4">
+            <div className="flex space-x-4">
               <SelectField
                 label="Current Energy Efficiency Rating"
                 name="currentEERating"
                 watch={watch}
                 setValue={setValue}
-                options={energyRatingOptions}
+                options={Array.from({ length: 101 }, (_, i) => ({
+                  value: i.toString(),
+                  label: i.toString(),
+                }))}
                 register={register}
                 error={errors.currentEERating?.message?.toString()}
                 onChange={(value: string) => {
-                  setValue("currentEERating", value);
+                  setValue("currentEERating", value, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  });
                   clearErrors("currentEERating");
                 }}
               />
@@ -142,92 +155,119 @@ const PhotosFloorFPCPlan = ({ register, watch, clearErrors, setValue, errors, ty
                 name="potentialEERating"
                 watch={watch}
                 setValue={setValue}
-                options={energyRatingOptions}
+                options={Array.from({ length: 101 }, (_, i) => ({
+                  value: i.toString(),
+                  label: i.toString(),
+                }))}
                 register={register}
                 error={errors.potentialEERating?.message?.toString()}
                 onChange={(value: string) => {
-                  setValue("potentialEERating", value);
+                  setValue("potentialEERating", value, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  });
                   clearErrors("potentialEERating");
                 }}
               />
             </div>
-          )}
-          {epcChartOption === "upload" && (
-            <div className="mt-4">
-              <label className="block text-gray-700 font-medium mb-1">Upload EPC Chart (.jpg)</label>
-              <input 
-                type="file" 
-                accept="image/jpeg" 
-                {...register("epcChartFile")} 
-                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" 
-              />
-              {errors.epcChartFile && <p className="text-red-500 text-sm mt-1">{errors.epcChartFile.message}</p>}
-            </div>
-          )}
-        </div>
+          </div>
+        )}
+        {epcChartOption === "upload" && (
+          <div className="mb-4">
+            <FileUploadField
+              label="Upload EPC Chart (.jpg)"
+              name="epcChartFile"
+              accept="image/jpeg"
+              register={register}
+              setValue={setValue}
+              watch={watch}
+              error={errors.epcChartFile?.message}
+              multiple={false}
+            />
+          </div>
+        )}
 
         {/* EPC/Home Report Option */}
-        <div>
-          <label className="block text-gray-700 font-medium mb-2">EPC/Home Report Option</label>
-          <div className="flex space-x-6 mb-4">
-            <label className="flex items-center space-x-2">
-              <input type="radio" value="uploadReport" {...register("epcReportOption")} className="form-radio text-blue-600" />
-              <span className="text-gray-700">Upload EPC/Home Report (PDF file only)</span>
+        <div className="mb-4">
+          <p className="mb-2 font-medium text-gray-700">EPC/Home Report Option</p>
+          <div className="flex space-x-4">
+            <label className="flex items-center">
+              <input
+                type="radio"
+                value="uploadReport"
+                {...register("epcReportOption")}
+                className="mr-2"
+                defaultChecked={epcReportOption === "uploadReport"}
+              />
+              Upload EPC/Home Report (PDF file only)
             </label>
-            <label className="flex items-center space-x-2">
-              <input type="radio" value="urlReport" {...register("epcReportOption")} className="form-radio text-blue-600" />
-              <span className="text-gray-700">Enter EPC/Home Report URL</span>
+            <label className="flex items-center">
+              <input
+                type="radio"
+                value="urlReport"
+                {...register("epcReportOption")}
+                className="mr-2"
+                defaultChecked={epcReportOption === "urlReport"}
+              />
+              Enter EPC/Home Report URL
             </label>
           </div>
-          {epcReportOption === "uploadReport" && (
-            <div className="mb-4">
-              <label className="block text-gray-700 font-medium mb-1">Upload EPC/Home Report (PDF)</label>
-              <input 
-                type="file" 
-                accept="application/pdf" 
-                {...register("epcReportFile")} 
-                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" 
-              />
-              {errors.epcReportFile && <p className="text-red-500 text-sm mt-1">{errors.epcReportFile.message}</p>}
-            </div>
-          )}
-          {epcReportOption === "urlReport" && (
-            <div className="mb-4">
-              <InputField
-                setValue={setValue}
-                label="Enter EPC/Home Report URL"
-                name="epcReportURL"
-                register={register}
-                error={errors.epcReportURL?.message?.toString()}
-              />
-            </div>
-          )}
         </div>
+        {epcReportOption === "uploadReport" && (
+          <div className="mb-4">
+            <FileUploadField
+              label="Upload EPC/Home Report (PDF)"
+              name="epcReportFile"
+              accept="application/pdf"
+              register={register}
+              setValue={setValue}
+              watch={watch}
+              error={errors.epcReportFile?.message}
+              multiple={true}
+            />
+          </div>
+        )}
+        {epcReportOption === "urlReport" && (
+          <div className="mb-4">
+            <InputField
+              label="Enter EPC/Home Report URL"
+              name="epcReportURL"
+              setValue={setValue}
+              register={register}
+              
+              error={errors.epcReportURL?.message?.toString()}
+            />
+          </div>
+        )}
       </div>
 
       {/* Video Tour Section */}
-      <div>
-        <h2 className="text-2xl font-semibold text-gray-800 border-b border-gray-300 pb-2 mb-4">Video Tour</h2>
-        <div className="mb-4">
-          <TextAreaField
-            label="Video Tour Description"
-            name="videoTourDescription"
-            register={register}
-            error={errors.videoTourDescription?.message?.toString()}
+      <div className="mb-6">
+        <h3 className="text-xl font-medium mb-2">Video Tour</h3>
+        <TextAreaField
+          placeholder="Video Tour Description"
+          label="videoTourDescription"
+          name = "videoTourDescription"
+          register={register}
+          error={errors.videoTourDescription?.message?.toString()}
+        />
+        {errors.videoTourDescription && (
+          <p className="text-red-500 text-sm mt-1">{errors.videoTourDescription.message}</p>
+        )}
+        <div className="flex items-center mt-2">
+          <input
+            type="checkbox"
+            id="showOnWebsite"
+            {...register("showOnWebsite")}
+            className="form-checkbox h-5 w-5 "
           />
-        </div>
-        <div className="flex items-center">
-          <input 
-            type="checkbox" 
-            id="showOnWebsite" 
-            {...register("showOnWebsite")} 
-            className="form-checkbox h-5 w-5 text-blue-600" 
-          />
-          <label htmlFor="showOnWebsite" className="ml-2 text-gray-700 font-medium">Show on website</label>
+          <label htmlFor="showOnWebsite" className="ml-2 text-gray-700 font-medium">
+            Show on website
+          </label>
         </div>
       </div>
     </div>
   );
 };
 
-export default PhotosFloorFPCPlan;
+export default React.memo(PhotosFloorFPCPlan);

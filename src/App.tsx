@@ -16,6 +16,7 @@ import ProtectedRoute from "@/components/ProtectedRoute"; // Import the Protecte
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import EditVendor from "./pages/EditVendor";
 import AddProperty from "./pages/AddProperty";
+import EditProperty from "./pages/EditProperty";
 
 function App() {
   
@@ -54,7 +55,7 @@ function App() {
                   <Route path="/vendors" element={<VendorList />} />
                   <Route path="/vendors/add" element={<AddVendor />} />
                   <Route path="/property/add" element={<AddProperty />} />
-                  
+                  <Route path="/property/edit" element={<EditProperty />} />
                   <Route path="/properties" element={<PropertyList />} />
                   <Route path="/vendors/edit" element={<EditVendor />} />
                 </Route>

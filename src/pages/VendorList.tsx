@@ -136,6 +136,7 @@ const VendorList = () => {
       <TableHead className="text-muted-foreground">Post Code</TableHead>  {/* New Field */}
       <TableHead className="text-muted-foreground">Phone Home</TableHead>  {/* New Field */}
       <TableHead className="text-muted-foreground">Status</TableHead>
+      <TableHead className="text-muted-foreground">Salutation</TableHead>
     </TableRow>
   </TableHeader>
   <TableBody>
@@ -150,7 +151,7 @@ const VendorList = () => {
         <TableCell>{vendor.country}</TableCell> {/* Add country */}
         <TableCell>{vendor.postCode}</TableCell> {/* Add postCode */}
         <TableCell>{vendor.phoneHome}</TableCell> {/* Add phoneHome */}
-        
+
         <TableCell>
           <span
             className={cn(
@@ -163,6 +164,9 @@ const VendorList = () => {
             {vendor.status}
           </span>
         </TableCell>
+
+        <TableCell>{vendor.salutation}</TableCell> {/* Add phoneHome */}
+        
         <TableCell className="text-right">
           <div className="flex justify-end gap-2">
             <Button onClick={() => handleEditVendor(vendor)} variant="ghost" size="icon" className="hover:bg-muted">

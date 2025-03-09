@@ -244,10 +244,10 @@ const MoreInfo = ({ register, watch, clearErrors, setValue, errors, type }: More
         />
         <InputField
           setValue={setValue}
-          label="Council Band"
-          name="councilBand"
+          label="Council Brand"
+          name="councilBrand"
           register={register}
-          error={errors.councilBand?.message?.toString()}
+          error={errors.councilBrand?.message?.toString()}
         />
         <InputField
           setValue={setValue}
@@ -274,16 +274,18 @@ const MoreInfo = ({ register, watch, clearErrors, setValue, errors, type }: More
             type="checkbox"
             id="nonGasProperty"
             name="nonGasProperty"
-            onChange={(e) => setValue('nonGasProperty', e.target.checked)}
+            {...register("nonGasProperty")}
+            // onChange={(e) => setValue('nonGasProperty', e.target.checked)}
+
           />
           <label htmlFor="nonGasProperty" className="ml-2">Non-gas Property</label>
         </div>
         <InputField
           setValue={setValue}
           label="Insurer"
-          name="insurer"
+          name="Insurer"  
           register={register}
-          error={errors.insurer?.message?.toString()}
+          error={errors.Insurer?.message?.toString()}
         />
       </div>
     </div>

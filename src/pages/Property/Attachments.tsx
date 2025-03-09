@@ -85,7 +85,7 @@ const Attachments = ({ register, clearErrors, setValue, errors, watch }: any) =>
     <div>
       <h2 className="text-lg font-medium text-gray-600 mb-4">Attachments</h2>
       <div
-        className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50 text-center"
+        className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-transparent text-center "
         onDrop={handleDrop}
         onDragOver={(e) => e.preventDefault()}
         onClick={handleFileInputClick}

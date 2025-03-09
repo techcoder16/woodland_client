@@ -1,39 +1,33 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
-
-
-import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Check, ArrowLeft, ArrowRight } from "lucide-react";
-
-import  postApi  from "@/helper/postApi"; // Ensure you have this utility function
-import { useNavigate } from "react-router-dom";
-
-import Attachments from './Property/Attachments';
+import postApi from "@/helper/postApi";
+import { useNavigate, useLocation } from "react-router-dom";
+import Attachments from "./Property/Attachments";
 import { MainNav } from "@/components/MainNav";
 import LoadingBar from "react-top-loading-bar";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
-import postApiImage from "@/helper/postApiImage";
 import PropertyInfo from "./Property/PropertyInfo";
 import Description from "./Property/Descriptions";
 import MoreInfo from "./Property/MoreInfo";
 import PhotosFloorFPCPlan from "./Property/PhotosFloorFPCPlanProps";
 import Publish from "./Property/Publish";
+
+// Room schema
 const roomSchema = z.object({
   title: z.string().optional(),
   description: z.string().optional(),
   dimensions: z.string().nullable().optional(),
 });
 
-  
-const formSchema =
-z.object({
-
+// Form schema (same as your AddProperty schema)
+const formSchema = z.object({
   for: z.string().nullable().default(null).describe("For field is required."),
   category: z.string().nullable().default(null).describe("Category is required."),
   propertyType: z.string().nullable().default(null).describe("Property type is required."),
@@ -62,7 +56,7 @@ z.object({
   meetingRooms: z.string().nullable().default(null).describe("Meeting rooms information is required."),
   workStation: z.string().nullable().default(null).describe("Workstation information is required."),
   landSize: z.string().nullable().default(null).describe("Land size is required."),
-  outBuildings: z.string().nullable().default(null).describe("Outbuildings information is required."),
+  outBuildings: z.string().nullable().default(null).describe("Out buildings information is required."),
   propertyFeature: z.array(z.string(), { required_error: "Property features are required." }),
   Tags: z.string().nullable().default(null).describe("Tags field is required."),
   shortSummary: z.string().nullable().default(null).describe("Short summary is required."),
@@ -81,7 +75,7 @@ z.object({
   occupant: z.string().nullable().default(null).describe("Occupant name is required."),
   occupantEmail: z.string().nullable().default(null).describe("Occupant email is required."),
   occupantMobile: z.string().nullable().default(null).describe("Occupant mobile is required."),
-  Solicitor:z.string().nullable(),
+
   council: z.string().nullable().default(null).describe("Council is required."),
   councilBrand: z.string().nullable().default(null).describe("Council brand is required."),
   freeholder: z.string().nullable().default(null).describe("Freeholder is required."),
@@ -150,6 +144,7 @@ z.object({
   vendor: z.string().nullable(),
   rooms: z.array(roomSchema).optional(),
   portalList: z.any(),
+  Solicitor:z.string().nullable(),
   attachments: z.array(
     z.string().regex(/^data:image\/[a-zA-Z+]+;base64,/, {
       message: "Only valid image files in Base64 format are allowed.",
@@ -157,117 +152,298 @@ z.object({
   ),
 });
 
-
 type FormData = z.infer<typeof formSchema>;
 
-const AddProperty = () => {
+const EditProperty = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Get the property to edit from location state
+  const property = location.state?.property;
+  console.log(property);
+     const splitFeeValue = (value: string) => {
+        if (!value) return { amount: '', type: '' };
+        const parts = value.split('-');
+        return {
+          amount: parts[0] || '',
+          type: parts[1] || ''
+        };
+      };
+  // Use useMemo to memoize the transformed data so it doesn't trigger re-renders on every render.
+  const transformedVendorData = useMemo(() => {
+    console.log(property,"furqan")
+    if(property)
+    {
+
+      
+ 
+  
+      const salesFeeParts = splitFeeValue(property.salesFee);
+      const priceParts = splitFeeValue(property.price);
+     
+
+        property.salesFee_input = salesFeeParts.amount;
+        property.salesFee_select= salesFeeParts.type;
+
+        property.price_input = priceParts.amount;
+        property.price_select= priceParts.type;
+
+
+
+        property.nonGasProperty = property.nonGasProperty  ?? false;
+        property.showOnWebsite = property.showOnWebsite  ?? false;
+        property.newHome  = property.newHome == "true" ? true   :  false;
+        property.offPlan = property.offPlan == "true" ? true   :   false;
+        property.sendToBoomin = property.sendToBoomin ??  false;
+        property.sendToRightmoveNow  =  property.sendToRightmoveNow ??   false;
+        property.sendToOnTheMarket =   property.sendToOnTheMarket ?? false;
+        property.newsAndExclusive =   property.newsAndExclusive ?? false;
+
+       console.log(property.newHome,property.offPlan )
+      
+
+    return {
+      ...property,
+
+      vendor: property?.vendorId ? property.vendorId : "",
+      // Add any additional transformations here.
+    };
+  }
+  return;
+  }, [property]);
+
+  const { toast } = useToast();
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     mode: "onSubmit",
+    defaultValues: transformedVendorData || ({} as FormData),
   });
-const { toast } = useToast();
+  const { watch, reset } = form;
 
-const { watch } = form;
-
-
+  useEffect(() => {
+    if (property) {
+      // Reset the form whenever the property changes
+      reset(transformedVendorData);
+    }
+  }, [property, reset, transformedVendorData]);
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [savedData, setSavedData] = useState<Record<number, any>>({});
 
-  const navigate = useNavigate();
+  const steps = [
+    {
+      label: "Standard Info",
+      component: (
+        <PropertyInfo
+          watch={watch}
+          register={form.register}
+          errors={form.formState.errors}
+          setValue={form.setValue}
+          clearErrors={form.clearErrors}
+        />
+      ),
+    },
+    {
+      label: "Description",
+      component: (
+        <Description
+          watch={watch}
+          register={form.register}
+          errors={form.formState.errors}
+          setValue={form.setValue}
+          clearErrors={form.clearErrors}
+        />
+      ),
+    },
+    {
+      label: "More Info",
+      component: (
+        <MoreInfo
+          watch={watch}
+          register={form.register}
+          errors={form.formState.errors}
+          setValue={form.setValue}
+          clearErrors={form.clearErrors}
+        />
+      ),
+    },
+    {
+      label: "Photos/Floor/FPC Plan",
+      component: (
+        <PhotosFloorFPCPlan
+          watch={watch}
+          register={form.register}
+          errors={form.formState.errors}
+          setValue={form.setValue}
+          clearErrors={form.clearErrors}
+          unregister={form.unregister}
+        />
+      ),
+    },
+    {
+      label: "Attachments",
+      component: (
+        <Attachments
+          watch={watch}
+          register={form.register}
+          errors={form.formState.errors}
+          setValue={form.setValue}
+          clearErrors={form.clearErrors}
+        />
+      ),
+    },
+    {
+      label: "Publish",
+      component: (
+        <Publish
+          watch={watch}
+          register={form.register}
+          errors={form.formState.errors}
+          setValue={form.setValue}
+          clearErrors={form.clearErrors}
+        />
+      ),
+    },
+  ];
 
+  const isLastStep = currentStep === steps.length - 1;
+
+  const stepFields = [
+    // Standard Info (Step 0)
+   ['for','category','propertyType','internalReference','price','priceQualifier','tenure','contractType','salesFee','postCode','propertyNo','propertyName','addressLine1','addressLine2','town','county','country','latitude','longitude','development','yearOfBuild','parking','garden','livingFloorSpace','meetingRooms','workStation','landSize','outBuildings','propertyFeature','Tags']
+  , ['shortSummary','fullDescription','rooms']
+    // Internal Info (Step 1)
+   , ['Solicitor', 'GuaranteedRentLandlord', 'Branch', 'Negotiator', 'whodoesviewings', 'comments', 'sva', 'tenureA', 'customGarden', 'customParking', 'pets', 'train', 'occupant', 'occupantEmail', 'occupantMobile', 'council', 'councilBrand', 'freeholder', 'freeholderContract', 'freeholderAddress', 'nonGasProperty', 'Insurer']
+   ,
+
+ ['photographs','floorPlans','epcChartOption','currentEERating','potentialEERating','epcChartFile','epcReportOption','epcReportFile','epcReportURL','videoTourDescription','showOnWebsite']
+ ,
+  
+
+    ['attachments'],
+    ['publishOnWeb', 'status', 'detailPageUrl', 'publishOnPortals', 'portalStatus', 'forA', 'propertyTypeA', 'newHome', 'offPlan', 'virtualTour', 'enterUrl', 'virtualTour2', 'propertyBrochureUrl', 'AdminFee', 'ServiceCharges', 'minimumTermForLet', 'annualGroundRent', 'lengthOfLease', 'shortSummaryForPortals', 'fullDescriptionforPortals', 'sendToBoomin', 'sendToRightmoveNow', 'CustomDisplayAddress', 'transactionType', 'sendToOnTheMarket', 'newsAndExclusive', 'selectPortals']
+
+  ]; 
+
+  
   useEffect(() => {
     console.log("Form Errors:", form.formState.errors);
   }, [form.formState.errors]);
   
 
-  const [progress, setProgress] = useState(0);
-  const onSubmit = async (data: FormData) => {
-    console.log("submit button")
-    const isValid = await form.trigger(); // Validate all fields before final submission
-
-    if (!isValid) return;
-
-    setProgress(30);
-    setIsSubmitting(true); // Prevent interactions during submission
+  const handleNext = async () => {
+    const currentStepFields = stepFields[currentStep]; // Validate only current step fields
   
+    const isValid = await form.trigger(currentStepFields as any, { shouldFocus: true });
+  
+    if (isValid) {
+      setSavedData((prev) => ({
+        ...prev,
+        [currentStep]: form.getValues(),
+      }));
+  
+      if (currentStep < steps.length - 1) {
+        setCurrentStep((prev) => prev + 1);
+      }
+  
+      const nextStepData = savedData[currentStep + 1];
+  
+      if (nextStepData) {
+        form.reset(nextStepData);
+      }
+    } else {
+      console.log("Validation failed:", form.formState.errors);
+    }
+  };
+  
+  
+  
+  
+  const handlePrevious = () => {
+    // Save the current step's data
+    setSavedData((prev) => ({
+      ...prev,
+      [currentStep]: form.getValues(),
+    }));
+  
+  
+    // Move to the previous step
+    setCurrentStep((prev) => Math.max(prev - 1, 0));
+  
+    // Restore the saved data for the previous step
+    const previousStepData = savedData[currentStep - 1];
+    if (previousStepData) {
+      
+      form.reset(previousStepData);
+    }
+  
+  };
+
+  
+  const onSubmit = async (data: FormData) => {
+    const isValid = await form.trigger();
+    if (!isValid) return;
+    setProgress(30);
+    setIsSubmitting(true);
     try {
-      // Retrieve access token
       const accessToken = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = {
-        Authorization: `Bearer ${accessToken}`, // Add token to Authorization header
+        Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/x-www-form-urlencoded",
       };
-  
+
       const formData = new FormData();
-  
-      // Dynamically append all fields from `data`
-   
       for (const [key, value] of Object.entries(data)) {
-        console.log(key,value)
-          
         if (key === "attachments" && Array.isArray(value)) {
-          
-          // Handle attachments array
-          value.forEach((file:any,index) => {
+          value.forEach((file: any, index) => {
             if (file) {
-              formData.append(`attachments[${index}]`, file); // Append each file individually
+              formData.append(`attachments[${index}]`, file);
             }
           });
-        } 
-        else if (key === "rooms") {
+        } else if (key === "rooms") {
           formData.append("rooms", JSON.stringify(value));
-        }
-
-        else if (typeof value === "boolean") {
-          console.log(key,value)
-          formData.append(key, JSON.stringify(value)); // Send as string
-          
+        } else if (typeof value === "boolean") {
+          formData.append(key, JSON.stringify(value));
         } else if (value !== null && value !== undefined) {
-          
-            if (Array.isArray(value) && key=="selectPortals" || key == "propertyFeature") {
-     
-              // Handle arrays (not just attachments)
-              value && Array(value)?.forEach((item:any, index) => {
-                if (item !== null && item !== undefined) {
-                  formData.append(`${key}[${index}]`, item);
-                }
-              });
-            }
-            else {
-            formData.append(key, String(value)); // Append all other values as strings
-            }
+          if (
+            Array.isArray(value) &&
+            (key === "selectPortals" || key === "propertyFeature")
+          ) {
+            value.forEach((item: any, index) => {
+              if (item !== null && item !== undefined) {
+                formData.append(`${key}[${index}]`, item);
+              }
+            });
+          } else {
+            formData.append(key, String(value));
+          }
         }
       }
 
+      // Include the property ID for updating
+      formData.append("id", property?.id || "");
 
-  console.log(formData)
-  
-      // Call postApi with FormData and headers
-      const { data: apiData, error } = await postApi("property/create", formData, headers);
+      const { data: apiData, error } = await postApi("property/update", formData, headers);
       setProgress(60);
-  
       if (error && error.message) {
-        
         toast({
           title: "Error",
-          description: error.message || "Failed to create property.",
+          description: error.message || "Failed to update property.",
           variant: "destructive",
         });
-        return; // Exit early on error
+        return;
       }
-  
-      // Ensure `response.data.property` is parsed correctly
-      const propertyId = apiData?.property?.id;
-          
-      if (propertyId && propertyId.length > 0) {
-  
+      const updatedPropertyId = apiData?.property?.id;
+      if (updatedPropertyId && updatedPropertyId.length > 0) {
         toast({
           title: "Success",
-          description: apiData.message || "Property created successfully!",
+          description: apiData.message || "Property updated successfully!",
         });
-  
         setProgress(100);
+        // Optionally navigate away or refresh data here.
       } else {
         throw new Error("Invalid Property ID or unexpected response format.");
       }
@@ -275,170 +451,72 @@ const { watch } = form;
       console.error("Error:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create Property.",
+        description: error.message || "Failed to update property.",
         variant: "destructive",
       });
     } finally {
-      setIsSubmitting(false); // Allow interactions after completion
+      setIsSubmitting(false);
     }
   };
-  
-  
 
-const steps = [
-  { label: "Standard Info", component: <PropertyInfo  watch={watch} register={form.register}  errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
-  { label: "Description", component: <Description watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
-  { label: "More Info", component: <MoreInfo watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
-  { label: "Photos/Floor/FPC Plan", component: <PhotosFloorFPCPlan watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} unregister={form.unregister} /> },
- 
-  { label: "Attachments", component: <Attachments watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
-  { label: "Publish", component: <Publish watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
- 
- 
-]; 
-
-
-const isLastStep = currentStep === steps.length - 1;
-
-
-
-
-const [savedData, setSavedData] = useState<Record<number, any>>({});
-const handleNext = async () => {
-      
-
-  const currentStepFields = Object.keys(form.getValues()) as Array<keyof typeof form.getValues>;
-    console.log(currentStepFields);
-
-  const isValid = await form.trigger(currentStepFields, { shouldFocus: true });
-  
-  if (isValid) {
-
-    setSavedData((prev) => ({
-      ...prev,
-      [currentStep]: form.getValues(),
-    }));
-
-    if (currentStep < steps.length - 1) {
-
-      setCurrentStep((prev) => prev + 1);
-    }
-
-    const nextStepData = savedData[currentStep + 1];
-
-    if (nextStepData) {
-      
-      form.reset(nextStepData);
-    }
-
-
-    
-  } else {
-    // If validation fails, log errors
-        console.log("Validation failed:", form.formState.errors);
-
-    
+  if (!property) {
+    return <div>Loading...</div>;
   }
-};
-
-
-const handlePrevious = () => {
-  // Save the current step's data
-  setSavedData((prev) => ({
-    ...prev,
-    [currentStep]: form.getValues(),
-  }));
-
-
-  // Move to the previous step
-  setCurrentStep((prev) => Math.max(prev - 1, 0));
-
-  // Restore the saved data for the previous step
-  const previousStepData = savedData[currentStep - 1];
-  if (previousStepData) {
-    
-    form.reset(previousStepData);
-  }
-
-};
 
   return (
     <>
-{isSubmitting && (
-  <div className="fixed inset-0 h-full w-full bg-black bg-opacity-50 z-50 flex items-center justify-center">
-    <div className="text-white text-lg font-semibold">Processing...</div>
-  </div>
-)}
-
-      
-      <div className="min-h-screen bg-background">
-
-
-
-
-
-              <LoadingBar
-        color="rgb(95,126,220)"
-        progress={progress}
-        onLoaderFinished={() => setProgress(0)}
-      />
-      
-    <MainNav />
-    <div className="container mx-auto max-w-3xl py-8">
-      <h1 className="text-4xl font-bold mb-8">Add New Property</h1>
-
-      <div className="mb-8">
-        <div className="flex justify-between items-center mb-4">
-          {steps.map((step, index) => (
-            <div key={index} className="flex-1 text-center">
-              <div className={`w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center 
-                ${index <= currentStep ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-600"}`}>
-                {index < currentStep ? <Check className="h-5 w-5" /> : index + 1}
-              </div>
-              <p className={`text-sm ${index <= currentStep ? "text-blue-600" : "text-gray-600"}`}>
-                {step.label}
-              </p>
-            </div>
-          ))}
+      {isSubmitting && (
+        <div className="fixed inset-0 h-full w-full bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="text-white text-lg font-semibold">Processing...</div>
         </div>
-        <Progress value={((currentStep + 1) / steps.length) * 100} className="h-2" />
+      )}
+      <div className="min-h-screen bg-background">
+        <LoadingBar color="rgb(95,126,220)" progress={progress} onLoaderFinished={() => setProgress(0)} />
+        <MainNav />
+        <div className="container mx-auto max-w-3xl py-8">
+          <h1 className="text-4xl font-bold mb-8">Edit Property</h1>
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-4">
+              {steps.map((step, index) => (
+                <div key={index} className="flex-1 text-center">
+                  <div
+                    className={`w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center ${
+                      index <= currentStep ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-600"
+                    }`}
+                  >
+                    {index < currentStep ? <Check className="h-5 w-5" /> : index + 1}
+                  </div>
+                  <p className={`text-sm ${index <= currentStep ? "text-blue-600" : "text-gray-600"}`}>
+                    {step.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <Progress value={((currentStep + 1) / steps.length) * 100} className="h-2" />
+          </div>
+          <Card className="p-6 shadow-md">
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+              {steps[currentStep].component}
+              <div className="flex justify-between pt-6">
+                <Button type="button" variant="outline" onClick={handlePrevious} disabled={currentStep === 0}>
+                  <ArrowLeft className="mr-2 h-4 w-4" /> Previous
+                </Button>
+                {isLastStep ? (
+                  <Button key="submit" type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
+                    Submit <Check className="ml-2 h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button key="next" type="button" onClick={handleNext}>
+                    Next <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </form>
+          </Card>
+        </div>
       </div>
-
-      <Card className="p-6 shadow-md">
-    
-
-
-    <form onSubmit={form.handleSubmit(onSubmit)}>
-      {steps[currentStep].component}
-
-          <div className="flex justify-between pt-6">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handlePrevious}
-              disabled={currentStep === 0}
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" /> Previous
-            </Button>
-            
-            {isLastStep ? (
-<Button key="submit" type="submit" onClick={()=>{console.log("asdkalsjds")}} className="bg-blue-500 text-white px-4 py-2 rounded">
-  Submit <Check className="ml-2 h-4 w-4" />
-</Button>
-            ) : (
-<Button key="next" type="button" onClick={handleNext}>
-                Next <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            )}
-          </div> 
-
-
-    </form> 
-      </Card>
-    </div>
-  </div>
-  </>
+    </>
   );
 };
 
-export default AddProperty; 
+export default EditProperty;

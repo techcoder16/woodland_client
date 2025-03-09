@@ -42,7 +42,7 @@ const InputSelect: React.FC<SelectFieldProps> = ({
 
   const inputValue = watch(inputFieldName) || "";
   const selectValue = watch(selectFieldName) || "";
-
+console.log(inputValue,selectValue)
   useEffect(() => {
     const combinedValue = `${inputValue}-${selectValue}`.trim();
     setValue(name, combinedValue, { shouldValidate: true });
@@ -91,7 +91,7 @@ const InputSelect: React.FC<SelectFieldProps> = ({
           }}
           value={selectValue}
           onChange={(e) => setValue(selectFieldName, e.target.value)}
-          className=" border rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className=" border"
           aria-invalid={error ? "true" : "false"}
         >
           <option value="">Select...</option>

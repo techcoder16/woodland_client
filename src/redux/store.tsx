@@ -1,16 +1,17 @@
 import {configureStore} from '@reduxjs/toolkit';
-import summarySlice from './dataStore/dataSlice';
+
 import { useDispatch } from 'react-redux';
 
 // import userSlice from './dataStore/userSlice';
 
 import vendorSlice from './dataStore/vendorSlice';
-
+import propertySlice from './dataStore/propertySlice';
 
 const rootStore  = configureStore({
     
     reducer:{
         vendors:vendorSlice,
+        properties:propertySlice,
         
     }
 
