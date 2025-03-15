@@ -92,7 +92,7 @@ const VendorList = () => {
       <div className="container mx-auto p-6 space-y-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <h1 className="text-3xl font-bold tracking-tight">Landlords & Vendors</h1>
-          <Button asChild className="shrink-0 bg-primary hover:bg-primary/90">
+          <Button asChild className="shrink-0  bg-primary hover:bg-primary/90">
             <Link to="/vendors/add">Add Vendor</Link>
           </Button>
         </div>

@@ -97,7 +97,7 @@ if (typeof rooms == "string")
           />
           <button
             type="button"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 mt-2 rounded transition-colors inline-flex items-center"
+            className="bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 mt-2 rounded transition-colors inline-flex items-center"
             onClick={() => removeRoom(index)}
           >
             <FaTrash className="mr-2" />
@@ -108,7 +108,7 @@ if (typeof rooms == "string")
       <div className="flex space-x-4">
         <button
           type="button"
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 mt-4 rounded transition-colors inline-flex items-center"
+          className="bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 mt-4 rounded transition-colors inline-flex items-center"
           onClick={addRoom}
         >
           <FaPlus className="mr-2" />
@@ -116,7 +116,7 @@ if (typeof rooms == "string")
         </button>
         <button
           type="button"
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 mt-4 rounded transition-colors inline-flex items-center"
+          className="bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 mt-4 rounded transition-colors inline-flex items-center"
           onClick={handleSaveRooms}
         >
           <FaSave className="mr-2" />

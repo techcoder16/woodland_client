@@ -266,25 +266,7 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type }: 
     { label: "%", value: "%" },
     { label: "Fixed", value: "fixed" },
   ];
-  // useEffect(() => {
-  //   console.log("Selected Vendor:", watch("vendor"));
-  // }, [watch("vendor")]);
 
-  // const handleSelectChange = (name: string, value: string) => {
-  //   // Update corresponding state based on the name of the select field
-  //   if (name === 'type') setSelectedType(value);
-  //   if (name === 'title') setSelectedTitle(value);
-  //   if (name === 'salutation') setSelectedSalutation(value);
-  //   // if (name === 'country'  && type!="edit") setSelectedCountry(value);
-  //   if (name === 'acceptLHA') setAcceptLHA(value);
-
-  //   // Use setValue to update the form field value and clear any previous errors
-  //   setValue(name, value); // Update the form field value
-  //   clearErrors(name); // Clear any validation errors for the field
-
-  //   // Optionally, log or do other side effects here
-
-  // };
 
   return (
     <div className="w-full">

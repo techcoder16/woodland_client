@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Search, LogOut, Menu, Home, Users, Building2, Settings, Sun, Moon, Cookie } from "lucide-react";
+import { Search, LogOut, Menu, Home, Users, Building2, Settings, Sun, Moon, Cookie,FolderKanban } from "lucide-react";
 import { Input } from "./ui/input";
 import { ThemeToggle } from "./ThemeToggle";
 import { Button } from "./ui/button";
@@ -213,6 +213,18 @@ export function MainNav() {
               >
                 <Building2 className="mr-2 h-4 w-4" />
                 Properties
+              </Link>
+
+
+              <Link
+                to="/property/manager"
+                className={cn(
+                  "text-sm font-medium transition-colors hover:text-primary flex items-center",
+                  location.pathname === "/property-management" ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                <FolderKanban className="mr-2 h-4 w-4" />
+                Property Management
               </Link>
             </nav>
           </div>

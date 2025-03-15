@@ -24,7 +24,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Pencil, Trash, Filter } from "lucide-react";
+import { Pencil, Trash, Filter, SquareChartGantt } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
@@ -59,6 +59,12 @@ const PropertyList = () => {
     setCurrentPage(page);
   };
 
+  const handleManageProperty = (property: any) => {
+    navigate(`/property/manager`, { state: { property } });
+
+  };
+
+  
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       <MainNav />
@@ -140,6 +146,15 @@ const PropertyList = () => {
                         onClick={() => handleDeleteProperty(property.id)}
                       >
                         <Trash className="h-4 w-4" />
+                      </Button>
+
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="hover:text-destructive hover:bg-muted"
+                        onClick={() => handleManageProperty(property.id)}
+                      >
+                        <SquareChartGantt className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>

@@ -481,12 +481,12 @@ const EditProperty = () => {
                 <div key={index} className="flex-1 text-center">
                   <div
                     className={`w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center ${
-                      index <= currentStep ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-600"
+                      index <= currentStep ? "bg-red-600 text-white" : "bg-gray-200 text-gray-600"
                     }`}
                   >
                     {index < currentStep ? <Check className="h-5 w-5" /> : index + 1}
                   </div>
-                  <p className={`text-sm ${index <= currentStep ? "text-blue-600" : "text-gray-600"}`}>
+                  <p className={`text-sm ${index <= currentStep ? "text-red-600" : "text-gray-600"}`}>
                     {step.label}
                   </p>
                 </div>
@@ -502,7 +502,7 @@ const EditProperty = () => {
                   <ArrowLeft className="mr-2 h-4 w-4" /> Previous
                 </Button>
                 {isLastStep ? (
-                  <Button key="submit" type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
+                  <Button key="submit" type="submit" className="bg-red-500 text-white px-4 py-2 rounded">
                     Submit <Check className="ml-2 h-4 w-4" />
                   </Button>
                 ) : (

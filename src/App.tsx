@@ -18,6 +18,8 @@ import EditVendor from "./pages/EditVendor";
 import AddProperty from "./pages/AddProperty";
 import EditProperty from "./pages/EditProperty";
 
+import ManageProperty from "./pages/Manager/ManageProperty";
+
 function App() {
   
 
@@ -58,6 +60,8 @@ function App() {
                   <Route path="/property/edit" element={<EditProperty />} />
                   <Route path="/properties" element={<PropertyList />} />
                   <Route path="/vendors/edit" element={<EditVendor />} />
+                  <Route path="/property/manager" element={<ManageProperty />} />
+                  
                 </Route>
 
                 {/* Redirect unknown routes to login */}
