@@ -65,7 +65,7 @@ const SelectField: React.FC<SelectFieldProps> = ({
      
         
         >
-          <SelectTrigger className="p-2 border border-gray-300 rounded flex w-full">
+          <SelectTrigger className="">
             <SelectValue placeholder="Select an option">
             {currentValue
     ? options && options.find(option => option.value === currentValue)?.label || "Unknown Field"

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import InputField from '../../utils/InputField';
 import SelectField from '../../utils/SelectedField';
 import countriesData from '../../data/counteries.json';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 const BankDetails = ({register,watch, clearErrors, setValue, errors }: any) => {
   // const [countries, setCountries] = useState<any>([]);
@@ -31,8 +32,11 @@ const BankDetails = ({register,watch, clearErrors, setValue, errors }: any) => {
   
   return (
     <div>
+
+
       <div className="p-4 w-full">
         <div className="text-lg font-medium flex justify-start underline p-5">Bank details</div>
+       
         <InputField setValue={setValue} label="Bank Body" name="bankBody" register={register} error={errors.bankBody?.message?.toString()} />
 
         <div className="text-lg font-medium flex justify-start underline p-5">Bank branch address</div>
@@ -53,7 +57,10 @@ const BankDetails = ({register,watch, clearErrors, setValue, errors }: any) => {
         <InputField setValue={setValue} label="BIC" name="bic" register={register} error={errors.bank_bic?.message?.toString()} />
         <InputField setValue={setValue} label="NIB" name="nib" register={register} error={errors.nib?.message?.toString()} />
       </div>
+     
     </div>
+  
+    
   );
 };
 

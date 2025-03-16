@@ -1,6 +1,6 @@
 // src/components/ManageProperty.tsx
 import React from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,6 +11,10 @@ import InputField from "@/utils/InputField";
 import SelectField from "@/utils/SelectedField";
 import TextAreaField from "@/utils/TextAreaField";
 import { MainNav } from "@/components/MainNav";
+import Dashboard from "../Dashboard";
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import postApi from "@/helper/postApi";
+import Features from "./Features";
 
 // ----- Zod Schemas & Types ----- //
 
@@ -18,6 +22,7 @@ import { MainNav } from "@/components/MainNav";
 const featureSchema = z.object({
   featureType: z.string().min(1, "Feature type is required"),
   value: z.string().optional(),
+
 });
 type FeatureFormData = z.infer<typeof featureSchema>;
 
@@ -60,10 +65,14 @@ type NoteFormData = z.infer<typeof noteSchema>;
 // ----- Main Component ----- //
 
 const ManageProperty = () => {
-  // Get propertyId from URL parameters
-  const { propertyId } = useParams<{ propertyId: string }>();
+  // Get property.id from URL parameters
+  const location = useLocation();
+  const property:any = location.state?.property;
+  // ----- Feature Form Setup ----- /
+  // 
+  // c/
 
-  // ----- Feature Form Setup ----- //
+  console.log(property,"property asdadka")
   const {
     register: registerFeature,
     handleSubmit: handleSubmitFeature,
@@ -122,8 +131,8 @@ const ManageProperty = () => {
   // ----- API Submit Handlers ----- //
 
   const onSubmitFeature = async (data: FeatureFormData) => {
-    const payload = { ...data, propertyId };
-    const res = await postApi("/manager/features/create",data,headers);
+    const payload = { ...data };
+    const res = await postApi("/manager/features/create",data);
     if (res) {
       alert("Feature created successfully");
       resetFeature();
@@ -133,7 +142,7 @@ const ManageProperty = () => {
   };
 
   const onSubmitParty = async (data: PartyFormData) => {
-    const payload = { ...data, propertyId };
+    const payload = { ...data };
     const res = await fetch("/manager/parties/create", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -148,7 +157,7 @@ const ManageProperty = () => {
   };
 
   const onSubmitLease = async (data: LeaseFormData) => {
-    const payload = { ...data, propertyId };
+    const payload = { ...data };
     const res = await fetch("/manager/leases/create", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -163,7 +172,7 @@ const ManageProperty = () => {
   };
 
   const onSubmitTransaction = async (data: TransactionFormData) => {
-    const payload = { ...data, propertyId };
+    const payload = { ...data };
     const res = await fetch("/manager/transactions/create", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -178,7 +187,7 @@ const ManageProperty = () => {
   };
 
   const onSubmitNote = async (data: NoteFormData) => {
-    const payload = { ...data, propertyId };
+    const payload = { ...data };
     const res = await fetch("/manager/notes/create", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -193,14 +202,14 @@ const ManageProperty = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <MainNav />
-      <div className="container mx-auto p-6 space-y-6">
-        <h1 className="text-3xl font-bold">Manage Property</h1>
-        <p className="text-muted">Property ID: {propertyId}</p>
+    <DashboardLayout>
+      <div className="p-6 max-w-5xl mx-auto">
+            <h1 className="text-3xl font-bold tracking-tight mb-6">Manage Property</h1>
+
+   
         <Tabs defaultValue="features" className="mt-6">
           <TabsList className="grid grid-cols-5 gap-4">
-            <TabsTrigger value="features">Features</TabsTrigger>
+            <TabsTrigger value="features">Property</TabsTrigger>
             <TabsTrigger value="parties">Parties</TabsTrigger>
             <TabsTrigger value="leases">Leases</TabsTrigger>
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
@@ -209,7 +218,7 @@ const ManageProperty = () => {
 
           {/* ----- Features Tab ----- */}
           <TabsContent value="features" className="mt-4">
-            <Card className="shadow">
+            {/* <Card className="shadow">
               <CardHeader>
                 <CardTitle>Create Feature</CardTitle>
               </CardHeader>
@@ -237,7 +246,8 @@ const ManageProperty = () => {
                   <Button type="submit">Create Feature</Button>
                 </form>
               </CardContent>
-            </Card>
+            </Card> */}
+            <Features property={property}></Features>
           </TabsContent>
 
           {/* ----- Parties Tab ----- */}
@@ -396,7 +406,7 @@ const ManageProperty = () => {
                     register={registerTransaction}
                     error={errorsTransaction.description?.message}
                     placeholder="Enter description (optional)"
-                    setValue={setTransactionValue}
+               
                   />
                   <Button type="submit">Create Transaction</Button>
                 </form>
@@ -421,7 +431,7 @@ const ManageProperty = () => {
                     register={registerNote}
                     error={errorsNote.content?.message}
                     placeholder="Enter note content"
-                    setValue={setNoteValue}
+              
                   />
                   <Button type="submit">Create Note</Button>
                 </form>
@@ -430,7 +440,8 @@ const ManageProperty = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+      
+    </DashboardLayout>
   );
 };
 

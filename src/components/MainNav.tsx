@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Search, LogOut, Menu, Home, Users, Building2, Settings, Sun, Moon, Cookie,FolderKanban } from "lucide-react";
 import { Input } from "./ui/input";
-import { ThemeToggle } from "./ThemeToggle";
+
 import { Button } from "./ui/button";
 import {
   DropdownMenu,
@@ -18,7 +18,7 @@ import {
   DropdownMenuRadioItem,
 } from "./ui/dropdown-menu";
 import { useEffect, useState } from "react";
-import { useTheme } from "./ThemeProvider";
+import { useTheme } from "@/context/ThemeContext";
 import { DEFAULT_COOKIE_DELETE } from "@/helper/Cookie";
 
 const fontFamilies = [
@@ -65,9 +65,9 @@ export function MainNav() {
   const handleLogout = () => {
     console.log("Logging out...");
     DEFAULT_COOKIE_DELETE("access_token");
-    
+   
 
-    navigate("/login");
+    navigate("/");
   };
 
   const handleFontChange = (value: string) => {

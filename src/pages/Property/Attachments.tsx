@@ -1,3 +1,4 @@
+import { UploadCloud } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
 const Attachments = ({ register, clearErrors, setValue, errors, watch }: any) => {
@@ -85,14 +86,14 @@ const Attachments = ({ register, clearErrors, setValue, errors, watch }: any) =>
     <div>
       <h2 className="text-lg font-medium text-gray-600 mb-4">Attachments</h2>
       <div
-        className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-transparent text-center "
+        className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center"
         onDrop={handleDrop}
         onDragOver={(e) => e.preventDefault()}
         onClick={handleFileInputClick}
       >
-        <p className="text-gray-500">Drag and drop your images here</p>
-        <p className="text-sm text-gray-400">or click to browse</p>
-
+         <UploadCloud className="h-10 w-10 text-muted-foreground mb-2" />
+                      <p className="mb-1 font-medium">Drag and drop images here or click to upload</p>
+                      <p className="text-sm text-muted-foreground mb-3">Support for JPG, PNG, WebP up to 10MB each</p>
         <input
           id="fileInput"
           type="file"

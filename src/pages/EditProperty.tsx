@@ -18,6 +18,7 @@ import Description from "./Property/Descriptions";
 import MoreInfo from "./Property/MoreInfo";
 import PhotosFloorFPCPlan from "./Property/PhotosFloorFPCPlanProps";
 import Publish from "./Property/Publish";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 
 // Room schema
 const roomSchema = z.object({
@@ -171,7 +172,7 @@ const EditProperty = () => {
       };
   // Use useMemo to memoize the transformed data so it doesn't trigger re-renders on every render.
   const transformedVendorData = useMemo(() => {
-    console.log(property,"furqan")
+
     if(property)
     {
 
@@ -464,7 +465,8 @@ const EditProperty = () => {
   }
 
   return (
-    <>
+    <DashboardLayout>
+
       {isSubmitting && (
         <div className="fixed inset-0 h-full w-full bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div className="text-white text-lg font-semibold">Processing...</div>
@@ -472,8 +474,8 @@ const EditProperty = () => {
       )}
       <div className="min-h-screen bg-background">
         <LoadingBar color="rgb(95,126,220)" progress={progress} onLoaderFinished={() => setProgress(0)} />
-        <MainNav />
-        <div className="container mx-auto max-w-3xl py-8">
+     
+ <div className="p-6 max-w-5xl mx-auto">
           <h1 className="text-4xl font-bold mb-8">Edit Property</h1>
           <div className="mb-8">
             <div className="flex justify-between items-center mb-4">
@@ -515,7 +517,7 @@ const EditProperty = () => {
           </Card>
         </div>
       </div>
-    </>
+    </DashboardLayout>
   );
 };
 

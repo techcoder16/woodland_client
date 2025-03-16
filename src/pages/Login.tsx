@@ -1,33 +1,33 @@
+// src/pages/Login.tsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import toast from "react-hot-toast";
 import LoadingBar from "react-top-loading-bar";
-import { VscEye, VscEyeClosed } from "react-icons/vsc";
+import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { DEFAULT_COOKIE_SETTER } from "@/helper/Cookie";
-import postApi from "@/helper/postApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/context/AuthContext";
 
 import wall2 from "@/assets/wall2.jpg";
 import wall3 from "@/assets/wall3.jpg";
 import wall5 from "@/assets/wall5.jpg";
 import wall6 from "@/assets/wall6.jpg";
-import { Toaster } from "@/components/ui/toaster"; // Ensure this is properly set up
+import { toast } from "sonner";
 
 const Login = () => {
+  const { login } = useAuth();
   const [progress, setProgress] = useState(0);
-  const navigate = useNavigate();
   const [currentImage, setCurrentImage] = useState(wall2);
-  const [isPasswordVisible, setPasswordVisible] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const images = [wall2, wall3, wall5, wall6];
-  const { toast } = useToast();
-
-  // Background image transition logic
+  const navigate = useNavigate();
+  // Rotate background images
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentImage((prevImage) => {
@@ -35,7 +35,6 @@ const Login = () => {
         return images[(currentIndex + 1) % images.length];
       });
     }, 5000);
-
     return () => clearInterval(interval);
   }, [images]);
 
@@ -55,74 +54,25 @@ const Login = () => {
 
   const onSubmit = async (payload: { email: string; password: string }) => {
     setProgress(30);
+    setIsLoading(true);
+    const success = await login(payload.email, payload.password);
+    setProgress(100);
+    setIsLoading(false);
+    if (!success) {
+      toast.error("Invalid email or password");
 
-    try {
-
-      const response = await postApi("auth/getLogin", payload);
-      const {data,error} = response;
-      
-      setProgress(60);
-
-      if (response?.data) {
-        const { message, user, accessToken } = response.data;
-        if (!accessToken)
-        {
-
-        toast({
-        title: "Error",
-        description: error.message || "Network Error!",
-        variant: "destructive",
-      });
-       
-      // toast.error(error.message || "Network Error!");
-
-      setProgress(100);
-
-      return ;
-
-        }
-        // Save user data and access token
-        localStorage.setItem("user_data", JSON.stringify(user));
-        await DEFAULT_COOKIE_SETTER("access_token", accessToken, false);
-        await DEFAULT_COOKIE_SETTER("user", JSON.stringify({ email: user.email, name: user.name }), false);
-
-        toast({
-          title: "Success",
-          description: message,
-        });
-        console.log("here login success");
-        setProgress(100);
-
-        navigate("/dashboard");
-
-   
-      } else {
-        throw new Error(response?.error?.message || "Unknown error occurred");
-      }
-    } catch (error: any) {
-
-    
-      toast({
-        title: "Error",
-        description: error.message || "Network Error!",
-        variant: "destructive",
-      });
-       
-      // toast.error(error.message || "Network Error!");
-
-      setProgress(100);
     }
+else{
+    toast.success("Login successful");
+    navigate("/dashboard");
+}
+
+
   };
 
   return (
-
-    <React.Fragment>
-
-      <LoadingBar
-        color="rgb(95,126,220)"
-        progress={progress}
-        onLoaderFinished={() => setProgress(0)}
-      />
+    <>
+      <LoadingBar color="rgb(95,126,220)" progress={progress} onLoaderFinished={() => setProgress(0)} />
       <div
         style={{
           backgroundImage: `url(${currentImage})`,
@@ -133,59 +83,60 @@ const Login = () => {
         className="min-h-screen flex items-center justify-center relative"
       >
         <div className="absolute inset-0 bg-black/50 backdrop-blur-md" />
-        <Card className="z-10 w-full max-w-md">
-          <CardHeader>
-            <CardTitle className="text-3xl font-semibold text-center text-gray-800">
-              Welcome to Woodland
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-600">
-                  Email Address
-                </label>
-                <Input
-                  id="email"
-                  type="email"
-                  {...register("email")}
-                  className={`mt-1 ${errors.email ? "border-red-500" : "border-gray-300"}`}
-                  placeholder="Enter your email"
-                />
-               
-              </div>
-
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-600">
-                  Password
-                </label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={isPasswordVisible ? "text" : "password"}
-                    {...register("password")}
-                    className={`mt-1 ${errors.password ? "border-red-500" : "border-gray-300"}`}
-                    placeholder="Enter your password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setPasswordVisible(!isPasswordVisible)}
-                    className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
-                  >
-                    {isPasswordVisible ? <VscEye /> : <VscEyeClosed />}
-                  </button>
+       
+            <div className="glass-card rounded-xl p-6 w-full max-w-md mx-auto">
+              <div className="space-y-2 text-center">
+                <div className="mx-auto h-12 w-12 rounded-full bg-primary flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">PM</span>
                 </div>
-              
+                <h1 className="text-2xl font-bold tracking-tight">Property Management</h1>
+                <p className="text-sm text-muted-foreground">Enter your credentials to access your account</p>
               </div>
-
-              <Button type="submit" className="w-full bg-red-500 text-white py-3 rounded-lg font-medium hover:bg-red-600 transition-colors">
-                Sign In
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-6">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      placeholder="you@example.com"
+                      type="email"
+                      {...register("email")}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      {...register("password")}
+                      className="pl-10"
+                      required
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                    </Button>
+                  </div>
+                </div>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? "Signing in..." : "Sign in"}
+                </Button>
+              </form>
+            </div>
+       
       </div>
-    </React.Fragment>
+    </>
   );
 };
 

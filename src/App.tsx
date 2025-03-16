@@ -1,58 +1,60 @@
-import { Toaster } from "./components/ui/toaster";  // Use react-hot-toast's Toaster
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { ThemeProvider } from "@/components/ThemeProvider";
-import { Provider } from "react-redux"; // Import Redux Provider
-import store from "./redux/store"; // Import Redux store
-
+// src/App.tsx
 import React, { useEffect, useState } from "react";
+import { Provider } from "react-redux";
+import store from "./redux/store";
+import { ThemeProvider } from "@/context/ThemeContext";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "./components/ui/toaster";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import VendorList from "./pages/VendorList";
 import AddVendor from "./pages/AddVendor";
 import PropertyList from "./pages/PropertyList";
-import ProtectedRoute from "@/components/ProtectedRoute"; // Import the ProtectedRoute
+import ProtectedRoute from "@/components/ProtectedRoute";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import EditVendor from "./pages/EditVendor";
 import AddProperty from "./pages/AddProperty";
 import EditProperty from "./pages/EditProperty";
-
 import ManageProperty from "./pages/Manager/ManageProperty";
-
+import { AuthProvider } from "./context/AuthContext";
+import Index from "./pages/Index";
+import NotFound from "./pages/NotFound";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import  Settings  from "@/pages/Settings";
 function App() {
-  
-
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchAccessToken = async () => {
-      const access_object = await DEFAULT_COOKIE_GETTER("access_token");
-      setAccessToken(access_object);
+      const token = await DEFAULT_COOKIE_GETTER("access_token");
+      setAccessToken(token);
       setLoading(false);
-      
     };
 
     fetchAccessToken();
   }, []);
 
   if (loading) {
-    return <div>Loading...</div>; // Show a loading state
+ 
+    return <div>Loading...</div>;
   }
 
   return (
-    <Provider store={store}> {/* Redux Provider */}
-      
-        <ThemeProvider defaultTheme="light">
-          <TooltipProvider>
-            <Toaster /> {/* Single Toaster for toast notifications */}
-            <BrowserRouter>
-              <Routes>
-                <Route path="/login" element={<Login />} />
+    <Provider store={store}>
+      <ThemeProvider >
 
+
+        <TooltipProvider>
+          <Toaster />
+          <BrowserRouter>
+            <AuthProvider>
+              <Sonner/>
+              <Routes>
+              <Route path="/" element={<Index />} />
                 {/* Protected Routes */}
-                <Route element={<ProtectedRoute accessToken={accessToken} />}>
+        
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/vendors" element={<VendorList />} />
                   <Route path="/vendors/add" element={<AddVendor />} />
@@ -61,16 +63,16 @@ function App() {
                   <Route path="/properties" element={<PropertyList />} />
                   <Route path="/vendors/edit" element={<EditVendor />} />
                   <Route path="/property/manager" element={<ManageProperty />} />
-                  
-                </Route>
-
+                  <Route path="/settings" element={<Settings />} />
+            
                 {/* Redirect unknown routes to login */}
-                <Route path="*" element={<Navigate to="/login" replace />} />
+                <Route path="*" element={<NotFound />} />
               </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
-        </ThemeProvider>
-      
+       
+            </AuthProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </ThemeProvider>
     </Provider>
   );
 }

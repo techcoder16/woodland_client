@@ -1,15 +1,24 @@
-import React, { useEffect } from "react";
+// src/components/ProtectedRoute.tsx
+import React from "react";
 import { Navigate, Outlet } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 
 interface ProtectedRouteProps {
-  accessToken: string | null;
+  // Optionally, you can accept additional props if needed
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ accessToken }) => {
-  useEffect(()=>{
+const ProtectedRoute = ({}: ProtectedRouteProps) => {
+  const { isAuthenticated, isLoading } = useAuth();
 
-  },[])
-  return accessToken ? <Outlet /> : <Navigate to="/login" replace />;
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+  console.log(isAuthenticated)
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return <Outlet />;
 };
 
 export default ProtectedRoute;

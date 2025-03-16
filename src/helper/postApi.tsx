@@ -41,7 +41,7 @@ export default async function postApi(url: string, values: object,headers:any = 
       error.message = "Server is currently unavailable. Please try again later.";
     } else {
       error.message = "An error occurred while updating data.";
-      console.log(e)
+  
     }
   }
 

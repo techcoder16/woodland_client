@@ -35,7 +35,7 @@ const InputField: React.FC<InputFieldProps> = ({
       <label className="text-gray-700 font-medium mr-4 w-32">{label}</label>
       <Textarea 
      
-        className="p-2 border border-gray-300 rounded flex-grow"
+        className=""
         {...register(name)}
         placeholder={placeholder}
         onChange={handleChange}  // Attach the onChange handler

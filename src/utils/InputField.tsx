@@ -61,8 +61,9 @@ const InputField: React.FC<InputFieldProps> = ({
         <Input
           type={type}
           ref={inputRef}
-          className="p-2 border border-gray-300 rounded lg:flex-grow"
+          className=""
           {...register(name)}
+          {...(type === "number" ? { min: 0 } : {})}
           
           placeholder={placeholder}
         />

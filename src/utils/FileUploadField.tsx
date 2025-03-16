@@ -1,3 +1,4 @@
+import { UploadCloud } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { UseFormRegister, UseFormSetValue, UseFormWatch } from "react-hook-form";
 
@@ -64,10 +65,9 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
   useEffect(() => {
     if (fileValue) {
       if (Array.isArray(fileValue)) {
-        console.log(fileValue, typeof fileValue, "fileValue is array");
+        
         setPreviews(fileValue);
       } else if (typeof fileValue === "string") {
-        console.log(typeof fileValue, typeof [fileValue], [fileValue], accept);
             setValue(name, [fileValue], { shouldValidate: true, shouldDirty: true });
         setPreviews([fileValue]);
       }
@@ -84,12 +84,14 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
     <div>
       {label && <label className="block text-gray-700 mb-2">{label}</label>}
       <div
-        className="border-2 border-dashed border-gray-300 rounded-lg p-4 cursor-pointer"
+        className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center"
         onClick={triggerFileInput}
       >
-        <p className="text-gray-500 text-center">
-          Click or drag and drop to upload files
-        </p>
+      <UploadCloud className="h-10 w-10 text-muted-foreground mb-2" />
+                      <p className="mb-1 font-medium">Drag and drop images here or click to upload</p>
+                      <p className="text-sm text-muted-foreground mb-3">Support for JPG, PNG, WebP up to 10MB each</p>
+
+
         <input
           id={`${name}Input`}
           type="file"

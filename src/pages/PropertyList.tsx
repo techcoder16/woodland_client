@@ -14,6 +14,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -24,12 +25,13 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Pencil, Trash, Filter, SquareChartGantt } from "lucide-react";
+import { Pencil, Trash, Filter, SquareChartGantt, Search, Plus, Building, User, Edit, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
 import { fetchProperties, deleteProperty } from "@/redux/dataStore/propertySlice";
 import { useToast } from "@/components/ui/use-toast";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 
 const PropertyList = () => {
   const dispatch = useAppDispatch();
@@ -56,7 +58,9 @@ const PropertyList = () => {
   };
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+    if (page > 0 && page <= totalPages) {
+      setCurrentPage(page);
+    }
   };
 
   const handleManageProperty = (property: any) => {
@@ -65,106 +69,144 @@ const PropertyList = () => {
   };
 
   
+  function handleDelete(id: string): void {
+    throw new Error("Function not implemented.");
+  }
+
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground">
-      <MainNav />
-      <div className="container mx-auto p-6 space-y-6">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <h1 className="text-3xl font-bold tracking-tight">Properties</h1>
-          <Button asChild className="shrink-0 bg-primary hover:bg-primary/90">
-            <Link to="/property/add">Add Property</Link>
-          </Button>
-        </div>
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="relative w-full md:w-72">
+    <DashboardLayout>
+
+<div className="p-6 space-y-6">
+<h1 className="text-3xl font-bold tracking-tight">Properties</h1>
+<div className="space-y-4">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-1 items-center gap-2">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
+              type="search"
               placeholder="Search properties..."
+              className="pl-8"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-background border-input"
             />
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2 border-input">
-                <Filter className="h-4 w-4" />
-                Filters
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-popover text-popover-foreground">
-              <DropdownMenuItem>Status: Available</DropdownMenuItem>
-              <DropdownMenuItem>Status: Sold</DropdownMenuItem>
-              <DropdownMenuItem>Category: Residential</DropdownMenuItem>
-              <DropdownMenuItem>Category: Commercial</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          
+          <Button variant="outline" size="icon" className="shrink-0">
+            <Filter className="h-4 w-4" />
+          </Button>
         </div>
 
-        <div className="rounded-md border border-input bg-card text-card-foreground shadow">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-muted/50">
-                <TableHead className="text-muted-foreground">Name</TableHead>
-                <TableHead className="text-muted-foreground">Address</TableHead>
-                <TableHead className="text-muted-foreground">Category</TableHead>
-                <TableHead className="text-muted-foreground">Status</TableHead>
-                <TableHead className="text-muted-foreground">Price</TableHead>
-                <TableHead className="text-right text-muted-foreground">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {properties && properties.map((property: any) => (
-                <TableRow key={property.id} className="hover:bg-muted/50">
-                  <TableCell className="font-medium">{property.propertyName}</TableCell>
-                  <TableCell>{property.addressLine1}, {property.town}</TableCell>
-                  <TableCell>{property.category}</TableCell>
-                  <TableCell>
-                    <span className={cn(
-                      "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
-                      property.status === "Available"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
-                    )}>
-                      {property.status}
-                    </span>
-                  </TableCell>
-                  <TableCell>{property.price}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        onClick={() => handleEditProperty(property)}
-                        variant="ghost"
-                        size="icon"
-                        className="hover:bg-muted"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="hover:text-destructive hover:bg-muted"
-                        onClick={() => handleDeleteProperty(property.id)}
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
+           
+        <div className="flex flex-wrap items-center gap-2">
+        <Button className="ml-auto" onClick={() => navigate("/property/add")}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Property
+          </Button>
 
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="hover:text-destructive hover:bg-muted"
-                        onClick={() => handleManageProperty(property.id)}
-                      >
-                        <SquareChartGantt className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        </div>
+</div>
+
+
+<div className="glass-card rounded-lg overflow-hidden">
+        <div className="overflow-x-auto">
+        <table className="w-full">
+  <thead>
+    <tr className="border-b">
+      <th className="px-4 py-3 text-left font-medium">Name</th>
+      <th className="px-4 py-3 text-left font-medium">Address</th>
+      <th className="px-4 py-3 text-left font-medium">Category</th>
+      <th className="px-4 py-3 text-left font-medium">Status</th>
+      <th className="px-4 py-3 text-left font-medium">Price</th>
+      
+    </tr>
+  </thead>
+  <tbody>
+    {properties.length > 0 ? (
+      properties.map((property: any) => (
+        <tr
+          key={property.id}
+          className="border-b hover:bg-muted/50 transition-colors"
+        >
+          <td className="px-4 py-3">{property.propertyName}</td>
+          <td className="px-4 py-3">
+            {property.addressLine1}, {property.town}
+          </td>
+          <td className="px-4 py-3">{property.category}</td>
+          <td className="px-4 py-3 text-center">
+            <span
+              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                property.status === "Active"
+                  ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                  : property.status === "Inactive"
+                  ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                  : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+              }`}
+            >
+              {property.status}
+            </span>
+          </td>
+          <td className="px-4 py-3">{property.price}</td>
+       
+          <td className="px-4 py-3 text-right">
+       <DropdownMenu>
+         <DropdownMenuTrigger asChild>
+           <Button variant="ghost" size="icon">
+             <MoreHorizontal className="h-4 w-4" />
+           </Button>
+         </DropdownMenuTrigger>
+         <DropdownMenuContent align="end">
+           <DropdownMenuItem onClick={()=>handleEditProperty(property)}>
+             <Edit className="mr-2 h-4 w-4" />
+             Edit
+           </DropdownMenuItem>
+          
+
+
+           <DropdownMenuSeparator />
+           <DropdownMenuItem
+             onClick={() => handleManageProperty(property)}
+      
+           >
+      <SquareChartGantt className="mr-2 h-4 w-4" />
+      Manage Property
+           </DropdownMenuItem>
+
+
+           <DropdownMenuSeparator />
+           <DropdownMenuItem
+             onClick={() => handleDeleteProperty(property.id)}
+             className="text-destructive focus:text-destructive"
+           >
+             <Trash className="mr-2 h-4 w-4" />
+             Delete
+           </DropdownMenuItem>
+
+        
+         </DropdownMenuContent>
+       </DropdownMenu>
+     </td>
+
+
+        </tr>
+      ))
+    ) : (
+      <tr>
+        <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+          No properties found
+        </td>
+      </tr>
+    )}
+  </tbody>
+</table>
+
         </div>
 
-        <Pagination>
+        
+      </div>
+
+
+      <Pagination>
           <PaginationContent>
             <PaginationItem>
               <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} />
@@ -184,8 +226,10 @@ const PropertyList = () => {
             </PaginationItem>
           </PaginationContent>
         </Pagination>
-      </div>
+        
     </div>
+    </div>
+      </DashboardLayout>
   );
 };
 

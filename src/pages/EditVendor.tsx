@@ -23,6 +23,7 @@ import { MainNav } from "@/components/MainNav";
 import LoadingBar from "react-top-loading-bar";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import postApiImage from "@/helper/postApiImage";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 
 
 const formSchema = z.object({
@@ -164,8 +165,7 @@ const { watch } = form;
       const findersFeeParts = splitFeeValue(vendor.findersFee);
       const salesFeeAParts = splitFeeValue(vendor.salesFeeA);
       const managementFeeAParts = splitFeeValue(vendor.managementFeeA);
-
-
+     
       const transformedVendorData = {
         id:vendor.id ?? "",
 
@@ -276,7 +276,7 @@ const { watch } = form;
   const [progress, setProgress] = useState(0);
   const onSubmit = async (data: FormData) => {
     const isValid = await form.trigger(); // Validate all fields before final submission
-    console.log("asdkjas")
+
     if (!isValid) return;
 
     setProgress(30);
@@ -374,7 +374,7 @@ const stepFields = [
   // Standard Info (Step 0)
   ['type', 'title', 'firstName', 'lastName', 'company', 'salutation', 'postCode', 'addressLine1', 'addressLine2', 'town', 'country', 'phoneHome','phoneWork', 'phoneMobile', 'fax', 'email', 'website', 'pager', 'birthplace', 'nationality', 'passportNumber', 'acceptLHA'],
   // Internal Info (Step 1)
-  ['dnrvfn', 'label', 'status', 'branch', 'source', 'ldhor', 'salesFee', 'managementFee', 'findersFee', 'salesFeeA', 'managementFeeA', 'findersFeeA','nrlTax', 'nrlRef', 'nrlRate', 'vatNumber', 'landlordFullName', 'landlordContact', 'comments', 'otherInfo','negotiator'],
+  ['dnrvfn', 'label', 'status', 'branch', 'source', 'ldhor', 'salesFee','salesFee_input','salesFee_select', 'managementFee','managementFee_input','managementFee_select', 'findersFee','findersFee_input','findersFee_select', 'salesFeeA','salesFeeA_input','salesFeeA_select', 'managementFeeA','managementFeeA_input','managementFeeA_select', 'findersFeeA','findersFeeA_input','findersFeeA_select','nrlTax', 'nrlRef', 'nrlRate', 'vatNumber', 'landlordFullName', 'landlordContact', 'comments', 'otherInfo','negotiator'],
   // Bank Details (Step 2)
   ['bankBody', 'bankAddressLine1', 'bankAddressLine2', 'bankTown', 'bankPostCode', 'bankCountry', 'bankIban', 'bic', 'nib'],
   // Web Login (Step 3)
@@ -433,7 +433,7 @@ const handlePrevious = () => {
 };
 
   return (
-    <>
+    <DashboardLayout>
 {isSubmitting && (
   <div className="fixed inset-0 h-full w-full bg-black bg-opacity-50 z-50 flex items-center justify-center">
     <div className="text-white text-lg font-semibold">Processing...</div>
@@ -453,9 +453,9 @@ const handlePrevious = () => {
         onLoaderFinished={() => setProgress(0)}
       />
       
-    <MainNav />
+
  
-    <div className="container mx-auto max-w-3xl py-8">
+      <div className="p-6 max-w-5xl mx-auto">
       <h1 className="text-4xl font-bold mb-8">Edit Vendor</h1>
 
       <div className="mb-8">
@@ -508,7 +508,7 @@ const handlePrevious = () => {
       </Card>
     </div>
   </div>
-  </>
+  </DashboardLayout>
   );
 };
 

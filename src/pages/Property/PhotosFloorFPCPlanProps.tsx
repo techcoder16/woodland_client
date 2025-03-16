@@ -215,16 +215,16 @@ const PhotosFloorFPCPlan = ({
         </div>
         {epcReportOption === "uploadReport" && (
           <div className="mb-4">
-            <FileUploadField
-              label="Upload EPC/Home Report (PDF)"
-              name="epcReportFile"
-              accept="application/pdf"
-              register={register}
-              setValue={setValue}
-              watch={watch}
-              error={errors.epcReportFile?.message}
-              multiple={true}
-            />
+              <FileUploadField
+                label="Upload EPC/Home Report (PDF)"
+                name="epcReportFile"
+                accept="application/pdf"
+                register={register}
+                setValue={setValue}
+                watch={watch}
+                error={errors.epcReportFile?.message}
+                multiple={true}
+              />
           </div>
         )}
         {epcReportOption === "urlReport" && (

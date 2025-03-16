@@ -24,6 +24,9 @@ import Description from "./Property/Descriptions";
 import MoreInfo from "./Property/MoreInfo";
 import PhotosFloorFPCPlan from "./Property/PhotosFloorFPCPlanProps";
 import Publish from "./Property/Publish";
+import { AuthProvider } from "@/context/AuthContext";
+import { ThemeProvider } from "@/context/ThemeContext";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 const roomSchema = z.object({
   title: z.string().optional(),
   description: z.string().optional(),
@@ -220,7 +223,7 @@ const { watch } = form;
         }
 
         else if (typeof value === "boolean") {
-          console.log(key,value)
+ 
           formData.append(key, JSON.stringify(value)); // Send as string
           
         } else if (value !== null && value !== undefined) {
@@ -241,8 +244,6 @@ const { watch } = form;
       }
 
 
-  console.log(formData)
-  
       // Call postApi with FormData and headers
       const { data: apiData, error } = await postApi("property/create", formData, headers);
       setProgress(60);
@@ -264,7 +265,7 @@ const { watch } = form;
   
         toast({
           title: "Success",
-          description: apiData.message || "Property created successfully!",
+          description: apiData.message || "",
         });
   
         setProgress(100);
@@ -363,7 +364,8 @@ const handlePrevious = () => {
 };
 
   return (
-    <>
+
+      <DashboardLayout>
 {isSubmitting && (
   <div className="fixed inset-0 h-full w-full bg-black bg-opacity-50 z-50 flex items-center justify-center">
     <div className="text-white text-lg font-semibold">Processing...</div>
@@ -382,9 +384,8 @@ const handlePrevious = () => {
         progress={progress}
         onLoaderFinished={() => setProgress(0)}
       />
-      
-    <MainNav />
-    <div className="container mx-auto max-w-3xl py-8">
+ 
+ <div className="p-6 max-w-5xl mx-auto">
       <h1 className="text-4xl font-bold mb-8">Add New Property</h1>
 
       <div className="mb-8">
@@ -437,7 +438,8 @@ const handlePrevious = () => {
       </Card>
     </div>
   </div>
-  </>
+  </DashboardLayout>
+
   );
 };
 
