@@ -88,6 +88,7 @@ const MoreInfo = ({ register, watch, clearErrors, setValue, errors, type }: More
             clearErrors('Branch');
           }}
         />
+        
         <SelectField
           label="Negotiator"
           name="Negotiator"

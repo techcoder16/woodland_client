@@ -25,7 +25,15 @@ export default async function deleteApi(url: string,headers: object) {
     }
   } catch (e: any) {
     // Handling Axios errors
-    if (e.response && e.response.status === 503) {
+
+  
+    if ( e.response && e.response.status === 400)
+    {  console.log(typeof e.response.status)
+
+      error.message = e.response.data.message;
+
+    }
+   else if (e.response && e.response.status === 503) {
    
       error.message = "Server is currently unavailable. Please try again later.";
     } else if (e.response && e.response.status === 401) {
@@ -41,6 +49,6 @@ export default async function deleteApi(url: string,headers: object) {
       error.message = "An error occurred while fetching data.";
     }
   }
-
+console.log(error)
   return { data, error };
 }

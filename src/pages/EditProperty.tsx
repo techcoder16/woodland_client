@@ -157,7 +157,6 @@ type FormData = z.infer<typeof formSchema>;
 
 const EditProperty = () => {
   const location = useLocation();
-  const navigate = useNavigate();
 
   // Get the property to edit from location state
   const property = location.state?.property;

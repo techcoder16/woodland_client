@@ -16,17 +16,22 @@ interface Vendor {
 // Define the state type
 interface VendorState {
   vendors: Vendor[];
+  selectedVendor: any | null; // ✅ Added to store a single vendor
   totalPages: number;
   loading: boolean;
   error: string | null;
+  vendorLoading:boolean;
 }
 
 // Initial state with correct type
 const initialState: VendorState = {
   vendors: [],
+  selectedVendor: null, // ✅ Initial value for single vendor
   totalPages: 1,
   loading: false,
   error: null,
+  vendorLoading:false
+
 };
 
 // Fetch vendors from API
@@ -45,6 +50,22 @@ export const fetchVendors = createAsyncThunk(
   }
 );
 
+// Fetch vendor by ID
+export const getVendorById = createAsyncThunk(
+  "vendors/getVendorById",
+  async (vendorId: string, { rejectWithValue }) => {
+    try {
+      const access_token = await DEFAULT_COOKIE_GETTER("access_token");
+      const headers = { Authorization: `Bearer ${access_token}` };
+      const data = await getApi(`vendor/getVendorById/${vendorId}`, "", headers);
+      console.log(data,"furqan")
+      return data;
+    } catch (error: any) {
+      return rejectWithValue(error.message || "Failed to fetch vendor");
+    }
+  }
+);
+
 // Delete vendor
 export const deleteVendor = createAsyncThunk<
   void, // No return value
@@ -56,9 +77,18 @@ export const deleteVendor = createAsyncThunk<
     try {
       const access_token = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = { Authorization: `Bearer ${access_token}` };
-      await deleteApi(`vendor/delete/${vendorId}`, headers);
+     const {data,error} =  await deleteApi(`vendor/delete/${vendorId}`, headers);
 
       await (dispatch as AppDispatch)(fetchVendors({ page: 1, search: "" })); // ✅ Fix dispatch typing
+
+      
+      if (error?.message) {
+        console.log(error.message)
+        return rejectWithValue(error.message); // Properly returning error message
+      }
+
+
+      
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to delete vendor");
     }
@@ -72,10 +102,11 @@ const vendorSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
+      // Fetch Vendors List
       .addCase(fetchVendors.pending, (state) => {
         state.loading = true;
       })
-      .addCase(fetchVendors.fulfilled, (state:any, action:any) => {
+      .addCase(fetchVendors.fulfilled, (state, action) => {
         state.loading = false;
         state.vendors = action.payload?.vendors || [];
         state.totalPages = action.payload?.totalPages || 1;
@@ -84,14 +115,34 @@ const vendorSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string || "Failed to fetch vendors";
       })
+
+      // Fetch Vendor by ID ✅ Corrected
+      .addCase(getVendorById.pending, (state) => {
+        
+        state.vendorLoading = true;
+      })
+      .addCase(getVendorById.fulfilled, (state, action) => {
+        console.log(action.payload,"furqan1")
+        state.vendorLoading = false;
+        state.selectedVendor = action.payload || null; // ✅ Store single vendor
+      })
+      .addCase(getVendorById.rejected, (state, action) => {
+        state.vendorLoading = false;
+        state.error = action.payload as string || "Failed to fetch vendor";
+      })
+
+      // Delete Vendor
       .addCase(deleteVendor.fulfilled, (state) => {
-        state.loading = false;
+        state.vendorLoading = false;
+        state.error = null;
       })
       .addCase(deleteVendor.rejected, (state, action) => {
-        state.loading = false;
+        state.vendorLoading = false;
+        console.log(action.payload)
         state.error = action.payload as string || "Failed to delete vendor";
+
       });
-  },
+  },  
 });
 
 export default vendorSlice.reducer;

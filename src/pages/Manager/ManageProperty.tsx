@@ -15,7 +15,12 @@ import Dashboard from "../Dashboard";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import postApi from "@/helper/postApi";
 import Features from "./Features";
-
+import Parties from "./Parties";
+import Rent from "./Rent";
+import SupplierInventory from './SupplierInventory'
+import ManagementAgreement from "./ManagementAgreement";
+import TenancyAgreement from "./TenancyAgreement";
+import TransactionPage from "./TransactionPage";
 // ----- Zod Schemas & Types ----- //
 
 // Feature form schema
@@ -203,17 +208,29 @@ const ManageProperty = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-6 max-w-5xl mx-auto">
+      <div className="p-6 w-full mx-auto">
             <h1 className="text-3xl font-bold tracking-tight mb-6">Manage Property</h1>
 
    
         <Tabs defaultValue="features" className="mt-6">
-          <TabsList className="grid grid-cols-5 gap-4">
+          <TabsList className="grid grid-cols-5 gap-10">
             <TabsTrigger value="features">Property</TabsTrigger>
             <TabsTrigger value="parties">Parties</TabsTrigger>
-            <TabsTrigger value="leases">Leases</TabsTrigger>
+            <TabsTrigger value="rent">Rent</TabsTrigger>
+            <TabsTrigger value="supplier">Supplier</TabsTrigger>
+            <TabsTrigger value="management">Management Agreement</TabsTrigger>
+
+            
+            </TabsList>
+
+            <TabsList className="grid grid-cols-5 gap-10 mt-2">
+            <TabsTrigger value="tenancy">Tenancy Agreement</TabsTrigger>
+     
+     
+
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
             <TabsTrigger value="notes">Notes</TabsTrigger>
+        
           </TabsList>
 
           {/* ----- Features Tab ----- */}
@@ -252,41 +269,38 @@ const ManageProperty = () => {
 
           {/* ----- Parties Tab ----- */}
           <TabsContent value="parties" className="mt-4">
-            <Card className="shadow">
-              <CardHeader>
-                <CardTitle>Create Party</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form
-                  onSubmit={handleSubmitParty(onSubmitParty)}
-                  className="space-y-4"
-                >
-                  <InputField
-                    label="Party ID"
-                    name="partyId"
-                    register={registerParty}
-                    error={errorsParty.partyId?.message}
-                    placeholder="Enter party ID"
-                    setValue={setPartyValue}
-                  />
-                  <SelectField
-                    label="Role"
-                    name="role"
-                    options={[
-                      { value: "TENANT", label: "Tenant" },
-                      { value: "LANDLORD", label: "Landlord" },
-                      { value: "SUPPLIER", label: "Supplier" },
-                      { value: "OTHER", label: "Other" },
-                    ]}
-                    register={registerParty}
-                    error={errorsParty.role?.message}
-                    setValue={setPartyValue}
-                    watch={watchParty}
-                  />
-                  <Button type="submit">Create Party</Button>
-                </form>
-              </CardContent>
-            </Card>
+       <Parties property={property}>
+        
+       </Parties>
+          </TabsContent>
+
+
+          <TabsContent value="rent" className="mt-4">
+            <Rent propertyId={property.id}></Rent>
+              </TabsContent>
+
+              <TabsContent value="supplier" className="mt-4">
+       <SupplierInventory propertyId={property.id}/>
+        
+          </TabsContent>
+
+
+          <TabsContent value="management" className="mt-4">
+       <ManagementAgreement propertyId={property.id}/>
+        
+          </TabsContent>
+
+
+
+          <TabsContent value="tenancy" className="mt-4">
+       <TenancyAgreement propertyId={property.id}/>
+        
+          </TabsContent>
+
+
+          <TabsContent value="transactions" className="mt-4">
+       <TransactionPage propertyId={property.id}/>
+        
           </TabsContent>
 
           {/* ----- Leases Tab ----- */}
@@ -300,14 +314,7 @@ const ManageProperty = () => {
                   onSubmit={handleSubmitLease(onSubmitLease)}
                   className="space-y-4"
                 >
-                  <InputField
-                    label="Tenant ID"
-                    name="tenantId"
-                    register={registerLease}
-                    error={errorsLease.tenantId?.message}
-                    placeholder="Enter tenant ID"
-                    setValue={setLeaseValue}
-                  />
+                  
                   <InputField
                     label="Landlord ID"
                     name="landlordId"
@@ -365,54 +372,7 @@ const ManageProperty = () => {
           </TabsContent>
 
           {/* ----- Transactions Tab ----- */}
-          <TabsContent value="transactions" className="mt-4">
-            <Card className="shadow">
-              <CardHeader>
-                <CardTitle>Create Transaction</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form
-                  onSubmit={handleSubmitTransaction(onSubmitTransaction)}
-                  className="space-y-4"
-                >
-                  <InputField
-                    label="Amount"
-                    name="amount"
-                    register={registerTransaction}
-                    error={errorsTransaction.amount?.message}
-                    placeholder="Enter amount"
-                    type="number"
-                    setValue={setTransactionValue}
-                  />
-                  <InputField
-                    label="Transaction Date"
-                    name="transactionDate"
-                    register={registerTransaction}
-                    error={errorsTransaction.transactionDate?.message}
-                    placeholder="YYYY-MM-DD"
-                    setValue={setTransactionValue}
-                  />
-                  <InputField
-                    label="Type"
-                    name="type"
-                    register={registerTransaction}
-                    error={errorsTransaction.type?.message}
-                    placeholder="Enter transaction type"
-                    setValue={setTransactionValue}
-                  />
-                  <TextAreaField
-                    label="Description"
-                    name="description"
-                    register={registerTransaction}
-                    error={errorsTransaction.description?.message}
-                    placeholder="Enter description (optional)"
-               
-                  />
-                  <Button type="submit">Create Transaction</Button>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
+
 
           {/* ----- Notes Tab ----- */}
           <TabsContent value="notes" className="mt-4">

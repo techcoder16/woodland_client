@@ -41,7 +41,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-600">
             <span className="text-white font-bold text-lg">PM</span>
           </div>
-          <h1 className="font-bold text-lg mt-2">PropManager</h1>
+          <h1 className="font-bold text-lg mt-2">Woodland</h1>
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>

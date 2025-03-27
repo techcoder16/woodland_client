@@ -3,9 +3,13 @@ import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import getApi from "@/helper/getApi";
 import deleteApi from "@/helper/deleteApi";
 import { AppDispatch } from "../store"; // Import AppDispatch for correct dispatch typing
+import { ReactNode } from "react";
 
 // Define the tenant type
 interface tenant {
+  [x: string]: ReactNode;
+  MobileNo: ReactNode;
+  title: ReactNode;
   id: string;
   name: string;
   email: string;
@@ -56,10 +60,19 @@ export const deleteTenant = createAsyncThunk<
     try {
       const access_token = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = { Authorization: `Bearer ${access_token}` };
-      await deleteApi(`tenant/delete/${TenantId}`, headers);
-
+     const {data,error} =  await deleteApi(`tenant/delete/${TenantId}`, headers);
+  
       await (dispatch as AppDispatch)(fetchtenants({ page: 1, search: "" })); // ✅ Fix dispatch typing
+
+
+      if (error?.message) {
+        return rejectWithValue(error.message); // Properly returning error message
+      }
+
+
+
     } catch (error: any) {
+      console.log(error,"ASDasd")
       return rejectWithValue(error.message || "Failed to delete tenant");
     }
   }
@@ -84,10 +97,13 @@ const tenantslice = createSlice({
         state.loading = false;
         state.error = action.payload as string || "Failed to fetch tenants";
       })
-      .addCase(deleteTenant.fulfilled, (state) => {
+      .addCase(deleteTenant.fulfilled, (state, action) => {
+    
         state.loading = false;
+        state.error = null; // Clear error on success
       })
       .addCase(deleteTenant.rejected, (state, action) => {
+       
         state.loading = false;
         state.error = action.payload as string || "Failed to delete tenant";
       });

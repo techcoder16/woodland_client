@@ -72,7 +72,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
             <span className="text-white font-bold">PM</span>
           </div>
-          <span className="font-bold text-lg font-heading">Property Manager</span>
+          <span className="font-bold text-lg font-heading">Woodland Property Manager</span>
         </div>
         
         <Button

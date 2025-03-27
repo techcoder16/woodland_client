@@ -22,6 +22,8 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import  Settings  from "@/pages/Settings";
+import AddTenant from "./pages/AddTenant";
+import EditTenant from "./pages/EditTenant";
 function App() {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -62,6 +64,10 @@ function App() {
                   <Route path="/property/edit" element={<EditProperty />} />
                   <Route path="/properties" element={<PropertyList />} />
                   <Route path="/vendors/edit" element={<EditVendor />} />
+                  {/* <Route path="/tenant/add" element={<AddTenant />} />
+                  <Route path="/tenant/edit" element={<EditTenant />} />
+                   */}
+            
                   <Route path="/property/manager" element={<ManageProperty />} />
                   <Route path="/settings" element={<Settings />} />
             

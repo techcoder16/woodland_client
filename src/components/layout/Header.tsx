@@ -47,7 +47,7 @@ export function Header() {
             <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
               <span className="text-white font-bold">PM</span>
             </div>
-            <span className="font-bold text-lg font-heading">Property Manager</span>
+            <span className="font-bold text-lg font-heading">Woodland Property Manager</span>
           </div>
         </div>
       </div>
@@ -64,13 +64,7 @@ export function Header() {
       </div>
 
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center">
-            3
-          </span>
-        </Button>
-        
+       
         <ThemeToggle />
         
         <DropdownMenu>

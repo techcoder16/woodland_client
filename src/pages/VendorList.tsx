@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { MainNav } from "@/components/MainNav";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
-
+import { toast } from "sonner";
 import {
   Table,
   TableBody,
@@ -30,18 +30,12 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Input } from "@/components/ui/input";
-import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
-import getApi from "@/helper/getApi";
-import deleteApi from "@/helper/deleteApi";
 import { useToast } from "@/components/ui/use-toast";
 
 import { fetchVendors, deleteVendor } from "@/redux/dataStore/vendorSlice";
-import { useDispatch, useSelector } from "react-redux";
 
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks"; // ✅ Use typed hooks
 
-import { RootState } from "@/redux/store";
-import VendorPdf from "./Vendor/VendorPdf";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 
 
@@ -53,10 +47,6 @@ const VendorList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
 
-  const [deleted,setDeleted] = useState(true);
-  const itemsPerPage = 10;
-    const { toast } = useToast();
-  
 
 
 
@@ -64,10 +54,25 @@ const VendorList = () => {
     dispatch(fetchVendors({ page: currentPage, search: searchTerm }));
   }, [dispatch, currentPage, searchTerm]);
 
-  const handleDeleteVendor = async (id: string) => {
-    await dispatch(deleteVendor(id));
-    toast({ title: "Success", description: "Vendor deleted successfully!" });
-  };
+  const handleDeleteVendor = useCallback (async  (id: string) => {
+    try {
+      
+    
+    await dispatch(deleteVendor(id)).unwrap();
+
+
+    toast.success("Vendor deleted successfully!")
+
+    }
+catch(error)
+{console.log(error)
+
+  toast.error(error);
+
+}
+
+
+  },[]);
 
 
   const handleEditVendor = (vendor:any) =>{
@@ -157,6 +162,8 @@ const VendorList = () => {
       <th className="px-4 py-3 text-left font-medium">Phone Home</th>  {/* New Field */}
       <th className="px-4 py-3 text-left font-medium">Status</th>
       <th className="px-4 py-3 text-left font-medium">Salutation</th>
+      <th className="px-4 py-3 text-left font-medium">Actions</th>
+ 
     </tr>
   </thead>
   <tbody>
