@@ -48,6 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (data?.accessToken) {
       setUser(data.user);
       await DEFAULT_COOKIE_SETTER("access_token", data.accessToken, false);
+      console.log(data.user);
       await DEFAULT_COOKIE_SETTER("user", JSON.stringify(data.user), false);
       navigate("/");
       return true;
