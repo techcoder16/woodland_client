@@ -16,7 +16,7 @@ import TextAreaField from '@/utils/TextAreaField';
 
 
 const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type }: any) => {
-  console.log(watch("postCode"))
+ 
 
   const [selectedType, setSelectedType] = useState('');
   const [selectedTitle, setSelectedTitle] = useState('');

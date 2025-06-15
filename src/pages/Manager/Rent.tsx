@@ -178,7 +178,7 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
   };
 
   return (
-    <>
+    <div>
       {/* Main Rent Form */}
       <Card className="shadow">
         <CardHeader>
@@ -187,6 +187,8 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {/* Rent Fields */}
+                     <div className=" grid  grid-cols-3">
+
             <InputField
               label="Amount (£)"
               name="Amount"
@@ -236,6 +238,10 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
               placeholder="Enter who holds the rent"
               setValue={setValue}
             />
+
+</div>        
+  <div className=" grid  grid-cols-3">
+
             <div>
               <label className="text-gray-700 font-medium mr-4 w-32">Returned On</label>
               <Popover>
@@ -309,6 +315,9 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
               type="number"
               setValue={setValue}
             />
+                      </div> 
+                               <div className=" grid  grid-cols-3">
+
             <InputField
               label="DSS Ref"
               name="DssRef"
@@ -332,6 +341,9 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
               error={errors.Note?.message}
               placeholder="Enter note (optional)"
             />
+                      </div>         
+                      
+                      
 
             {/* Deposits List */}
             <div className="flex flex-col space-y-2">
@@ -367,6 +379,7 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
           </form>
         </CardContent>
       </Card>
+      
 
       {/* Deposit Modal (rendered outside the main form) */}
       <Dialog open={isDepositModalOpen} onOpenChange={setIsDepositModalOpen}>
@@ -526,7 +539,7 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
           </form>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 };
 

@@ -133,6 +133,8 @@ console.log(errorsFeature);
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmitFeature(onSubmitFeature)} className="space-y-4">
+          <div className=" grid  grid-cols-3">
+
           <InputField
             label="Feature Type"
             name="featureType"
@@ -150,6 +152,8 @@ console.log(errorsFeature);
             placeholder="Enter number of deds"
             setValue={setFeatureValue}
           />
+            
+
           <InputField
             label="Number of WC"
             name="NoOfWC"
@@ -159,6 +163,8 @@ console.log(errorsFeature);
             placeholder="Enter number of WC"
             setValue={setFeatureValue}
           />
+          </div>          <div className=" grid  grid-cols-3">
+
           <InputField
             label="Number of Receptions"
             name="NoOfReceptions"
@@ -168,6 +174,7 @@ console.log(errorsFeature);
             placeholder="Enter number of receptions"
             setValue={setFeatureValue}
           />
+          
           <InputField
             label="Number of Cook Rooms"
             name="NoOfCookRooms"
@@ -185,6 +192,8 @@ console.log(errorsFeature);
             placeholder="Enter carpeting details"
             setValue={setFeatureValue}
           />
+                    </div>          <div className=" grid  grid-cols-3">
+
           <InputField
             label="Gas Control Meeting"
             name="GasControlMeeting"
@@ -201,6 +210,7 @@ console.log(errorsFeature);
             placeholder="Enter double glazing details"
             setValue={setFeatureValue}
           />
+           
           <InputField
             label="Off Street Parking"
             name="OffStreetParking"
@@ -210,6 +220,8 @@ console.log(errorsFeature);
             placeholder="Off Street Parking"
             setValue={setFeatureValue}
           />
+                    </div>          <div className=" grid  grid-cols-3">
+
           <InputField
             label="Garage"
             name="Garage"
@@ -218,6 +230,7 @@ console.log(errorsFeature);
             placeholder="Enter garage details"
             setValue={setFeatureValue}
           />
+          
           <InputField
             label="Key Number"
             name="keyNumber"
@@ -235,6 +248,8 @@ console.log(errorsFeature);
             placeholder="Enter type"
             setValue={setFeatureValue}
           />
+          </div>          <div className=" grid  grid-cols-3">
+      
           <InputField
             label="How Deattached"
             name="HowDeattached"
@@ -251,6 +266,7 @@ console.log(errorsFeature);
             placeholder="Enter floor"
             setValue={setFeatureValue}
           />
+          
           <InputField
             label="Door Number"
             name="DoorNumber"
@@ -259,6 +275,7 @@ console.log(errorsFeature);
             placeholder="Enter door number"
             setValue={setFeatureValue}
           />
+                    </div>      
           <InputField
             label="Road"
             name="Road"
@@ -267,6 +284,7 @@ console.log(errorsFeature);
             placeholder="Enter road"
             setValue={setFeatureValue}
           />
+        
           <FileUploadField
             label="Upload Images"
             name="map"
