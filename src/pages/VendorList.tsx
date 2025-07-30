@@ -259,15 +259,7 @@ catch(error)
               Showing <span className="font-medium">{vendors.length}</span> of{" "}
               <span className="font-medium">{vendors.length}</span> vendors
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="ml-auto"
-              // onClick={handleExport}
-            >
-              <FileDown className="mr-2 h-4 w-4" />
-              Export
-            </Button>
+         
           </div>
         )}
 

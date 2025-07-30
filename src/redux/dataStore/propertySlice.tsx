@@ -12,7 +12,6 @@ interface Property {
   category: string;
   status: string;
   price: string;
-  // Add additional fields as needed
 }
 
 interface PropertyState {
@@ -51,9 +50,8 @@ export const fetchProperties = createAsyncThunk(
       }${status ? `&status=${status}` : ""}${postCode ? `&postCode=${postCode}` : ""}${
         country ? `&country=${country}` : ""
       }`;
-      const data = await getApi("property/getProperties", params, headers);
-      console.log(data)
-      return data;
+      const data:any = await getApi("properties", params, headers);
+      return data?.items;
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to fetch properties");
     }
@@ -70,7 +68,7 @@ export const deleteProperty = createAsyncThunk<
     try {
       const access_token = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = { Authorization: `Bearer ${access_token}` };
-      await deleteApi(`property/delete/${propertyId}`, headers);
+      await deleteApi(`properties/${propertyId}`, headers);
       await dispatch(fetchProperties({ page: 1, search: "" }));
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to delete property");
@@ -89,7 +87,8 @@ const propertySlice = createSlice({
       })
       .addCase(fetchProperties.fulfilled, (state, action: any) => {
         state.loading = false;
-        state.properties = action.payload?.properties || [];
+ 
+        state.properties = action.payload || [];
         state.totalPages = action.payload?.totalPages || 1;
       })
       .addCase(fetchProperties.rejected, (state, action) => {

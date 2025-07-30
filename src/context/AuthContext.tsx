@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { DEFAULT_COOKIE_DELETE, DEFAULT_COOKIE_GETTER, DEFAULT_COOKIE_SETTER } from "@/helper/Cookie";
 import postApi from "@/helper/postApi";
+import { post } from "@/helper/api";
 
 interface User {
   id: string;
@@ -43,8 +44,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
-    const { data, error } = await postApi("auth/getLogin", { email, password });
 
+    const { data, error }:any = await post("auth/login", { email, password });
+      
     if (data?.accessToken) {
       setUser(data.user);
       await DEFAULT_COOKIE_SETTER("access_token", data.accessToken, false);

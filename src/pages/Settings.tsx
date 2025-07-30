@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useTheme } from "@/context/ThemeContext";
 import { Button } from "@/components/ui/button";
@@ -7,8 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import postApi from "@/helper/postApi"; // Your postApi function
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
+import { patch } from "@/helper/api";
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState("profile");
@@ -19,6 +19,28 @@ const Settings = () => {
     email: "admin@example.com",
     phone_number: ""
   });
+  
+    useEffect(() => {
+
+    const fetchProfileData = async () => {
+      const accessToken = await DEFAULT_COOKIE_GETTER("access_token");
+      const user = await DEFAULT_COOKIE_GETTER("user");
+
+      if (user) {
+        const userData = JSON.parse(user);
+        setProfileValues({
+          ...profileValues,
+          id: userData.id,
+          first_name: userData.first_name || "",
+          last_name: userData.last_name || "",
+          email: userData.email || "",
+          phone_number: userData.phone_number || ""
+        });
+      }
+    };
+fetchProfileData();
+  },[]);
+
   
   const [passwordValues, setPasswordValues] = useState({
     email: "user-unique-id", // Provide user id from your auth context/state
@@ -35,14 +57,14 @@ const Settings = () => {
 
     const headers = {
       Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/x-www-form-urlencoded",
+      "Content-Type": "application/json",
     };
 
     let user_data  = JSON.parse(user);
     profileValues.email = user_data?.email;
 
 
-    const { data, error } = await postApi("auth/update-metadata", profileValues,headers);
+    const { data, error } = await patch("auth/update-meta", profileValues,headers);
     if (error && error.message) {
       toast.error(error.message);
     } else {
@@ -66,12 +88,12 @@ const user = await DEFAULT_COOKIE_GETTER("user");
     if (passwordValues.newPassword !== passwordValues.confirmPassword) {
       return toast.error("New passwords do not match");
     }
-    const { data, error } = await postApi("auth/update-password", {
+    const { data, error } = await patch("auth/update-password", {
       email: passwordValues.email,
       currentPassword: passwordValues.currentPassword,
       newPassword: passwordValues.newPassword
     },headers);
-    if (error && error.message) {
+    if (error && error) {
       toast.error(error.message);
     } else {  
       toast.success("Password updated successfully!");

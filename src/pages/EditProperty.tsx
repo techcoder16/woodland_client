@@ -19,6 +19,7 @@ import MoreInfo from "./Property/MoreInfo";
 import PhotosFloorFPCPlan from "./Property/PhotosFloorFPCPlanProps";
 import Publish from "./Property/Publish";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { patch, post } from "@/helper/api";
 
 // Room schema
 const roomSchema = z.object({
@@ -426,7 +427,7 @@ const EditProperty = () => {
       // Include the property ID for updating
       formData.append("id", property?.id || "");
 
-      const { data: apiData, error } = await postApi("property/update", formData, headers);
+      const { data: apiData, error }:any = await patch("properties/" +Object.fromEntries(formData.entries()).id , formData, headers);
       setProgress(60);
       if (error && error.message) {
         toast({

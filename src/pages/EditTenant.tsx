@@ -11,9 +11,9 @@ import postApi from "@/helper/postApi";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import LoadingBar from "react-top-loading-bar";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import BasicInfo from "./Tenant/BasicInfo";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { patch } from "@/helper/api";
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -86,8 +86,8 @@ const EditTenant = ({ isOpen, onClose, propertyId ,tenant}: EditTenantModalProps
         if (value !== null && value !== undefined) formData.append(key, String(value));
       });
 
-      const { data: apiData, error } = await postApi(
-        `tenant/update`,
+      const { data: apiData, error } = await patch(
+        `tenants/`+Object.fromEntries(formData.entries()).id ,
         formData,
         headers
       );

@@ -11,6 +11,7 @@ import postApi from "@/helper/postApi";
 import LoadingBar from "react-top-loading-bar";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import BasicInfo from "./Tenant/BasicInfo";
+import { post } from "@/helper/api";
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -99,7 +100,7 @@ export function AddTenant({ isOpen, onClose, propertyId }: AddTenantModalProps) 
         if (value !== null && value !== undefined) formData.append(key, String(value));
       });
 console.log(formData)
-      const { data: apiData, error } = await postApi("tenant/create", formData, headers);
+      const { data: apiData, error } = await post("tenants", formData, headers);
       console.log(data);
       setProgress(60);
       if (error && error.message) throw new Error(error.message);

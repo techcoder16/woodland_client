@@ -24,6 +24,7 @@ import LoadingBar from "react-top-loading-bar";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import postApiImage from "@/helper/postApiImage";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { patch } from "@/helper/api";
 
 
 const formSchema = z.object({
@@ -77,10 +78,11 @@ const formSchema = z.object({
   nrlTax: z.string().nullable().optional(),
   
   nrlRate: z.string().nullable().optional(),
-  vatumber: z.string().nullable().optional(),
+  vatNumber: z.string().nullable().optional(),
   landlordFullName: z.string().nullable().optional(),
   landlordContact: z.string().nullable().optional(),
   comments:z.string().nullable().optional(),
+ 
   otherInfo:z.string().nullable().optional(),
 
   bankBody: z.string().nullable().optional(),
@@ -313,9 +315,9 @@ const { watch } = form;
         }
       }
   
-  
+      console.log("Form data before submission:", Object.fromEntries(formData.entries()));
       // Call postApi with FormData and headers
-      const { data: apiData, error } = await postApi("vendor/update", formData, headers);
+      const { data: apiData, error }:any = await patch("vendors/update/"+Object.fromEntries(formData.entries()).id, formData, headers);
       setProgress(60);
   
       if (error && error.message) {
@@ -329,7 +331,7 @@ const { watch } = form;
       }
   
       // Ensure `response.data.vendor` is parsed correctly
-      const vendorId = apiData?.vendor?.id;
+      const vendorId = apiData?.vendor.id;
           
       if (vendorId && vendorId.length > 0) {
   

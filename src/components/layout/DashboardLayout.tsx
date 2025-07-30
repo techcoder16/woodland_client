@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Header } from "./Header";
 import { ThemeToggle } from "./ThemeToggle";
-import { Building2, LayoutDashboard, LogOut, Settings, Users2 } from "lucide-react";
+import { Building2, CircleUser, LayoutDashboard, LogOut, Settings, Users2, Wallet } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../ui/button";
 
@@ -73,6 +73,26 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               >
                 <Users2 className="w-5 h-5" />
                 <span>Vendors & Landlords</span>
+              </SidebarMenuButton>
+
+
+  <SidebarMenuButton 
+                onClick={() => navigate("/property-management")}
+                isActive={window.location.pathname === "/property-management"}
+                tooltip="Finance"
+              >
+                <Wallet className="w-5 h-5" />
+                <span>Finance</span>
+              </SidebarMenuButton>
+
+
+                     <SidebarMenuButton 
+                onClick={() => navigate("/tenants")}
+                isActive={window.location.pathname === "/tenants"}
+                tooltip="Tenants"
+              >
+                <CircleUser className="w-5 h-5" />
+                <span>Tenants</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>

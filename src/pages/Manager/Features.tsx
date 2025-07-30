@@ -11,11 +11,13 @@ import postApi from "@/helper/postApi";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import { toast } from "sonner";
 import getApi from "@/helper/getApi";
+import SelectField from "@/utils/SelectedField";
+import { post } from "@/helper/api";
 
 const featureSchema = z.object({
   propertyId: z.string().min(1),
   featureType: z.string().optional(),
-  
+
   PostCode: z.string().optional(),
   noOfDeds: z.string().optional(),
   NoOfWC: z.string().optional(),
@@ -31,11 +33,13 @@ const featureSchema = z.object({
     (a) => (typeof a === "string" && a.trim() !== "" ? parseFloat(a) : undefined),
     z.number().optional()
   ),
-  Type: z.string().optional(),
   HowDeattached: z.string().optional(),
   Floor: z.string().optional(),
   DoorNumber: z.string().optional(),
   Road: z.string().optional(),
+  towns:z.string().optional(),
+  NoOfBaths: z.string().optional(),
+
   // map is an array of Base64 image strings
   map: z.any().optional(),
 });
@@ -44,16 +48,20 @@ type FeatureFormData = z.infer<typeof featureSchema>;
 
 export const Feature = ({ property }: any) => {
   // Initialize the form with zod validation.
+
   const {
     register: registerFeature,
     handleSubmit: handleSubmitFeature,
     reset: resetFeature,
     setValue: setFeatureValue,
     watch,
+    clearErrors, // ✅ Add this
+  
     formState: { errors: errorsFeature },
   } = useForm<FeatureFormData>({
     resolver: zodResolver(featureSchema),
   });
+  const postCodeValue = watch("PostCode");
 
   // Always set propertyId in the form.
   useEffect(() => {
@@ -62,23 +70,32 @@ export const Feature = ({ property }: any) => {
       console.log("Property ID set:", property.id);
     }
   }, [setFeatureValue, property]);
-console.log(errorsFeature);
+
+  const handleSelectChange = (name: keyof FeatureFormData, value: string) => {
+    // Update corresponding state based on the name of the select field
+
+    setFeatureValue(name, value);
+    clearErrors(name);
+
+
+  };
+console.log(errorsFeature)
   // Fetch existing features for this property and integrate them (if found).
   useEffect(() => {
     async function fetchFeature() {
       try {
         const accessToken = await DEFAULT_COOKIE_GETTER("access_token");
         const headers = {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/x-www-form-urlencoded",
-          };
-          const params = `?propertyId=${property.id}`
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        };
+        const params = `?propertyId=${property.id}`
         const response = await getApi(
-          `manager/features`,params,
-           headers 
+          `property-management/feature`, params,
+          headers
         );
         console.log(response)
-        const data:any = response;
+        const data: any = response;
         if (data?.features && data?.features.length > 0) {
           // Assuming only one feature per property, integrate the first feature.
           resetFeature(data.features[0]);
@@ -98,15 +115,15 @@ console.log(errorsFeature);
     console.log("Submitting for propertyId:", property.id);
 
     // Loop over the data fields and append them to FormData.
-    Object.entries(data).forEach(([key, value]) => {
+   data && Object.entries(data).forEach(([key, value]) => {
       if (key === "map" && value) {
         // If value is a FileList or array, append each file.
         console.log(key)
-        value.forEach((file:any,index) => {
-            if (file) {
-              formData.append(`map[${index}]`, file); // Append each file individually
-            }
-          });
+        value.forEach((file: any, index) => {
+          if (file) {
+            formData.append(`map[${index}]`, file); // Append each file individually
+          }
+        });
       } else if (value !== undefined) {
         formData.append(key, value as string | Blob);
       }
@@ -115,10 +132,10 @@ console.log(errorsFeature);
     const accessToken = await DEFAULT_COOKIE_GETTER("access_token");
     const headers = {
       Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/x-www-form-urlencoded",
+      "Content-Type": "application/json",
     };
-
-    const res = await postApi("manager/features/upsert", formData, headers);
+    console.log(formData);
+    const res = await post("property-management/feature/upsert", data, headers);
     if (res) {
       toast.success("Feature created successfully");
     } else {
@@ -135,156 +152,370 @@ console.log(errorsFeature);
         <form onSubmit={handleSubmitFeature(onSubmitFeature)} className="space-y-4">
           <div className=" grid  grid-cols-3">
 
-          <InputField
-            label="Feature Type"
-            name="featureType"
-            register={registerFeature}
-            error={errorsFeature.featureType?.message}
-            placeholder="Enter feature type"
-            setValue={setFeatureValue}
-          />
-          <InputField
-            label="Number of Deds"
-            name="noOfDeds"
-            type="number"
-            register={registerFeature}
-            error={errorsFeature.noOfDeds?.message}
-            placeholder="Enter number of deds"
-            setValue={setFeatureValue}
-          />
-            
 
-          <InputField
-            label="Number of WC"
-            name="NoOfWC"
-            type="number"
-            register={registerFeature}
-            error={errorsFeature.NoOfWC?.message}
-            placeholder="Enter number of WC"
-            setValue={setFeatureValue}
-          />
+            <SelectField
+              label="Carpeting"
+              name="Carpeting"
+              register={registerFeature}
+              error={errorsFeature.Carpeting?.message}
+              watch={watch}
+              options={[
+                { label: "Wooden Floor", value: "Wooden-Floor" },
+                { label: "Fully Carpeted", value: "Fully-Carpeted" },
+                { label: "Partialy Carpeted", value: "Partly-Carpeted" },
+                { label: "Partialy Wooden Floor ", value: "Partialy-Wooden-Floor" },
+              ]}
+              onChange={(value) => handleSelectChange("Carpeting", value)}
+              setValue={setFeatureValue}
+            />
+            <SelectField
+              label="Number of Beds"
+              name="noOfDeds"
+              options={[
+                { label: "Not Available", value: "Not-Available" },
+
+                { label: "Box Room", value: "Box-Room" },
+
+                { label: "Single Room", value: "Single-Room" },
+                { label: "Double Room", value: "Double-Room" },
+                { label: "Studio", value: "Studio" },
+
+                { label: "One", value: "One" },
+
+                { label: "One-Two", value: "One-Two" },
+
+                { label: "Two", value: "Two" },
+                { label: "Two-Three", value: "Two-Three" },
+
+
+                { label: "Three", value: "Three" },
+                { label: "Three-Four", value: "Three-Four" },
+
+
+                { label: "Four", value: "Four" },
+                { label: "Four-Five", value: "Four-Five" },
+
+                { label: "Five", value: "Five" },
+                { label: "Five-Six", value: "Five-Six" },
+
+                { label: "Six", value: "Six" },
+
+                { label: "Six-Seven", value: "Six-Seven" },
+                { label: "Seven", value: "Seven" },
+                { label: "Eight", value: "Eight" },
+                { label: "Nine", value: "Nine" },
+                { label: "Ten", value: "Ten" },
+
+              ]}
+
+              register={registerFeature}
+              error={errorsFeature.noOfDeds?.message}
+              watch={watch}
+              setValue={setFeatureValue}
+              onChange={(value) => handleSelectChange("noOfDeds", value)}
+
+            />
+
+
+            <SelectField
+              label="Number of WC/Showers"
+              name="NoOfWC"
+
+              register={registerFeature}
+              error={errorsFeature.NoOfWC?.message}
+              setValue={setFeatureValue}
+              watch={watch}
+              options={[
+                { label: "One", value: "One" },
+                { label: "Two", value: "Two" },
+                { label: "Three", value: "Three" },
+                { label: "Four", value: "Four" },
+                { label: "Five", value: "Five" },
+                { label: "Six", value: "Six" },
+                { label: "Seven", value: "Seven" },
+                { label: "Eight", value: "Eight" },
+                { label: "Nine", value: "Nine" },
+                { label: "Ten", value: "Ten" }
+
+              ]}
+              onChange={(value) => handleSelectChange("NoOfWC", value)}
+
+            />
           </div>          <div className=" grid  grid-cols-3">
 
-          <InputField
-            label="Number of Receptions"
-            name="NoOfReceptions"
-            type="number"
-            register={registerFeature}
-            error={errorsFeature.NoOfReceptions?.message}
-            placeholder="Enter number of receptions"
-            setValue={setFeatureValue}
-          />
-          
-          <InputField
-            label="Number of Cook Rooms"
-            name="NoOfCookRooms"
-            type="number"
-            register={registerFeature}
-            error={errorsFeature.NoOfCookRooms?.message}
-            placeholder="Enter number of cook rooms"
-            setValue={setFeatureValue}
-          />
-          <InputField
-            label="Carpeting"
-            name="Carpeting"
-            register={registerFeature}
-            error={errorsFeature.Carpeting?.message}
-            placeholder="Enter carpeting details"
-            setValue={setFeatureValue}
-          />
-                    </div>          <div className=" grid  grid-cols-3">
+            <SelectField
+              watch={watch}
+              label="Number of Receptions"
+              name="NoOfReceptions"
+              options={[
+                { label: "Not Available", value: "Not-Available" },
 
-          <InputField
-            label="Gas Control Meeting"
-            name="GasControlMeeting"
-            register={registerFeature}
-            error={errorsFeature.GasControlMeeting?.message}
-            placeholder="Enter gas control meeting details"
-            setValue={setFeatureValue}
-          />
-          <InputField
-            label="Double Glazing"
-            name="DoubleGazing"
-            register={registerFeature}
-            error={errorsFeature.DoubleGazing?.message}
-            placeholder="Enter double glazing details"
-            setValue={setFeatureValue}
-          />
-           
-          <InputField
-            label="Off Street Parking"
-            name="OffStreetParking"
-            type="checkbox"
-            register={registerFeature}
-            error={errorsFeature.OffStreetParking?.message}
-            placeholder="Off Street Parking"
-            setValue={setFeatureValue}
-          />
-                    </div>          <div className=" grid  grid-cols-3">
+                { label: "One", value: "One" },
+                { label: "Two", value: "Two" },
+                { label: "Three", value: "Three" },
+                { label: "Four", value: "Four" },
+                { label: "Through Lounge", value: "Though-Lounge" },
 
-          <InputField
-            label="Garage"
-            name="Garage"
-            register={registerFeature}
-            error={errorsFeature.Garage?.message}
-            placeholder="Enter garage details"
-            setValue={setFeatureValue}
-          />
-          
-          <InputField
-            label="Key Number"
-            name="keyNumber"
-            type="number"
-            register={registerFeature}
-            error={errorsFeature.keyNumber?.message}
-            placeholder="Enter key number"
-            setValue={setFeatureValue}
-          />
-          <InputField
-            label="Type"
-            name="Type"
-            register={registerFeature}
-            error={errorsFeature.Type?.message}
-            placeholder="Enter type"
-            setValue={setFeatureValue}
-          />
+
+              ]}
+              register={registerFeature}
+              error={errorsFeature.NoOfReceptions?.message}
+              setValue={setFeatureValue}
+              onChange={(value) => handleSelectChange("NoOfReceptions", value)}
+
+            />
+
+            <SelectField
+              label="Number of Cloak Rooms"
+              name="NoOfCookRooms"
+
+              register={registerFeature}
+              error={errorsFeature.NoOfCookRooms?.message}
+              watch={watch}
+              options={[
+
+                { label: "One", value: "One" },
+                { label: "Two", value: "Two" },
+                { label: "Three", value: "Three" },
+                { label: "Four", value: "Four" },
+                { label: "Five", value: "Five" },
+
+                { label: "Six", value: "Six" },
+                { label: "Seven", value: "Seven" },
+                { label: "Eight", value: "Eight" },
+                { label: "Nine", value: "Nine" },
+                { label: "Ten", value: "Ten" }
+
+
+              ]}
+              onChange={(value) => handleSelectChange("NoOfCookRooms", value)}
+
+              setValue={setFeatureValue}
+            />
+
+
+
+            <SelectField
+              watch={watch}
+              label="Garden"
+              name="Garden"
+              options={[
+                { value: "Not Available", label: "Not-Available" },
+
+                { value: "Small", label: "Small" },
+                { value: "Medium", label: "Medium" },
+                { value: "Large", label: "Large" },
+
+
+              ]}
+              register={registerFeature}
+              error={errorsFeature.Garden?.message}
+              setValue={setFeatureValue}
+              onChange={(value) => handleSelectChange("Garden", value)}
+
+            />
+
+
           </div>          <div className=" grid  grid-cols-3">
-      
-          <InputField
-            label="How Deattached"
-            name="HowDeattached"
-            register={registerFeature}
-            error={errorsFeature.HowDeattached?.message}
-            placeholder="Enter how deattached"
-            setValue={setFeatureValue}
-          />
-          <InputField
-            label="Floor"
-            name="Floor"
-            register={registerFeature}
-            error={errorsFeature.Floor?.message}
-            placeholder="Enter floor"
-            setValue={setFeatureValue}
-          />
-          
-          <InputField
-            label="Door Number"
-            name="DoorNumber"
-            register={registerFeature}
-            error={errorsFeature.DoorNumber?.message}
-            placeholder="Enter door number"
-            setValue={setFeatureValue}
-          />
-                    </div>      
-          <InputField
-            label="Road"
-            name="Road"
-            register={registerFeature}
-            error={errorsFeature.Road?.message}
-            placeholder="Enter road"
-            setValue={setFeatureValue}
-          />
-        
+
+            <SelectField
+              watch={watch}
+              label="Gas Central Heating"
+              name="GasControlMeeting"
+              register={registerFeature}
+              options={[
+                { label: "Fully Tested", value: "Fully-Tested" },
+                { label: "Un Tested", value: "Un-Tested" },
+                { label: "Not Available", value: "Not-Available" },
+                { label: "Available", value: "Available" }
+
+              ]}
+              error={errorsFeature.GasControlMeeting?.message}
+              setValue={setFeatureValue}
+              onChange={(value) => handleSelectChange("GasControlMeeting", value)}
+            />
+<div className="flex col-span-2">
+  <InputField
+    label="Post Code"
+    name="PostCode"
+    register={registerFeature}
+    error={errorsFeature.PostCode?.message}
+    placeholder="Enter PostCode details"
+    setValue={setFeatureValue}
+  />
+
+  {postCodeValue?.trim() && (
+    <div className="mt-2">
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() =>
+          window.open(
+            `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(postCodeValue)}`,
+            "_blank"
+          )
+        }
+      >
+        Show Map
+      </Button>
+    </div>
+  )}
+
+  
+            <InputField
+              label="Town"
+              name="towns"
+              register={registerFeature}
+              error={errorsFeature.towns?.message}
+              type="text"
+              setValue={setFeatureValue}
+
+            />
+
+
+
+</div>
+
+
+            <SelectField
+              label="Double Glazing"
+              name="DoubleGazing"
+              register={registerFeature}
+              error={errorsFeature.DoubleGazing?.message}
+              watch={watch}
+              options={[
+                { label: "Fully Double Glazed", value: "Fully-Double-Glazed" },
+                { label: "Partialy Double Glazed", value: "Partly-Double-Gazed" },
+                { label: "Not Available", value: "Not-Available" },
+
+              ]}
+              setValue={setFeatureValue}
+              onChange={(value) => handleSelectChange("DoubleGazing", value)}
+
+            />
+
+            <InputField
+              label="Off Street Parking"
+              name="OffStreetParking"
+              type="checkbox"
+              register={registerFeature}
+              error={errorsFeature.OffStreetParking?.message}
+              placeholder="Off Street Parking"
+              setValue={setFeatureValue}
+            />
+            <InputField
+              label="Road"
+              name="Road"
+              register={registerFeature}
+              error={errorsFeature.Road?.message}
+              placeholder="Enter road"
+              setValue={setFeatureValue}
+            />
+
+
+          </div>          <div className=" grid  grid-cols-3">
+
+            <SelectField
+              watch={watch}
+              label="Garage"
+              name="Garage"
+              register={registerFeature}
+              error={errorsFeature.Garage?.message}
+              options={[
+                { label: "Front Garage", value: "Front-Garage" },
+                { label: "Rear Garage", value: "Rear-Garage" },
+                { label: "Not Available", value: "Not-Available" },
+              ]}
+
+              onChange={(value) => handleSelectChange("Garage", value)}
+
+              setValue={setFeatureValue}
+
+            />
+
+            <InputField
+              label="Key Number"
+              name="keyNumber"
+              type="number"
+              register={registerFeature}
+              error={errorsFeature.keyNumber?.message}
+              placeholder="Enter key number"
+              setValue={setFeatureValue}
+            />
+            <SelectField
+              label="Type"
+              name="featureType"
+              register={registerFeature}
+              error={errorsFeature.featureType?.message}
+              options={[
+                { label: "Flat", value: "Flat" },
+                { label: "House", value: "House" },
+                { label: "Bungalow", value: "Bungalow" },
+
+                { label: "Room", value: "Room" },
+                { label: "Commercial Plot", value: "Commercial-Plot" },
+                { label: "Residential Plot", value: "Residental-Plot" },
+                { label: "Ware House", value: "Ware-House" },
+                { label: "Shop", value: "Shop" },
+
+
+              ]}
+              watch={watch}
+              onChange={(value) => handleSelectChange("featureType", value)}
+
+
+              setValue={setFeatureValue} />
+          </div>          <div className=" grid  grid-cols-3">
+
+            <SelectField
+              label="How Deattached"
+              name="HowDeattached"
+              register={registerFeature}
+              error={errorsFeature.HowDeattached?.message}
+              options={[
+                { value: "Detached", label: "Detached" },
+                { label: "Semi Detached", value: "Semi-Detached" },
+                { value: "Terraced", label: "Terraced" },
+                { label: "End of Terrace", value: "End-of-Terrace" },
+              ]}
+              watch={watch}
+              setValue={setFeatureValue}
+              onChange={(value) => handleSelectChange("HowDeattached", value)}
+
+
+            />
+            <SelectField
+              label="Floor"
+              name="Floor"
+              register={registerFeature}
+              error={errorsFeature.Floor?.message}
+              watch={watch}
+              options={[
+                { value: "Ground", label: "Ground" },
+                { value: "First", label: "First" },
+                { value: "Second", label: "Second" },
+                { value: "Third", label: "Third" },
+                { value: "Fourth", label: "Fourth" },
+                { value: "Maisonette", label: "Maisonette" },
+                { value: "Basement", label: "Basement" },
+
+
+              ]}
+              setValue={setFeatureValue}
+                    onChange={(value) => handleSelectChange("Floor", value)}
+            />
+
+            <InputField
+              label="Door Number"
+              name="DoorNumber"
+              register={registerFeature}
+              error={errorsFeature.DoorNumber?.message}
+              placeholder="Enter door number"
+              max={500}
+              setValue={setFeatureValue}
+            />
+          </div>
+
           <FileUploadField
             label="Upload Images"
             name="map"
@@ -295,6 +526,33 @@ console.log(errorsFeature);
             error={errorsFeature.map?.message?.toString()}
             multiple={true}
           />
+
+
+          
+            <SelectField
+              label="Number of Baths"
+              name="NoOfBaths"
+
+              register={registerFeature}
+              error={errorsFeature.NoOfBaths?.message}
+              setValue={setFeatureValue}
+              watch={watch}
+              options={[
+                { label: "One", value: "One" },
+                { label: "Two", value: "Two" },
+                { label: "Three", value: "Three" },
+                { label: "Four", value: "Four" },
+                { label: "Five", value: "Five" },
+                { label: "Six", value: "Six" },
+                { label: "Seven", value: "Seven" },
+                { label: "Eight", value: "Eight" },
+                { label: "Nine", value: "Nine" },
+                { label: "Ten", value: "Ten" }
+
+              ]}
+              onChange={(value) => handleSelectChange("NoOfBaths", value)}
+
+            />
           <Button type="submit">Update Feature</Button>
         </form>
       </CardContent>

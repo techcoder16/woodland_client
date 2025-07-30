@@ -11,6 +11,8 @@ interface InputFieldProps {
   error?: string;
   placeholder?: string;
   onChange?: (value: string) => void;
+  max ?: number; // Optional max length for input
+
 }
 
 const InputField: React.FC<InputFieldProps> = ({
@@ -22,6 +24,7 @@ const InputField: React.FC<InputFieldProps> = ({
   error,
   placeholder = "",
   onChange,
+  max =100000000000,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -64,6 +67,7 @@ const InputField: React.FC<InputFieldProps> = ({
           className=""
           {...register(name)}
           {...(type === "number" ? { min: 0 } : {})}
+          {...(type === "number" ? { max: max } : {})}
           
           placeholder={placeholder}
         />

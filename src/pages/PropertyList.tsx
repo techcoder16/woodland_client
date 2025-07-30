@@ -44,6 +44,7 @@ const PropertyList = () => {
     (state) => state.properties
   );
   useEffect(() => {
+
     dispatch(fetchProperties({ page: currentPage, search: searchTerm }));
   }, [dispatch, currentPage, searchTerm]);
 

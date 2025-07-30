@@ -16,14 +16,14 @@ import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import EditVendor from "./pages/EditVendor";
 import AddProperty from "./pages/AddProperty";
 import EditProperty from "./pages/EditProperty";
-import ManageProperty from "./pages/Manager/ManageProperty";
+import ManageProperty from "./pages/Manager/ManagePropertyMain";
 import { AuthProvider } from "./context/AuthContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import  Settings  from "@/pages/Settings";
-import AddTenant from "./pages/AddTenant";
-import EditTenant from "./pages/EditTenant";
+import TenantList from "./pages/TenantList";
+import PropertyManager from "./pages/PropertyManager";
 function App() {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,6 +63,10 @@ function App() {
                   <Route path="/property/add" element={<AddProperty />} />
                   <Route path="/property/edit" element={<EditProperty />} />
                   <Route path="/properties" element={<PropertyList />} />
+                  <Route path="/property-management" element={<PropertyManager />} />
+                  
+                  <Route path="/tenants" element={<TenantList />} />
+                  
                   <Route path="/vendors/edit" element={<EditVendor />} />
                   {/* <Route path="/tenant/add" element={<AddTenant />} />
                   <Route path="/tenant/edit" element={<EditTenant />} />

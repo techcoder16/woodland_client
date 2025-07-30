@@ -27,6 +27,7 @@ import Publish from "./Property/Publish";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { post } from "@/helper/api";
 const roomSchema = z.object({
   title: z.string().optional(),
   description: z.string().optional(),
@@ -245,7 +246,7 @@ const { watch } = form;
 
 
       // Call postApi with FormData and headers
-      const { data: apiData, error } = await postApi("property/create", formData, headers);
+      const { data: apiData, error } = await post("properties", formData, headers);
       setProgress(60);
   
       if (error && error.message) {

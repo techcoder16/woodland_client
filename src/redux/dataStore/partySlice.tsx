@@ -9,7 +9,7 @@ import { AppDispatch } from "../store";
 interface PropertyParty {
   id?: string;
   propertyId: string;
-  tenantId: string;
+  tenantId: any[];
   vendorId: string;
 }
 
@@ -35,7 +35,7 @@ export const upsertPropertyParty = createAsyncThunk(
       const access_token = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = { Authorization: `Bearer ${access_token}` };
       console.log(partyData)
-      const {data,error} = await postApi("manager/party-upsert", partyData, headers);
+      const {data,error} = await postApi("property-management/party-upsert", partyData, headers);
             console.log(error)
       if (error?.message)
         { 
@@ -57,7 +57,7 @@ export const fetchPropertyParties = createAsyncThunk(
     try {
       const access_token = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = { Authorization: `Bearer ${access_token}` };
-      const response = await getApi(`manager/property-party-get/${propertyId}`, "", headers);
+      const response = await getApi(`property-management/party/${propertyId}`, "", headers);
       return response;
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to fetch PropertyParty");
@@ -76,7 +76,7 @@ export const deletePropertyParty = createAsyncThunk<
     try {
       const access_token = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = { Authorization: `Bearer ${access_token}` };
-     const {data,error} =  await deleteApi(`manager/property-party-delete/${id}`, headers);
+     const {data,error} =  await deleteApi(`property-management/party/${id}`, headers);
 
       dispatch(fetchPropertyParties(id)); // Refresh list after deletion
 

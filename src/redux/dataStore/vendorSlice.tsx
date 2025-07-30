@@ -42,7 +42,7 @@ export const fetchVendors = createAsyncThunk(
       const access_token = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = { Authorization: `Bearer ${access_token}` };
       const params = `?page=${page}&limit=10&search=${search}`;
-      const data = await getApi("vendor/getVendors", params, headers);
+      const data = await getApi("vendors/getVendors", params, headers);
       return data;
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to fetch vendors");
@@ -57,7 +57,7 @@ export const getVendorById = createAsyncThunk(
     try {
       const access_token = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = { Authorization: `Bearer ${access_token}` };
-      const data = await getApi(`vendor/getVendorById/${vendorId}`, "", headers);
+      const data = await getApi(`vendors/getVendorById/${vendorId}`, "", headers);
       console.log(data,"furqan")
       return data;
     } catch (error: any) {
@@ -77,7 +77,7 @@ export const deleteVendor = createAsyncThunk<
     try {
       const access_token = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = { Authorization: `Bearer ${access_token}` };
-     const {data,error} =  await deleteApi(`vendor/delete/${vendorId}`, headers);
+     const {data,error} =  await deleteApi(`vendors/delete/${vendorId}`, headers);
 
       await (dispatch as AppDispatch)(fetchVendors({ page: 1, search: "" })); // ✅ Fix dispatch typing
 
@@ -106,7 +106,7 @@ const vendorSlice = createSlice({
       .addCase(fetchVendors.pending, (state) => {
         state.loading = true;
       })
-      .addCase(fetchVendors.fulfilled, (state, action) => {
+      .addCase(fetchVendors.fulfilled, (state, action:any) => {
         state.loading = false;
         state.vendors = action.payload?.vendors || [];
         state.totalPages = action.payload?.totalPages || 1;

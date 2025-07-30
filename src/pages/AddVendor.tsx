@@ -205,7 +205,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
     
     
         // Call postApi with FormData and headers
-        const { data: apiData, error } = await postApi("vendor/create", formData, headers);
+        const { data: apiData, error } = await postApi("vendors/create", formData, headers);
         setProgress(60);
     
         if (error && error.message) {

@@ -235,35 +235,7 @@ const ManageProperty = () => {
 
           {/* ----- Features Tab ----- */}
           <TabsContent value="features" className="mt-4">
-            {/* <Card className="shadow">
-              <CardHeader>
-                <CardTitle>Create Feature</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form
-                  onSubmit={handleSubmitFeature(onSubmitFeature)}
-                  className="space-y-4"
-                >
-                  <InputField
-                    label="Feature Type"
-                    name="featureType"
-                    register={registerFeature}
-                    error={errorsFeature.featureType?.message}
-                    placeholder="Enter feature type"
-                    setValue={setFeatureValue}
-                  />
-                  <InputField
-                    label="Value"
-                    name="value"
-                    register={registerFeature}
-                    error={errorsFeature.value?.message}
-                    placeholder="Enter value (optional)"
-                    setValue={setFeatureValue}
-                  />
-                  <Button type="submit">Create Feature</Button>
-                </form>
-              </CardContent>
-            </Card> */}
+           
             <Features property={property}></Features>
           </TabsContent>
 

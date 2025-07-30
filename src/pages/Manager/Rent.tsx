@@ -230,12 +230,16 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
                 <p className="text-red-600 text-sm">{errors.ReceivedOn.message}</p>
               )}
             </div>
-            <InputField
-              label="Hold By"
+            <SelectField
+              label="Held By"
               name="HoldBy"
               register={register}
               error={errors.HoldBy?.message}
-              placeholder="Enter who holds the rent"
+              watch={watch}
+              options={[
+                { value: "landlord", label: "The Landlord" },
+                { value: "agent", label: "Letting Agent" },
+              ]}
               setValue={setValue}
             />
 

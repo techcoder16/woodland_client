@@ -41,8 +41,8 @@ export const fetchtenants = createAsyncThunk(
       const access_token = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = { Authorization: `Bearer ${access_token}` };
       const params = `?page=${page}&limit=10&search=${search}`;
-      const data = await getApi("tenant/tenants", params, headers);
-      return data;
+      const result:any = await getApi("tenants", params, headers);
+      return result?.data;
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to fetch tenants");
     }
@@ -60,7 +60,7 @@ export const deleteTenant = createAsyncThunk<
     try {
       const access_token = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = { Authorization: `Bearer ${access_token}` };
-     const {data,error} =  await deleteApi(`tenant/delete/${TenantId}`, headers);
+     const {data,error} =  await deleteApi(`tenants/${TenantId}`, headers);
   
       await (dispatch as AppDispatch)(fetchtenants({ page: 1, search: "" })); // ✅ Fix dispatch typing
 
@@ -72,7 +72,7 @@ export const deleteTenant = createAsyncThunk<
 
 
     } catch (error: any) {
-      console.log(error,"ASDasd")
+
       return rejectWithValue(error.message || "Failed to delete tenant");
     }
   }
@@ -90,7 +90,7 @@ const tenantslice = createSlice({
       })
       .addCase(fetchtenants.fulfilled, (state:any, action:any) => {
         state.loading = false;
-        state.tenants = action.payload?.tenants || [];
+        state.tenants = action.payload || [];
         state.totalPages = action.payload?.totalPages || 1;
       })
       .addCase(fetchtenants.rejected, (state, action) => {
