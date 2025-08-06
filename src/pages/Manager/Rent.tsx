@@ -16,28 +16,32 @@ import { useAppSelector } from "@/redux/reduxHooks";
 import SelectField from "@/utils/SelectedField";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
 import {
   Dialog,
   DialogContent,
   DialogTrigger,
   DialogTitle,
 } from "@/components/ui/dialog";
-
+import {  Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@radix-ui/react-select";
+import { Label } from "@/components/ui/label"
 // ----- Zod Schemas ----- //
 
 // Extend the deposit schema with a new computed field "bill"
 const depositSchema = z.object({
   description: z.string().min(1, "Description is required"),
   rent: z.coerce.number({ invalid_type_error: "Deposit rent must be a number" }),
-  per: z.enum(["month", "year"], {
+  per: z.enum(["day","week","2-week","4-week","calender-month"], {
     errorMap: () => ({ message: "Select a valid period" }),
   }),
   startsOn: z.string().min(1, "Start date is required"),
   closedOn: z.string().min(1, "Closed date is required"),
   month: z.enum(
-    ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"],
+    ["6","12","24","36","48","60"],
     { errorMap: () => ({ message: "Select a valid month" }) }
   ),
+  inArrears: z.boolean().optional(),
+
   expiryDate: z.string().min(1, "Expiry date is required"),
   bill: z.coerce.number({ invalid_type_error: "Bill must be a number" }),
 });
@@ -55,37 +59,92 @@ const rentSchema = z.object({
   DssRef: z.string().min(1, "DSS Ref is required"),
   HowFurnished: z.string().min(1, "How Furnished is required"),
   Note: z.string().optional(),
+
 });
 type RentFormData = z.infer<typeof rentSchema>;
 
 // Options for the Deposit "Per" select field
-const perOptions = [
-  { label: "Month", value: "month" },
-  { label: "Year", value: "year" },
+const perOptions =
+ [ 
+ 
+   {label :"Day",value:"day"},
+   {label :"Week",value:"week"},
+    {label :"2 Week",value:"2-week"},
+     {label :"4 Week",value:"4-week"},
+  { label: "Calender-Month", value: "calender-month" },
+
 ];
 
 // Options for the Month dropdown (1 to 12)
-const monthOptions = Array.from({ length: 12 }, (_, i) => ({
-  label: (i + 1).toString(),
-  value: (i + 1).toString(),
+const monthValues = [6, 12, 24, 36, 48, 60];
+
+const monthOptions = monthValues.map((m) => ({
+  label: m.toString(),
+  value: m.toString(),
 }));
 
-// Utility to calculate the bill using closedOn date and the period type.
-const calculateBill = (rent: number, startsOn: string, closedOn: string, per: string) => {
-  if (!startsOn || !closedOn) return rent;
+
+// Utility to calculate the bill using closedOn date, period type, and inArrears flag.
+const calculateBill = (
+  rent: number,
+  startsOn: string,
+  closedOn: string,
+  per: string,
+  inArrears: boolean = false
+): number => {
+  if (!startsOn || !closedOn || isNaN(Date.parse(startsOn)) || isNaN(Date.parse(closedOn))) {
+    return rent;
+  }
+
   const start = new Date(startsOn);
   const end = new Date(closedOn);
-  if (per === "month") {
-    let months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
-    months = months > 0 ? months : 1;
-    return rent * months;
-  } else if (per === "year") {
-    let years = end.getFullYear() - start.getFullYear();
-    years = years > 0 ? years : 1;
-    return rent * years;
+  const diffInMs = end.getTime() - start.getTime();
+  const diffInDays = Math.ceil(diffInMs / (1000 * 60 * 60 * 24));
+
+  let periods = 1;
+
+  switch (per.toLowerCase()) {
+    case "day":
+      periods = diffInDays;
+      break;
+
+    case "week":
+      periods = Math.ceil(diffInDays / 7);
+      break;
+
+    case "2-week":
+      periods = Math.ceil(diffInDays / 14);
+      break;
+
+    case "4-week":
+      periods = Math.ceil(diffInDays / 28);
+      break;
+
+    case "calendar-month":
+    case "calender-month":
+      periods =
+        (end.getFullYear() - start.getFullYear()) * 12 +
+        (end.getMonth() - start.getMonth()) +
+        (end.getDate() >= start.getDate() ? 0 : -1);
+      break;
+
+    default:
+      periods = 1;
+      break;
   }
-  return rent;
+
+  // Ensure at least one period is billed
+  periods = Math.max(1, periods);
+
+  // Apply in-arrears logic
+  if (inArrears) {
+    periods = Math.max(0, periods - 1);
+  }
+
+  return rent * periods;
 };
+
+
 
 // ----- Rent Component ----- //
 interface RentComponentProps {
@@ -96,7 +155,13 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
   const dispatch = useDispatch<any>();
   const { rents } = useAppSelector((state) => state.rent);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
-
+ const [dropdown, setDropdown] =
+    React.useState<React.ComponentProps<typeof Calendar>["captionLayout"]>(
+      "dropdown"
+    )
+  const [date, setDate] = React.useState<Date | undefined>(
+    new Date(2025, 5, 12)
+  )
   const {
     register,
     handleSubmit,
@@ -104,12 +169,26 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
     watch,
     reset,
     control,
+    clearErrors,
     formState: { errors },
   } = useForm<RentFormData>({
     resolver: zodResolver(rentSchema),
     defaultValues: { propertyId, Deposit: [] },
   });
   
+
+
+
+    const handleSelectChange = (name: keyof RentFormData, value: string) => {
+    // Update corresponding state based on the name of the select field
+
+    setValue(name, value);
+    clearErrors(name);
+
+
+  };
+
+
   useEffect(() => {
     if (rents && Object.keys(rents).length > 0) {
       reset(rents && rents);
@@ -126,9 +205,8 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
   useEffect(() => {
     dispatch(fetchRents({ propertyId, page: 1, search: "" }));
   }, [dispatch, propertyId]);
-
   // Generic calendar handler
-  const handleDateChange = (name: string, date: Date) => {
+  const handleDateChange = (name: any, date: Date) => {
     setValue(name, date.toISOString());
   };
 
@@ -148,18 +226,20 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
     setValue: setDepositValue,
     watch: depositWatch,
     reset: resetDepositForm,
+    
     formState: { errors: depositErrors },
   } = useForm<z.infer<typeof depositSchema>>({
     resolver: zodResolver(depositSchema),
     defaultValues: {
       description: "",
       rent: 0,
-      per: "month",
-      month: "1",
+      per: "calender-month",
+      month: "6",
       startsOn: "",
       closedOn: "",
       expiryDate: "",
       bill: 0,
+      inArrears:false
     },
   });
 
@@ -169,14 +249,29 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
       depositData.rent,
       depositData.startsOn,
       depositData.closedOn,
-      depositData.per
+      depositData.per,
+      depositData.inArrears
     );
     append({ ...depositData, bill: computedBill });
     toast.success("Deposit added!");
     resetDepositForm();
     setIsDepositModalOpen(false); // close the modal on submit
   };
+  const startsOn = depositWatch("startsOn");
+const months = depositWatch("month");
 
+useEffect(() => {
+  console.log(startsOn,months)
+  if (startsOn && months) {
+    const startDate = new Date(startsOn);
+    const newExpiry = new Date(startDate.setMonth(startDate.getMonth() + Number(months)));
+    const formatted = newExpiry.toISOString().split("T")[0];
+    
+    setDepositValue("expiryDate", formatted);
+  }
+}, [startsOn, months]);
+
+console.log(clearErrors)
   return (
     <div>
       {/* Main Rent Form */}
@@ -199,7 +294,7 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
               setValue={setValue}
             />
             <div>
-              <label className="text-gray-700 font-medium mr-4 w-32">Received On</label>
+              <label className="text-gray-700 font-medium mr-4">Received On</label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -217,13 +312,17 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={watch("ReceivedOn") ? new Date(watch("ReceivedOn")) : null}
-                    onSelect={(date) => handleDateChange("ReceivedOn", date)}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
+            
+                        <Calendar
+        mode="single"
+        defaultMonth={date}
+        selected={date}
+        
+        onSelect={setDate}
+  captionLayout="dropdown"   className="rounded-lg border shadow-sm"
+   
+   />
+      
                 </PopoverContent>
               </Popover>
               {errors.ReceivedOn && (
@@ -239,11 +338,20 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
               options={[
                 { value: "landlord", label: "The Landlord" },
                 { value: "agent", label: "Letting Agent" },
+                {value: "The-Dispute-Service-Ltd", label:"The Dispute Service Ltd"},
+                {value: "The-Deposit-Protection-Service",label:"The Deposit Protection Service"},
+                {value: "Tenancy-Deposit-Solutions-Limited",label:"Tenancy Deposit Solutions Limited"}
+                
+                
+
               ]}
-              setValue={setValue}
+                 setValue={setValue}
+              onChange={(value)=>{handleSelectChange("HoldBy",value)}}
+            
             />
 
-</div>        
+</div>     
+ 
   <div className=" grid  grid-cols-3">
 
             <div>
@@ -267,6 +375,8 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
+                    
+                    title="Returned On"
                     selected={watch("ReturnedOn") ? new Date(watch("ReturnedOn")) : null}
                     onSelect={(date) => handleDateChange("ReturnedOn", date)}
                     initialFocus
@@ -279,7 +389,7 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
               )}
             </div>
             <div>
-              <label className="text-gray-700 font-medium  w-32">Date Of Agreement</label>
+              <label className="text-gray-700 font-medium mr-4 w-32">Date Of Agreement</label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -314,6 +424,7 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
               label="No. Of Occupants"
               name="NoOfOccupant"
               register={register}
+              
               error={errors.NoOfOccupant?.message}
               placeholder="Enter number of occupants"
               type="number"
@@ -323,19 +434,27 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
                                <div className=" grid  grid-cols-3">
 
             <InputField
-              label="DSS Ref"
+              label="DSS Ref(If Any)"
               name="DssRef"
               register={register}
               error={errors.DssRef?.message}
               placeholder="Enter DSS reference"
               setValue={setValue}
             />
-            <InputField
+            <SelectField
               label="How Furnished"
               name="HowFurnished"
               register={register}
               error={errors.HowFurnished?.message}
-              placeholder="Enter furnishing details"
+              watch={watch}
+              options={[
+                {value:"Partially-Furnished",label:"Partially Furnished"},
+                                {value:"Fully-Furnished",label:"Fully Furnished"}
+                                ,
+
+                                                {value:"Un-Furnished",label:"Un Furnished"}
+
+              ]}
               setValue={setValue}
             />
             <TextAreaField
@@ -387,10 +506,10 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
 
       {/* Deposit Modal (rendered outside the main form) */}
       <Dialog open={isDepositModalOpen} onOpenChange={setIsDepositModalOpen}>
-        <DialogContent className="sm:max-w-[425px] max-h-[70vh] overflow-y-auto">
+    <DialogContent className="sm:max-w-4xl">
           <DialogTitle>Add Deposit</DialogTitle>
           <form onSubmit={handleDepositSubmit(onDepositSubmit)} className="space-y-4">
-            <InputField
+          <div className=" grid  grid-cols-2">  <InputField
               label="Description"
               name="description"
               register={depositRegister}
@@ -398,6 +517,7 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
               placeholder="Enter description"
               setValue={setDepositValue}
             />
+            
             <InputField
               label="Rent (£)"
               name="rent"
@@ -407,26 +527,39 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
               type="number"
               setValue={setDepositValue}
             />
+              </div>
+              <div className=" grid  grid-cols-2"> 
             <SelectField
               label="Per"
               name="per"
               options={perOptions}
               register={depositRegister}
-              onChange={(value: string) => setDepositValue("per", value)}
+              onChange={(value: any) => {
+                
+                setDepositValue("per", value);
+              
+              
+              }}
               error={depositErrors.per?.message?.toString()}
               watch={depositWatch}
               setValue={setDepositValue}
             />
+          
             <SelectField
-              label="Month"
+              label="Months"
               name="month"
               options={monthOptions}
               register={depositRegister}
-              onChange={(value: string) => setDepositValue("month", value)}
+              onChange={(value: any) => setDepositValue("month", value)}
               error={depositErrors.month?.message?.toString()}
               watch={depositWatch}
               setValue={setDepositValue}
             />
+          
+                </div>
+              
+                            <div className=" grid  grid-cols-2"> 
+
             <div>
               <label className="text-gray-700 font-medium">Starts On</label>
               <Popover>
@@ -459,6 +592,8 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
                 <p className="text-red-600 text-sm">{depositErrors.startsOn.message}</p>
               )}
             </div>
+        
+           
             <div>
               <label className="text-gray-700 font-medium">Closed On</label>
               <Popover>
@@ -491,6 +626,8 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
                 <p className="text-red-600 text-sm">{depositErrors.closedOn.message}</p>
               )}
             </div>
+   </div>
+                            <div className=" grid grid-cols-2"> 
             <div>
               <label className="text-gray-700 font-medium">Expiry Date</label>
               <Popover>
@@ -523,6 +660,24 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
                 <p className="text-red-600 text-sm">{depositErrors.expiryDate.message}</p>
               )}
             </div>
+
+
+            <InputField
+              label="In Arrear"
+              name="InArrears"
+              type="checkbox"
+
+                  {...register("inArrears")}
+              onChange={()=>{}}
+              register={depositRegister}
+              error={depositErrors.inArrears?.message}
+              setValue={setDepositValue}
+            />
+
+
+
+            
+            </div>
             <div>
               <label className="text-gray-700 font-medium">Bill (£)</label>
               <input
@@ -532,7 +687,8 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
                   Number(depositWatch("rent")),
                   depositWatch("startsOn"),
                   depositWatch("closedOn"),
-                  depositWatch("per")
+                  depositWatch("per"),
+                  depositWatch("inArrears")
                 )}
                 className="w-full border rounded p-2 bg-gray-100"
               />

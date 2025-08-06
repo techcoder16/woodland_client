@@ -302,7 +302,7 @@ console.log(vendors,"array vendors",propertyParties.data.VendorId)
                 </tr>
               ))
             ) : (
-              <tr><td colSpan={4}>No tenants found.</td></tr>
+              <tr><td className="px-4 py-8 text-center" colSpan={4}>No tenants found.</td></tr>
             )}
           </tbody>
         </table>

@@ -246,7 +246,7 @@ const PhotosFloorFPCPlan = ({
         <h3 className="text-xl font-medium mb-2">Video Tour</h3>
         <TextAreaField
           placeholder="Video Tour Description"
-          label="videoTourDescription"
+          label="Video Tour Description"
           name = "videoTourDescription"
           register={register}
           error={errors.videoTourDescription?.message?.toString()}

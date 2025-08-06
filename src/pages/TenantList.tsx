@@ -182,7 +182,7 @@ const TenantList = ({ property }: any) => {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={5} className="text-center p-4">
+                        <td colSpan={5} className="px-4 py-8text-center p-4">
                           No tenants found.
                         </td>
                       </tr>

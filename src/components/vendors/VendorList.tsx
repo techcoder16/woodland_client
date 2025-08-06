@@ -276,7 +276,7 @@ export function VendorList() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={7} className=" text-center text-muted-foreground">
                     No vendors found
                   </td>
                 </tr>
