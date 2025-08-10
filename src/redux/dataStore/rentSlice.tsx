@@ -4,6 +4,7 @@ import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import getApi from "@/helper/getApi";
 import postApi from "@/helper/postApi"; // Helper for POST/PUT requests
 import { AppDispatch } from "../store";
+import { post } from "@/helper/api";
 
 // Define Rent type
 interface Rent {
@@ -19,11 +20,16 @@ interface Rent {
   DssRef: string;
   HowFurnished: string;
   Note: string;
+  oldRef:string;
+  fees:string;
+  closed:boolean;
+  fees_input:string;
+  fees_select:string;
 }
 
 // Define Rent state type
 interface RentState {
-  rents: Rent[];
+  rents: Rent;
   totalPages: number;
   loading: boolean;
   error: string | null;
@@ -31,7 +37,7 @@ interface RentState {
 
 // Initial state with correct type
 const initialState: RentState = {
-  rents: [],
+  rents: null,
   totalPages: 1,
   loading: false,
   error: null,
@@ -44,8 +50,8 @@ export const fetchRents = createAsyncThunk(
     try {
       const access_token = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = { Authorization: `Bearer ${access_token}` };
-      const params = `propertyId=${propertyId}&page=${page}&limit=10&search=${search}`;
-      const data = await getApi("manager/getRent", params, headers);
+      const params = `${propertyId}`;
+      const data = await getApi("property-management/rent", params, headers);
       return data;
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to fetch rents");
@@ -62,10 +68,16 @@ export const upsertRent = createAsyncThunk(
       const headers = {
         Authorization: `Bearer ${access_token}`,
         "Content-Type": "application/json",
-      };console.log(rentData,"hey")
-      const res = await postApi("manager/rent", rentData, headers);
+
+      };
+
+      // rentData.Deposit  = JSON.stringify
+      const res = await post("property-management/rent/upsert", rentData);
       // After upserting, refresh the rent list.
-      await (dispatch as AppDispatch)(fetchRents({ page: 1, search: "" }));
+      await (dispatch as AppDispatch)(fetchRents({
+        page: 1, search: "",
+        propertyId: ""
+      }));
 
       return res;
     } catch (error: any) {

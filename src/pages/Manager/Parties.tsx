@@ -160,7 +160,7 @@ console.log(vendors,"array vendors",propertyParties.data.VendorId)
           <button
             type="button"
             onClick={() => setTenantDropdownOpen((prev) => !prev)}
-            className="w-full border rounded-md px-4 py-2 text-sm text-left bg-white shadow-sm flex justify-between items-center"
+            className="w-full border bg-transparent rounded-md px-4 py-2 text-sm text-left  shadow-sm flex justify-between items-center"
           >
             {selectedTenants.length > 0
               ? selectedTenants.map((t) => `${t.FirstName} ${t.SureName}`).join(", ")
@@ -169,7 +169,7 @@ console.log(vendors,"array vendors",propertyParties.data.VendorId)
           </button>
 
           {isTenantDropdownOpen && (
-            <div className="border rounded-md mt-2 max-h-60 overflow-y-auto space-y-2 shadow-sm bg-white p-2 z-10 relative">
+            <div className="border rounded-md mt-2 max-h-60 overflow-y-auto space-y-2 shadow-sm p-2 z-10 relative">
               {tenants.map((tenant) => {
                 const isSelected = selectedTenants.some((t) => t.id === tenant.id);
                 return (
@@ -221,11 +221,11 @@ console.log(vendors,"array vendors",propertyParties.data.VendorId)
                 const landlord = vendors.find((l: any) => l.id === e.target.value);
                 setSelectedLandlord(landlord || null);
               }}
-              className="w-full border rounded-md px-4 py-2 text-sm shadow-sm bg-white mb-2"
+              className="w-full border rounded-md bg-transparent px-4 py-2 text-sm shadow-sm  mb-2"
             >
               <option value="">Select a landlord</option>
               {vendors.map((landlord) => (
-                <option key={landlord.id} value={landlord.id}>
+                <option className="bg-transparent" key={landlord.id} value={landlord.id}>
                   {landlord.firstName} {landlord.lastName}
                 </option>
               ))}

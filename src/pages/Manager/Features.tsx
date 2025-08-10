@@ -13,6 +13,99 @@ import { toast } from "sonner";
 import getApi from "@/helper/getApi";
 import SelectField from "@/utils/SelectedField";
 import { post } from "@/helper/api";
+import { TOWN_AREA } from "@/lib/constant";
+
+ const areaOptions = [
+
+    { value: '44', label: '34' },
+    { value: '45', label: '9' },
+    { value: '31', label: 'Acton' },
+    { value: '12', label: 'Barking' },
+    { value: '35', label: 'Barkingside' },
+    { value: '67', label: 'Basildon' },
+    { value: '8', label: 'Beckton' },
+    { value: '79', label: 'Belvedere' },
+    { value: '62', label: 'Benfleet' },
+    { value: '85', label: 'Bexley' },
+    { value: '29', label: 'Bow' },
+    { value: '64', label: 'Brentwood' },
+    { value: '70', label: 'Bromley' },
+    { value: '61', label: 'Buckhurst Hill' },
+    { value: '15', label: 'Canning Town' },
+    { value: '74', label: 'Canvey Island' },
+    { value: '27', label: 'Chadwell Heath' },
+    { value: '73', label: 'Chatham' },
+    { value: '9', label: 'Chigwell' },
+    { value: '19', label: 'Chingford' },
+    { value: '13', label: 'Clayhall' },
+    { value: '52', label: 'Croydon' },
+    { value: '4', label: 'Dagenham' },
+    { value: '80', label: 'Dartford' },
+    { value: '6', label: 'East Ham' },
+    { value: '39', label: 'Enfield' },
+    { value: '48', label: 'Erith' },
+    { value: '55', label: 'Feltham' },
+    { value: '14', label: 'Forest Gate' },
+    { value: '3', label: 'Gants Hill' },
+    { value: '81', label: 'Gillingham' },
+    { value: '32', label: 'Goodmayes' },
+    { value: '54', label: 'Gravesend' },
+    { value: '36', label: 'Grays' },
+    { value: '24', label: 'Hackney' },
+    { value: '42', label: 'Hainault' },
+    { value: '5', label: 'Hainult' },
+    { value: '38', label: 'Harlow' },
+    { value: '43', label: 'Harrow' },
+    { value: '84', label: 'Hoddesdon' },
+    { value: '17', label: 'Hornchurch' },
+    { value: '71', label: 'Hounslow' },
+    { value: '1', label: 'Ilford' },
+    { value: '25', label: 'Leyton' },
+    { value: '23', label: 'Leytonstone' },
+    { value: '34', label: 'London' },
+    { value: '59', label: 'Loughton' },
+    { value: '51', label: 'Luton' },
+    { value: '7', label: 'Manor Park' },
+    { value: '33', label: 'Mile End' },
+    { value: '50', label: 'Mitcham' },
+    { value: '72', label: 'New Malden' },
+    { value: '2', label: 'Newbury Park' },
+    { value: '82', label: 'Northolt' },
+    { value: '87', label: 'Orpington' },
+    { value: '10', label: 'Plaistow' },
+    { value: '28', label: 'Poplar' },
+    { value: '77', label: 'Potters Bar' },
+    { value: '53', label: 'Purfleet' },
+    { value: '49', label: 'Rainham' },
+    { value: '75', label: 'Ramsgate' },
+    { value: '16', label: 'Redbridge' },
+    { value: '78', label: 'Rochester' },
+    { value: '83', label: 'Rochford' },
+    { value: '22', label: 'Romford' },
+    { value: '20', label: 'Seven Kings' },
+    { value: '56', label: 'Shanklin' },
+    { value: '60', label: 'Sidcup' },
+    { value: '30', label: 'Silvertown' },
+    { value: '47', label: 'South Croydon' },
+    { value: '41', label: 'South Ockendon' },
+    { value: '40', label: 'Southend-on-Sea' },
+    { value: '69', label: 'Staines-upon-Thames' },
+    { value: '18', label: 'Stratford' },
+    { value: '68', label: 'Tilbury' },
+    { value: '46', label: 'Upminster' },
+    { value: '26', label: 'Upton Park' },
+    { value: '86', label: 'Uxbridge' },
+    { value: '76', label: 'Waltham Abbey' },
+    { value: '21', label: 'Walthamstow' },
+    { value: '57', label: 'Walton On The Naze' },
+    { value: '63', label: 'Welling' },
+    { value: '65', label: 'Welwyn Garden City' },
+    { value: '58', label: 'West Molesey' },
+    { value: '66', label: 'Westcliff-On-Sea' },
+    { value: '11', label: 'Woodford' },
+    { value: '37', label: 'Woodford Green' },
+  ];
+
 
 const featureSchema = z.object({
   propertyId: z.string().min(1),
@@ -362,12 +455,14 @@ console.log(errorsFeature)
   )}
 
   
-            <InputField
+            <SelectField
               label="Town"
               name="towns"
+              watch={watch}
+              options={TOWN_AREA}
               register={registerFeature}
               error={errorsFeature.towns?.message}
-              type="text"
+              onChange={(value)=>{handleSelectChange("towns",value)}}
               setValue={setFeatureValue}
 
             />

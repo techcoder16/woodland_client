@@ -23,8 +23,9 @@ import {
   DialogTrigger,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {  Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@radix-ui/react-select";
-import { Label } from "@/components/ui/label"
+
+import InputSelect from "@/utils/InputSelect";
+
 // ----- Zod Schemas ----- //
 
 // Extend the deposit schema with a new computed field "bill"
@@ -41,7 +42,6 @@ const depositSchema = z.object({
     { errorMap: () => ({ message: "Select a valid month" }) }
   ),
   inArrears: z.boolean().optional(),
-
   expiryDate: z.string().min(1, "Expiry date is required"),
   bill: z.coerce.number({ invalid_type_error: "Bill must be a number" }),
 });
@@ -59,30 +59,35 @@ const rentSchema = z.object({
   DssRef: z.string().min(1, "DSS Ref is required"),
   HowFurnished: z.string().min(1, "How Furnished is required"),
   Note: z.string().optional(),
-
+  fees:z.string().optional(),
+  closed:z.boolean().optional(),
+  oldRef:z.string().optional(),
+  
 });
+
 type RentFormData = z.infer<typeof rentSchema>;
 
 // Options for the Deposit "Per" select field
-const perOptions =
- [ 
- 
-   {label :"Day",value:"day"},
-   {label :"Week",value:"week"},
-    {label :"2 Week",value:"2-week"},
-     {label :"4 Week",value:"4-week"},
+const perOptions = [ 
+  {label :"Day",value:"day"},
+  {label :"Week",value:"week"},
+  {label :"2 Week",value:"2-week"},
+  {label :"4 Week",value:"4-week"},
   { label: "Calender-Month", value: "calender-month" },
-
 ];
+
+ const feeOptions = [
+    { label: "%", value: "%" },
+    { label: "Fixed", value: "fixed" },
+  ];
+
 
 // Options for the Month dropdown (1 to 12)
 const monthValues = [6, 12, 24, 36, 48, 60];
-
 const monthOptions = monthValues.map((m) => ({
   label: m.toString(),
   value: m.toString(),
 }));
-
 
 // Utility to calculate the bill using closedOn date, period type, and inArrears flag.
 const calculateBill = (
@@ -107,19 +112,15 @@ const calculateBill = (
     case "day":
       periods = diffInDays;
       break;
-
     case "week":
       periods = Math.ceil(diffInDays / 7);
       break;
-
     case "2-week":
       periods = Math.ceil(diffInDays / 14);
       break;
-
     case "4-week":
       periods = Math.ceil(diffInDays / 28);
       break;
-
     case "calendar-month":
     case "calender-month":
       periods =
@@ -127,7 +128,6 @@ const calculateBill = (
         (end.getMonth() - start.getMonth()) +
         (end.getDate() >= start.getDate() ? 0 : -1);
       break;
-
     default:
       periods = 1;
       break;
@@ -144,7 +144,49 @@ const calculateBill = (
   return rent * periods;
 };
 
-
+// Custom Date Field Component for consistent styling
+const DateField = ({ 
+  label, 
+  value, 
+  onChange, 
+  error, 
+  placeholder = "Pick a date" 
+}: {
+  label: string;
+  value: string;
+  onChange: (date: Date) => void;
+  error?: string;
+  placeholder?: string;
+}) => (
+  <div className="space-y-2">
+    <label className="block text-sm font-medium text-gray-700">{label}</label>
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className={cn(
+            "w-full justify-start text-left font-normal h-10",
+            !value && "text-muted-foreground"
+          )}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {value ? new Date(value).toLocaleDateString() : placeholder}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={value ? new Date(value) : undefined}
+          onSelect={(date) => date && onChange(date)}
+          initialFocus
+          className="rounded-md border"
+        />
+      </PopoverContent>
+    </Popover>
+    {error && <p className="text-sm text-red-600">{error}</p>}
+  </div>
+);
 
 // ----- Rent Component ----- //
 interface RentComponentProps {
@@ -155,13 +197,7 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
   const dispatch = useDispatch<any>();
   const { rents } = useAppSelector((state) => state.rent);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
- const [dropdown, setDropdown] =
-    React.useState<React.ComponentProps<typeof Calendar>["captionLayout"]>(
-      "dropdown"
-    )
-  const [date, setDate] = React.useState<Date | undefined>(
-    new Date(2025, 5, 12)
-  )
+
   const {
     register,
     handleSubmit,
@@ -175,25 +211,29 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
     resolver: zodResolver(rentSchema),
     defaultValues: { propertyId, Deposit: [] },
   });
-  
 
-
-
-    const handleSelectChange = (name: keyof RentFormData, value: string) => {
-    // Update corresponding state based on the name of the select field
-
+  const handleSelectChange = (name: keyof RentFormData, value: string) => {
     setValue(name, value);
     clearErrors(name);
-
-
   };
 
-
-  useEffect(() => {
+   useEffect(() => {
     if (rents && Object.keys(rents).length > 0) {
-      reset(rents && rents);
+      console.log(rents);
+      console.log(rents.fees,typeof(rents));
+      
+      const split_fee = rents?.fees?.split("-")
+      console.log(split_fee)
+      let rentsCopy = { ...rents };
+const [fees_input, fees_select] = (rentsCopy.fees || "").split("-");
+rentsCopy.fees_input = fees_input || "";
+rentsCopy.fees_select = fees_select || "";
+
+
+      reset(rentsCopy && rentsCopy);
     }
   }, [rents, reset]);
+
 
   // useFieldArray for deposits
   const { fields: depositFields, append, remove } = useFieldArray({
@@ -205,6 +245,7 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
   useEffect(() => {
     dispatch(fetchRents({ propertyId, page: 1, search: "" }));
   }, [dispatch, propertyId]);
+
   // Generic calendar handler
   const handleDateChange = (name: any, date: Date) => {
     setValue(name, date.toISOString());
@@ -226,7 +267,6 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
     setValue: setDepositValue,
     watch: depositWatch,
     reset: resetDepositForm,
-    
     formState: { errors: depositErrors },
   } = useForm<z.infer<typeof depositSchema>>({
     resolver: zodResolver(depositSchema),
@@ -239,7 +279,7 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
       closedOn: "",
       expiryDate: "",
       bill: 0,
-      inArrears:false
+      inArrears: false
     },
   });
 
@@ -255,431 +295,332 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
     append({ ...depositData, bill: computedBill });
     toast.success("Deposit added!");
     resetDepositForm();
-    setIsDepositModalOpen(false); // close the modal on submit
+    setIsDepositModalOpen(false);
   };
+
   const startsOn = depositWatch("startsOn");
-const months = depositWatch("month");
+  const months = depositWatch("month");
 
-useEffect(() => {
-  console.log(startsOn,months)
-  if (startsOn && months) {
-    const startDate = new Date(startsOn);
-    const newExpiry = new Date(startDate.setMonth(startDate.getMonth() + Number(months)));
-    const formatted = newExpiry.toISOString().split("T")[0];
-    
-    setDepositValue("expiryDate", formatted);
-  }
-}, [startsOn, months]);
+  useEffect(() => {
+    if (startsOn && months) {
+      const startDate = new Date(startsOn);
+      const newExpiry = new Date(startDate.setMonth(startDate.getMonth() + Number(months)));
+      const formatted = newExpiry.toISOString().split("T")[0];
+      setDepositValue("expiryDate", formatted);
+    }
+  }, [startsOn, months]);
 
-console.log(clearErrors)
   return (
-    <div>
+    <div className="max-w-7xl mx-auto p-6">
       {/* Main Rent Form */}
-      <Card className="shadow">
-        <CardHeader>
-          <CardTitle>Rent</CardTitle>
+      <Card className="shadow-lg">
+        <CardHeader className="border-b">
+          <CardTitle className="text-2xl font-semibold">Rent Information</CardTitle>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {/* Rent Fields */}
-                     <div className=" grid  grid-cols-3">
-
-            <InputField
-              label="Amount (£)"
-              name="Amount"
-              register={register}
-              error={errors.Amount?.message}
-              placeholder="Enter rent amount"
-              type="number"
-              setValue={setValue}
-            />
-            <div>
-              <label className="text-gray-700 font-medium mr-4">Received On</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className={cn(
-                      "mx-4 justify-start text-left font-normal",
-                      !watch("ReceivedOn") && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {watch("ReceivedOn")
-                      ? new Date(watch("ReceivedOn")).toLocaleDateString()
-                      : "Pick a date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+        <CardContent className="pt-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
             
-                        <Calendar
-        mode="single"
-        defaultMonth={date}
-        selected={date}
-        
-        onSelect={setDate}
-  captionLayout="dropdown"   className="rounded-lg border shadow-sm"
-   
-   />
-      
-                </PopoverContent>
-              </Popover>
-              {errors.ReceivedOn && (
-                <p className="text-red-600 text-sm">{errors.ReceivedOn.message}</p>
-              )}
-            </div>
-            <SelectField
-              label="Held By"
-              name="HoldBy"
-              register={register}
-              error={errors.HoldBy?.message}
-              watch={watch}
-              options={[
-                { value: "landlord", label: "The Landlord" },
-                { value: "agent", label: "Letting Agent" },
-                {value: "The-Dispute-Service-Ltd", label:"The Dispute Service Ltd"},
-                {value: "The-Deposit-Protection-Service",label:"The Deposit Protection Service"},
-                {value: "Tenancy-Deposit-Solutions-Limited",label:"Tenancy Deposit Solutions Limited"}
-                
-                
-
-              ]}
-                 setValue={setValue}
-              onChange={(value)=>{handleSelectChange("HoldBy",value)}}
-            
-            />
-
-</div>     
- 
-  <div className=" grid  grid-cols-3">
-
-            <div>
-              <label className="text-gray-700 font-medium mr-4 w-32">Returned On</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className={cn(
-                      "mx-2 text-left font-normal",
-                      !watch("ReturnedOn") && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {watch("ReturnedOn")
-                      ? new Date(watch("ReturnedOn")).toLocaleDateString()
-                      : "Pick a date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    
-                    title="Returned On"
-                    selected={watch("ReturnedOn") ? new Date(watch("ReturnedOn")) : null}
-                    onSelect={(date) => handleDateChange("ReturnedOn", date)}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
-              {errors.ReturnedOn && (
-                <p className="text-red-600 text-sm">{errors.ReturnedOn.message}</p>
-              )}
-            </div>
-            <div>
-              <label className="text-gray-700 font-medium mr-4 w-32">Date Of Agreement</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className={cn(
-                      "mx-2 text-left font-normal",
-                      !watch("DateOfAgreement") && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {watch("DateOfAgreement")
-                      ? new Date(watch("DateOfAgreement")).toLocaleDateString()
-                      : "Pick a date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={watch("DateOfAgreement") ? new Date(watch("DateOfAgreement")) : null}
-                    onSelect={(date) => handleDateChange("DateOfAgreement", date)}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
-              {errors.DateOfAgreement && (
-                <p className="text-red-600 text-sm">{errors.DateOfAgreement.message}</p>
-              )}
-            </div>
-            <InputField
-              label="No. Of Occupants"
-              name="NoOfOccupant"
-              register={register}
+            {/* First Row - Amount, Received On, Held By */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <InputField
+                label="Amount (£)"
+                name="Amount"
+                register={register}
+                error={errors.Amount?.message}
+                placeholder="Enter rent amount"
+                type="number"
+                setValue={setValue}
+              />
               
-              error={errors.NoOfOccupant?.message}
-              placeholder="Enter number of occupants"
-              type="number"
-              setValue={setValue}
-            />
-                      </div> 
-                               <div className=" grid  grid-cols-3">
+              <DateField
+                label="Received On"
+                value={watch("ReceivedOn")}
+                onChange={(date) => handleDateChange("ReceivedOn", date)}
+                error={errors.ReceivedOn?.message}
+              />
+              
+              <SelectField
+                label="Held By"
+                name="HoldBy"
+                register={register}
+                error={errors.HoldBy?.message}
+                watch={watch}
+                options={[
+                  { value: "landlord", label: "The Landlord" },
+                  { value: "agent", label: "Letting Agent" },
+                  { value: "The-Dispute-Service-Ltd", label: "The Dispute Service Ltd" },
+                  { value: "The-Deposit-Protection-Service", label: "The Deposit Protection Service" },
+                  { value: "Tenancy-Deposit-Solutions-Limited", label: "Tenancy Deposit Solutions Limited" }
+                ]}
+                setValue={setValue}
+                onChange={(value) => { handleSelectChange("HoldBy", value) }}
+              />
+            </div>
 
+            {/* Second Row - Returned On, Date of Agreement, No. of Occupants */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <DateField
+                label="Returned On"
+                value={watch("ReturnedOn") || ""}
+                onChange={(date) => handleDateChange("ReturnedOn", date)}
+                error={errors.ReturnedOn?.message}
+                placeholder="Pick return date (optional)"
+              />
+              
+              <DateField
+                label="Date of Agreement"
+                value={watch("DateOfAgreement")}
+                onChange={(date) => handleDateChange("DateOfAgreement", date)}
+                error={errors.DateOfAgreement?.message}
+              />
+              
+              <InputField
+                label="No. of Occupants"
+                name="NoOfOccupant"
+                register={register}
+                error={errors.NoOfOccupant?.message}
+                placeholder="Enter number of occupants"
+                type="number"
+                setValue={setValue}
+              />
+            </div>
+
+            {/* Third Row - DSS Ref, How Furnished, Note */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <InputField
+                label="DSS Ref (If Any)"
+                name="DssRef"
+                register={register}
+                error={errors.DssRef?.message}
+                placeholder="Enter DSS reference"
+                setValue={setValue}
+                             />
+              
+              <SelectField
+                label="How Furnished"
+                name="HowFurnished"
+                register={register}
+                error={errors.HowFurnished?.message}
+                watch={watch}
+                options={[
+                  { value: "Partially-Furnished", label: "Partially Furnished" },
+                  { value: "Fully-Furnished", label: "Fully Furnished" },
+                  { value: "Un-Furnished", label: "Unfurnished" }
+                ]}
+                setValue={setValue}
+                      onChange={(value)=>{handleSelectChange("HowFurnished",value)}}
+
+              />
+
+
+
+              
+              <TextAreaField
+                label="Note"
+                name="Note"
+                register={register}
+                error={errors.Note?.message}
+                placeholder="Enter note (optional)"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                     <InputSelect
+          setValue={setValue}
+
+          label="Management Fees"
+          name="fees"
+          watch={watch}
+
+          options={feeOptions}
+          register={register}
+        />
+
+
+    <InputField
+                label="Old Ref"
+                name="oldRef"
+                register={register}
+                error={errors.NoOfOccupant?.message}
+                placeholder=""
+                type="text"
+                setValue={setValue}
+              />
+
+
+              
             <InputField
-              label="DSS Ref(If Any)"
-              name="DssRef"
+              label="Closed?"
+              name="closed"
+              type="checkbox"
               register={register}
-              error={errors.DssRef?.message}
-              placeholder="Enter DSS reference"
+              error={errors.closed?.message}
               setValue={setValue}
             />
-            <SelectField
-              label="How Furnished"
-              name="HowFurnished"
-              register={register}
-              error={errors.HowFurnished?.message}
-              watch={watch}
-              options={[
-                {value:"Partially-Furnished",label:"Partially Furnished"},
-                                {value:"Fully-Furnished",label:"Fully Furnished"}
-                                ,
 
-                                                {value:"Un-Furnished",label:"Un Furnished"}
 
-              ]}
-              setValue={setValue}
-            />
-            <TextAreaField
-              label="Note"
-              name="Note"
-              register={register}
-              error={errors.Note?.message}
-              placeholder="Enter note (optional)"
-            />
-                      </div>         
-                      
-                      
-
-            {/* Deposits List */}
-            <div className="flex flex-col space-y-2">
+                </div>
+            {/* Deposits Section */}
+            <div className="space-y-4 pt-6 border-t">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium">Deposits</h3>
-                <Button type="button" onClick={() => setIsDepositModalOpen(true)}>
+                <h3 className="text-xl font-semibold">Deposits</h3>
+                <Button 
+                  type="button" 
+                  onClick={() => setIsDepositModalOpen(true)}
+                  className=""
+                >
                   Add Deposit
                 </Button>
               </div>
+              
               {depositFields.length > 0 && (
-                <div className="space-y-2">
+                <div className="grid gap-4">
                   {depositFields.map((field, index) => (
-                    <div key={field.id} className="p-3 border rounded flex justify-between items-center">
-                      <div>
-                        <p className="font-semibold">{field.description}</p>
-                        <p className="text-sm">
-                          Rent: £{field.rent} | Bill: £{field.bill} | Per: {field.per} | Month: {field.month}
-                        </p>
-                        <p className="text-sm">
-                          {new Date(field.startsOn).toLocaleDateString()} -{" "}
-                          {new Date(field.closedOn).toLocaleDateString()}
-                        </p>
+                    <div key={field.id} className="p-4 border rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <p className="font-semibold text-lg">{field.description}</p>
+                            <p className="text-sm text-gray-600 mt-1">
+                              Rent: £{field.rent} | Bill: £{field.bill}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-600">
+                              Period: {field.per} | Duration: {field.month} months
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {new Date(field.startsOn).toLocaleDateString()} - {new Date(field.closedOn).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <Button 
+                          type="button"
+                          variant="destructive" 
+                          size="sm"
+                          onClick={() => remove(index)}
+                          className="ml-4"
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
                       </div>
-                      <Button variant="destructive" onClick={() => remove(index)}>
-                        <Trash className="h-4 w-4" />
-                      </Button>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-            <Button type="submit">Update Rent</Button>
+
+            {/* Submit Button */}
+            <div className="pt-6 border-t">
+              <Button 
+                type="submit" 
+                className="w-full md:w-auto px-8 py-2"
+              >
+                Update Rent Information
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
-      
 
-      {/* Deposit Modal (rendered outside the main form) */}
+      {/* Deposit Modal */}
       <Dialog open={isDepositModalOpen} onOpenChange={setIsDepositModalOpen}>
-    <DialogContent className="sm:max-w-4xl">
-          <DialogTitle>Add Deposit</DialogTitle>
-          <form onSubmit={handleDepositSubmit(onDepositSubmit)} className="space-y-4">
-          <div className=" grid  grid-cols-2">  <InputField
-              label="Description"
-              name="description"
-              register={depositRegister}
-              error={depositErrors.description?.message}
-              placeholder="Enter description"
-              setValue={setDepositValue}
-            />
-            
-            <InputField
-              label="Rent (£)"
-              name="rent"
-              register={depositRegister}
-              error={depositErrors.rent?.message}
-              placeholder="Enter deposit rent"
-              type="number"
-              setValue={setDepositValue}
-            />
-              </div>
-              <div className=" grid  grid-cols-2"> 
-            <SelectField
-              label="Per"
-              name="per"
-              options={perOptions}
-              register={depositRegister}
-              onChange={(value: any) => {
-                
-                setDepositValue("per", value);
-              
-              
-              }}
-              error={depositErrors.per?.message?.toString()}
-              watch={depositWatch}
-              setValue={setDepositValue}
-            />
+        <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogTitle className="text-xl font-semibold mb-4">Add New Deposit</DialogTitle>
           
-            <SelectField
-              label="Months"
-              name="month"
-              options={monthOptions}
-              register={depositRegister}
-              onChange={(value: any) => setDepositValue("month", value)}
-              error={depositErrors.month?.message?.toString()}
-              watch={depositWatch}
-              setValue={setDepositValue}
-            />
-          
+          <form onSubmit={handleDepositSubmit(onDepositSubmit)} className="space-y-6">
+            {/* First Row - Description, Rent */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <InputField
+                label="Description"
+                name="description"
+                register={depositRegister}
+                error={depositErrors.description?.message}
+                placeholder="Enter description"
+                setValue={setDepositValue}
+              />
+              
+              <InputField
+                label="Rent (£)"
+                name="rent"
+                register={depositRegister}
+                error={depositErrors.rent?.message}
+                placeholder="Enter deposit rent"
+                type="number"
+                setValue={setDepositValue}
+              />
+            </div>
+
+            {/* Second Row - Per, Months */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <SelectField
+                label="Billing Period"
+                name="per"
+                options={perOptions}
+                register={depositRegister}
+                onChange={(value: any) => setDepositValue("per", value)}
+                error={depositErrors.per?.message?.toString()}
+                watch={depositWatch}
+                setValue={setDepositValue}
+              />
+              
+              <SelectField
+                label="Duration (Months)"
+                name="month"
+                options={monthOptions}
+                register={depositRegister}
+                onChange={(value: any) => setDepositValue("month", value)}
+                error={depositErrors.month?.message?.toString()}
+                watch={depositWatch}
+                setValue={setDepositValue}
+              />
+            </div>
+
+            {/* Third Row - Starts On, Closed On */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <DateField
+                label="Starts On"
+                value={depositWatch("startsOn")}
+                onChange={(date) => setDepositValue("startsOn", date.toISOString())}
+                error={depositErrors.startsOn?.message}
+              />
+              
+              <DateField
+                label="Closed On"
+                value={depositWatch("closedOn")}
+                onChange={(date) => setDepositValue("closedOn", date.toISOString())}
+                error={depositErrors.closedOn?.message}
+              />
+            </div>
+
+            {/* Fourth Row - Expiry Date, In Arrears */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <DateField
+                label="Expiry Date"
+                value={depositWatch("expiryDate")}
+                onChange={(date) => setDepositValue("expiryDate", date.toISOString())}
+                error={depositErrors.expiryDate?.message}
+              />
+              
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Payment Terms</label>
+                <div className="flex items-center space-x-3 h-10">
+                  <input
+                    type="checkbox"
+                    {...depositRegister("inArrears")}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <span className="text-sm text-gray-700">In Arrears</span>
                 </div>
-              
-                            <div className=" grid  grid-cols-2"> 
-
-            <div>
-              <label className="text-gray-700 font-medium">Starts On</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className={cn(
-                      "mx-2 text-left font-normal",
-                      !depositWatch("startsOn") && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {depositWatch("startsOn")
-                      ? new Date(depositWatch("startsOn")).toLocaleDateString()
-                      : "Pick a date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={depositWatch("startsOn") ? new Date(depositWatch("startsOn")) : null}
-                    onSelect={(date) => setDepositValue("startsOn", date.toISOString())}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
-              {depositErrors.startsOn && (
-                <p className="text-red-600 text-sm">{depositErrors.startsOn.message}</p>
-              )}
-            </div>
-        
-           
-            <div>
-              <label className="text-gray-700 font-medium">Closed On</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className={cn(
-                      "mx-2 text-left font-normal",
-                      !depositWatch("closedOn") && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {depositWatch("closedOn")
-                      ? new Date(depositWatch("closedOn")).toLocaleDateString()
-                      : "Pick a date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={depositWatch("closedOn") ? new Date(depositWatch("closedOn")) : null}
-                    onSelect={(date) => setDepositValue("closedOn", date.toISOString())}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
-              {depositErrors.closedOn && (
-                <p className="text-red-600 text-sm">{depositErrors.closedOn.message}</p>
-              )}
-            </div>
-   </div>
-                            <div className=" grid grid-cols-2"> 
-            <div>
-              <label className="text-gray-700 font-medium">Expiry Date</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className={cn(
-                      "mx-2 text-left font-normal",
-                      !depositWatch("expiryDate") && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {depositWatch("expiryDate")
-                      ? new Date(depositWatch("expiryDate")).toLocaleDateString()
-                      : "Pick a date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={depositWatch("expiryDate") ? new Date(depositWatch("expiryDate")) : null}
-                    onSelect={(date) => setDepositValue("expiryDate", date.toISOString())}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
-              {depositErrors.expiryDate && (
-                <p className="text-red-600 text-sm">{depositErrors.expiryDate.message}</p>
-              )}
+                {depositErrors.inArrears && (
+                  <p className="text-sm text-red-600">{depositErrors.inArrears.message}</p>
+                )}
+              </div>
             </div>
 
-
-            <InputField
-              label="In Arrear"
-              name="InArrears"
-              type="checkbox"
-
-                  {...register("inArrears")}
-              onChange={()=>{}}
-              register={depositRegister}
-              error={depositErrors.inArrears?.message}
-              setValue={setDepositValue}
-            />
-
-
-
-            
-            </div>
-            <div>
-              <label className="text-gray-700 font-medium">Bill (£)</label>
+            {/* Bill Calculation Display */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Calculated Bill (£)</label>
               <input
                 type="number"
                 readOnly
@@ -690,11 +631,25 @@ console.log(clearErrors)
                   depositWatch("per"),
                   depositWatch("inArrears")
                 )}
-                className="w-full border rounded p-2 bg-gray-100"
+                className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700 font-medium"
               />
             </div>
-            <div className="flex justify-end space-x-2">
-              <Button type="submit">Add Deposit</Button>
+
+            {/* Modal Actions */}
+            <div className="flex justify-end space-x-3 pt-6 border-t">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setIsDepositModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit"
+                className=""
+              >
+                Add Deposit
+              </Button>
             </div>
           </form>
         </DialogContent>

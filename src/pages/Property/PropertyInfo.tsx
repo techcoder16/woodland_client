@@ -12,6 +12,7 @@ import InputSelect from '@/utils/InputSelect';
 import FeatureSelection from '@/utils/FeatureSelection';
 import { RegisterOptions, FieldValues, UseFormRegisterReturn } from 'react-hook-form';
 import TextAreaField from '@/utils/TextAreaField';
+import { TOWN_AREA } from '@/lib/constant';
 
 
 
@@ -436,7 +437,7 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type }: 
             name="town"
             watch={watch}
             setValue={setValue}
-            options={areaOptions}
+            options={TOWN_AREA}
             register={register}
             error={errors.town?.message?.toString()}
             onChange={(value) => handleSelectChange('town', value)}

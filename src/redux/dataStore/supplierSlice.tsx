@@ -4,6 +4,7 @@ import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import getApi from "@/helper/getApi";
 import postApi from "@/helper/postApi";
 import { AppDispatch } from "../store";
+import { post } from "@/helper/api";
 
 // Define Supplier type
 interface InventoryItem {
@@ -19,25 +20,24 @@ export interface Supplier {
   propertyId: string;
   electricitySupplier: string;
   electricityPhone: string;
-  electricityMeterNo: string;
-  electricityReadingOne: string;
-  electricityReadingTwo: string;
+  electricityMeterNo: number;
+  electricityReadingOne: number;
+  electricityReadingTwo: number;
   gasSupplier: string;
   gasPhone: string;
-  gasMeterNo: string;
-  gasReadingOne: string;
-  gasReadingTwo: string;
+  gasMeterNo: number;
+  gasReadingOne: number;
+  gasReadingTwo: number;
   WaterSupplier: string;
   WaterPhone: string;
-  WaterMeterNo: string;
-  WaterReadingOne: string;
-  WaterReadingTwo: string;
+  WaterMeterNo: number;
+  WaterReadingOne: number;
+  WaterReadingTwo: number;
   BoroughSupplier: string;
   BoroughPhone: string;
-  BoroughMeterNo: string;
-  BoroughReadingOne: string;
-  BoroughReadingTwo: string;
-  Phone: string;
+  BoroughMeterNo: number;
+  BoroughReadingOne: number;
+  BoroughReadingTwo: number;
   inventory: InventoryItem[];
 }
 
@@ -65,8 +65,8 @@ export const fetchSupplier = createAsyncThunk(
     try {
       const access_token = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = { Authorization: `Bearer ${access_token}` };
-      const params = `propertyId=${propertyId}`;
-      const data = await getApi("manager/getSupplier", params, headers);
+      const params = `${propertyId}`;
+      const data = await getApi("property-management/supplier", params, headers);
       return data;
     } catch (error: any) {
       return rejectWithValue(
@@ -86,7 +86,7 @@ export const upsertSupplier = createAsyncThunk(
         Authorization: `Bearer ${access_token}`,
         "Content-Type": "application/json",
       };
-      const res = await postApi("manager/supplier", supplierData, headers);
+      const res = await post("property-management/supplier/upsert", supplierData, headers);
       // Refresh supplier data after updating
       await (dispatch as AppDispatch)(
         fetchSupplier({ propertyId: supplierData.propertyId })
