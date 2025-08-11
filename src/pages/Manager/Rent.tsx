@@ -16,7 +16,14 @@ import { useAppSelector } from "@/redux/reduxHooks";
 import SelectField from "@/utils/SelectedField";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
 
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +32,7 @@ import {
 } from "@/components/ui/dialog";
 
 import InputSelect from "@/utils/InputSelect";
+import { TableCell } from "@/components/ui/table";
 
 // ----- Zod Schemas ----- //
 
@@ -145,7 +153,7 @@ const calculateBill = (
 };
 
 // Custom Date Field Component for consistent styling
-const DateField = ({ 
+export const DateField = ({ 
   label, 
   value, 
   onChange, 
@@ -191,9 +199,10 @@ const DateField = ({
 // ----- Rent Component ----- //
 interface RentComponentProps {
   propertyId: string;
+  property:any;
 }
 
-const Rent: React.FC<RentComponentProps> = ({ propertyId }) => {
+const Rent: React.FC<RentComponentProps> = ({ propertyId ,property}) => {
   const dispatch = useDispatch<any>();
   const { rents } = useAppSelector((state) => state.rent);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
@@ -473,41 +482,45 @@ rentsCopy.fees_select = fees_select || "";
                 </Button>
               </div>
               
-              {depositFields.length > 0 && (
-                <div className="grid gap-4">
-                  {depositFields.map((field, index) => (
-                    <div key={field.id} className="p-4 border rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <p className="font-semibold text-lg">{field.description}</p>
-                            <p className="text-sm text-gray-600 mt-1">
-                              Rent: £{field.rent} | Bill: £{field.bill}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-600">
-                              Period: {field.per} | Duration: {field.month} months
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              {new Date(field.startsOn).toLocaleDateString()} - {new Date(field.closedOn).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-                        <Button 
-                          type="button"
-                          variant="destructive" 
-                          size="sm"
-                          onClick={() => remove(index)}
-                          className="ml-4"
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+           {depositFields.length > 0 && (
+  <div className="overflow-x-auto">
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Description</TableHead>
+          <TableHead>Rent / Bill</TableHead>
+          <TableHead>Period / Duration</TableHead>
+          <TableHead>Start - End</TableHead>
+          <TableHead>Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {depositFields.map((field, index) => (
+          <TableRow key={field.id}>
+            <TableCell className="font-medium">{field.description}</TableCell>
+            <TableCell>£{field.rent} / £{field.bill}</TableCell>
+            <TableCell>{field.per} / {field.month} months</TableCell>
+            <TableCell>
+              {new Date(field.startsOn).toLocaleDateString()} -{" "}
+              {new Date(field.closedOn).toLocaleDateString()}
+            </TableCell>
+            <TableCell>
+              <Button 
+                type="button"
+                variant="destructive" 
+                size="sm"
+                onClick={() => remove(index)}
+              >
+                <Trash className="h-4 w-4" />
+              </Button>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  </div>
+)}
+
             </div>
 
             {/* Submit Button */}

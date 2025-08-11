@@ -14,6 +14,15 @@ import { toast } from "sonner";
 import { useAppSelector } from "@/redux/reduxHooks";
 import { fetchSupplier, upsertSupplier } from "@/redux/dataStore/supplierSlice";
 import { INVENTORY, LOCATION } from "@/lib/constant";
+import FileUploadField from "@/utils/FileUploadField";
+import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
+} from "@/components/ui/table";
 
 // ----- Supplier Data ----- //
 const suppliersList = [
@@ -46,6 +55,12 @@ const inventoryItemSchema = z.object({
   item: z.string().optional(),
   quantity: z.coerce.number({ invalid_type_error: "Quantity must be a number" }),
   condition: z.string().min(1, "Condition is required"),
+  inventoryImage:  z.array(
+    z.string().regex(/^data:image\/[a-zA-Z+]+;base64,/, {
+      message: "Only valid image files in Base64 format are allowed.",
+    }).nonempty('Required')
+  ),
+  
 });
 
 const supplierSchema = z.object({
@@ -111,7 +126,7 @@ const SupplierInventory: React.FC<SupplierInventoryProps> = ({ propertyId }) => 
     }
   };
 
-  const handleSupplierChange = (sectionKey: string, supplierValue: string) => {
+  const handleSupplierChange = (sectionKey?: string, supplierValue?: string) => {
     setValue(`${sectionKey}Supplier`, supplierValue);
     const selected = suppliersList.find((s) => s.value === supplierValue);
     if (selected) {
@@ -131,13 +146,14 @@ const SupplierInventory: React.FC<SupplierInventoryProps> = ({ propertyId }) => 
     resolver: zodResolver(inventoryItemSchema),
     defaultValues: {
       location: "",
-      quality: "",
       detail: "",
-      quantity: 0,
+   
       condition: "",
     },
   });
+console.log(errors)
 
+console.log(inventoryErrors)
   const onInventorySubmit = (itemData: z.infer<typeof inventoryItemSchema>) => {
     append(itemData);
     toast.success("Inventory item added!");
@@ -255,24 +271,49 @@ const SupplierInventory: React.FC<SupplierInventoryProps> = ({ propertyId }) => 
                   Add Inventory
                 </Button>
               </div>
-              {inventoryFields.length > 0 && (
-                <div className="space-y-2">
-                  {inventoryFields.map((field, index) => (
-                    <div key={field.id} className="p-3 border rounded flex justify-between items-center">
-                      <div>
-                        <p className="font-semibold">{field.location}</p>
-                        <p className="text-sm">
-                          Quality: {field.quality} | Quantity: {field.quantity} | Condition: {field.condition}
-                        </p>
-                        {field.detail && <p className="text-sm">Detail: {field.detail}</p>}
-                      </div>
-                      <Button variant="destructive" onClick={() => remove(index)}>
-                        Delete
-                      </Button>
-                    </div>
-                  ))}
-                </div>
+   {inventoryFields.length > 0 && (
+  <div className="overflow-x-auto">
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Location</TableHead>
+          <TableHead>Quantity</TableHead>
+          <TableHead>Condition</TableHead>
+          <TableHead>Detail</TableHead>
+          <TableHead>Image</TableHead>
+          <TableHead>Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {inventoryFields.map((field, index) => (
+          <TableRow key={field.id}>
+            <TableCell>{field.location}</TableCell>
+            <TableCell>{field.quantity}</TableCell>
+            <TableCell>{field.condition}</TableCell>
+            <TableCell>{field.detail || "-"}</TableCell>
+            <TableCell>
+              {field.inventoryImage ? (
+                <img
+                  src={field.inventoryImage}
+                  alt="Inventory"
+                  className="w-16 h-16 object-cover rounded-md"
+                />
+              ) : (
+                "No image"
               )}
+            </TableCell>
+            <TableCell>
+              <Button variant="destructive" onClick={() => remove(index)}>
+                Delete
+              </Button>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  </div>
+)}
+
             </div>
 
             <Button type="submit">Update Supplier Details</Button>
@@ -282,9 +323,12 @@ const SupplierInventory: React.FC<SupplierInventoryProps> = ({ propertyId }) => 
 
       {/* Inventory Modal */}
       <Dialog open={isInventoryModalOpen} onOpenChange={setIsInventoryModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="w-full flex-grid">
           <DialogTitle>Add Inventory Item</DialogTitle>
           <form onSubmit={handleInventorySubmit(onInventorySubmit)} className="space-y-4">
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
             <SelectField
               label="Location"
               name="location"
@@ -309,6 +353,8 @@ const SupplierInventory: React.FC<SupplierInventoryProps> = ({ propertyId }) => 
              onChange={(value: any) => setInventoryValue("item", value)}
             />
 
+              </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
             <TextAreaField
               label="Detail"
@@ -330,6 +376,9 @@ const SupplierInventory: React.FC<SupplierInventoryProps> = ({ propertyId }) => 
             
               setValue={() => { }}
             />
+            </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
             <SelectField
               label="Condition"
               name="condition"
@@ -345,6 +394,21 @@ const SupplierInventory: React.FC<SupplierInventoryProps> = ({ propertyId }) => 
                    setValue={setInventoryValue}
              onChange={(value: any) => setInventoryValue("condition", value)}
             />
+      </div>
+            <div className="mb-4">
+<FileUploadField
+  label="Inventory Image"
+  name="inventoryImage"
+  accept="image/*"
+  register={inventoryRegister}
+  setValue={setInventoryValue}
+  watch={inventoryWatch}
+  error={inventoryErrors.inventoryImage?.message}
+/>
+
+</div>
+
+
             <div className="flex justify-end space-x-2">
               <Button type="submit">Add Item</Button>
             </div>

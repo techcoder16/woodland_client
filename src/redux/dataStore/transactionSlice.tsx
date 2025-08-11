@@ -1,22 +1,15 @@
 // src/redux/dataStore/transactionSlice.ts
-
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import getApi from "@/helper/getApi";
 import postApi from "@/helper/postApi";
+import deleteApi from "@/helper/deleteApi";
 import { AppDispatch } from "../store";
+import { patch } from "@/helper/api";
 
-/**
- * 1) Define the Transaction interface.
- *    These fields should match the ones in your Zod schema and component.
- *    Adjust as needed for your real data model.
- */
 export interface Transaction {
   propertyId: string;
-
   Branch: string;
-
-  // From Tenant Section
   fromTenantDate?: string;
   fromTenantMode?: string;
   fromTenantOtherDebit?: number;
@@ -26,17 +19,11 @@ export interface Transaction {
   fromTenantDescription?: string;
   fromTenantReceivedBy?: string;
   fromTenantPrivateNote?: string;
-
-  // Tenant Section
   tenantTotalCredit?: number;
   tenantUpToDateRent?: number;
   tenantNetOutstanding?: number;
   tenantDueDate?: string;
-
-  // Gross Profit
   grossProfit?: number;
-
-  // To Landlord Section
   toLandlordDate?: string;
   toLandlordRentReceived?: number;
   toLandlordLeaseManagementFees?: number;
@@ -48,64 +35,43 @@ export interface Transaction {
   toLandlordDefaultExpenditure?: string;
   toLandlordExpenditureDescription?: string;
   toLandlordFundBy?: string;
-
-  // Landlord Section
   landlordNetRentReceived?: number;
   landlordNetDeductions?: number;
   landlordNetToBePaid?: number;
   landlordNetPaid?: number;
+  landlordPaidBy:string;
   landlordNetDebit?: number;
 }
 
-/**
- * 2) Define the slice state
- */
 interface TransactionState {
-  transactionData: Transaction | null;
+  transaction: Transaction[];
   loading: boolean;
   error: string | null;
 }
 
-/**
- * 3) Initial state
- */
 const initialState: TransactionState = {
-  transactionData: null,
+  transaction: [],
   loading: false,
   error: null,
 };
 
-/**
- * 4) Async Thunk: fetchTransaction
- *    - propertyId is passed as an argument to fetch the relevant transaction data.
- *    - Adjust the endpoint and params as needed.
- */
+// Fetch all transactions for a property
 export const fetchTransaction = createAsyncThunk(
   "transaction/fetchTransaction",
-  async (
-    { propertyId }: { propertyId: string },
-    { rejectWithValue }
-  ) => {
+  async ({ propertyId }: { propertyId: string }, { rejectWithValue }) => {
     try {
       const access_token = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = { Authorization: `Bearer ${access_token}` };
-      // Example: GET /manager/getTransaction?propertyId=xxxx
       const params = `propertyId=${propertyId}`;
-      const data = await getApi("manager/getTransaction", params, headers);
-      return data; // data should include e.g. { transactionData: {...} }
+      const data = await getApi("manager/getTransactions", params, headers);
+      return data?.transaction || [];
     } catch (error: any) {
-      return rejectWithValue(
-        error.message || "Failed to fetch transaction data"
-      );
+      return rejectWithValue(error.message || "Failed to fetch transactions");
     }
   }
 );
 
-/**
- * 5) Async Thunk: upsertTransaction
- *    - Called to create or update transaction data.
- *    - Adjust the endpoint as needed (e.g., "manager/transaction").
- */
+// Upsert (Create or Update) transaction
 export const upsertTransaction = createAsyncThunk(
   "transaction/upsertTransaction",
   async (transaction: Transaction, { dispatch, rejectWithValue }) => {
@@ -115,56 +81,84 @@ export const upsertTransaction = createAsyncThunk(
         Authorization: `Bearer ${access_token}`,
         "Content-Type": "application/json",
       };
-      // Example: POST or PUT /manager/transaction
-      const res = await postApi("manager/transaction", transaction, headers);
 
-      // After upserting, refresh the transaction data
+      if (transaction.id) {
+        // Update
+        await patch("property-management/transaction", transaction, headers);
+      } else {
+        // Create
+        await postApi("property-management/transaction", transaction, headers);
+      }
+
       await (dispatch as AppDispatch)(
         fetchTransaction({ propertyId: transaction.propertyId })
       );
-      return res;
+      return;
     } catch (error: any) {
-      return rejectWithValue(
-        error.message || "Failed to upsert transaction data"
-      );
+      return rejectWithValue(error.message || "Failed to save transaction");
     }
   }
 );
 
-/**
- * 6) Create the transactionSlice
- */
+// Delete transaction
+export const deleteTransaction = createAsyncThunk(
+  "transaction/deleteTransaction",
+  async (
+    { id, propertyId }: { id: string; propertyId: string },
+    { dispatch, rejectWithValue }
+  ) => {
+    try {
+      const access_token = await DEFAULT_COOKIE_GETTER("access_token");
+      const headers = { Authorization: `Bearer ${access_token}` };
+      await deleteApi(`property-management/transaction/${id}`, headers);
+
+      await (dispatch as AppDispatch)(fetchTransaction({ propertyId }));
+      return id;
+    } catch (error: any) {
+      return rejectWithValue(error.message || "Failed to delete transaction");
+    }
+  }
+);
+
 const transactionSlice = createSlice({
   name: "transaction",
   initialState,
   reducers: {},
   extraReducers: (builder) => {
     builder
-      // fetchTransaction
+      // Fetch
       .addCase(fetchTransaction.pending, (state) => {
         state.loading = true;
       })
       .addCase(fetchTransaction.fulfilled, (state, action) => {
         state.loading = false;
-        // Adjust if your API returns a different shape
-        state.transactionData = action.payload?.transactionData || null;
+        state.transaction = action.payload;
       })
       .addCase(fetchTransaction.rejected, (state, action) => {
         state.loading = false;
-        state.error = (action.payload as string) || "Failed to fetch transaction data";
+        state.error = action.payload as string;
       })
-
-      // upsertTransaction
+      // Upsert
       .addCase(upsertTransaction.pending, (state) => {
         state.loading = true;
       })
       .addCase(upsertTransaction.fulfilled, (state) => {
         state.loading = false;
-        state.error = null;
       })
       .addCase(upsertTransaction.rejected, (state, action) => {
         state.loading = false;
-        state.error = (action.payload as string) || "Failed to upsert transaction data";
+        state.error = action.payload as string;
+      })
+      // Delete
+      .addCase(deleteTransaction.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(deleteTransaction.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(deleteTransaction.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });

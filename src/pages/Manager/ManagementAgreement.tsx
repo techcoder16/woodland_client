@@ -1,4 +1,3 @@
-// src/components/ManagementAgreement.tsx
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -16,18 +15,20 @@ import { useAppSelector } from "@/redux/reduxHooks";
 import { fetchManagementAgreement, upsertManagementAgreement } from "@/redux/dataStore/managementAgreementSlice";
 import { cn } from "@/lib/utils";
 import jsPDF from "jspdf";
+import SelectField from "@/utils/SelectedField";
+import { DateField } from "./Rent";
 
-// Define the form schema for Management Agreement
 const managementAgreementSchema = z.object({
   propertyId: z.string().min(1, "Property ID is required"),
   DateofAgreement: z.string().min(1, "Date of Agreement is required"),
   AgreementStart: z.string().min(1, "Agreement Start is required"),
   PaymentAgreement: z.string().min(1, "Payment Agreement is required"),
   AgreementEnd: z.string().min(1, "Agreement End is required"),
-  Frequency: z.coerce.number({ invalid_type_error: "Frequency must be a number" }),
+  Frequency: z.string().optional(),
   InventoryCharges: z.coerce.number({ invalid_type_error: "Inventory Charges must be a number" }),
   ManagementFees: z.coerce.number({ invalid_type_error: "Management Fees must be a number" }),
   TermsAndCondition: z.string().min(1, "Terms and Condition is required"),
+  checkPayableTo: z.string().min(1, "Required"),
 });
 
 type ManagementAgreementFormData = z.infer<typeof managementAgreementSchema>;
@@ -52,10 +53,9 @@ const ManagementAgreement: React.FC<{ propertyId: string }> = ({ propertyId }) =
       AgreementStart: "",
       PaymentAgreement: "",
       AgreementEnd: "",
-      Frequency: 0,
-      InventoryCharges: 0,
-      ManagementFees: 0,
+      Frequency: "",
       TermsAndCondition: "",
+      checkPayableTo: "",
     },
   });
 
@@ -69,7 +69,7 @@ const ManagementAgreement: React.FC<{ propertyId: string }> = ({ propertyId }) =
     dispatch(fetchManagementAgreement({ propertyId }));
   }, [dispatch, propertyId]);
 
-  const handleDateChange = (name: string, date: Date) => {
+  const handleDateChange = (name: keyof ManagementAgreementFormData, date: Date) => {
     setValue(name, date.toISOString());
   };
 
@@ -89,6 +89,7 @@ const ManagementAgreement: React.FC<{ propertyId: string }> = ({ propertyId }) =
     doc.text("Management Agreement Preview", 10, 10);
     doc.setFontSize(12);
     let y = 20;
+
     doc.text(`Date of Agreement: ${new Date(data.DateofAgreement).toLocaleDateString()}`, 10, y);
     y += 10;
     doc.text(`Agreement Start: ${new Date(data.AgreementStart).toLocaleDateString()}`, 10, y);
@@ -104,6 +105,8 @@ const ManagementAgreement: React.FC<{ propertyId: string }> = ({ propertyId }) =
     doc.text(`Management Fees: ${data.ManagementFees}`, 10, y);
     y += 10;
     doc.text(`Terms & Conditions: ${data.TermsAndCondition}`, 10, y);
+    y += 10;
+    doc.text(`Check Payable To: ${data.checkPayableTo}`, 10, y);
     window.open(doc.output("bloburl"), "_blank");
   };
 
@@ -113,142 +116,126 @@ const ManagementAgreement: React.FC<{ propertyId: string }> = ({ propertyId }) =
         <CardTitle>Management Agreement</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <input type="hidden" {...register("propertyId")} />
-          <div>
-            <label className="text-gray-700 font-medium mr-4">Date of Agreement</label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className={cn("mx-2 text-left font-normal", !watch("DateofAgreement") && "text-muted-foreground")}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {watch("DateofAgreement") ? new Date(watch("DateofAgreement")).toLocaleDateString() : "Pick a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={watch("DateofAgreement") ? new Date(watch("DateofAgreement")) : null}
-                  onSelect={(date) => handleDateChange("DateofAgreement", date)}
-                  initialFocus
-                  className={cn("p-3 pointer-events-auto")}
-                />
-              </PopoverContent>
-            </Popover>
-            {errors.DateofAgreement && <p className="text-red-600 text-sm">{errors.DateofAgreement.message}</p>}
+
+          {/* Date of Agreement & Payment Agreement */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Date of Agreement */}
+
+
+    <DateField
+                label="Date of Agreement"
+                value={watch("DateofAgreement") || ""}
+                onChange={(date) => handleDateChange("DateofAgreement", date)}
+                error={errors.DateofAgreement?.message}
+              />
+
+
+
+    <DateField
+                label="Payment Agreement"
+                value={watch("PaymentAgreement") || ""}
+                onChange={(date) => handleDateChange("PaymentAgreement", date)}
+                error={errors.PaymentAgreement?.message}
+              />
+
+
           </div>
-          <div>
-            <label className="text-gray-700 font-medium mr-4">Agreement Start</label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className={cn("mx-2 text-left font-normal", !watch("AgreementStart") && "text-muted-foreground")}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {watch("AgreementStart") ? new Date(watch("AgreementStart")).toLocaleDateString() : "Pick a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={watch("AgreementStart") ? new Date(watch("AgreementStart")) : null}
-                  onSelect={(date) => handleDateChange("AgreementStart", date)}
-                  initialFocus
-                  className={cn("p-3 pointer-events-auto")}
-                />
-              </PopoverContent>
-            </Popover>
-            {errors.AgreementStart && <p className="text-red-600 text-sm">{errors.AgreementStart.message}</p>}
+
+          {/* Agreement Start & Agreement End */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Agreement Start */}
+           <DateField
+                label="Agreement Start On"
+                value={watch("AgreementStart") || ""}
+                onChange={(date) => handleDateChange("AgreementStart", date)}
+                error={errors.AgreementStart?.message}
+              />
+            {/* Agreement End */}
+            <div>
+          
+            <DateField
+                label="Agreement Ended On"
+                value={watch("AgreementEnd")  || ""}
+                onChange={(date) => handleDateChange("AgreementEnd", date)}
+                error={errors.AgreementStart?.message}
+               placeholder="Pick return date (optional)"
+
+                      
+              />
+            </div>
           </div>
-          <div>
-            <label className="text-gray-700 font-medium mr-4">Payment Agreement</label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className={cn("mx-2 text-left font-normal", !watch("PaymentAgreement") && "text-muted-foreground")}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {watch("PaymentAgreement") ? new Date(watch("PaymentAgreement")).toLocaleDateString() : "Pick a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={watch("PaymentAgreement") ? new Date(watch("PaymentAgreement")) : null}
-                  onSelect={(date) => handleDateChange("PaymentAgreement", date)}
-                  initialFocus
-                  className={cn("p-3 pointer-events-auto")}
-                />
-              </PopoverContent>
-            </Popover>
-            {errors.PaymentAgreement && <p className="text-red-600 text-sm">{errors.PaymentAgreement.message}</p>}
+
+          {/* Frequency & Inventory Charges */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <SelectField
+                label="Frequency"
+                name="Frequency"
+                register={register}
+                error={errors.Frequency?.message}
+                watch={watch}
+                options={[
+                  { label: "Monthly", value: "monthly" },
+                  { label: "4 Weekly", value: "4-weekly" },
+                  { label: "Quarterly", value: "quarterly" },
+                  { label: "Annually", value: "annually" },
+                ]}
+                setValue={setValue}
+              />
+            </div>
+
+            <div>
+              <InputField
+                label="Inventory Charges"
+                name="InventoryCharges"
+                register={register}
+                error={errors.InventoryCharges?.message}
+                placeholder="Enter inventory charges"
+                type="number"
+                setValue={setValue}
+              />
+            </div>
           </div>
-          <div>
-            <label className="text-gray-700 font-medium mr-4">Agreement End</label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className={cn("mx-2 text-left font-normal", !watch("AgreementEnd") && "text-muted-foreground")}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {watch("AgreementEnd") ? new Date(watch("AgreementEnd")).toLocaleDateString() : "Pick a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={watch("AgreementEnd") ? new Date(watch("AgreementEnd")) : null}
-                  onSelect={(date) => handleDateChange("AgreementEnd", date)}
-                  initialFocus
-                  className={cn("p-3 pointer-events-auto")}
-                />
-              </PopoverContent>
-            </Popover>
-            {errors.AgreementEnd && <p className="text-red-600 text-sm">{errors.AgreementEnd.message}</p>}
-          </div>
+
+          {/* Management Fees & Terms and Conditions (textarea spans both columns) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+         
+              <InputField
+                label="Management Fees"
+                name="ManagementFees"
+                register={register}
+                error={errors.ManagementFees?.message}
+                placeholder="Enter management fees"
+                type="number"
+                setValue={setValue}
+              />
+                   {/* checkPayableTo field */}
           <InputField
-            label="Frequency"
-            name="Frequency"
+            label="Check Payable To"
+            name="checkPayableTo"
             register={register}
-            error={errors.Frequency?.message}
-            placeholder="Enter frequency"
-            type="number"
-            setValue={setValue}
-          />
-          <InputField
-            label="Inventory Charges"
-            name="InventoryCharges"
-            register={register}
-            error={errors.InventoryCharges?.message}
-            placeholder="Enter inventory charges"
-            type="number"
-            setValue={setValue}
-          />
-          <InputField
-            label="Management Fees"
-            name="ManagementFees"
-            register={register}
-            error={errors.ManagementFees?.message}
-            placeholder="Enter management fees"
-            type="number"
-            setValue={setValue}
-          />
-          <TextAreaField
-            label="Terms and Conditions"
-            name="TermsAndCondition"
-            register={register}
-            error={errors.TermsAndCondition?.message}
-            placeholder="Enter terms and conditions"
-          />
+            error={errors.checkPayableTo?.message}
+            placeholder="Enter check payable to" 
+            setValue={setValue }   
+            
+            type="text" />
+
+
+            </div>
+
+            <div className="md:col-span-2">
+              <TextAreaField
+                label="Terms and Conditions"
+                name="TermsAndCondition"
+                register={register}
+                error={errors.TermsAndCondition?.message}
+                placeholder="Enter terms and conditions"
+              />
+            </div>
+          
+     
           <div className="flex justify-end space-x-4">
             <Button type="button" onClick={handlePreview}>
               Preview Agreement

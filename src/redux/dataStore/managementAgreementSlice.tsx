@@ -17,6 +17,7 @@ export interface ManagementAgreement {
   InventoryCharges: number;
   ManagementFees: number;
   TermsAndCondition: string;
+  checkPayableTo:string;
 }
 
 interface ManagementAgreementState {
@@ -39,7 +40,7 @@ export const fetchManagementAgreement = createAsyncThunk(
       const headers = { Authorization: `Bearer ${access_token}` };
       const params = `${propertyId}`;
       
-      const data = await getApi("manager/getManagementAgreement", params, headers);
+      const data = await getApi("property-management/ma", params, headers);
       return data;
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to fetch management agreement");
@@ -56,7 +57,7 @@ export const upsertManagementAgreement = createAsyncThunk(
         Authorization: `Bearer ${access_token}`,
         "Content-Type": "application/json",
       };
-      const res = await postApi("manager/managementAgreement", agreementData, headers);
+      const res = await postApi("property-management/ma/upsert", agreementData, headers);
       await (dispatch as AppDispatch)(fetchManagementAgreement({ propertyId: agreementData.propertyId }));
       return res;
     } catch (error: any) {

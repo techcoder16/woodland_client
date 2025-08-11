@@ -17,17 +17,29 @@ import postApi from "@/helper/postApi";
 import Features from "./Features";
 import Parties from "./Parties";
 import Rent from "./Rent";
-import SupplierInventory from './SupplierInventory'
+import SupplierInventory from './SupplierInventory';
 import ManagementAgreement from "./ManagementAgreement";
 import TenancyAgreement from "./TenancyAgreement";
 import TransactionPage from "./TransactionPage";
+
+// Icons for better visual representation (using Lucide React icons)
+import { 
+  Building2, 
+  Users, 
+  DollarSign, 
+  Package, 
+  FileText, 
+  HandHeart, 
+  ArrowRightLeft, 
+  StickyNote 
+} from "lucide-react";
+
 // ----- Zod Schemas & Types ----- //
 
 // Feature form schema
 const featureSchema = z.object({
   featureType: z.string().min(1, "Feature type is required"),
   value: z.string().optional(),
-
 });
 type FeatureFormData = z.infer<typeof featureSchema>;
 
@@ -72,12 +84,10 @@ type NoteFormData = z.infer<typeof noteSchema>;
 const ManageProperty = () => {
   // Get property.id from URL parameters
   const location = useLocation();
-  const property:any = location.state?.property;
-  // ----- Feature Form Setup ----- /
-  // 
-  // c/
+  const property: any = location.state?.property;
 
-  console.log(property,"property asdadka")
+  console.log(property, "property asdadka");
+
   const {
     register: registerFeature,
     handleSubmit: handleSubmitFeature,
@@ -137,7 +147,7 @@ const ManageProperty = () => {
 
   const onSubmitFeature = async (data: FeatureFormData) => {
     const payload = { ...data };
-    const res = await postApi("/manager/features/create",data);
+    const res = await postApi("/manager/features/create", data);
     if (res) {
       alert("Feature created successfully");
       resetFeature();
@@ -208,171 +218,248 @@ const ManageProperty = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-6 w-full mx-auto">
-            <h1 className="text-3xl font-bold tracking-tight mb-6">Manage Property</h1>
+      <div className="p-6 w-full mx-auto  min-h-screen">
+        {/* Header Section */}
+        <div className=" rounded-lg shadow-sm p-6 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold  mb-2">
+                Manage Property
+              </h1>
+              {property && (
+                <p className="">
+                  Property ID: {property.id}
+                </p>
+              )}
+            </div>
+            <div className="flex items-center space-x-2">
+              <Building2 className="h-8 w-8 " />
+            </div>
+          </div>
+        </div>
 
-   
-        <Tabs defaultValue="features" className="mt-6">
-          <TabsList className="grid grid-cols-5 gap-10">
-            <TabsTrigger value="features">Property</TabsTrigger>
-            <TabsTrigger value="parties">Parties</TabsTrigger>
-            <TabsTrigger value="rent">Rent</TabsTrigger>
-            <TabsTrigger value="supplier">Supplier</TabsTrigger>
-            <TabsTrigger value="management">Management Agreement</TabsTrigger>
+        {/* Tabs Section */}
+        <div className=" rounded-lg shadow-sm ">
+          <Tabs defaultValue="features" className="w-full">
+            {/* Horizontal Scrollable Tab List */}
+            <div className="border-b  px-6 py-4">
+              <div className="flex space-x-1 overflow-x-auto scrollbar-hide">
+                <TabsList className="inline-flex h-12 items-center justify-center rounded-lg  p-1 ">
+                  <TabsTrigger 
+                    value="features" 
+                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:  data-[state=active]:shadow-sm"
+                  >
+                    <Building2 className="h-4 w-4 mr-2" />
+                    Property
+                  </TabsTrigger>
+                  
+                  <TabsTrigger 
+                    value="parties"
+                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:  data-[state=active]:shadow-sm"
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Parties
+                  </TabsTrigger>
+                  
+                  <TabsTrigger 
+                    value="rent"
+                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:  data-[state=active]:shadow-sm"
+                  >
+                    <DollarSign className="h-4 w-4 mr-2" />
+                    Rent
+                  </TabsTrigger>
+                  
+                  <TabsTrigger 
+                    value="supplier"
+                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:  data-[state=active]:shadow-sm"
+                  >
+                    <Package className="h-4 w-4 mr-2" />
+                    Supplier
+                  </TabsTrigger>
+                  
+                  <TabsTrigger 
+                    value="management"
+                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:  data-[state=active]:shadow-sm"
+                  >
+                    <HandHeart className="h-4 w-4 mr-2" />
+                    Management
+                  </TabsTrigger>
+                  
+                  <TabsTrigger 
+                    value="tenancy"
+                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:  data-[state=active]:shadow-sm"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Tenancy
+                  </TabsTrigger>
+                  
+                  <TabsTrigger 
+                    value="transactions"
+                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:  data-[state=active]:shadow-sm"
+                  >
+                    <ArrowRightLeft className="h-4 w-4 mr-2" />
+                    Transactions
+                  </TabsTrigger>
+                  
+                  <TabsTrigger 
+                    value="notes"
+                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:  data-[state=active]:shadow-sm"
+                  >
+                    <StickyNote className="h-4 w-4 mr-2" />
+                    Notes
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+            </div>
 
-            
-            </TabsList>
-
-            <TabsList className="grid grid-cols-5 gap-10 mt-2">
-            <TabsTrigger value="tenancy">Tenancy Agreement</TabsTrigger>
-     
-     
-
-            <TabsTrigger value="transactions">Transactions</TabsTrigger>
-            <TabsTrigger value="notes">Notes</TabsTrigger>
-        
-          </TabsList>
-
-          {/* ----- Features Tab ----- */}
-          <TabsContent value="features" className="mt-4">
-           
-            <Features property={property}></Features>
-          </TabsContent>
-
-          {/* ----- Parties Tab ----- */}
-          <TabsContent value="parties" className="mt-4">
-       <Parties property={property}>
-        
-       </Parties>
-          </TabsContent>
-
-
-          <TabsContent value="rent" className="mt-4">
-            <Rent propertyId={property.id}></Rent>
+            {/* Tab Content */}
+            <div className="p-6">
+              {/* ----- Features Tab ----- */}
+              <TabsContent value="features" className="mt-0">
+                <Features property={property} />
               </TabsContent>
 
-              <TabsContent value="supplier" className="mt-4">
-       <SupplierInventory propertyId={property.id}/>
-        
-          </TabsContent>
+              {/* ----- Parties Tab ----- */}
+              <TabsContent value="parties" className="mt-0">
+                <Parties property={property} />
+              </TabsContent>
 
+              <TabsContent value="rent" className="mt-0">
+                <Rent propertyId={property.id} property={property} />
+              </TabsContent>
 
-          <TabsContent value="management" className="mt-4">
-       <ManagementAgreement propertyId={property.id}/>
-        
-          </TabsContent>
+              <TabsContent value="supplier" className="mt-0">
+                <SupplierInventory propertyId={property.id} />
+              </TabsContent>
 
+              <TabsContent value="management" className="mt-0">
+                <ManagementAgreement propertyId={property.id} />
+              </TabsContent>
 
+              <TabsContent value="tenancy" className="mt-0">
+                <TenancyAgreement propertyId={property.id} />
+              </TabsContent>
 
-          <TabsContent value="tenancy" className="mt-4">
-       <TenancyAgreement propertyId={property.id}/>
-        
-          </TabsContent>
+              <TabsContent value="transactions" className="mt-0">
+                <TransactionPage propertyId={property.id} />
+              </TabsContent>
 
+              {/* ----- Leases Tab ----- */}
+              <TabsContent value="leases" className="mt-0">
+                <Card className="shadow-sm border-0 ">
+                  <CardHeader className="">
+                    <CardTitle className="text-xl font-semibold  flex items-center">
+                      <FileText className="h-5 w-5 mr-2 " />
+                      Create Lease Agreement
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <form
+                      onSubmit={handleSubmitLease(onSubmitLease)}
+                      className="space-y-6"
+                    >
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <InputField
+                          label="Landlord ID"
+                          name="landlordId"
+                          register={registerLease}
+                          error={errorsLease.landlordId?.message}
+                          placeholder="Enter landlord ID"
+                          setValue={setLeaseValue}
+                        />
+                        <InputField
+                          label="Rent Amount"
+                          name="rent"
+                          register={registerLease}
+                          error={errorsLease.rent?.message}
+                          placeholder="Enter rent amount"
+                          type="number"
+                          setValue={setLeaseValue}
+                        />
+                        <InputField
+                          label="Security Deposit"
+                          name="deposit"
+                          register={registerLease}
+                          error={errorsLease.deposit?.message}
+                          placeholder="Enter deposit amount"
+                          type="number"
+                          setValue={setLeaseValue}
+                        />
+                        <InputField
+                          label="Agreement Date"
+                          name="agreementDate"
+                          register={registerLease}
+                          error={errorsLease.agreementDate?.message}
+                          placeholder="YYYY-MM-DD (optional)"
+                          setValue={setLeaseValue}
+                        />
+                        <InputField
+                          label="Start Date"
+                          name="startDate"
+                          register={registerLease}
+                          error={errorsLease.startDate?.message}
+                          placeholder="YYYY-MM-DD"
+                          setValue={setLeaseValue}
+                        />
+                        <InputField
+                          label="End Date"
+                          name="endDate"
+                          register={registerLease}
+                          error={errorsLease.endDate?.message}
+                          placeholder="YYYY-MM-DD (optional)"
+                          setValue={setLeaseValue}
+                        />
+                      </div>
+                      <div className="flex justify-end pt-4">
+                        <Button 
+                          type="submit" 
+                          className="px-8 py-2 rounded-lg font-medium"
+                        >
+                          Create Lease Agreement
+                        </Button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-          <TabsContent value="transactions" className="mt-4">
-       <TransactionPage propertyId={property.id}/>
-        
-          </TabsContent>
-
-          {/* ----- Leases Tab ----- */}
-          <TabsContent value="leases" className="mt-4">
-            <Card className="shadow">
-              <CardHeader>
-                <CardTitle>Create Lease</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form
-                  onSubmit={handleSubmitLease(onSubmitLease)}
-                  className="space-y-4"
-                >
-                  
-                  <InputField
-                    label="Landlord ID"
-                    name="landlordId"
-                    register={registerLease}
-                    error={errorsLease.landlordId?.message}
-                    placeholder="Enter landlord ID"
-                    setValue={setLeaseValue}
-                  />
-                  <InputField
-                    label="Rent"
-                    name="rent"
-                    register={registerLease}
-                    error={errorsLease.rent?.message}
-                    placeholder="Enter rent"
-                    type="number"
-                    setValue={setLeaseValue}
-                  />
-                  <InputField
-                    label="Deposit"
-                    name="deposit"
-                    register={registerLease}
-                    error={errorsLease.deposit?.message}
-                    placeholder="Enter deposit"
-                    type="number"
-                    setValue={setLeaseValue}
-                  />
-                  <InputField
-                    label="Agreement Date"
-                    name="agreementDate"
-                    register={registerLease}
-                    error={errorsLease.agreementDate?.message}
-                    placeholder="YYYY-MM-DD (optional)"
-                    setValue={setLeaseValue}
-                  />
-                  <InputField
-                    label="Start Date"
-                    name="startDate"
-                    register={registerLease}
-                    error={errorsLease.startDate?.message}
-                    placeholder="YYYY-MM-DD"
-                    setValue={setLeaseValue}
-                  />
-                  <InputField
-                    label="End Date"
-                    name="endDate"
-                    register={registerLease}
-                    error={errorsLease.endDate?.message}
-                    placeholder="YYYY-MM-DD (optional)"
-                    setValue={setLeaseValue}
-                  />
-                  <Button type="submit">Create Lease</Button>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* ----- Transactions Tab ----- */}
-
-
-          {/* ----- Notes Tab ----- */}
-          <TabsContent value="notes" className="mt-4">
-            <Card className="shadow">
-              <CardHeader>
-                <CardTitle>Create Note</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form
-                  onSubmit={handleSubmitNote(onSubmitNote)}
-                  className="space-y-4"
-                >
-                  <TextAreaField
-                    label="Content"
-                    name="content"
-                    register={registerNote}
-                    error={errorsNote.content?.message}
-                    placeholder="Enter note content"
-              
-                  />
-                  <Button type="submit">Create Note</Button>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+              {/* ----- Notes Tab ----- */}
+              <TabsContent value="notes" className="mt-0">
+                <Card className="shadow-sm border-0 ">
+                  <CardHeader className=" border-b">
+                    <CardTitle className="text-xl font-semibold  flex items-center">
+                      <StickyNote className="h-5 w-5 mr-2 " />
+                      Create Property Note
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <form
+                      onSubmit={handleSubmitNote(onSubmitNote)}
+                      className="space-y-4"
+                    >
+                      <TextAreaField
+                        label="Note Content"
+                        name="content"
+                        register={registerNote}
+                        error={errorsNote.content?.message}
+                        placeholder="Enter your note about this property..."
+                      />
+                      <div className="flex justify-end pt-4">
+                        <Button 
+                          type="submit"
+                          className=" px-8 py-2 rounded-lg font-medium"
+                        >
+                          Save Note
+                        </Button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </div>
+          </Tabs>
+        </div>
       </div>
-      
     </DashboardLayout>
   );
 };

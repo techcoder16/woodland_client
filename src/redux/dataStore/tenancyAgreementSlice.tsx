@@ -4,6 +4,7 @@ import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import getApi from "@/helper/getApi";
 import postApi from "@/helper/postApi";
 import { AppDispatch } from "../store";
+import { post } from "@/helper/api";
 
 // Define the Tenancy Agreement type
 export interface TenancyAgreement {
@@ -18,7 +19,7 @@ export interface TenancyAgreement {
   Address1: string;
   Address2?: string;
   HideLandlordAdress: boolean;
-  signedDate?: string;
+  witness:string;
 }
 
 interface TenancyAgreementState {
@@ -41,7 +42,7 @@ export const fetchTenancyAgreement = createAsyncThunk(
       const headers = { Authorization: `Bearer ${access_token}` };
       const params = `${propertyId}`;
       console.log(params)
-      const data = await getApi("manager/getTenancyAgreement", params, headers);
+      const data = await getApi("property-management/ta", params, headers);
       console.log(data,"sda")
       return data;
     } catch (error: any) {
@@ -60,7 +61,7 @@ export const upsertTenancyAgreement = createAsyncThunk(
         "Content-Type": "application/json",
       };
       console.log(agreementData)
-      const res = await postApi("manager/tenancyAgreement", agreementData, headers);
+      const res = await post("property-management/ta/upsert", agreementData, headers);
       await (dispatch as AppDispatch)(fetchTenancyAgreement({ propertyId: agreementData.propertyId }));
       return res;
     } catch (error: any) {
