@@ -1755,3 +1755,16 @@ export const LOCATION=[
   { label: "Living Room", value: "living-room" },
   { label: "Entrance", value: "entrance" }
 ]
+
+
+export const bankOptions = [
+  { label: "Abbey", value: "abbey" },
+  { label: "BACS", value: "bacs" },
+  { label: "Barclays", value: "barclays" },
+  { label: "Cash", value: "cash" },
+  { label: "Cheque", value: "cheque" },
+  { label: "Halifax", value: "halifax" },
+  { label: "HSBC", value: "hsbc" },
+  { label: "Lloyds", value: "lloyds" },
+  { label: "NatWest", value: "natwest" },
+];

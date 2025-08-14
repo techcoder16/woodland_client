@@ -1,8 +1,9 @@
-import React from "react";
-
+import React, { useEffect } from "react";
 import InputField from "../../utils/InputField";
 import SelectField from "@/utils/SelectedField";
 import { DateField } from "../Manager/Rent";
+import TextAreaField from "@/utils/TextAreaField";
+import { bankOptions } from "@/lib/constant";
 
 interface TenantProps {
   register: any;
@@ -16,173 +17,115 @@ interface TenantProps {
 const TranscationInfo = ({
   register,
   watch,
-  clearErrors,
   setValue,
   errors,
 }: TenantProps) => {
-  // Title options for select
-
-  // Optional: handle select change if needed
-  const handleSelectChange = (name: string, value: string) => {
-    setValue(name, value);
-    clearErrors(name);
-  };
-
-   const handleDateChange = (name: any, date: Date) => {
+  const handleDateChange = (name: any, date: Date) => {
     setValue(name, date.toISOString());
   };
+  useEffect(() => {
+    const expenditure = Number(watch("toLandlordLessBuildingExpenditure")) || 0;
+    const actual = Number(watch("toLandlordLessBuildingExpenditureActual")) || 0;
+    setValue("toLandlordLessBuildingExpenditureDifference", expenditure - actual);
+  }, [
+    watch("toLandlordLessBuildingExpenditure"),
+    watch("toLandlordLessBuildingExpenditureActual"),
+    setValue
+  ]);
 
 
-return (
-  <div className="w-full ">
-    <div className="flex gap-8">
-      {/* From Tenant Section */}
-      <div className="flex-1">
-        <div className="text-lg font-medium underline p-5">From Tenant</div>
-        <div className="grid grid-cols-1 gap-4 mb-8">
-          <DateField
-            label="Date"
-            value={watch("Date") || ""}
-            onChange={(date) => handleDateChange("Date", date)}
-            error={errors.ReturnedOn?.message}
-            placeholder="Pick return date (optional)"
-          />
-          <InputField
-            setValue={setValue}
-            label="Rent Received"
-            name="toTenantRentReceived"
-            register={register}
-            error={errors?.toTenantRentReceived?.message?.toString()}
-            type="number"
-          />
-          {/* rest of From Tenant inputs */}
-          <InputField
-            setValue={setValue}
-            label="Other Debit"
-            name="toTenantOtherDebit"
-            register={register}
-            error={errors?.toTenantOtherDebit?.message?.toString()}
-            type="number"
-          />
-          <InputField
-            setValue={setValue}
-            label="Description"
-            name="toTenantDescription"
-            register={register}
-            error={errors?.toTenantDescription?.message?.toString()}
-          />
-          <InputField
-            setValue={setValue}
-            label="Received By"
-            name="toTenantReceivedBy"
-            register={register}
-            error={errors?.toTenantReceivedBy?.message?.toString()}
-          />
-          <InputField
-            setValue={setValue}
-            label="Private Note"
-            name="toTenantPrivateNote"
-            register={register}
-            error={errors?.toTenantPrivateNote?.message?.toString()}
-          />
+  
+  const handleSelectChange = (name: string, value: string) => {
+    console.log(name,value)
+    setValue(name, value);
+
+  };
+  
+  return (
+    <div className="w-full max-h-[80vh] overflow-y-auto p-4">
+      <div className="flex flex-col lg:flex-row gap-6">
+        
+        {/* From Tenant */}
+        <div className="flex-1 border border-gray-200 rounded-lg p-4 shadow-sm">
+          <div className="text-lg font-semibold border-b pb-2 mb-4">From Tenant</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            
+            <DateField
+              label="Date"
+              value={watch("fromTenantDate") || ""}
+              onChange={(date) => handleDateChange("fromTenantDate", date)}
+              error={errors.fromTenantDate?.message}
+              placeholder="Tenant Date"
+            />
+
+            <SelectField
+              setValue={setValue}
+              label="Mode"
+              name="fromTenantMode"
+              register={register}
+              error={errors?.fromTenantMode?.message?.toString()}
+              options={bankOptions}
+              watch={watch}
+            />
+
+            <InputField label="H.Benefit 1" name="fromTenantHBenefit1" type="number" {...{ register, setValue, errors }} />
+            <InputField label="H.Benefit 2" name="fromTenantHBenefit2" type="number" {...{ register, setValue, errors }} />
+            <InputField label="Rent Received" name="fromTenantRentReceived" type="number" {...{ register, setValue, errors }} />
+            <InputField label="Other Debit" name="fromTenantOtherDebit" type="number" {...{ register, setValue, errors }} />
+            <TextAreaField label="Description" name="fromTenantDescription" register={register} error={errors?.fromTenantDescription?.message?.toString()} />
+            <InputField label="Received By" name="fromTenantReceivedBy" {...{ register, setValue, errors }} />
+            <InputField label="Private Note" name="fromTenantPrivateNote" {...{ register, setValue, errors }} />
+
+          </div>
         </div>
-      </div>
 
-      {/* To Landlord Section */}
-      <div className="flex-1">
-        <div className="text-lg font-medium underline p-5">To Landlord</div>
-        <div className="grid grid-cols-2 gap-4 mb-8">
-          <InputField
-            setValue={setValue}
-            label="Date"
-            name="toLandlordDate"
-            register={register}
-            error={errors?.toLandlordDate?.message?.toString()}
-            type="date"
-          />
-          <InputField
-            setValue={setValue}
-            label="Rent Received"
-            name="toLandlordRentReceived"
-            register={register}
-            error={errors?.toLandlordRentReceived?.message?.toString()}
-            type="number"
-          />
-          {/* rest of To Landlord inputs */}
-          <InputField
-            setValue={setValue}
-            label="Lease Management Fees"
-            name="toLandlordLeaseManagementFees"
-            register={register}
-            error={errors?.toLandlordLeaseManagementFees?.message?.toString()}
-            type="number"
-          />
-          <InputField
-            setValue={setValue}
-            label="Lease Building Expenditure"
-            name="toLandlordLeaseBuildingExpenditure"
-            register={register}
-            error={errors?.toLandlordLeaseBuildingExpenditure?.message?.toString()}
-            type="number"
-          />
-          <InputField
-            setValue={setValue}
-            label="Net Received"
-            name="toLandlordNetReceived"
-            register={register}
-            error={errors?.toLandlordNetReceived?.message?.toString()}
-            type="number"
-          />
-          <InputField
-            setValue={setValue}
-            label="Less VAT"
-            name="toLandlordLessVAT"
-            register={register}
-            error={errors?.toLandlordLessVAT?.message?.toString()}
-            type="number"
-          />
-          <InputField
-            setValue={setValue}
-            label="Net Paid"
-            name="toLandlordNetPaid"
-            register={register}
-            error={errors?.toLandlordNetPaid?.message?.toString()}
-            type="number"
-          />
-          <InputField
-            setValue={setValue}
-            label="Cheque No"
-            name="toLandlordChequeNo"
-            register={register}
-            error={errors?.toLandlordChequeNo?.message?.toString()}
-          />
-          <InputField
-            setValue={setValue}
-            label="Default Expenditure"
-            name="toLandlordDefaultExpenditure"
-            register={register}
-            error={errors?.toLandlordDefaultExpenditure?.message?.toString()}
-          />
-          <InputField
-            setValue={setValue}
-            label="Expenditure Description"
-            name="toLandlordExpenditureDescription"
-            register={register}
-            error={errors?.toLandlordExpenditureDescription?.message?.toString()}
-          />
-          <InputField
-            setValue={setValue}
-            label="Fund By"
-            name="toLandlordFundBy"
-            register={register}
-            error={errors?.toLandlordFundBy?.message?.toString()}
-          />
+        {/* To Landlord */}
+        <div className="flex-1 border border-gray-200 rounded-lg p-4 shadow-sm">
+          <div className="text-lg font-semibold border-b pb-2 mb-4">To Landlord</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            
+            <DateField
+              label="Date"
+              value={watch("toLandlordDate") || ""}
+              onChange={(date) => handleDateChange("toLandlordDate", date)}
+              error={errors.toLandlordDate?.message}
+              placeholder="Landlord Date"
+
+            />
+
+            <InputField label="Rent Received" name="toLandlordRentReceived" type="number" {...{ register, setValue, errors }} />
+
+            <SelectField
+              setValue={setValue}
+              label="Mode"
+              name="toLandLordMode"
+              register={register}
+
+            onChange={(value) => handleSelectChange("toLandLordMode", value)}
+
+              error={errors?.toLandLordMode?.message?.toString()}
+              watch={watch}
+              options={bankOptions}
+            />
+
+            <InputField label="Less Management Fees" name="toLandlordLessManagementFees" type="number" {...{ register, setValue, errors }} />
+            <InputField label="Less Building Expenditure" name="toLandlordLessBuildingExpenditure" type="number" {...{ register, setValue, errors }} />
+            <InputField label="Actual" name="toLandlordLessBuildingExpenditureActual" type="number" {...{ register, setValue, errors }} />
+            <InputField label="Difference" name="toLandlordLessBuildingExpenditureDifference" type="number" {...{ register, setValue, errors }} />
+            <InputField label="Net Received" name="toLandlordNetReceived" type="number" {...{ register, setValue, errors }} />
+            <InputField label="Less VAT" name="toLandlordLessVAT" type="number" {...{ register, setValue, errors }} />
+            <InputField label="Net Paid" name="toLandlordNetPaid" type="number" {...{ register, setValue, errors }} />
+            <InputField label="Cheque No" name="toLandlordChequeNo" {...{ register, setValue, errors }} />
+            <TextAreaField label="Detail of  Expenditure" name="toLandlordDefaultExpenditure" {...{ register, setValue, errors }} />
+            <TextAreaField label="Expenditure Description" name="toLandlordExpenditureDescription" {...{ register, setValue, errors }} />
+            <InputField label="Received By" name="toLandlordPaidBy" {...{ register, setValue, errors }} />
+
+          </div>
         </div>
+
       </div>
-    </div>
     </div>
   );
 };
-
 
 export default TranscationInfo;

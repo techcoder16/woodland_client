@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "@/context/AuthContext";
-
+import logo from '@/assets/logo.png'
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export function Header() {
@@ -44,10 +44,14 @@ export function Header() {
         
         <div className="hidden md:flex items-center">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
-              <span className="text-white font-bold">PM</span>
-            </div>
-            <span className="font-bold text-lg font-heading">Woodland Property Manager</span>
+               <div className="flex w-20 bg-red-600">
+        <img
+                className=""
+                src={logo}
+                >
+               
+                </img>
+          </div>
           </div>
         </div>
       </div>

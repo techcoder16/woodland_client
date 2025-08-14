@@ -37,7 +37,7 @@ const SelectField: React.FC<SelectFieldProps> = ({
   // Ensure the value is properly set when component mounts
   useEffect(() => {
     // If there's a current value but it's not in the register, set it
-    if (currentValue && !register(name).value) {
+    if (currentValue && !register(name)?.value) {
       setValue(name, currentValue);
     }
   }, [currentValue, name, setValue, register]);

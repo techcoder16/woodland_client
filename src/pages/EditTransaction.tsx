@@ -15,40 +15,34 @@ import { patch } from "@/helper/api";
 
 const formSchema = z.object({
 
-    propertyId: z.string().min(1, "Property ID is required"),
-
+ 
   // Example Select field for Branch
-  Branch: z.string().min(1, "Branch is required"), // or make it optional if needed
-
   // From Tenant Section
   fromTenantDate: z.string().optional(), // date as ISO string
   fromTenantMode: z.string().optional(),
+  
   fromTenantOtherDebit: z.coerce.number().optional(),
-  fromTenantBenefit1: z.string().optional(),
-  fromTenantBenefit2: z.string().optional(),
+  fromTenantHBenefit1: z.coerce.number().optional(),
+  fromTenantHBenefit2: z.coerce.number().optional(),
   fromTenantRentReceived: z.coerce.number().optional(),
   fromTenantDescription: z.string().optional(),
   fromTenantReceivedBy: z.string().optional(),
   fromTenantPrivateNote: z.string().optional(),
-
+toLandLordMode :z.string().optional(),
     toLandlordDate: z.string().optional(),
   toLandlordRentReceived: z.coerce.number().optional(),
-  toLandlordLeaseManagementFees: z.coerce.number().optional(),
-  toLandlordLeaseBuildingExpenditure: z.coerce.number().optional(),
+  toLandlordLessManagementFees: z.coerce.number().optional(),
+  toLandlordLessBuildingExpenditure: z.coerce.number().optional(),
+  toLandlordLessBuildingExpenditureActual : z.coerce.number().optional(),
+  toLandlordLessBuildingExpenditureDifference: z.coerce.number().optional(),
   toLandlordNetReceived: z.coerce.number().optional(),
   toLandlordLessVAT: z.coerce.number().optional(),
   toLandlordNetPaid: z.coerce.number().optional(),
   toLandlordChequeNo: z.string().optional(),
   toLandlordDefaultExpenditure: z.string().optional(),
   toLandlordExpenditureDescription: z.string().optional(),
-  toLandlordFundBy: z.string().optional(),
+  toLandlordPaidBy: z.string().optional(),
 
-  // Landlord Section (outside summary)
-  landlordNetRentReceived: z.coerce.number().optional(),
-  landlordNetDeductions: z.coerce.number().optional(),
-  landlordNetToBePaid: z.coerce.number().optional(),
-  landlordNetPaid: z.coerce.number().optional(),
-  landlordNetDebit: z.coerce.number().optional(),
 
 });
 
@@ -73,7 +67,6 @@ const EditTransaction = ({ isOpen, onClose, propertyId ,transaction}: EditTransa
   const { toast } = useToast();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [progress, setProgress] = useState(0);
   useEffect(() => {
     if (transaction) {
@@ -94,7 +87,6 @@ const EditTransaction = ({ isOpen, onClose, propertyId ,transaction}: EditTransa
     if (!isValid) return;
 
     setProgress(30);
-    setIsSubmitting(true);
 
     try {
       const accessToken = await DEFAULT_COOKIE_GETTER("access_token");
@@ -107,9 +99,13 @@ const EditTransaction = ({ isOpen, onClose, propertyId ,transaction}: EditTransa
         if (value !== null && value !== undefined) formData.append(key, String(value));
       });
 
+            const newData = {...data,propertyId}
+      newData.propertyId  = propertyId
+      console.log(newData.toLandLordMode,"asddddddddddddddd")
+      
       const { data: apiData, error } = await patch(
-        `transactions/`+Object.fromEntries(formData.entries()).id ,
-        formData,
+        `transaction/`+transaction.id ,
+        newData,
         headers
       );
       setProgress(60);
@@ -127,16 +123,15 @@ const EditTransaction = ({ isOpen, onClose, propertyId ,transaction}: EditTransa
       console.error("Error:", error);
       toast({ title: "Error", description: error.message || "Failed to update tenant.", variant: "destructive" });
     } finally {
-      setIsSubmitting(false);
     }
   };
 
-  const steps = [{ label: "Basic Info", component: <BasicInfo watch={watch} register={register} errors={formState.errors} setValue={setValue} clearErrors={clearErrors} /> }];
+  const steps = [{ label: "Basic Info", component: <BasicInfo  watch={watch} register={register} errors={formState.errors} setValue={setValue} clearErrors={clearErrors} /> }];
   const isLastStep = currentStep === steps.length - 1;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-    <DialogContent className="sm:max-w-4xl">
+    <DialogContent className="sm:max-w-7xl">
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
           <UserPlus className="h-5 w-5 text-red-600" /> Edit Tenant
@@ -147,7 +142,6 @@ const EditTransaction = ({ isOpen, onClose, propertyId ,transaction}: EditTransa
 
             <form onSubmit={handleSubmit(onSubmit)}>{steps[currentStep].component}
               <div className="flex justify-between pt-6">
-                <Button type="button" variant="outline" onClick={() => setCurrentStep(Math.max(currentStep - 1, 0))} disabled={currentStep === 0}><ArrowLeft className="mr-2 h-4 w-4" /> Previous</Button>
                 {isLastStep ? <Button type="submit" className="bg-red-500 text-white px-4 py-2 rounded">Submit <Check className="ml-2 h-4 w-4" /></Button> : <Button type="button" onClick={() => setCurrentStep(currentStep + 1)}>Next <ArrowRight className="ml-2 h-4 w-4" /></Button>}
               </div>
             </form>

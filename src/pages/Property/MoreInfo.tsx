@@ -1,7 +1,6 @@
 import React from 'react';
 import InputField from '../../utils/InputField';
 import SelectField from '../../utils/SelectedField';
-import InputSelect from '@/utils/InputSelect';
 import TextAreaField from '@/utils/TextAreaField';
 
 interface MoreInfoProps {

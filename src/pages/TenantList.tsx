@@ -22,8 +22,7 @@ import {
 
 import EditTenant from "./EditTenant";
 import { toast } from "sonner";
-import { User, Mail, Phone, Building2, Loader2 } from "lucide-react";
-import { HiHome } from "react-icons/hi2";
+import { Phone } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Input } from "@/components/ui/input";
 
@@ -37,7 +36,6 @@ const TenantList = ({ property }: any) => {
   // Local state
   const [isAddTenantModalOpen, setIsAddTenantModalOpen] = useState(false);
   const [isEditTenantModalOpen, setIsEditTenantModalOpen] = useState(false);
-  const [selectedTenant, setSelectedTenant] = useState<any>(null);
   const [tenantEditSet, setTenantEdit] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 

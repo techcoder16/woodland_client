@@ -21,7 +21,7 @@ import { ThemeToggle } from "./ThemeToggle";
 import { Building2, CircleUser, LayoutDashboard, LogOut, Settings, Users2, Wallet } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../ui/button";
-
+import logo from '@/assets/logo.png'
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
@@ -38,10 +38,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     <SidebarProvider defaultOpen={true}>
       <Sidebar variant="inset">
         <SidebarHeader className="flex flex-col items-center justify-center py-4">
-          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-600">
-            <span className="text-white font-bold text-lg">PM</span>
+          <div className="flex  bg-red-600">
+        <img
+                className=""
+                src={logo}
+                >
+               
+                </img>
           </div>
-          <h1 className="font-bold text-lg mt-2">Woodland</h1>
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>

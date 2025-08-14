@@ -12,6 +12,7 @@ import {
   Settings,
   Users,
 } from "lucide-react";
+import {logo} from '@/assets/logo.png'
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -70,7 +71,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       <div className="flex h-16 items-center border-b px-4">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
-            <span className="text-white font-bold">PM</span>
+           <img
+           className="w-24"
+           src={logo}
+           >
+          
+           </img>
           </div>
           <span className="font-bold text-lg font-heading">Woodland Property Manager</span>
         </div>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,43 +12,40 @@ import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 
 import { post } from "@/helper/api";
 import TransactionInfo from "./Transaction/TransactionInfo";
+import { error } from "console";
 
 const formSchema = z.object({
 
-    propertyId: z.string().min(1, "Property ID is required"),
-
+ 
   // Example Select field for Branch
-  Branch: z.string().min(1, "Branch is required"), // or make it optional if needed
-
   // From Tenant Section
   fromTenantDate: z.string().optional(), // date as ISO string
   fromTenantMode: z.string().optional(),
+  
   fromTenantOtherDebit: z.coerce.number().optional(),
-  fromTenantBenefit1: z.string().optional(),
-  fromTenantBenefit2: z.string().optional(),
+  fromTenantHBenefit1: z.coerce.number().optional(),
+  fromTenantHBenefit2: z.coerce.number().optional(),
   fromTenantRentReceived: z.coerce.number().optional(),
   fromTenantDescription: z.string().optional(),
   fromTenantReceivedBy: z.string().optional(),
   fromTenantPrivateNote: z.string().optional(),
-
-    toLandlordDate: z.string().optional(),
+  toLandLordMode :z.string().optional(),
+  toLandlordDate: z.string().optional(),
   toLandlordRentReceived: z.coerce.number().optional(),
-  toLandlordLeaseManagementFees: z.coerce.number().optional(),
-  toLandlordLeaseBuildingExpenditure: z.coerce.number().optional(),
+  toLandlordLessManagementFees: z.coerce.number().optional(),
+  toLandlordLessBuildingExpenditure: z.coerce.number().optional(),
+  toLandlordLessBuildingExpenditureActual : z.coerce.number().optional(),
+  toLandlordLessBuildingExpenditureDifference: z.coerce.number().optional(),
+  
+
   toLandlordNetReceived: z.coerce.number().optional(),
   toLandlordLessVAT: z.coerce.number().optional(),
   toLandlordNetPaid: z.coerce.number().optional(),
   toLandlordChequeNo: z.string().optional(),
   toLandlordDefaultExpenditure: z.string().optional(),
   toLandlordExpenditureDescription: z.string().optional(),
-  toLandlordFundBy: z.string().optional(),
+  toLandlordPaidBy: z.string().optional(),
 
-  // Landlord Section (outside summary)
-  landlordNetRentReceived: z.coerce.number().optional(),
-  landlordNetDeductions: z.coerce.number().optional(),
-  landlordNetToBePaid: z.coerce.number().optional(),
-  landlordNetPaid: z.coerce.number().optional(),
-  landlordNetDebit: z.coerce.number().optional(),
 
 });
 
@@ -70,13 +67,16 @@ export function AddTransaction({ isOpen, onClose, propertyId }: AddTenantModalPr
 
   const [currentStep, setCurrentStep] = useState(0);
   const [progress, setProgress] = useState(0);
-
+useEffect(()=>{
+  console.log(form.formState.errors)
+})
   const steps = [
     {
       label: "Transaction Info",
       component: (
         <TransactionInfo
           watch={watch}
+
           register={form.register}
           errors={form.formState.errors}
           setValue={form.setValue}
@@ -100,12 +100,9 @@ export function AddTransaction({ isOpen, onClose, propertyId }: AddTenantModalPr
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       };
-      const formData = new FormData();
-      Object.entries(data).forEach(([key, value]) => {
-        if (value !== null && value !== undefined) formData.append(key, String(value));
-      });
-console.log(formData)
-      const { data: apiData, error } = await post("transactions/create", formData, headers);
+      const newData = {...data,propertyId}
+      newData.propertyId  = propertyId
+      const { data: apiData, error } = await post("transaction", newData, headers);
       console.log(data);
       setProgress(60);
       if (error && error.message) throw new Error(error.message);
@@ -114,6 +111,7 @@ console.log(formData)
       toast({ title: "Success", description: "Tenant created successfully!" });
       onClose();
       form.reset();
+
     } catch (error: any) {
       console.log(error)
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -123,10 +121,10 @@ console.log(formData)
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-4xl">
+      <DialogContent className="sm:max-w-6xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="h-5 w-5 text-red-600" /> Add New Tenant
+            <UserPlus className="h-5 w-5 text-red-600" /> Add New Transaction
           </DialogTitle>
         </DialogHeader>
 
@@ -136,10 +134,7 @@ console.log(formData)
           {steps[currentStep].component}
 
           <div className="flex justify-between pt-6">
-            {/* <Button type="button" variant="outline" onClick={handlePrevious} disabled={currentStep === 0}>
-              <ArrowLeft className="mr-2 h-4 w-4" /> Previous
-            </Button> */}
-
+       
               <Button type="submit" className="bg-red-500 text-white px-4 py-2 rounded">
                 Submit <Check className="ml-2 h-4 w-4" />
               </Button>

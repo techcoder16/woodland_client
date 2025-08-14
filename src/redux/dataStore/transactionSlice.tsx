@@ -8,6 +8,8 @@ import { AppDispatch } from "../store";
 import { patch } from "@/helper/api";
 
 export interface Transaction {
+    id?: string; // <-- add this
+ 
   propertyId: string;
   Branch: string;
   fromTenantDate?: string;
@@ -63,8 +65,8 @@ export const fetchTransaction = createAsyncThunk(
       const access_token = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = { Authorization: `Bearer ${access_token}` };
       const params = `propertyId=${propertyId}`;
-      const data = await getApi("manager/getTransactions", params, headers);
-      return data?.transaction || [];
+      const data = await getApi("transaction", params, headers);
+      return data || [];
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to fetch transactions");
     }
@@ -108,9 +110,11 @@ export const deleteTransaction = createAsyncThunk(
     { dispatch, rejectWithValue }
   ) => {
     try {
+      console.log(id,propertyId)
       const access_token = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = { Authorization: `Bearer ${access_token}` };
-      await deleteApi(`property-management/transaction/${id}`, headers);
+      console.log(id,"myid")
+      await deleteApi(`transaction/${id}`, headers);
 
       await (dispatch as AppDispatch)(fetchTransaction({ propertyId }));
       return id;

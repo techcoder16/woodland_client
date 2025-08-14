@@ -6,9 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import InputField from "@/utils/InputField";
 import TextAreaField from "@/utils/TextAreaField";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+
 import { useDispatch } from "react-redux";
 import { toast } from "sonner";
 import { useAppSelector } from "@/redux/reduxHooks";
@@ -61,7 +59,7 @@ const ManagementAgreement: React.FC<{ propertyId: string }> = ({ propertyId }) =
 
   useEffect(() => {
     if (managementAgreement) {
-      reset(managementAgreement);
+      reset(managementAgreement && managementAgreement);
     }
   }, [managementAgreement, reset]);
 
@@ -124,21 +122,21 @@ const ManagementAgreement: React.FC<{ propertyId: string }> = ({ propertyId }) =
             {/* Date of Agreement */}
 
 
-    <DateField
-                label="Date of Agreement"
-                value={watch("DateofAgreement") || ""}
-                onChange={(date) => handleDateChange("DateofAgreement", date)}
-                error={errors.DateofAgreement?.message}
-              />
+            <DateField
+              label="Date of Agreement"
+              value={watch("DateofAgreement") || ""}
+              onChange={(date) => handleDateChange("DateofAgreement", date)}
+              error={errors.DateofAgreement?.message}
+            />
 
 
 
-    <DateField
-                label="Payment Agreement"
-                value={watch("PaymentAgreement") || ""}
-                onChange={(date) => handleDateChange("PaymentAgreement", date)}
-                error={errors.PaymentAgreement?.message}
-              />
+            <DateField
+              label="Payment Agreement"
+              value={watch("PaymentAgreement") || ""}
+              onChange={(date) => handleDateChange("PaymentAgreement", date)}
+              error={errors.PaymentAgreement?.message}
+            />
 
 
           </div>
@@ -146,23 +144,23 @@ const ManagementAgreement: React.FC<{ propertyId: string }> = ({ propertyId }) =
           {/* Agreement Start & Agreement End */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Agreement Start */}
-           <DateField
-                label="Agreement Start On"
-                value={watch("AgreementStart") || ""}
-                onChange={(date) => handleDateChange("AgreementStart", date)}
-                error={errors.AgreementStart?.message}
-              />
+            <DateField
+              label="Agreement Start On"
+              value={watch("AgreementStart") || ""}
+              onChange={(date) => handleDateChange("AgreementStart", date)}
+              error={errors.AgreementStart?.message}
+            />
             {/* Agreement End */}
             <div>
-          
-            <DateField
+
+              <DateField
                 label="Agreement Ended On"
-                value={watch("AgreementEnd")  || ""}
+                value={watch("AgreementEnd") || ""}
                 onChange={(date) => handleDateChange("AgreementEnd", date)}
                 error={errors.AgreementStart?.message}
-               placeholder="Pick return date (optional)"
+                placeholder="Pick return date (optional)"
 
-                      
+
               />
             </div>
           </div>
@@ -201,41 +199,41 @@ const ManagementAgreement: React.FC<{ propertyId: string }> = ({ propertyId }) =
 
           {/* Management Fees & Terms and Conditions (textarea spans both columns) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-         
-              <InputField
-                label="Management Fees"
-                name="ManagementFees"
-                register={register}
-                error={errors.ManagementFees?.message}
-                placeholder="Enter management fees"
-                type="number"
-                setValue={setValue}
-              />
-                   {/* checkPayableTo field */}
-          <InputField
-            label="Check Payable To"
-            name="checkPayableTo"
-            register={register}
-            error={errors.checkPayableTo?.message}
-            placeholder="Enter check payable to" 
-            setValue={setValue }   
-            
-            type="text" />
+
+            <InputField
+              label="Management Fees"
+              name="ManagementFees"
+              register={register}
+              error={errors.ManagementFees?.message}
+              placeholder="Enter management fees"
+              type="number"
+              setValue={setValue}
+            />
+            {/* checkPayableTo field */}
+            <InputField
+              label="Check Payable To"
+              name="checkPayableTo"
+              register={register}
+              error={errors.checkPayableTo?.message}
+              placeholder="Enter check payable to"
+              setValue={setValue}
+
+              type="text" />
 
 
-            </div>
+          </div>
 
-            <div className="md:col-span-2">
-              <TextAreaField
-                label="Terms and Conditions"
-                name="TermsAndCondition"
-                register={register}
-                error={errors.TermsAndCondition?.message}
-                placeholder="Enter terms and conditions"
-              />
-            </div>
-          
-     
+          <div className="md:col-span-2">
+            <TextAreaField
+              label="Terms and Conditions"
+              name="TermsAndCondition"
+              register={register}
+              error={errors.TermsAndCondition?.message}
+              placeholder="Enter terms and conditions"
+            />
+          </div>
+
+
           <div className="flex justify-end space-x-4">
             <Button type="button" onClick={handlePreview}>
               Preview Agreement
