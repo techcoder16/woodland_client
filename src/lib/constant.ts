@@ -1757,7 +1757,7 @@ export const LOCATION=[
 ]
 
 
-export const bankOptions = [
+export const BANKOPTIONS = [
   { label: "Abbey", value: "abbey" },
   { label: "BACS", value: "bacs" },
   { label: "Barclays", value: "barclays" },

@@ -36,14 +36,22 @@ const BankDetails = ({register,watch, clearErrors, setValue, errors }: any) => {
 
       <div className="p-4 w-full">
         <div className="text-lg font-medium flex justify-start underline p-5">Bank details</div>
-       
-        <InputField setValue={setValue} label="Bank Body" name="bankBody" register={register} error={errors.bankBody?.message?.toString()} />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
+        <InputField setValue={setValue} label="Bank Body" name="bankBody" register={register} error={errors.bankBody?.message?.toString()} />
+      </div>
         <div className="text-lg font-medium flex justify-start underline p-5">Bank branch address</div>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
         <InputField setValue={setValue} label="Address Line 1" name="bankAddressLine1" register={register} error={errors.bankAddressLine1?.message?.toString()} />
         <InputField setValue={setValue} label="Address Line 2" name="bankAddressLine2" register={register} error={errors.bankAddressLine2?.message?.toString()} />
+        </div>       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
         <InputField setValue={setValue} label="Town" name="bankTown" register={register} error={errors.bankTown?.message?.toString()} />
         <InputField setValue={setValue}  label="Post Code" name="bankPostCode" register={register} error={errors.bankPostCode?.message?.toString()} />
+        </div>       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+
         <SelectField 
         watch={watch}
           
@@ -54,8 +62,13 @@ const BankDetails = ({register,watch, clearErrors, setValue, errors }: any) => {
 
         <div className="text-lg font-medium flex justify-start underline p-5">International Bank Details</div>
         <InputField setValue={setValue} label="IBAN" name="bankIban" register={register} error={errors.bankIban?.message?.toString()} />
+       
+        </div>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
         <InputField setValue={setValue} label="BIC" name="bic" register={register} error={errors.bank_bic?.message?.toString()} />
         <InputField setValue={setValue} label="NIB" name="nib" register={register} error={errors.nib?.message?.toString()} />
+      </div>
       </div>
      
     </div>

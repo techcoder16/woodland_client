@@ -1,7 +1,7 @@
 import { UploadCloud } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
-const Attachments = ({ register, clearErrors, setValue, errors, watch }: any) => {
+const Attachments = ({ clearErrors, setValue, errors, watch }: any) => {
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [fileBase64, setFileBase64] = useState<string[]>([]);
 
@@ -11,11 +11,7 @@ const Attachments = ({ register, clearErrors, setValue, errors, watch }: any) =>
     if (attachments && attachments.length > 0) {
       console.log(typeof attachments);
 
-      // Object.keys(attachments).map((e)=>{
-
-      //  attachments[e].name
-      // })
-
+     
     
 
       setPreviewImages(attachments);

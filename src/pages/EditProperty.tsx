@@ -10,7 +10,6 @@ import { Check, ArrowLeft, ArrowRight } from "lucide-react";
 import postApi from "@/helper/postApi";
 import { useNavigate, useLocation } from "react-router-dom";
 import Attachments from "./Property/Attachments";
-import { MainNav } from "@/components/MainNav";
 import LoadingBar from "react-top-loading-bar";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import PropertyInfo from "./Property/PropertyInfo";
@@ -59,7 +58,10 @@ const formSchema = z.object({
   workStation: z.string().nullable().default(null).describe("Workstation information is required."),
   landSize: z.string().nullable().default(null).describe("Land size is required."),
   outBuildings: z.string().nullable().default(null).describe("Out buildings information is required."),
-  propertyFeature: z.array(z.string(), { required_error: "Property features are required." }),
+propertyFeature: z.array(z.string()).min(1, "At least one property feature is required.").refine(
+  (features) => features && features.length > 0 && features.some(feature => feature && feature.trim() !== ''),
+  "At least one property feature must be selected."
+),
   Tags: z.string().nullable().default(null).describe("Tags field is required."),
   shortSummary: z.string().nullable().default(null).describe("Short summary is required."),
   fullDescription: z.string().nullable().default(null).describe("Full description is required."),
@@ -337,9 +339,26 @@ const EditProperty = () => {
 
   const handleNext = async () => {
     const currentStepFields = stepFields[currentStep]; // Validate only current step fields
-  
+    console.log(currentStep,currentStepFields)
     const isValid = await form.trigger(currentStepFields as any, { shouldFocus: true });
-  
+  console.log(isValid,"furqan");
+      console.log("Validation errors:", form.formState.errors);
+    console.log("Validation errors:", form.formState.errors);
+
+      if (isValid) {
+      // Double-check propertyFeature again for step 0
+      if (currentStep === 0) {
+        const propertyFeatures = form.getValues("propertyFeature");
+        if (!propertyFeatures || propertyFeatures.length === 0) {
+          toast({
+            title: "Validation Error",
+            description: "Please select at least one property feature before proceeding.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+    }
     if (isValid) {
       setSavedData((prev) => ({
         ...prev,

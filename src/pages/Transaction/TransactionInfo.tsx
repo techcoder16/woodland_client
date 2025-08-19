@@ -3,7 +3,7 @@ import InputField from "../../utils/InputField";
 import SelectField from "@/utils/SelectedField";
 import { DateField } from "../Manager/Rent";
 import TextAreaField from "@/utils/TextAreaField";
-import { bankOptions } from "@/lib/constant";
+import { BANKOPTIONS } from "@/lib/constant";
 
 interface TenantProps {
   register: any;
@@ -64,7 +64,7 @@ const TranscationInfo = ({
               name="fromTenantMode"
               register={register}
               error={errors?.fromTenantMode?.message?.toString()}
-              options={bankOptions}
+              options={BANKOPTIONS}
               watch={watch}
             />
 
@@ -105,7 +105,7 @@ const TranscationInfo = ({
 
               error={errors?.toLandLordMode?.message?.toString()}
               watch={watch}
-              options={bankOptions}
+              options={BANKOPTIONS}
             />
 
             <InputField label="Less Management Fees" name="toLandlordLessManagementFees" type="number" {...{ register, setValue, errors }} />

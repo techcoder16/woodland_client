@@ -165,14 +165,7 @@ const PropertyList = () => {
 
 
            <DropdownMenuSeparator />
-           <DropdownMenuItem
-             onClick={() => handleManageProperty(property)}
-      
-           >
-      <SquareChartGantt className="mr-2 h-4 w-4" />
-      Manage Property
-           </DropdownMenuItem>
-
+           
 
            <DropdownMenuSeparator />
            <DropdownMenuItem

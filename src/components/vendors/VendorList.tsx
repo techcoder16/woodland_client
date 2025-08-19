@@ -205,7 +205,7 @@ export function VendorList() {
                 filteredVendors.map((vendor) => (
                   <tr
                     key={vendor.id}
-                    className="border-b hover:bg-muted/50 transition-colors"
+                    className="border-b hover:bg-red/50 transition-colors"
                   >
                     <td className="px-4 py-3">
                       <Checkbox
@@ -215,7 +215,7 @@ export function VendorList() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded bg-primary/10 flex items-center justify-center text-primary">
+                        <div className="h-10 w-10 rounded bg-red/10 flex items-center justify-center text-red">
                           <User className="h-5 w-5" />
                         </div>
                         <div>

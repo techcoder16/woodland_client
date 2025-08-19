@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -29,10 +29,10 @@ const formSchema = z.object({
   vendor: z.boolean(),
 
   type: z.enum(['Individual', 'Company'], {
-    errorMap: () => ({ message: 'Invalid Type value. Please select one of the following options: "Company, Individual".' }),
+    errorMap: () => ({ message: ' Please select one of the following options: "Company, Individual".' }),
   }),
   title: z.enum(['mr', 'mrs', 'miss', 'ms', 'dr', 'prof'], {
-    errorMap: () => ({ message: 'Invalid title value. Please select one of the following options: "mr", "mrs", "miss", "ms", "dr", "prof".' }),
+    errorMap: () => ({ message: 'Please select one of the following options: "mr", "mrs", "miss", "ms", "dr", "prof".' }),
   }),
   firstName: z.string().nonempty('First Name is required'),
   lastName: z.string().nonempty('Last Name is required'),
@@ -227,7 +227,7 @@ const AddVendor = () => {
       setIsSubmitting(false); // Allow interactions after completion
     }
   };
-console.log(form.formState.errors)
+  console.log(form.formState.errors)
 
 
   const steps = [

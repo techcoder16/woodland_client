@@ -64,7 +64,7 @@ export const fetchTransaction = createAsyncThunk(
     try {
       const access_token = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = { Authorization: `Bearer ${access_token}` };
-      const params = `propertyId=${propertyId}`;
+      const params = `?propertyId=${propertyId}`;
       const data = await getApi("transaction", params, headers);
       return data || [];
     } catch (error: any) {

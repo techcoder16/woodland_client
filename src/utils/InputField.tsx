@@ -59,8 +59,9 @@ const InputField: React.FC<InputFieldProps> = ({
 
   return (
     <div className="p-3 rounded-sm">
-      <div className="flex items-center lg:w-full">
-        <label className="text-gray-700 font-medium mr-4 w-32">{label}</label>
+      <div className="space-y-2">
+
+        <label className="text-gray-700 font-medium  text-sm mr-4 w-32">{label}</label>
         <Input
           type={type}
           ref={inputRef}

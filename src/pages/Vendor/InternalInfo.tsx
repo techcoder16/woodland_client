@@ -53,6 +53,8 @@ const InternalInfo = ({ register,watch, clearErrors, setValue, errors }: any) =>
           Do not receive viewing feedback notifications
         </label>
       </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
       <SelectField
         label="Label"
         watch={watch}
@@ -78,6 +80,8 @@ const InternalInfo = ({ register,watch, clearErrors, setValue, errors }: any) =>
         onChange={(value) => handleSelectChange("status", value)}
         
       />
+</div>              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
       <SelectField
         label="Branch"
         name="branch"
@@ -96,13 +100,15 @@ const InternalInfo = ({ register,watch, clearErrors, setValue, errors }: any) =>
         register={register}
         error={errors.negotiator?.message?.toString()}
       />
+      </div>              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
       <InputField setValue={setValue}
         label="Source"
         name="source"
         register={register}
         error={errors.source?.message?.toString()}
       />
-
+</div>  
       <div className="underline p-5">Fees and Contract</div>
       <div className="flex items-center p-6">
         <input
@@ -116,6 +122,8 @@ const InternalInfo = ({ register,watch, clearErrors, setValue, errors }: any) =>
       </div>
 
       <div className="text-lg font-medium underline p-5">Default Sole Agency Fee</div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
       <InputSelect
       setValue={setValue}
 
@@ -138,6 +146,8 @@ const InternalInfo = ({ register,watch, clearErrors, setValue, errors }: any) =>
         options={feeOptions}
         register={register}
       />
+      </div>              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
       <InputSelect
       setValue={setValue}
       
@@ -148,9 +158,13 @@ const InternalInfo = ({ register,watch, clearErrors, setValue, errors }: any) =>
         options={feeOptions}
         register={register}
       />
+      </div>
+
 
       <div className="text-lg font-medium underline p-5">Default Multi Agency Fee</div>
-      <InputSelect
+    
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <InputSelect
       setValue={setValue}
       
         label="Sales Fee"
@@ -160,6 +174,8 @@ const InternalInfo = ({ register,watch, clearErrors, setValue, errors }: any) =>
         options={feeOptions}
         register={register}
       />
+
+
       <InputSelect
       setValue={setValue}
       
@@ -170,6 +186,9 @@ const InternalInfo = ({ register,watch, clearErrors, setValue, errors }: any) =>
         
         register={register}
       />
+
+            </div>              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
       <InputSelect
       setValue={setValue}
       
@@ -180,8 +199,11 @@ const InternalInfo = ({ register,watch, clearErrors, setValue, errors }: any) =>
         options={feeOptions}
         register={register}
       />
+      </div>          
 
       <div className="text-lg font-medium underline p-5">NRL and VAT</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
       <SelectField
       watch={watch}
           
@@ -216,40 +238,51 @@ const InternalInfo = ({ register,watch, clearErrors, setValue, errors }: any) =>
           error={errors.nrlRef?.message?.toString()}
         />
       )}
+   
       <InputField setValue={setValue}
         label="VAT Number"
         name="vatNumber"
         register={register}
         error={errors.vatNumber?.message?.toString()}
       />
-
+   </div>             
       <div className="text-lg font-medium underline p-5">Landlord/Vendor 2</div>
+
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
       <InputField setValue={setValue}
         label="Full Name"
         name="landlordFullName"
         register={register}
         error={errors.landlordFullName?.message?.toString()}
       />
+
       <InputField setValue={setValue}
         label="Contact"
         name="landlordContact"
         register={register}
         error={errors.landlordContact?.message?.toString()}
       />
-
+      </div>             
       <div className="text-lg font-medium underline p-5">Comments</div>
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
       <TextAreaField
         label="Comments"
         name="comments"
         register={register}
         error={errors.comments?.message?.toString()}
       />
+
       <TextAreaField
         label="Other Info"
         name="otherInfo"
         register={register}
         error={errors.otherInfo?.message?.toString()}
       />
+            </div>              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+</div>
     </div>
   );
 };

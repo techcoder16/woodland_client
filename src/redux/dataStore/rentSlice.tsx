@@ -50,7 +50,7 @@ export const fetchRents = createAsyncThunk(
     try {
       const access_token = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = { Authorization: `Bearer ${access_token}` };
-      const params = `${propertyId}`;
+      const params = `?propertyId=${propertyId}`;
       const data = await getApi("property-management/rent", params, headers);
       return data;
     } catch (error: any) {
