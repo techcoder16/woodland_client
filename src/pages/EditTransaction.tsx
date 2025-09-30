@@ -134,7 +134,7 @@ const EditTransaction = ({ isOpen, onClose, propertyId ,transaction}: EditTransa
     <DialogContent className="sm:max-w-7xl">
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
-          <UserPlus className="h-5 w-5 text-red-600" /> Edit Tenant
+          <UserPlus className="h-5 w-5 text-red-600" /> Edit Transaction
         </DialogTitle>
       </DialogHeader>
 

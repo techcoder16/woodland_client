@@ -2,8 +2,9 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import getApi from "@/helper/getApi";
 import deleteApi from "@/helper/deleteApi";
-import postApi from "@/helper/postApi"; // Assuming you have a helper for POST requests
+
 import { AppDispatch } from "../store";
+import { post } from "@/helper/api";
 
 // Define the PropertyParty type
 interface PropertyParty {
@@ -35,7 +36,7 @@ export const upsertPropertyParty = createAsyncThunk(
       const access_token = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = { Authorization: `Bearer ${access_token}` };
       console.log(partyData)
-      const {data,error} = await postApi("property-management/party-upsert", partyData, headers);
+      const {data,error} = await post("property-management/party-upsert", partyData, headers);
             console.log(error)
       if (error?.message)
         { 

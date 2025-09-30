@@ -81,7 +81,6 @@ const tenancyAgreementSlice = createSlice({
       })
       .addCase(fetchTenancyAgreement.fulfilled, (state, action) => {
         state.loading = false;
-        console.log(action.payload.tenancyAgreement)
         state.tenancyAgreement = action.payload?.agreement || null;
       })
       .addCase(fetchTenancyAgreement.rejected, (state, action) => {

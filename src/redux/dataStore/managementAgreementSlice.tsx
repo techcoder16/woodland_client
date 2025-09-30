@@ -2,8 +2,9 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import getApi from "@/helper/getApi";
-import postApi from "@/helper/postApi";
+
 import { AppDispatch } from "../store";
+import { post } from "@/helper/api";
 
 // Define the Management Agreement type
 export interface ManagementAgreement {
@@ -57,7 +58,7 @@ export const upsertManagementAgreement = createAsyncThunk(
         Authorization: `Bearer ${access_token}`,
         "Content-Type": "application/json",
       };
-      const res = await postApi("property-management/ma/upsert", agreementData, headers);
+      const res = await post("property-management/ma/upsert", agreementData, headers);
       await (dispatch as AppDispatch)(fetchManagementAgreement({ propertyId: agreementData.propertyId }));
       return res;
     } catch (error: any) {

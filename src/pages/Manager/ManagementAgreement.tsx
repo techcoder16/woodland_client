@@ -14,7 +14,7 @@ import { fetchManagementAgreement, upsertManagementAgreement } from "@/redux/dat
 import { cn } from "@/lib/utils";
 import jsPDF from "jspdf";
 import SelectField from "@/utils/SelectedField";
-import { DateField } from "./Rent";
+import { DateField } from "@/utils/DateField";
 
 const managementAgreementSchema = z.object({
   propertyId: z.string().min(1, "Property ID is required"),

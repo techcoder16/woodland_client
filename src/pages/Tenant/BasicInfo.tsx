@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import InputField from "../../utils/InputField";
 import Room from "../../utils/Room"; // This Room component manages the entire rooms list
 import SelectField from "@/utils/SelectedField";
+import TextAreaField from "@/utils/TextAreaField";
 
 interface TenantProps {
   register: any;
@@ -13,53 +14,40 @@ interface TenantProps {
   type?: string;
 }
 
-const Tenant = ({
-  register,
-  watch,
-  clearErrors,
-  setValue,
-  errors,
-}: TenantProps) => {
-
+const Tenant = ({ register, watch, clearErrors, setValue, errors }: TenantProps) => {
   const titleOptions = [
-    { value: 'mr', label: 'Mr' },
-    { value: 'mrs', label: 'Mrs' },
-    { value: 'miss', label: 'Miss' },
-    { value: 'ms', label: 'Ms' },
-    { value: 'dr', label: 'Dr' },
+    { value: "mr", label: "Mr" },
+    { value: "mrs", label: "Mrs" },
+    { value: "miss", label: "Miss" },
+    { value: "ms", label: "Ms" },
+    { value: "dr", label: "Dr" },
   ];
-  const [selectedTitle, setSelectedTitle] = useState('');
+  const [selectedTitle, setSelectedTitle] = useState("");
   const handleSelectChange = (name: string, value: string) => {
     // Update corresponding state based on the name of the select field
 
-    if (name === 'title') setSelectedTitle(value);
+    if (name === "title") setSelectedTitle(value);
 
     // Use setValue to update the form field value and clear any previous errors
     setValue(name, value); // Update the form field value
     clearErrors(name); // Clear any validation errors for the field
 
     // Optionally, log or do other side effects here
-
   };
-
 
   return (
     <div className="w-full p-4">
       <div className="text-lg font-medium underline p-5">Tenants</div>
-
       <div className="grid grid-cols-2 gap-4">
-
         <SelectField
           label="Title"
           name="title"
           watch={watch}
-
           setValue={setValue}
-
           options={titleOptions}
           register={register}
           error={errors.title?.message?.toString()}
-          onChange={(value) => handleSelectChange('title', value)} // Added onChange
+          onChange={value => handleSelectChange("title", value)} // Added onChange
         />
         <InputField
           setValue={setValue}
@@ -67,7 +55,9 @@ const Tenant = ({
           name="FirstName"
           register={register}
           error={errors?.FirstName?.message?.toString()}
-        /></div>  <div className="grid grid-cols-2 gap-4">
+        />
+      </div>{" "}
+      <div className="grid grid-cols-2 gap-4">
         <InputField
           setValue={setValue}
           label="Sure Name"
@@ -83,7 +73,8 @@ const Tenant = ({
           register={register}
           error={errors?.MobileNo?.message?.toString()}
         />
-      </div>  <div className="grid grid-cols-2 gap-4">
+      </div>{" "}
+      <div className="grid grid-cols-2 gap-4">
         <InputField
           setValue={setValue}
           label="Home Phone"
@@ -91,14 +82,15 @@ const Tenant = ({
           register={register}
           error={errors?.HomePhone?.message?.toString()}
         />
-
         <InputField
           setValue={setValue}
           label="Work Phone"
           name="WorkPhone"
           register={register}
           error={errors?.WorkPhone?.message?.toString()}
-        />  </div>  <div className="grid grid-cols-2 gap-4">
+        />{" "}
+      </div>{" "}
+      <div className="grid grid-cols-2 gap-4">
         <InputField
           setValue={setValue}
           label="Email"
@@ -112,7 +104,9 @@ const Tenant = ({
           name="EmployeeName"
           register={register}
           error={errors?.EmployeeName?.message?.toString()}
-        />  </div>  <div className="grid grid-cols-2 gap-4">
+        />{" "}
+      </div>{" "}
+      <div className="grid grid-cols-2 gap-4">
         <InputField
           setValue={setValue}
           label="Bank Account No"
@@ -120,16 +114,15 @@ const Tenant = ({
           register={register}
           error={errors?.BankAccountNo?.message?.toString()}
         />
-
-
         <InputField
           setValue={setValue}
           label="Sort Code"
           name="SortCode"
           register={register}
           error={errors?.SortCode?.message?.toString()}
-        />  </div>  <div className="grid grid-cols-2 gap-4">
-
+        />{" "}
+      </div>{" "}
+      <div className="grid grid-cols-2 gap-4">
         <InputField
           setValue={setValue}
           label="Bank Name"
@@ -137,15 +130,22 @@ const Tenant = ({
           register={register}
           error={errors?.BankName?.message?.toString()}
         />
-
         <InputField
           setValue={setValue}
           label="ID Check"
           name="IDCheck"
           register={register}
           error={errors?.IDCheck?.message?.toString()}
-        />  </div>  <div className="grid grid-cols-2 gap-4">
-
+        />
+      </div>
+      <div className="">
+        <TextAreaField
+          label="Address"
+          placeholder="Address"
+          name="Address"
+          register={register}
+          error={errors?.Address?.message?.toString()}
+        />
       </div>
     </div>
   );

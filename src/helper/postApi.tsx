@@ -1,5 +1,4 @@
 import axios from "axios";
-import env from "react-dotenv";
 export default async function postApi(url: string, values: object, headers: any = {}) {
   let data: any = {};
   let error: any = {};

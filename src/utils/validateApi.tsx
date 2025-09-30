@@ -1,8 +1,8 @@
 
-import postApi from "../helper/postApi";
+
 import getApi from "../helper/getApi";
 import { DEFAULT_COOKIE_GETTER } from "../helper/Cookie";
-import toast from "react-hot-toast";
+import { post } from "@/helper/api";
 
 
 export async function ValidationUserCreate(values:any) {
@@ -27,7 +27,7 @@ export async function ValidationUserCreate(values:any) {
     };
     
     
-    const data:any = await postApi("auth/create-user", Values,headers);
+    const data:any = await post("auth/create-user", Values,headers);
    
     return data.data.message || data.error.message;
 
@@ -56,7 +56,7 @@ export async function ValidationUserCreate(values:any) {
       "Access-Control-Allow-Origin": "true",
     };
 
-    await postApi("auth/update_team", Values,headers);
+    await post("auth/update_team", Values,headers);
   }
   
 
@@ -86,7 +86,7 @@ export async function ValidationUserCreate(values:any) {
     };
     
     
-    const value:any  = await postApi("auth/create_auth_screens", Values,headers);
+    const value:any  = await post("auth/create_auth_screens", Values,headers);
     return value.data.message || value.error.message;
     
   }
@@ -112,7 +112,7 @@ export async function ValidationUserCreate(values:any) {
       website: values.website,
     };
   
-    const value:any  =   await postApi("auth/update_user_settings", Values);
+    const value:any  =   await post("auth/update_user_settings", Values);
     return value.data.message || value.error.message;
     
   }

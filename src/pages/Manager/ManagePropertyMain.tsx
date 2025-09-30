@@ -145,61 +145,7 @@ const ManageProperty = () => {
 
   // ----- API Submit Handlers ----- //
 
-  const onSubmitFeature = async (data: FeatureFormData) => {
-    const payload = { ...data };
-    const res = await postApi("/manager/features/create", data);
-    if (res) {
-      alert("Feature created successfully");
-      resetFeature();
-    } else {
-      alert("Error creating feature");
-    }
-  };
-
-  const onSubmitParty = async (data: PartyFormData) => {
-    const payload = { ...data };
-    const res = await fetch("/manager/parties/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (res.ok) {
-      alert("Party created successfully");
-      resetParty();
-    } else {
-      alert("Error creating party");
-    }
-  };
-
-  const onSubmitLease = async (data: LeaseFormData) => {
-    const payload = { ...data };
-    const res = await fetch("/manager/leases/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (res.ok) {
-      alert("Lease created successfully");
-      resetLease();
-    } else {
-      alert("Error creating lease");
-    }
-  };
-
-  const onSubmitTransaction = async (data: TransactionFormData) => {
-    const payload = { ...data };
-    const res = await fetch("/manager/transactions/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (res.ok) {
-      alert("Transaction created successfully");
-      resetTransaction();
-    } else {
-      alert("Error creating transaction");
-    }
-  };
+  
 
   const onSubmitNote = async (data: NoteFormData) => {
     const payload = { ...data };
@@ -228,7 +174,7 @@ const ManageProperty = () => {
               </h1>
               {property && (
                 <p className="">
-                  Property ID: {property.id}
+                  Property ID: {property.propertyNumber}
                 </p>
               )}
             </div>
@@ -344,85 +290,7 @@ const ManageProperty = () => {
                 <TransactionPage propertyId={property.id} />
               </TabsContent>
 
-              {/* ----- Leases Tab ----- */}
-              <TabsContent value="leases" className="mt-0">
-                <Card className="shadow-sm border-0 ">
-                  <CardHeader className="">
-                    <CardTitle className="text-xl font-semibold  flex items-center">
-                      <FileText className="h-5 w-5 mr-2 " />
-                      Create Lease Agreement
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <form
-                      onSubmit={handleSubmitLease(onSubmitLease)}
-                      className="space-y-6"
-                    >
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <InputField
-                          label="Landlord ID"
-                          name="landlordId"
-                          register={registerLease}
-                          error={errorsLease.landlordId?.message}
-                          placeholder="Enter landlord ID"
-                          setValue={setLeaseValue}
-                        />
-                        <InputField
-                          label="Rent Amount"
-                          name="rent"
-                          register={registerLease}
-                          error={errorsLease.rent?.message}
-                          placeholder="Enter rent amount"
-                          type="number"
-                          setValue={setLeaseValue}
-                        />
-                        <InputField
-                          label="Security Deposit"
-                          name="deposit"
-                          register={registerLease}
-                          error={errorsLease.deposit?.message}
-                          placeholder="Enter deposit amount"
-                          type="number"
-                          setValue={setLeaseValue}
-                        />
-                        <InputField
-                          label="Agreement Date"
-                          name="agreementDate"
-                          register={registerLease}
-                          error={errorsLease.agreementDate?.message}
-                          placeholder="YYYY-MM-DD (optional)"
-                          setValue={setLeaseValue}
-                        />
-                        <InputField
-                          label="Start Date"
-                          name="startDate"
-                          register={registerLease}
-                          error={errorsLease.startDate?.message}
-                          placeholder="YYYY-MM-DD"
-                          setValue={setLeaseValue}
-                        />
-                        <InputField
-                          label="End Date"
-                          name="endDate"
-                          register={registerLease}
-                          error={errorsLease.endDate?.message}
-                          placeholder="YYYY-MM-DD (optional)"
-                          setValue={setLeaseValue}
-                        />
-                      </div>
-                      <div className="flex justify-end pt-4">
-                        <Button 
-                          type="submit" 
-                          className="px-8 py-2 rounded-lg font-medium"
-                        >
-                          Create Lease Agreement
-                        </Button>
-                      </div>
-                    </form>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
+            
               {/* ----- Notes Tab ----- */}
               <TabsContent value="notes" className="mt-0">
                 <Card className="shadow-sm border-0 ">

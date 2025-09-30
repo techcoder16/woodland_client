@@ -3,34 +3,17 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Check, ArrowLeft, ArrowRight, UserPlus } from "lucide-react";
-import postApi from "@/helper/postApi";
 import LoadingBar from "react-top-loading-bar";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import BasicInfo from "./Tenant/BasicInfo";
 import { post } from "@/helper/api";
+import { tenantSchema } from "@/schema/tenant.schema";
 
-const formSchema = z.object({
-  id: z.string().optional(),
-  title: z.string().nullable(),
-  FirstName: z.string().nullable(),
-  SureName: z.string().nullable(),
-  MobileNo: z.string().nullable(),
-  HomePhone: z.string().nullable(),
-  WorkPhone: z.string().nullable(),
-  Email: z.string().email().nullable(),
-  EmployeeName: z.string().nullable(),
-  BankAccountNo: z.string().nullable(),
-  SortCode: z.string().nullable(),
-  BankName: z.string().nullable(),
-  IDCheck: z.string().nullable(),
 
-});
-
-type FormData = z.infer<typeof formSchema>;
+type FormData = z.infer<typeof tenantSchema>;
 
 type AddTenantModalProps = {
   isOpen: boolean;
@@ -40,7 +23,7 @@ type AddTenantModalProps = {
 
 export function AddTenant({ isOpen, onClose, propertyId }: AddTenantModalProps) {
   const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(tenantSchema),
     mode: "onSubmit",
   });
   const { toast } = useToast();

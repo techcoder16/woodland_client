@@ -1,22 +1,51 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
 import { deleteTenant, fetchtenants } from "@/redux/dataStore/tenantSlice";
-import { getVendorById, fetchVendors } from "@/redux/dataStore/vendorSlice";
+import { fetchVendors } from "@/redux/dataStore/vendorSlice";
 import { fetchPropertyParties, upsertPropertyParty } from "@/redux/dataStore/partySlice";
 import { Button } from "@/components/ui/button";
-import { Edit, MoreHorizontal, Plus, Trash, User, Building2, Loader2, ChevronDown } from "lucide-react";
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  Edit,
+  MoreHorizontal,
+  Plus,
+  Trash,
+  User,
+  Building2,
+  Loader2,
+  ChevronDown,
+} from "lucide-react";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { AddTenant } from "../AddTenant";
 import EditTenant from "../EditTenant";
+import { Dialog, DialogContent } from "@/components/ui/dialog"; // shadcn dialog
+import { PDFViewer } from "@react-pdf/renderer";
+import EnvelopePDF from "@/components/pdf/EnvelopePdf";
+import getApi from "@/helper/getApi";
+import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 
 const Parties = ({ property }: any) => {
   const dispatch = useAppDispatch();
 
-  const { tenants, totalPages, loading } = useAppSelector((state) => state.tenants);
-  const { vendors, vendorLoading } = useAppSelector((state) => state.vendors);
-  const { propertyParties }:any = useAppSelector((state) => state.parties);
+  const { tenants, totalPages, loading } = useAppSelector(state => state.tenants);
+  const { vendors, vendorLoading } = useAppSelector(state => state.vendors);
+  const { propertyParties }: any = useAppSelector(state => state.parties);
+  const [isTenantPdfOpen, setTenantPdfOpen] = useState(false);
+  const [isLandlordPdfOpen, setLandlordPdfOpen] = useState(false);
 
   const [selectedTenants, setSelectedTenants] = useState<any[]>([]);
   const [selectedLandlord, setSelectedLandlord] = useState<any>(null);
@@ -25,11 +54,13 @@ const Parties = ({ property }: any) => {
   const [isEditTenantModalOpen, setIsEditTenantModalOpen] = useState(false);
   const [tenantEditSet, setTenantEdit] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-
+  const [featureData, setFeatureData] = useState<any>(null);
   const existingParty = useMemo(() => {
     const partiesArray = Array.isArray(propertyParties)
       ? propertyParties
-      : propertyParties ? [propertyParties] : [];
+      : propertyParties
+      ? [propertyParties]
+      : [];
     return partiesArray.filter((party: any) => party.propertyId === property?.id);
   }, [propertyParties, property]);
 
@@ -53,10 +84,10 @@ const Parties = ({ property }: any) => {
       const tenant = tenants.find((t: any) => t.id === tenantId);
       if (!tenant) return;
 
-      setSelectedTenants((prev) => {
-        const isSelected = prev.some((t) => t.id === tenantId);
+      setSelectedTenants(prev => {
+        const isSelected = prev.some(t => t.id === tenantId);
         if (isSelected) {
-          return prev.filter((t) => t.id !== tenantId);
+          return prev.filter(t => t.id !== tenantId);
         } else {
           return [...prev, tenant];
         }
@@ -75,38 +106,60 @@ const Parties = ({ property }: any) => {
     [dispatch, totalPages]
   );
 
- useEffect(() => {
-  console.log(
-    propertyParties.data ,
-    propertyParties?.data?.tenants, 
-    )
-  if (
-  
-      propertyParties.data  &&
-     propertyParties.data.tenants &&
-      propertyParties.data.tenants.length > 0
-  
-  ) {
-    // Map tenants from propertyParties.tenants to full tenant objects from tenants list
-    const matchingTenants =   propertyParties.data.tenants
-      .map((pt: any) => tenants.find((t: any) => t.id === pt.id))
-      .filter(Boolean);
 
-      console.log(matchingTenants, "matchingTenants");
-    setSelectedTenants(matchingTenants);
-console.log(vendors,"array vendors",propertyParties.data.VendorId)
-    // Find landlord by VendorId in vendors list
-    const landlord =
-      vendors.find((v: any) => v.id === propertyParties.data.VendorId) ||
-      propertyParties.vendor ||
-      null;
-      console.log(landlord)
-    setSelectedLandlord(landlord);
-  } else {
-    setSelectedTenants([]);
-    setSelectedLandlord(null);
-  }
-}, [propertyParties, property, tenants, vendors]);
+
+    useEffect(() => {
+      async function fetchFeature() {
+        try {
+          const accessToken = await DEFAULT_COOKIE_GETTER("access_token");
+          const headers = {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+          };
+          const params = `?propertyId=${property.id}`;
+          const response = await getApi(`property-management/feature`, params, headers);
+          console.log(response);
+          const data: any = response;
+          if (data?.features && data?.features.length > 0) {
+            // Assuming only one feature per property, integrate the first feature.
+            setFeatureData(data.features[0]);
+
+          }
+        } catch (error) {
+          console.error("Error fetching features:", error);
+        }
+      }
+      if (property?.id) {
+        fetchFeature();
+      }
+    }, [property?.id]);
+  
+
+
+
+  useEffect(() => {
+    if (
+      propertyParties.data &&
+      propertyParties.data.tenants &&
+      propertyParties.data.tenants.length > 0
+    ) {
+      // Map tenants from propertyParties.tenants to full tenant objects from tenants list
+      const matchingTenants = propertyParties.data.tenants
+        .map((pt: any) => tenants.find((t: any) => t.id === pt.id))
+        .filter(Boolean);
+
+      setSelectedTenants(matchingTenants);
+      // Find landlord by VendorId in vendors list
+      const landlord =
+        vendors.find((v: any) => v.id === propertyParties.data.VendorId) ||
+        propertyParties.vendor ||
+        null;
+      setSelectedLandlord(landlord);
+    } else {
+      setSelectedTenants([]);
+      setSelectedLandlord(null);
+    }
+  }, [propertyParties, property, tenants, vendors]);
 
   const handleDeleteTenant = useCallback(
     async (id: string) => {
@@ -131,23 +184,26 @@ console.log(vendors,"array vendors",propertyParties.data.VendorId)
       return;
     }
 
-      const partyData:any = {
-        propertyId: property.id,
-        tenantId: selectedTenants,
-        vendorId: selectedLandlord.id,
-      };
-      
-      
+    const partyData: any = {
+      propertyId: property.id,
+      tenantId: selectedTenants,
+      vendorId: selectedLandlord.id,
+    };
 
     try {
       await dispatch(upsertPropertyParty(partyData)).unwrap();
-      
+
       toast.success("Parties data saved successfully!");
       dispatch(fetchPropertyParties(property.id));
     } catch (error) {
       toast.error("Failed to save parties.");
     }
   }, [dispatch, property, selectedTenants, selectedLandlord]);
+
+  useEffect(() => {
+console.log("Selected Tenants:", selectedTenants);
+
+  }, [selectedTenants]);
 
   return (
     <div className="p-6 space-y-6">
@@ -159,24 +215,26 @@ console.log(vendors,"array vendors",propertyParties.data.VendorId)
 
           <button
             type="button"
-            onClick={() => setTenantDropdownOpen((prev) => !prev)}
+            onClick={() => setTenantDropdownOpen(prev => !prev)}
             className="w-full border bg-transparent rounded-md px-4 py-2 text-sm text-left  shadow-sm flex justify-between items-center"
           >
             {selectedTenants.length > 0
-              ? selectedTenants.map((t) => `${t.FirstName} ${t.SureName}`).join(", ")
+              ? selectedTenants.map(t => `${t.FirstName} ${t.SureName}`).join(", ")
               : "Select tenants"}
             <ChevronDown className="w-4 h-4 ml-2" />
           </button>
 
           {isTenantDropdownOpen && (
             <div className="border rounded-md mt-2 max-h-60 overflow-y-auto space-y-2 shadow-sm p-2 z-10 relative">
-              {tenants.map((tenant) => {
-                const isSelected = selectedTenants.some((t) => t.id === tenant.id);
+              {tenants.map(tenant => {
+                const isSelected = selectedTenants.some(t => t.id === tenant.id);
                 return (
                   <div
                     key={tenant.id}
                     onClick={() => handleTenantChange(tenant.id)}
-                    className={`cursor-pointer px-3 py-1 rounded hover:bg-gray-100 text-sm ${isSelected ? "bg-blue-100 text-blue-800 font-medium" : ""}`}
+                    className={`cursor-pointer px-3 py-1 rounded hover:bg-gray-100 text-sm ${
+                      isSelected ? "bg-blue-100 text-blue-800 font-medium" : ""
+                    }`}
                   >
                     {tenant.FirstName} {tenant.SureName}
                   </div>
@@ -190,17 +248,22 @@ console.log(vendors,"array vendors",propertyParties.data.VendorId)
               <User className="h-6 w-6 text-red-500" /> Selected Tenant(s)
             </h2>
             {selectedTenants.length > 0 ? (
-              selectedTenants.map((tenant) => (
+              selectedTenants.map(tenant => (
                 <div key={tenant.id} className="mb-4 p-3 border-b border-gray-200">
-                  <p><strong>Name:</strong> {tenant.title} {tenant.FirstName} {tenant.SureName}</p>
-                  <p><strong>Email:</strong> {tenant.Email}</p>
-                  <p><strong>Mobile:</strong> {tenant.MobileNo}</p>
+                  <p>
+                    <strong>Name:</strong> {tenant.title} {tenant.FirstName} {tenant.SureName}
+                  </p>
+                  <p>
+                    <strong>Email:</strong> {tenant.Email}
+                  </p>
+                  <p>
+                    <strong>Mobile:</strong> {tenant.MobileNo}
+                  </p>
                 </div>
               ))
             ) : (
               <p className="text-gray-500 italic">No tenants selected.</p>
             )}
-
 
             <Button onClick={handleSaveParty} className="mt-4">
               Save Parties
@@ -214,17 +277,17 @@ console.log(vendors,"array vendors",propertyParties.data.VendorId)
               <Building2 className="h-6 w-6 text-red-500 mb-2" /> Landlord Details
             </h2>
 
-                        {/* <label className="block mt-4 mb-2 text-lg font-semibold text-gray-700">Select Landlord</label> */}
+            {/* <label className="block mt-4 mb-2 text-lg font-semibold text-gray-700">Select Landlord</label> */}
             <select
               value={selectedLandlord?.id || ""}
-              onChange={(e) => {
+              onChange={e => {
                 const landlord = vendors.find((l: any) => l.id === e.target.value);
                 setSelectedLandlord(landlord || null);
               }}
               className="w-full border rounded-md bg-transparent px-4 py-2 text-sm shadow-sm  mb-2"
             >
               <option value="">Select a landlord</option>
-              {vendors.map((landlord) => (
+              {vendors.map(landlord => (
                 <option className="bg-transparent" key={landlord.id} value={landlord.id}>
                   {landlord.firstName} {landlord.lastName}
                 </option>
@@ -239,11 +302,27 @@ console.log(vendors,"array vendors",propertyParties.data.VendorId)
             ) : selectedLandlord ? (
               <div className="space-y-4">
                 <div className="p-4 rounded-xl border border-gray-200 shadow-sm">
-                  <p><strong>Name:</strong> {selectedLandlord.firstName} {selectedLandlord.lastName}</p>
-                  <p><strong>Email:</strong> {selectedLandlord.email}</p>
-                  <p><strong>Phone:</strong> {selectedLandlord.phoneMobile}</p>
-                  <p><strong>Company:</strong> {selectedLandlord.company}</p>
-                  <p><strong>Address:</strong> {selectedLandlord.addressLine1}</p>
+                  <p>
+                    <strong>Name:</strong> {selectedLandlord.firstName} {selectedLandlord.lastName}
+                  </p>
+                  <p>
+                    <strong>Email:</strong> {selectedLandlord.email}
+                  </p>
+                  <p>
+                    <strong>Phone:</strong> {selectedLandlord.phoneMobile}
+                  </p>
+                  <p>
+                    <strong>Company:</strong> {selectedLandlord.company}
+                  </p>
+                  <p>
+                    <strong>Address:</strong> {selectedLandlord.addressLine1}
+                  </p>
+                  <p>
+                    <strong>Phone Home:</strong> {selectedLandlord.phoneHome}
+                  </p>
+                  <p>
+                    <strong>Phone Work:</strong> {selectedLandlord.phoneWork}
+                  </p>
                 </div>
               </div>
             ) : (
@@ -272,7 +351,9 @@ console.log(vendors,"array vendors",propertyParties.data.VendorId)
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={4}>Loading...</td></tr>
+              <tr>
+                <td colSpan={4}>Loading...</td>
+              </tr>
             ) : tenants.length > 0 ? (
               tenants.map((tenant: any) => (
                 <tr key={tenant.id}>
@@ -302,7 +383,11 @@ console.log(vendors,"array vendors",propertyParties.data.VendorId)
                 </tr>
               ))
             ) : (
-              <tr><td className="px-4 py-8 text-center" colSpan={4}>No tenants found.</td></tr>
+              <tr>
+                <td className="px-4 py-8 text-center" colSpan={4}>
+                  No tenants found.
+                </td>
+              </tr>
             )}
           </tbody>
         </table>
@@ -328,6 +413,55 @@ console.log(vendors,"array vendors",propertyParties.data.VendorId)
           </PaginationContent>
         </Pagination>
       </div>
+
+      <div className="flex gap-4 my-4">
+        <Button onClick={() => setTenantPdfOpen(true)}>Tenant Address PDF</Button>
+        <Button onClick={() => setLandlordPdfOpen(true)}>Landlord Address PDF</Button>
+      </div>
+
+      <Dialog open={isTenantPdfOpen} onOpenChange={setTenantPdfOpen}>
+        <DialogContent className="w-full h-full">
+          <PDFViewer width="100%" height="100%">
+            <EnvelopePDF
+              recipient={{
+              
+                name: `${selectedTenants[0]?.title?.toUpperCase()} ${selectedTenants[0]?.FirstName} ${selectedTenants[0]?.SureName}`,
+                addressLine1: `${featureData?.DoorNumber} ${featureData?.Road || ""}`,
+                city: featureData?.towns || "",
+                postcode: property?.postCode || "",
+              }}
+              sender={{
+               addressLine1: process.env.NEXT_PUBLIC_OFFICE_ADDRESS || "235 Cranbrook Road",
+                city: process.env.NEXT_PUBLIC_OFFICE_CITY || "Ilford, Essex",
+                postcode: process.env.NEXT_PUBLIC_OFFICE_POSTCODE || "IG1 4TD",
+              }}
+            />
+          </PDFViewer>
+        </DialogContent>
+      </Dialog>
+
+      {/* Landlord PDF Modal */}
+      <Dialog open={isLandlordPdfOpen} onOpenChange={setLandlordPdfOpen}>
+        <DialogContent className="w-full h-full">
+          <PDFViewer width="100%" height="100%">
+            <EnvelopePDF
+              recipient={{
+                title: selectedLandlord?.title || "",
+
+                name: `${selectedLandlord?.firstName} ${selectedLandlord?.lastName}`,
+                addressLine1: selectedLandlord?.addressLine1 || "",
+                city: selectedLandlord?.city || "",
+                postcode: selectedLandlord?.postcode || "",
+              }}
+              sender={{
+                addressLine1: process.env.NEXT_PUBLIC_OFFICE_ADDRESS || "235 Cranbrook Road",
+                city: process.env.NEXT_PUBLIC_OFFICE_CITY || "Ilford, Essex",
+                postcode: process.env.NEXT_PUBLIC_OFFICE_POSTCODE || "IG1 4TD",
+              }}
+            />
+          </PDFViewer>
+        </DialogContent>
+      </Dialog>
 
       <AddTenant isOpen={isAddTenantModalOpen} onClose={() => setIsAddTenantModalOpen(false)} />
       {isEditTenantModalOpen && (

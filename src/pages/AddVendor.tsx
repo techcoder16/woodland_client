@@ -13,7 +13,6 @@ import StandardInfo from './Vendor/StandardInfo';
 import InternalInfo from './Vendor/InternalInfo';
 import BankDetails from './Vendor/BankDetails';
 import WebLogin from './Vendor/WebLogin';
-import postApi from "@/helper/postApi"; // Ensure you have this utility function
 
 
 import Attachments from './Vendor/Attachments';
@@ -22,6 +21,7 @@ import LoadingBar from "react-top-loading-bar";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { post } from "@/helper/api";
 
 
 const formSchema = z.object({
@@ -189,7 +189,7 @@ const AddVendor = () => {
 
 
       // Call postApi with FormData and headers
-      const { data: apiData, error } = await postApi("vendors/create", formData, headers);
+      const { data: apiData, error } = await post("vendors/create", formData, headers);
       setProgress(60);
 
       if (error && error.message) {

@@ -20,7 +20,7 @@ interface Rent {
   DssRef: string;
   HowFurnished: string;
   Note: string;
-  oldRef:string;
+  OldRef:string;
   fees:string;
   closed:boolean;
   fees_input:string;

@@ -6,12 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
 
-
 import { Card } from "@/components/ui/card";
 import { Check, ArrowLeft, ArrowRight } from "lucide-react";
 
-
-import Attachments from './Property/Attachments';
+import Attachments from "./Property/Attachments";
 import LoadingBar from "react-top-loading-bar";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import PropertyInfo from "./Property/PropertyInfo";
@@ -24,7 +22,6 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { post } from "@/helper/api";
 import { propertySchema } from "@/schema/property.schema";
 
-
 type FormData = z.infer<typeof propertySchema>;
 
 const AddProperty = () => {
@@ -36,20 +33,16 @@ const AddProperty = () => {
 
   const { watch } = form;
 
-
-
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
 
   useEffect(() => {
     console.log("Form Errors:", form.formState.errors);
   }, [form.formState.errors]);
 
-
   const [progress, setProgress] = useState(0);
   const onSubmit = async (data: FormData) => {
-    console.log("submit button")
+    console.log("submit button");
     const isValid = await form.trigger(); // Validate all fields before final submission
 
     if (!isValid) return;
@@ -70,49 +63,39 @@ const AddProperty = () => {
       // Dynamically append all fields from `data`
 
       for (const [key, value] of Object.entries(data)) {
-        console.log(key, value)
+        console.log(key, value);
 
         if (key === "attachments" && Array.isArray(value)) {
-
           // Handle attachments array
           value.forEach((file: any, index) => {
             if (file) {
               formData.append(`attachments[${index}]`, file); // Append each file individually
             }
           });
-        }
-        else if (key === "rooms") {
+        } else if (key === "rooms") {
           formData.append("rooms", JSON.stringify(value));
-        }
-
-        else if (typeof value === "boolean") {
-
+        } else if (typeof value === "boolean") {
           formData.append(key, JSON.stringify(value)); // Send as string
-
         } else if (value !== null && value !== undefined) {
-
-          if (Array.isArray(value) && key == "selectPortals" || key == "propertyFeature") {
-
+          if ((Array.isArray(value) && key == "selectPortals") || key == "propertyFeature") {
             // Handle arrays (not just attachments)
-            value && Array(value)?.forEach((item: any, index) => {
-              if (item !== null && item !== undefined) {
-                formData.append(`${key}[${index}]`, item);
-              }
-            });
-          }
-          else {
+            value &&
+              Array(value)?.forEach((item: any, index) => {
+                if (item !== null && item !== undefined) {
+                  formData.append(`${key}[${index}]`, item);
+                }
+              });
+          } else {
             formData.append(key, String(value)); // Append all other values as strings
           }
         }
       }
-
 
       // Call postApi with FormData and headers
       const { data: apiData, error }: any = await post("properties", formData, headers);
       setProgress(60);
 
       if (error && error.message) {
-
         toast({
           title: "Error",
           description: error.message || "Failed to create property.",
@@ -125,7 +108,6 @@ const AddProperty = () => {
       const propertyId = apiData?.property?.id;
 
       if (propertyId && propertyId.length > 0) {
-
         toast({
           title: "Success",
           description: apiData.message || "",
@@ -147,45 +129,104 @@ const AddProperty = () => {
     }
   };
 
-
-
   const steps = [
-    { label: "Standard Info", component: <PropertyInfo watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
-    { label: "Description", component: <Description watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
-    { label: "More Info", component: <MoreInfo watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
-    { label: "Photos/Floor/FPC Plan", component: <PhotosFloorFPCPlan watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} unregister={form.unregister} /> },
+    {
+      label: "Standard Info",
+      component: (
+        <PropertyInfo
+          watch={watch}
+          register={form.register}
+          errors={form.formState.errors}
+          setValue={form.setValue}
+          clearErrors={form.clearErrors}
+        />
+      ),
+    },
+    {
+      label: "Description",
+      component: (
+        <Description
+          watch={watch}
+          register={form.register}
+          errors={form.formState.errors}
+          setValue={form.setValue}
+          clearErrors={form.clearErrors}
+        />
+      ),
+    },
+    {
+      label: "More Info",
+      component: (
+        <MoreInfo
+          watch={watch}
+          register={form.register}
+          errors={form.formState.errors}
+          setValue={form.setValue}
+          clearErrors={form.clearErrors}
+        />
+      ),
+    },
+    {
+      label: "Photos/Floor/FPC Plan",
+      component: (
+        <PhotosFloorFPCPlan
+          watch={watch}
+          register={form.register}
+          errors={form.formState.errors}
+          setValue={form.setValue}
+          clearErrors={form.clearErrors}
+          unregister={form.unregister}
+        />
+      ),
+    },
 
-    { label: "Attachments", component: <Attachments watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
-    { label: "Publish", component: <Publish watch={watch} register={form.register} errors={form.formState.errors} setValue={form.setValue} clearErrors={form.clearErrors} /> },
-
-
+    {
+      label: "Attachments",
+      component: (
+        <Attachments
+          watch={watch}
+          register={form.register}
+          errors={form.formState.errors}
+          setValue={form.setValue}
+          clearErrors={form.clearErrors}
+        />
+      ),
+    },
+    {
+      label: "Publish",
+      component: (
+        <Publish
+          watch={watch}
+          register={form.register}
+          errors={form.formState.errors}
+          setValue={form.setValue}
+          clearErrors={form.clearErrors}
+        />
+      ),
+    },
   ];
-
 
   const isLastStep = currentStep === steps.length - 1;
 
-
-
-
   const [savedData, setSavedData] = useState<Record<number, any>>({});
- 
+
   const handleNext = async () => {
     const currentStepFields = stepFields[currentStep]; // Validate only current step fields
-  
+
     const isValid = await form.trigger(currentStepFields as any, { shouldFocus: true });
-  
+
     if (isValid) {
-      setSavedData((prev) => ({
+      setSavedData(prev => ({
         ...prev,
         [currentStep]: form.getValues(),
       }));
-  
+
       if (currentStep < steps.length - 1) {
-        setCurrentStep((prev) => prev + 1);
+        setCurrentStep(prev => prev + 1);
       }
-  
+
       const nextStepData = savedData[currentStep + 1];
-  
+
       if (nextStepData) {
         form.reset(nextStepData);
       }
@@ -196,26 +237,22 @@ const AddProperty = () => {
 
   const handlePrevious = () => {
     // Save the current step's data
-    setSavedData((prev) => ({
+    setSavedData(prev => ({
       ...prev,
       [currentStep]: form.getValues(),
     }));
 
-
     // Move to the previous step
-    setCurrentStep((prev) => Math.max(prev - 1, 0));
+    setCurrentStep(prev => Math.max(prev - 1, 0));
 
     // Restore the saved data for the previous step
     const previousStepData = savedData[currentStep - 1];
     if (previousStepData) {
-
       form.reset(previousStepData);
     }
-
   };
 
   return (
-
     <DashboardLayout>
       {isSubmitting && (
         <div className="fixed inset-0 h-full w-full bg-black bg-opacity-50 z-50 flex items-center justify-center">
@@ -223,13 +260,7 @@ const AddProperty = () => {
         </div>
       )}
 
-
       <div className="min-h-screen bg-background">
-
-
-
-
-
         <LoadingBar
           color="rgb(95,126,220)"
           progress={progress}
@@ -243,11 +274,15 @@ const AddProperty = () => {
             <div className="flex justify-between items-center mb-4">
               {steps.map((step, index) => (
                 <div key={index} className="flex-1 text-center">
-                  <div className={`w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center 
-                ${index <= currentStep ? "bg-red-600 text-white" : "bg-gray-200 text-gray-600"}`}>
+                  <div
+                    className={`w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center 
+                ${index <= currentStep ? "bg-red-600 text-white" : "bg-gray-200 text-gray-600"}`}
+                  >
                     {index < currentStep ? <Check className="h-5 w-5" /> : index + 1}
                   </div>
-                  <p className={`text-sm ${index <= currentStep ? "text-red-600" : "text-gray-600"}`}>
+                  <p
+                    className={`text-sm ${index <= currentStep ? "text-red-600" : "text-gray-600"}`}
+                  >
                     {step.label}
                   </p>
                 </div>
@@ -257,9 +292,6 @@ const AddProperty = () => {
           </div>
 
           <Card className="p-6 shadow-md">
-
-
-
             <form onSubmit={form.handleSubmit(onSubmit)}>
               {steps[currentStep].component}
 
@@ -274,7 +306,14 @@ const AddProperty = () => {
                 </Button>
 
                 {isLastStep ? (
-                  <Button key="submit" type="submit" onClick={() => { console.log("asdkalsjds") }} className="bg-red-500 text-white px-4 py-2 rounded">
+                  <Button
+                    key="submit"
+                    type="submit"
+                    onClick={() => {
+                      console.log("asdkalsjds");
+                    }}
+                    className="bg-red-500 text-white px-4 py-2 rounded"
+                  >
                     Submit <Check className="ml-2 h-4 w-4" />
                   </Button>
                 ) : (
@@ -283,15 +322,12 @@ const AddProperty = () => {
                   </Button>
                 )}
               </div>
-
-
             </form>
           </Card>
         </div>
       </div>
     </DashboardLayout>
-
   );
 };
 
-export default AddProperty; 
+export default AddProperty;

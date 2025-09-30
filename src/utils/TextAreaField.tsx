@@ -30,9 +30,8 @@ const InputField: React.FC<InputFieldProps> = ({
   
  return (
 
-  <div className=" p-3 rounded-sm">
-    <div className="flex items-center w-full">
-      <label className="text-gray-700 font-medium mr-4 w-32">{label}</label>
+  <div className=" p-3 rounded-sm text-sm items-center gap-2   my-2 space-y-2">
+      <label className="font-medium text-gray-700 whitespace-nowrap">{label}</label>
       <Textarea 
      
         className=""
@@ -41,7 +40,7 @@ const InputField: React.FC<InputFieldProps> = ({
         onChange={handleChange}  // Attach the onChange handler
 
       />
-    </div>
+
     {error && <p className="text-red-500 mt-1 mx-2">{error}</p>}
   </div>
  );

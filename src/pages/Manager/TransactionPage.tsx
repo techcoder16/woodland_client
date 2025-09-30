@@ -2,21 +2,26 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 
-// UI components (adjust imports to your paths)
+// UI components
 import { Button } from "@/components/ui/button";
-import {  Filter, Phone, Plus, Search } from "lucide-react";
+import { Filter, Plus, Search, Eye, Calendar, CreditCard, User, Building } from "lucide-react";
 
 // Redux
-import { useDispatch } from "react-redux";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
-import { deleteTransaction, fetchTransaction } from "@/redux/dataStore/transactionSlice"; 
-// ^ Adjust to match your actual slice and actions
+import { deleteTransaction, fetchTransaction } from "@/redux/dataStore/transactionSlice";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 // Others
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
-
-import { Edit, MoreHorizontal, PhoneCall, Trash } from "lucide-react";
+import { Edit, MoreHorizontal, Trash } from "lucide-react";
 import {
   Pagination,
   PaginationContent,
@@ -34,263 +39,76 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import EditTransaction from "../EditTransaction";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
-
-/**
- * 2) TransactionPage Component
- */
 const TransactionPage: React.FC<{ propertyId: string }> = ({ propertyId }) => {
   const dispatch = useAppDispatch();
-  // const { transaction } = useAppSelector((state) => state.transaction); 
-  // ^ Adjust the selector name to match your slice
-
   
-    // Redux selectors
-    const { transaction, totalPages, loading, error } = useAppSelector((state) => state.transaction);
+  // Redux selectors
+  const { transaction, totalPages, loading, error } = useAppSelector((state) => state.transaction);
   
-    const [searchTerm, setSearchTerm] = useState("");
-    // Local state
-    const [isAddTranscationModalOpen, setIsAddTransactionModalOpen] = useState(false);
-    const [isEditTransactionModalOpen, setIsEditTransactionModalOpen] = useState(false);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [transactionEditSet, setTransactionEdit] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isAddTranscationModalOpen, setIsAddTransactionModalOpen] = useState(false);
+  const [isEditTransactionModalOpen, setIsEditTransactionModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [transactionEditSet, setTransactionEdit] = useState("");
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('cards'); // Default to cards for mobile
 
-      const handlePageChange = useCallback(
-        (page: number) => {
-          if (page > 0 && page <= totalPages) {
-            setCurrentPage(page);
-            dispatch(fetchTransaction({ page, search: "" }));
-          }
-        },
-        [dispatch, totalPages]
-      );
+  const handlePageChange = useCallback(
+    (page: number) => {
+      if (page > 0 && page <= totalPages) {
+        setCurrentPage(page);
+        dispatch(fetchTransaction({ page, search: "" }));
+      }
+    },
+    [dispatch, totalPages]
+  );
 
+  const handleDeleteTransaction = useCallback(
+    async (id: any, propertyId: string) => {
+      try {
+        dispatch(deleteTransaction({ id: id, propertyId: propertyId })).unwrap();
+        toast.success("Transaction deleted successfully!");
+      } catch (error) {
+        console.log(error)
+        toast.error(error || "Failed to delete Transaction");
+      }
+    },
+    [dispatch]
+  );
 
-      
-      // Memoized handler for deleting a tenant
-      const handleDeleteTransaction = useCallback(
-        async (id: any,propertyId:string) => {
+  const handleEditTransaction = useCallback((tenant: any) => {
+    setTransactionEdit(tenant);
+    setIsEditTransactionModalOpen(true);
+  }, []);
 
-          console.log(id,propertyId)
-          try {
-dispatch(deleteTransaction({ id: id, propertyId:propertyId })).unwrap();
-            toast.success("Transaction deleted successfully!");
-          } catch (error) {
-            console.log(error)
-            toast.error(error || "Failed to delete Transaction");
-          }
-        },
-        [dispatch]
-      );
-    
-      const handleEditTransaction = useCallback((tenant: any) => {
-        setTransactionEdit(tenant);
-        setIsEditTransactionModalOpen(true);
-      }, []);
-    
-    
-
-
- 
-  /**
-   * 3) Fetch existing transaction data on mount
-   */
   useEffect(() => {
     dispatch(fetchTransaction({ propertyId }));
   }, [dispatch, propertyId]);
 
-  /**
-   * 4) If we have existing data in Redux, reset the form
-   */
- 
-  /**
-   * 5) Handle date fields with a popover + calendar
-   */
-
-
-  /**
-   * 8) Define example options for your SelectField
-   *    Adjust to your actual branches or dynamic data.
-   */
-  const branchOptions = [
-    { label: "London Branch", value: "london" },
-    { label: "Manchester Branch", value: "manchester" },
-    { label: "Birmingham Branch", value: "birmingham" },
-  ];
-
-  /**
-   * 9) Render
-   */
-  return (
-   
-      <div className="p-6 space-y-6">
-        <div className="flex w-full sm:items-center gap-4">
-          <h1 className="text-3xl font-bold tracking-tight">Transcations</h1>
-        </div>
-
-
-
-
-
-
-        {/* Transcation List with Pagination */}
-
-
-        <div className="space-y-4">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="flex flex-1 items-center gap-2">
-                <div className="relative flex-1 max-w-md">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 px-4 py-3 text-left font-medium" />
-                  <Input
-                    type="search"
-                    placeholder="Search Transcations..."
-                    className="pl-8"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-
-                </div>
-                <Button variant="outline" size="icon" className="shrink-0">
-                  <Filter className="h-4 w-4" />
-                </Button>
-
-              </div>
-            </div>
-
-
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ">
-              <Button className="ml-auto" onClick={() => setIsAddTransactionModalOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Transcation
-              </Button>
-            </div>
-  </div>
-<div className="space-y-4">
-  {loading ? (
-    <div className="text-center p-4">Loading...</div>
-  ) : transaction && transaction.length > 0 ? (
-    transaction.map((tx: any) => (
-      <div
-        key={tx.tranid}
-        className="glass-card rounded-lg overflow-hidden border shadow-sm p-4"
-      >
-        {/* From Tenant Section */}
-        <div className="mb-4">
-          <h3 className="font-semibold mb-2 text-lg">From Tenant</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            <div>
-              <span className="text-muted-foreground">Date:</span>
-              <div>{tx.fromTenantDate}</div>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Mode:</span>
-              <div>{tx.fromTenantMode}</div>
-            </div>
-            <div>
-              <span className="text-muted-foreground">HBenefit1:</span>
-              <div>{tx.fromTenantHBenefit1}</div>
-            </div>
-            <div>
-              <span className="text-muted-foreground">HBenefit2:</span>
-              <div>{tx.fromTenantHBenefit2}</div>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Rent Received:</span>
-              <div>{tx.fromTenantRentReceived}</div>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Other Debit:</span>
-              <div>{tx.fromTenantOtherDebit}</div>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Description:</span>
-              <div>{tx.fromTenantDescription}</div>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Received By:</span>
-              <div>{tx.fromTenantReceivedBy}</div>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Private Note:</span>
-              <div>{tx.fromTenantPrivateNote}</div>
+  // Mobile Card Component
+  const TransactionCard = ({ tx }: { tx: any }) => (
+    <Card className="w-full mb-4">
+      <CardHeader className="pb-3">
+        <div className="flex justify-between items-start">
+          <div className="space-y-1">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-blue-500" />
+              {tx.fromTenantDate || 'No Date'}
+            </CardTitle>
+            <div className="flex gap-2 flex-wrap">
+              <Badge variant="secondary" className="text-xs">
+                {tx.fromTenantMode || 'N/A'}
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                {tx.toLandLordMode || 'N/A'}
+              </Badge>
             </div>
           </div>
-        </div>
-
-        {/* To Landlord Section */}
-        <div className="mb-4">
-          <h3 className="font-semibold mb-2 text-lg">To Landlord</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            <div>
-              <span className="text-muted-foreground">Date:</span>
-              <div>{tx.toLandlordDate}</div>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Mode:</span>
-              <div>{tx.toLandLordMode}</div>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Rent Received:</span>
-              <div>{tx.toLandlordRentReceived}</div>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Management Fees:</span>
-              <div>{tx.toLandlordLessManagementFees}</div>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Building Expenditure:</span>
-              <div>{tx.toLandlordLessBuildingExpenditure}</div>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Actual Expenditure:</span>
-              <div>{tx.toLandlordLessBuildingExpenditureActual}</div>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Difference:</span>
-              <div>{tx.toLandlordLessBuildingExpenditureDifference}</div>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Net Paid:</span>
-              <div>{tx.toLandlordNetPaid}</div>
-            </div>
-            <div>
-              <span className="text-muted-foreground">VAT:</span>
-              <div>{tx.toLandlordLessVAT}</div>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Cheque No:</span>
-              <div>{tx.toLandlordChequeNo}</div>
-            </div>
-
-            <div>
-              <span className="text-muted-foreground"> Detail of Expenditure:</span>
-              <div>{tx.toLandlordDefaultExpenditure}</div>
-            </div>
-
-             <div>
-              <span className="text-muted-foreground"> Net Received:</span>
-              <div>{tx.toLandlordNetReceived}</div>
-            </div>
-
-
-            <div>
-              <span className="text-muted-foreground"> Description:</span>
-              <div>{tx.toLandlordExpenditureDescription}</div>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Paid By:</span>
-              <div>{tx.toLandlordPaidBy}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex justify-end mt-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -301,7 +119,7 @@ dispatch(deleteTransaction({ id: id, propertyId:propertyId })).unwrap();
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onClick={() => handleDeleteTransaction(tx.id,tx.propertyId)}
+                onClick={() => handleDeleteTransaction(tx.id, tx.propertyId)}
                 className="text-destructive focus:text-destructive"
               >
                 <Trash className="mr-2 h-4 w-4" />
@@ -310,51 +128,296 @@ dispatch(deleteTransaction({ id: id, propertyId:propertyId })).unwrap();
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </div>
-    ))
-  ) : (
-    <div className="text-center p-4">No transactions found.</div>
-  )}
-</div>
-
-
-        
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} />
-              </PaginationItem>
-              {Array.from({ length: totalPages }, (_, index) => (
-                <PaginationItem key={index}>
-                  <PaginationLink
-                    onClick={() => handlePageChange(index + 1)}
-                    isActive={currentPage === index + 1}
-                  >
-                    {index + 1}
-                  </PaginationLink>
-                </PaginationItem>
-              ))}
-              <PaginationItem>
-                <PaginationNext onClick={() => handlePageChange(currentPage + 1)} />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-
-          {/* Modals */}
-          <AddTransaction isOpen={isAddTranscationModalOpen} propertyId={propertyId} onClose={() => setIsAddTransactionModalOpen(false)} />
-          {isEditTransactionModalOpen && (
-            <EditTransaction
-              isOpen={isEditTransactionModalOpen}
-              onClose={() => setIsEditTransactionModalOpen(false)}
-              transaction={transactionEditSet}
-            />
-          )}
-
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* From Tenant Section */}
+        <div className="border-l-4 border-green-500 pl-3">
+          <h4 className="font-semibold text-sm text-green-700 mb-2 flex items-center gap-1">
+            <User className="h-3 w-3" />
+            From Tenant
+          </h4>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <span className="text-muted-foreground">Rent:</span>
+              <p className="font-medium">£{tx.fromTenantRentReceived || '0'}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">HBenefit:</span>
+              <p className="font-medium">£{tx.fromTenantHBenefit1 || '0'}</p>
+            </div>
+            {tx.fromTenantDescription && (
+              <div className="col-span-2">
+                <span className="text-muted-foreground">Description:</span>
+                <p className="font-medium text-xs">{tx.fromTenantDescription}</p>
+              </div>
+            )}
+            {tx.fromTenantReceivedBy && (
+              <div className="col-span-2">
+                <span className="text-muted-foreground">Received by:</span>
+                <p className="font-medium">{tx.fromTenantReceivedBy}</p>
+              </div>
+            )}
+          </div>
         </div>
 
+        {/* To Landlord Section */}
+        <div className="border-l-4 border-blue-500 pl-3">
+          <h4 className="font-semibold text-sm text-blue-700 mb-2 flex items-center gap-1">
+            <Building className="h-3 w-3" />
+            To Landlord
+          </h4>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <span className="text-muted-foreground">Date:</span>
+              <p className="font-medium">{tx.toLandlordDate || 'N/A'}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Net Paid:</span>
+              <p className="font-medium">£{tx.toLandlordNetPaid || '0'}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Management:</span>
+              <p className="font-medium">£{tx.toLandlordLessManagementFees || '0'}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">VAT:</span>
+              <p className="font-medium">£{tx.toLandlordLessVAT || '0'}</p>
+            </div>
+            {tx.toLandlordChequeNo && (
+              <div className="col-span-2 flex items-center gap-1">
+                <CreditCard className="h-3 w-3" />
+                <span className="text-muted-foreground">Cheque:</span>
+                <p className="font-medium">{tx.toLandlordChequeNo}</p>
+              </div>
+            )}
+            {tx.toLandlordPaidBy && (
+              <div className="col-span-2">
+                <span className="text-muted-foreground">Paid by:</span>
+                <p className="font-medium">{tx.toLandlordPaidBy}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50/50 max-w-full overflow-x-hidden">
+      <div className="w-full">
+        {/* Header - Mobile Optimized */}
+        <div className="bg-white border-b px-4 py-4 sm:px-6 max-w-full overflow-x-hidden">
+          <div className="flex flex-col space-y-4">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Transactions</h1>
+              <Button 
+                size="sm" 
+                onClick={() => setIsAddTransactionModalOpen(true)}
+                className="shrink-0"
+              >
+                <Plus className="mr-1 h-4 w-4" />
+                <span className="hidden sm:inline">Add Transaction</span>
+                <span className="sm:hidden">Add</span>
+              </Button>
+            </div>
+            
+            {/* Search and View Toggle */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search transactions..."
+                  className="pl-8"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant={viewMode === 'cards' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('cards')}
+                  className="flex-1 sm:flex-none"
+                >
+                  Cards
+                </Button>
+                <Button
+                  variant={viewMode === 'table' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('table')}
+                  className="flex-1 sm:flex-none"
+                >
+                  Table
+                </Button>
+                <Button variant="outline" size="sm">
+                  <Filter className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 sm:p-6 w-full overflow-x-hidden">
+          {loading ? (
+            <div className="text-center p-8">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <p className="mt-2 text-muted-foreground">Loading transactions...</p>
+            </div>
+          ) : transaction && transaction.length > 0 ? (
+            <>
+              {viewMode === 'cards' ? (
+                // Mobile Card View
+                <div className="space-y-4">
+                  {transaction.map((tx: any) => (
+                    <TransactionCard key={tx.tranid} tx={tx} />
+                  ))}
+                </div>
+              ) : (
+                // Desktop Grid View (No Table)
+                <div className="bg-white rounded-lg border shadow-sm w-full">
+                  <div className="w-full overflow-x-auto">
+                    {/* Header Row */}
+                    <div className="grid grid-cols-12 gap-2 p-4 border-b bg-gray-50 text-sm font-medium text-gray-700 min-w-[1000px]">
+                      <div className="col-span-1">From Date</div>
+                      <div className="col-span-1">Mode</div>
+                      <div className="col-span-1">HBenefit</div>
+                      <div className="col-span-1">Rent Recv.</div>
+                      <div className="col-span-2">Description</div>
+                      <div className="col-span-1">To Date</div>
+                      <div className="col-span-1">Mode</div>
+                      <div className="col-span-1">Mgmt Fees</div>
+                      <div className="col-span-1">Net Paid</div>
+                      <div className="col-span-1">VAT</div>
+                      <div className="col-span-1">Actions</div>
+                    </div>
+                    
+                    {/* Data Rows */}
+                    <div className="divide-y">
+                      {transaction.map((tx: any, index: number) => (
+                        <div 
+                          key={tx.tranid} 
+                          className={`grid grid-cols-12 gap-2 p-4 text-sm hover:bg-gray-50 min-w-[1000px] ${
+                            index % 2 === 0 ? 'bg-white' : 'bg-gray-25'
+                          }`}
+                        >
+                          <div className="col-span-1 truncate">{tx.fromTenantDate || '-'}</div>
+                          <div className="col-span-1 truncate">{tx.fromTenantMode || '-'}</div>
+                          <div className="col-span-1 truncate">£{tx.fromTenantHBenefit1 || '0'}</div>
+                          <div className="col-span-1 truncate">£{tx.fromTenantRentReceived || '0'}</div>
+                          <div className="col-span-2 truncate" title={tx.fromTenantDescription}>
+                            {tx.fromTenantDescription || '-'}
+                          </div>
+                          <div className="col-span-1 truncate">{tx.toLandlordDate || '-'}</div>
+                          <div className="col-span-1 truncate">{tx.toLandLordMode || '-'}</div>
+                          <div className="col-span-1 truncate">£{tx.toLandlordLessManagementFees || '0'}</div>
+                          <div className="col-span-1 truncate">£{tx.toLandlordNetPaid || '0'}</div>
+                          <div className="col-span-1 truncate">£{tx.toLandlordLessVAT || '0'}</div>
+                          <div className="col-span-1 flex justify-center">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleEditTransaction(tx)}>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteTransaction(tx.id, tx.propertyId)}
+                                  className="text-destructive focus:text-destructive"
+                                >
+                                  <Trash className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Pagination */}
+              <div className="mt-6 flex justify-center">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
+                      let pageNumber;
+                      if (totalPages <= 5) {
+                        pageNumber = index + 1;
+                      } else if (currentPage <= 3) {
+                        pageNumber = index + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNumber = totalPages - 4 + index;
+                      } else {
+                        pageNumber = currentPage - 2 + index;
+                      }
+                      
+                      return (
+                        <PaginationItem key={pageNumber}>
+                          <PaginationLink
+                            onClick={() => handlePageChange(pageNumber)}
+                            isActive={currentPage === pageNumber}
+                            className="cursor-pointer"
+                          >
+                            {pageNumber}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    })}
+                    <PaginationItem>
+                      <PaginationNext 
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-12">
+              <div className="mx-auto max-w-md">
+                <Building className="mx-auto h-12 w-12 text-muted-foreground" />
+                <h3 className="mt-4 text-lg font-medium">No transactions found</h3>
+                <p className="mt-2 text-muted-foreground">Get started by adding your first transaction.</p>
+                <Button className="mt-4" onClick={() => setIsAddTransactionModalOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Transaction
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-
+      {/* Modals */}
+      <AddTransaction 
+        isOpen={isAddTranscationModalOpen} 
+        propertyId={propertyId} 
+        onClose={() => setIsAddTransactionModalOpen(false)} 
+      />
+      {isEditTransactionModalOpen && (
+        <EditTransaction
+          isOpen={isEditTransactionModalOpen}
+          onClose={() => setIsEditTransactionModalOpen(false)}
+          transaction={transactionEditSet}
+        />
+      )}
+    </div>
   );
 };
 

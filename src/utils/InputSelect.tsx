@@ -67,7 +67,7 @@ const InputSelect: React.FC<SelectFieldProps> = ({
   }, [defaultValue, setValue, inputFieldName, selectFieldName]);
 
   return (
-    <div className={`lg:ml-4 flex items-center gap-2 ${className} my-2`}>
+    <div className={`lg:ml-4 text-sm items-center gap-2 ${className} my-2 space-y-4`}>
       {/* Label */}
       <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
         {label}

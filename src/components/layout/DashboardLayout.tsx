@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { Button } from "../ui/button";
 import logo from "@/assets/logo.png";
+import { TbTransactionDollar } from "react-icons/tb";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -44,6 +45,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
     { label: "Properties", path: "/properties", icon: Building2 },
     { label: "Vendors & Landlords", path: "/vendors", icon: Users2 },
+      { label: "Transactions", path: "/transaction", icon: TbTransactionDollar },
     { label: "Finance", path: "/property-management", icon: Wallet },
     { label: "Tenants", path: "/tenants", icon: CircleUser },
     { label: "Settings", path: "/settings", icon: Settings },

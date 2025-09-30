@@ -2,7 +2,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import getApi from "@/helper/getApi";
-import postApi from "@/helper/postApi";
+import {post} from "@/helper/api";
 import deleteApi from "@/helper/deleteApi";
 import { AppDispatch } from "../store";
 import { patch } from "@/helper/api";
@@ -48,6 +48,7 @@ export interface Transaction {
 interface TransactionState {
   transaction: Transaction[];
   loading: boolean;
+  totalPages?: number;
   error: string | null;
 }
 
@@ -55,6 +56,8 @@ const initialState: TransactionState = {
   transaction: [],
   loading: false,
   error: null,
+  totalPages: 0
+
 };
 
 // Fetch all transactions for a property
@@ -89,7 +92,7 @@ export const upsertTransaction = createAsyncThunk(
         await patch("property-management/transaction", transaction, headers);
       } else {
         // Create
-        await postApi("property-management/transaction", transaction, headers);
+        await post("property-management/transaction", transaction, headers);
       }
 
       await (dispatch as AppDispatch)(

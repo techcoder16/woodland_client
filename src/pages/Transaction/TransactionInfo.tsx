@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import InputField from "../../utils/InputField";
 import SelectField from "@/utils/SelectedField";
-import { DateField } from "../Manager/Rent";
+import { DateField } from "@/utils/DateField";
 import TextAreaField from "@/utils/TextAreaField";
 import { BANKOPTIONS } from "@/lib/constant";
 
@@ -27,9 +27,34 @@ const TranscationInfo = ({
     const expenditure = Number(watch("toLandlordLessBuildingExpenditure")) || 0;
     const actual = Number(watch("toLandlordLessBuildingExpenditureActual")) || 0;
     setValue("toLandlordLessBuildingExpenditureDifference", expenditure - actual);
+  
   }, [
     watch("toLandlordLessBuildingExpenditure"),
     watch("toLandlordLessBuildingExpenditureActual"),
+
+    setValue
+  ]);
+
+
+  
+
+   useEffect(() => {
+    const netRecieved = Number(watch("toLandlordRentReceived")) || 0;
+    const lessBuildingExpenditure = Number(watch("toLandlordLessBuildingExpenditure")|| 0);
+    const lessVat = Number(watch("toLandlordLessVAT")|| 0);
+     const toLandlordLessManagementFees = Number(watch("toLandlordLessManagementFees")|| 0);
+    
+   
+    setValue("toLandlordNetPaid", netRecieved - (lessBuildingExpenditure + lessVat + toLandlordLessManagementFees));
+
+  
+  }, [
+    watch("toLandlordNetPaid"),
+    watch("toLandlordLessBuildingExpenditure"),
+    watch("toLandlordLessManagementFees"),
+    watch("toLandlordRentReceived"),
+    watch ("toLandlordLessVAT"),
+
     setValue
   ]);
 
@@ -93,7 +118,6 @@ const TranscationInfo = ({
 
             />
 
-            <InputField label="Rent Received" name="toLandlordRentReceived" type="number" {...{ register, setValue, errors }} />
 
             <SelectField
               setValue={setValue}
@@ -107,12 +131,13 @@ const TranscationInfo = ({
               watch={watch}
               options={BANKOPTIONS}
             />
+            <InputField label="Rent Received" name="toLandlordRentReceived" type="number" {...{ register, setValue, errors }} />
 
             <InputField label="Less Management Fees" name="toLandlordLessManagementFees" type="number" {...{ register, setValue, errors }} />
             <InputField label="Less Building Expenditure" name="toLandlordLessBuildingExpenditure" type="number" {...{ register, setValue, errors }} />
             <InputField label="Actual" name="toLandlordLessBuildingExpenditureActual" type="number" {...{ register, setValue, errors }} />
             <InputField label="Difference" name="toLandlordLessBuildingExpenditureDifference" type="number" {...{ register, setValue, errors }} />
-            <InputField label="Net Received" name="toLandlordNetReceived" type="number" {...{ register, setValue, errors }} />
+            {/* <InputField label="Net Received" name="toLandlordNetReceived" type="number" {...{ register, setValue, errors }} /> */}
             <InputField label="Less VAT" name="toLandlordLessVAT" type="number" {...{ register, setValue, errors }} />
             <InputField label="Net Paid" name="toLandlordNetPaid" type="number" {...{ register, setValue, errors }} />
             <InputField label="Cheque No" name="toLandlordChequeNo" {...{ register, setValue, errors }} />
