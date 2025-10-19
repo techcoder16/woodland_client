@@ -28,3 +28,5 @@ dist-ssr
 
 tests/
 playwright-report/
+tests
+playwright.config.ts
