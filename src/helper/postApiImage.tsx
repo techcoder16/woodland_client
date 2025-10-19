@@ -1,5 +1,5 @@
 import axios from "axios";
-import env from "react-dotenv";
+import { refreshTokenIfNeeded, getAccessToken } from "./tokenManager";
 
 export default async function postApiImage(
   url: string,
@@ -10,9 +10,19 @@ export default async function postApiImage(
   let data: any = {};
   let error: any = {};
   
-  const API_URL = import.meta.env.VITE_API_URL;  // Accessing the environment variable
+  const API_URL = import.meta.env.VITE_API_URL;
 
   try {
+    // Check and refresh token if needed before making the request
+    const tokenValid = await refreshTokenIfNeeded();
+    if (!tokenValid) {
+      error.message = "Authentication failed";
+      return { data, error };
+    }
+
+    // Get the current access token
+    const accessToken = await getAccessToken();
+
     // Create a FormData object
     const formData = new FormData();
 
@@ -31,6 +41,7 @@ export default async function postApiImage(
     // If headers are provided, include them, but don't overwrite Content-Type because FormData will automatically set it
     const config = {
       headers: {
+        Authorization: `Bearer ${accessToken}`,
         ...headers,
         // Do NOT manually set Content-Type as it will be automatically set by FormData
       },

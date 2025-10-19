@@ -12,7 +12,10 @@ import RentSlice from './dataStore/rentSlice';
 import SupplierSlice from './dataStore/supplierSlice';
 import managementAgreementSlice from './dataStore/managementAgreementSlice';
 import tenancyAgreementSlice from './dataStore/tenancyAgreementSlice';
-import transactionSlice from './dataStore/transactionSlice'
+import transactionSlice from './dataStore/transactionSlice';
+import jobTypeSlice from './dataStore/jobTypeSlice';
+import noteSlice from './dataStore/noteSlice';
+import dashboardSlice from './dataStore/dashboardSlice';
 const rootStore  = configureStore({
     
     reducer:{
@@ -25,7 +28,10 @@ const rootStore  = configureStore({
         supplierData:SupplierSlice,
         managementAgreement:managementAgreementSlice,
         tenancyAgreement:tenancyAgreementSlice,
-        transaction:transactionSlice
+        transaction:transactionSlice,
+        jobTypes:jobTypeSlice,
+        notes:noteSlice,
+        dashboard:dashboardSlice
     }
 
 });

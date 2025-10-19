@@ -1,0 +1,26 @@
+{
+  "test_runner": "Comprehensive Test Runner",
+  "start_time": "2025-10-19T11:39:08.634901",
+  "end_time": "2025-10-19T11:39:22.963353",
+  "total_duration": 14.328443,
+  "suites": {
+    "complete": {
+      "success": false,
+      "duration": 14.32729,
+      "error": "Page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8081/login\nCall log:\n  - navigating to \"http://localhost:8081/login\", waiting until \"load\"\n",
+      "message": "complete test suite failed"
+    },
+    "enhanced": {
+      "success": false,
+      "duration": 13.709725,
+      "error": "Page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8081/login\nCall log:\n  - navigating to \"http://localhost:8081/login\", waiting until \"load\"\n",
+      "message": "enhanced test suite failed"
+    },
+    "draft": {
+      "success": false,
+      "duration": 13.993945,
+      "error": "Page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8081/login\nCall log:\n  - navigating to \"http://localhost:8081/login\", waiting until \"load\"\n",
+      "message": "draft test suite failed"
+    }
+  }
+}

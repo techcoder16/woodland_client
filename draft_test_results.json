@@ -1,0 +1,15 @@
+{
+  "test_suite": "Draft Property Management Test Suite",
+  "start_time": "2025-10-19T11:39:08.637959",
+  "end_time": "2025-10-19T11:39:22.630410",
+  "duration": 13.992459,
+  "results": [
+    {
+      "test": "Login",
+      "success": false,
+      "duration": 2.851345,
+      "error": "Page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8081/login\nCall log:\n  - navigating to \"http://localhost:8081/login\", waiting until \"load\"\n"
+    }
+  ],
+  "created_properties": []
+}

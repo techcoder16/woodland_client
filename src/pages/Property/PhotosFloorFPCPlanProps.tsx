@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import InputField from "../../utils/InputField";
 import FileUploadField from "../../utils/FileUploadField"; // adjust the path as needed
 import SelectField from "../../utils/SelectedField";
+import EPCRatingSelect from "../../utils/EPCRatingSelect";
 import TextAreaField from "@/utils/TextAreaField";
 
 interface PhotosFloorFPCPlanProps {
@@ -22,12 +23,21 @@ const PhotosFloorFPCPlan = ({
   unregister,
   errors,
 }: PhotosFloorFPCPlanProps) => {
+  console.log("📸 PhotosFloorFPCPlan component rendering...");
+  
   // Use watch with default values
   const epcChartOption = watch("epcChartOption", "ratings");
   const epcReportOption = watch("epcReportOption", "uploadReport");
+  
+  const currentEERating = watch("currentEERating");
+  const potentialEERating = watch("potentialEERating");
 
-  // Ensure default values are set if the watched value is empty
-  console.log(epcChartOption,epcReportOption)
+  console.log("📊 EPC Values in PhotosFloorFPCPlan:", {
+    epcChartOption,
+    epcReportOption,
+    currentEERating,
+    potentialEERating
+  });
   useEffect(() => {
     if (!watch("epcChartOption")) {
       setValue("epcChartOption", "ratings", { shouldValidate: true });
@@ -131,43 +141,19 @@ const PhotosFloorFPCPlan = ({
         {epcChartOption === "ratings" && (
           <div className="mb-4">
             <div className="flex space-x-4">
-              <SelectField
+              <EPCRatingSelect
                 label="Current Energy Efficiency Rating"
                 name="currentEERating"
                 watch={watch}
-                setValue={setValue}
-                options={Array.from({ length: 101 }, (_, i) => ({
-                  value: i.toString(),
-                  label: i.toString(),
-                }))}
                 register={register}
                 error={errors.currentEERating?.message?.toString()}
-                onChange={(value: string) => {
-                  setValue("currentEERating", value, {
-                    shouldValidate: true,
-                    shouldDirty: true,
-                  });
-                  clearErrors("currentEERating");
-                }}
               />
-              <SelectField
+              <EPCRatingSelect
                 label="Potential Energy Efficiency Rating"
                 name="potentialEERating"
                 watch={watch}
-                setValue={setValue}
-                options={Array.from({ length: 101 }, (_, i) => ({
-                  value: i.toString(),
-                  label: i.toString(),
-                }))}
                 register={register}
                 error={errors.potentialEERating?.message?.toString()}
-                onChange={(value: string) => {
-                  setValue("potentialEERating", value, {
-                    shouldValidate: true,
-                    shouldDirty: true,
-                  });
-                  clearErrors("potentialEERating");
-                }}
               />
             </div>
           </div>

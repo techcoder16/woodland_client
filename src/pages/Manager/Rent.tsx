@@ -13,14 +13,16 @@ import { useDispatch } from "react-redux";
 import { upsertRent, fetchRents } from "@/redux/dataStore/rentSlice";
 import { useAppSelector } from "@/redux/reduxHooks";
 import SelectField from "@/utils/SelectedField";
-import { cn } from "@/lib/utils";
+
 import { toast } from "sonner";
 import { Table, TableHeader, TableRow, TableHead, TableBody } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 import InputSelect from "@/utils/InputSelect";
 import { TableCell } from "@/components/ui/table";
 import { DateField } from "@/utils/DateField";
+import ReceiptPDF from "@/components/pdf/ReceiptPDF";
+import { PDFViewer } from "@react-pdf/renderer";
 // ----- Zod Schemas ----- //
 
 // Extend the deposit schema with a new computed field "bill"
@@ -147,6 +149,7 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId, property }) => {
   const dispatch = useDispatch<any>();
   const { rents } = useAppSelector(state => state.rent);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
+const [showReceiptPdf, setShowReceiptPdf] = useState(false);
 
   const {
     register,
@@ -469,6 +472,27 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId, property }) => {
             </div>
           </form>
         </CardContent>
+
+        <div className="flex justify-end space-x-3 pt-6 border-t">
+
+          <Button
+    type="button"
+    variant="outline"
+    className="px-8 py-2 mb-3 mr-3"
+    disabled={!watch("ReceivedOn") || !watch("ReturnedOn")}
+    onClick={() => {
+      if (!watch("ReceivedOn") || !watch("ReturnedOn")) {
+        toast.error("Please enter both Received On and Returned On dates first");
+      } else {
+        setShowReceiptPdf(true);
+      }
+    }}
+  >
+    Generate Receipt PDF
+  </Button>
+  </div>
+
+
       </Card>
 
       {/* Deposit Modal */}
@@ -595,6 +619,62 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId, property }) => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Receipt PDF Viewer */}
+{showReceiptPdf && (
+  <Dialog open={showReceiptPdf} onOpenChange={setShowReceiptPdf}>
+    <DialogContent className="sm:max-w-5xl h-[90vh] w-full">
+      <DialogTitle className="text-lg font-semibold mb-3">
+        Preview Receipt PDF
+      </DialogTitle>
+
+      <div className="w-full h-[80vh] border rounded-md overflow-hidden">
+        <PDFViewer width="100%" height="100%">
+          <ReceiptPDF
+            data={{
+              company: {
+                name: "WOODLAND",
+                
+                addressLine1: import.meta.env.VITE_PUBLIC_OFFICE_ADDRESS || "235 Cranbrook Road",
+                city: import.meta.env.VITE_PUBLIC_OFFICE_CITY || "Ilford, Essex",
+                postcode: import.meta.env.VITE_PUBLIC_OFFICE_POSTCODE || "IG1 4TD",
+                phone: "0208 554 55440",
+                fax: "020 8554 4433",
+                email: "ig1@woodlandltd.co.uk",
+                website: "www.woodlandltd.co.uk",
+                tagline: "SALES LETTINGS MANAGEMENT",
+              },
+              receipt: {
+                type: "RECEIPT OF DEPOSIT",
+                propertyRef: `${property?.DoorNumber || ""} ${property?.Road || ""}, ${property?.towns || ""}`,
+                accountNo: property?.accountNo || "N/A",
+                receivedFrom: `${property?.tenants?.[0]?.title?.toUpperCase() || ""} ${property?.tenants?.[0]?.FirstName || ""} ${property?.tenants?.[0]?.SureName || ""}`,
+                date: new Date(watch("ReceivedOn")).toLocaleDateString(),
+                amount: `£${watch("Amount") || 0}`,
+                description: `Deposit received for property ${property?.DoorNumber || ""} ${property?.Road || ""}`,
+                signature: "Santosh",
+              },
+            }}
+          />
+        </PDFViewer>
+      </div>
+
+      <DialogFooter className="pt-4 flex justify-end">
+        <Button variant="outline" onClick={() => setShowReceiptPdf(false)}>
+          Close
+        </Button>
+        <Button
+          variant="default"
+          onClick={() => toast.success("Receipt PDF sent successfully (mock)")}
+        >
+          Send Receipt
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
+)}
+
+
     </div>
   );
 };

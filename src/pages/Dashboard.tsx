@@ -1,11 +1,28 @@
 // src/pages/Dashboard.tsx
-import React from "react";
+import React, { useEffect } from "react";
+import { useAppDispatch, useAppSelector } from "../redux/reduxHooks";
+import { fetchDashboardStats, fetchRecentActivities } from "../redux/dataStore/dashboardSlice";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { AnalyticsChart } from "@/components/dashboard/AnalyticsChart";
 import { RecentActivities } from "@/components/dashboard/RecentActivities";
 
 const Dashboard = () => {
+  const dispatch = useAppDispatch();
+  const { stats, loading, error } = useAppSelector((state) => state.dashboard);
+
+  useEffect(() => {
+    // Fetch dashboard data from your APIs
+    console.log('Dashboard - Fetching stats...');
+    dispatch(fetchDashboardStats());
+    dispatch(fetchRecentActivities(10));
+  }, [dispatch]);
+
+  // Debug logging
+  console.log('Dashboard - stats:', stats);
+  console.log('Dashboard - loading:', loading);
+  console.log('Dashboard - error:', error);
+
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">

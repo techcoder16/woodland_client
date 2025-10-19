@@ -5,172 +5,215 @@ import {
   Text,
   View,
   StyleSheet,
-  Image,
 } from "@react-pdf/renderer";
-import logo from "@/assets/logo.png"; // Make sure the Woodland logo is stored here
 
-// Styles
+// 🎨 Styles
 const styles = StyleSheet.create({
   page: {
-    padding: 40,
+    padding: 50,
     fontFamily: "Helvetica",
-    fontSize: 12,
+    fontSize: 10,
     color: "#000",
+    backgroundColor: "#fff",
+  },
+  receipt: {
+    position: "relative",
+    marginBottom: 40,
+  },
+  leftLabel: {
+    position: "absolute",
+    left: -70,
+    top: "40%",
+    transform: "rotate(-90deg)",
+    fontSize: 11,
+    letterSpacing: 2,
   },
   header: {
-    alignItems: "center",
-    textAlign: "center",
-    marginBottom: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 25,
   },
-  logo: {
-    width: 100,
-    marginBottom: 6,
+  logoBox: {
+    width: 130,
+    height: 50,
+    backgroundColor: "#dc0032",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  logoText: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "bold",
   },
   companyInfo: {
-    textAlign: "center",
-    fontSize: 10,
-    marginBottom: 4,
+    textAlign: "right",
     lineHeight: 1.3,
   },
-  tagline: {
-    fontSize: 10,
-    marginTop: 4,
-    textAlign: "center",
-  },
-  divider: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#000",
-    marginVertical: 12,
+  companyName: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#dc0032",
+    marginBottom: 2,
   },
   title: {
     textAlign: "center",
-    fontSize: 14,
-    marginBottom: 12,
+    fontSize: 13,
     fontWeight: "bold",
+    marginVertical: 20,
+    letterSpacing: 1.5,
   },
-  section: {
-    marginVertical: 6,
+  contentArea: {
+    marginLeft: 20,
   },
   row: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginVertical: 3,
+    alignItems: "center",
+    marginBottom: 8,
   },
   label: {
-    fontWeight: "bold",
+    width: 120,
   },
-  signature: {
+  underline: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#000",
+    flex: 1,
+    minHeight: 12,
+  },
+  rowWithDate: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 8,
+  },
+  dateGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  dateLabel: {
+    marginRight: 10,
+  },
+  dateUnderline: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#000",
+    minWidth: 100,
+  },
+  amountRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+    flexWrap: "wrap",
+  },
+  amountLabel: {
+    width: 120,
+  },
+  amountUnderline: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#000",
+    paddingHorizontal: 30,
+    minWidth: 80,
+    marginHorizontal: 10,
+  },
+  paragraph: {
+    fontSize: 10,
+    marginTop: -2,
+  },
+  signatureSection: {
     marginTop: 40,
-    textAlign: "left",
-    fontSize: 12,
+    marginLeft: 120,
+  },
+  signatureLabel: {
+    marginBottom: 30,
   },
   footer: {
-    position: "absolute",
-    bottom: 40,
-    left: 40,
-    right: 40,
     textAlign: "center",
-    fontSize: 9,
+    marginTop: 50,
+    fontSize: 8,
+    color: "#999",
+    lineHeight: 1.4,
+  },
+  dashedLine: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#000",
+    borderStyle: "dashed",
+    marginVertical: 35,
   },
 });
 
-interface ReceiptData {
-  company: {
-    name: string;
-    addressLine1: string;
-    city: string;
-    postcode: string;
-    phone: string;
-    fax: string;
-    email: string;
-    website: string;
-    tagline: string;
-  };
-  receipt: {
-    type: string;
-    propertyRef: string;
-    accountNo: string;
-    receivedFrom: string;
-    date: string;
-    amount: string;
-    description: string;
-    signature: string;
-  };
-}
+// 🧾 Single Receipt Copy
+const ReceiptBlock = ({ label, data }: any) => (
+  <View style={styles.receipt}>
+    <Text style={styles.leftLabel}>{label}</Text>
 
-interface Props {
-  data: ReceiptData;
-}
+    {/* Header */}
+    <View style={styles.header}>
+      <View style={styles.logoBox}>
+        <Text style={styles.logoText}>Woodland</Text>
+      </View>
+      <View style={styles.companyInfo}>
+        <Text style={styles.companyName}>WOODLAND</Text>
+        <Text>235 Cranbrook Road, Ilford, Essex IG1 4TD</Text>
+        <Text>Tel: 0208 554 55440   Fax: 020 8554 4433</Text>
+        <Text>ig1@woodlandltd.co.uk</Text>
+      </View>
+    </View>
 
-const ReceiptPDF: React.FC<Props> = ({ data }) => (
+    {/* Title */}
+    <Text style={styles.title}>RETURN OF DEPOSIT</Text>
+
+    {/* Content */}
+    <View style={styles.contentArea}>
+      <View style={styles.rowWithDate}>
+        <View style={styles.row}>
+          <Text style={styles.label}>Account No.</Text>
+          <Text style={styles.underline}>{data.accountNo}</Text>
+        </View>
+        <View style={styles.dateGroup}>
+          <Text style={styles.dateLabel}>Date</Text>
+          <Text style={styles.dateUnderline}>{data.date}</Text>
+        </View>
+      </View>
+
+      <View style={styles.row}>
+        <Text style={styles.label}>Property Ref:</Text>
+        <Text style={styles.underline}>{data.propertyRef}</Text>
+      </View>
+
+      <View style={styles.row}>
+        <Text style={styles.label}>Received from</Text>
+        <Text style={styles.underline}>{data.receivedFrom}</Text>
+      </View>
+
+      <View style={styles.amountRow}>
+        <Text style={styles.amountLabel}>The sum of Amount</Text>
+        <Text style={styles.amountUnderline}>{data.amount}</Text>
+        <Text style={styles.paragraph}>as deposit returned in above mentioned Account</Text>
+      </View>
+    </View>
+
+    {/* Signature */}
+    <View style={styles.signatureSection}>
+      <Text style={styles.signatureLabel}>Signature</Text>
+      <Text>{data.signature}</Text>
+    </View>
+
+    {/* Footer */}
+    <View style={styles.footer}>
+      <Text>SALES LETTINGS MANAGEMENT</Text>
+      <Text>www.woodlandltd.co.uk</Text>
+    </View>
+  </View>
+);
+
+// 📄 Main PDF Document
+const ReturnDepositPDF = ({ data }: any) => (
   <Document>
     <Page size="A4" style={styles.page}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Image style={styles.logo} src={logo} />
-        <Text style={styles.companyInfo}>{data.company.name}</Text>
-        <Text style={styles.companyInfo}>
-          {data.company.addressLine1}, {data.company.city} {data.company.postcode}
-        </Text>
-        <Text style={styles.companyInfo}>
-          Tel: {data.company.phone} | Fax: {data.company.fax}
-        </Text>
-        <Text style={styles.companyInfo}>
-          {data.company.email} | {data.company.website}
-        </Text>
-        <Text style={styles.tagline}>{data.company.tagline}</Text>
-      </View>
-
-      <View style={styles.divider} />
-
-      {/* Title */}
-      <Text style={styles.title}>{data.receipt.type}</Text>
-
-      {/* Receipt Information */}
-      <View style={styles.section}>
-        <View style={styles.row}>
-          <Text style={styles.label}>Date:</Text>
-          <Text>{data.receipt.date}</Text>
-        </View>
-
-        <View style={styles.row}>
-          <Text style={styles.label}>Account No:</Text>
-          <Text>{data.receipt.accountNo}</Text>
-        </View>
-
-        <View style={styles.row}>
-          <Text style={styles.label}>Received From:</Text>
-          <Text>{data.receipt.receivedFrom}</Text>
-        </View>
-
-        <View style={styles.row}>
-          <Text style={styles.label}>Amount:</Text>
-          <Text>{data.receipt.amount}</Text>
-        </View>
-
-        <View style={styles.row}>
-          <Text style={styles.label}>Property Ref:</Text>
-          <Text>{data.receipt.propertyRef}</Text>
-        </View>
-
-        <View style={styles.row}>
-          <Text style={styles.label}>Description:</Text>
-          <Text>{data.receipt.description}</Text>
-        </View>
-      </View>
-
-      {/* Signature */}
-      <View style={styles.signature}>
-        <Text>Signature</Text>
-        <Text>{data.receipt.signature}</Text>
-      </View>
-
-      {/* Footer */}
-      <View style={styles.footer}>
-        <Text>{data.company.tagline}</Text>
-      </View>
+      <ReceiptBlock label="CUSTOMER COPY" data={data} />
+      <View style={styles.dashedLine} />
+      <ReceiptBlock label="OFFICE COPY" data={data} />
     </Page>
   </Document>
 );
 
-export default ReceiptPDF;
+export default ReturnDepositPDF;

@@ -7,7 +7,8 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
 
 import { Card } from "@/components/ui/card";
-import { Check, ArrowLeft, ArrowRight } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Check, ArrowLeft, ArrowRight, AlertCircle } from "lucide-react";
 
 import Attachments from "./Property/Attachments";
 import LoadingBar from "react-top-loading-bar";
@@ -41,11 +42,23 @@ const AddProperty = () => {
   }, [form.formState.errors]);
 
   const [progress, setProgress] = useState(0);
-  const onSubmit = async (data: FormData) => {
-    console.log("submit button");
-    const isValid = await form.trigger(); // Validate all fields before final submission
-
-    if (!isValid) return;
+  const [submissionType, setSubmissionType] = useState<"DRAFT" | "PUBLISHED">("PUBLISHED");
+  
+  const onSubmit = async (data: FormData, isDraft: boolean = false) => {
+    console.log("submit button", isDraft ? "as draft" : "as published");
+    
+    // Only validate if publishing, skip validation for drafts
+    if (!isDraft) {
+      const isValid = await form.trigger(); // Validate all fields before final submission
+      if (!isValid) {
+        toast({
+          title: "Validation Error",
+          description: "Please fill in all required fields before publishing.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
 
     setProgress(30);
     setIsSubmitting(true); // Prevent interactions during submission
@@ -54,16 +67,24 @@ const AddProperty = () => {
       // Retrieve access token
       const accessToken = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = {
-        Authorization: `Bearer ${accessToken}`, // Add token to Authorization header
-        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Bearer ${accessToken}`,
+        // DO NOT set Content-Type for FormData - let the browser set it automatically with the boundary
       };
 
       const formData = new FormData();
+      
+      // Set property status based on submission type
+      const propertyStatus = isDraft ? "DRAFT" : "PUBLISHED";
 
       // Dynamically append all fields from `data`
 
       for (const [key, value] of Object.entries(data)) {
         console.log(key, value);
+
+        // Skip propertyStatus in the loop - we'll add it separately
+        if (key === "propertyStatus") {
+          continue;
+        }
 
         if (key === "attachments" && Array.isArray(value)) {
           // Handle attachments array
@@ -73,23 +94,65 @@ const AddProperty = () => {
             }
           });
         } else if (key === "rooms") {
-          formData.append("rooms", JSON.stringify(value));
+          // Parse rooms if it's a string, then stringify it
+          let roomsValue = value;
+          if (typeof value === "string") {
+            try {
+              roomsValue = JSON.parse(value);
+            } catch (e) {
+              console.error("Error parsing rooms:", e);
+              roomsValue = [];
+            }
+          }
+          // Ensure it's an array before stringifying
+          if (!Array.isArray(roomsValue)) {
+            roomsValue = [];
+          }
+          formData.append("rooms", JSON.stringify(roomsValue));
         } else if (typeof value === "boolean") {
           formData.append(key, JSON.stringify(value)); // Send as string
         } else if (value !== null && value !== undefined) {
-          if ((Array.isArray(value) && key == "selectPortals") || key == "propertyFeature") {
-            // Handle arrays (not just attachments)
-            value &&
-              Array(value)?.forEach((item: any, index) => {
-                if (item !== null && item !== undefined) {
+          if (key === "propertyFeature" || key === "selectPortals") {
+            // Handle array fields - convert empty string to empty array for drafts
+            let arrayValue = value;
+            if (!Array.isArray(value)) {
+              // If it's a string (empty or not), convert to array
+              arrayValue = value === "" || !value ? [] : [value];
+            }
+            // Only append if there are items (skip empty arrays for drafts)
+            if (arrayValue.length > 0) {
+              arrayValue.forEach((item: any, index: number) => {
+                if (item !== null && item !== undefined && item !== "") {
                   formData.append(`${key}[${index}]`, item);
                 }
               });
+            } else if (!isDraft) {
+              // For publishing, we need to send empty array indication
+              formData.append(`${key}[]`, "");
+            }
           } else {
             formData.append(key, String(value)); // Append all other values as strings
           }
         }
       }
+      
+      // Append propertyStatus after all other fields as a single string value
+      formData.append("propertyStatus", propertyStatus);
+
+      // Debug: Log what's being sent
+      console.log("=== FormData being sent ===");
+      console.log("propertyStatus value:", propertyStatus);
+      console.log("Checking for duplicate propertyStatus keys:");
+      const allPropertyStatuses = formData.getAll("propertyStatus");
+      console.log("formData.getAll('propertyStatus'):", allPropertyStatuses);
+      console.log("Count:", allPropertyStatuses.length);
+      
+      // Log all entries
+      console.log("\nAll FormData entries:");
+      for (const [key, value] of formData.entries()) {
+        console.log(`  ${key}:`, value);
+      }
+      console.log("=========================");
 
       // Call postApi with FormData and headers
       const { data: apiData, error }: any = await post("properties", formData, headers);
@@ -110,23 +173,62 @@ const AddProperty = () => {
       if (propertyId && propertyId.length > 0) {
         toast({
           title: "Success",
-          description: apiData.message || "",
+          description: isDraft 
+            ? "Property saved as draft successfully!" 
+            : apiData.message || "Property published successfully!",
         });
 
         setProgress(100);
+        
+        // Navigate back to property list after a short delay
+        setTimeout(() => {
+          window.location.href = "/properties";
+        }, 1500);
       } else {
         throw new Error("Invalid Property ID or unexpected response format.");
       }
     } catch (error: any) {
       console.error("Error:", error);
+      
+      // Parse and display backend validation errors
+      let errorMessage = "Failed to create Property.";
+      
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        
+        // Check if it's a validation error with message array
+        if (errorData.message && Array.isArray(errorData.message)) {
+          const validationErrors = errorData.message.map((err: any) => {
+            if (err.property && err.constraints) {
+              const constraintMessages = Object.values(err.constraints).join(", ");
+              return `${err.property}: ${constraintMessages}`;
+            }
+            return JSON.stringify(err);
+          });
+          errorMessage = validationErrors.join("\n");
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
-        title: "Error",
-        description: error.message || "Failed to create Property.",
+        title: isDraft ? "Failed to Save Draft" : "Failed to Create Property",
+        description: errorMessage,
         variant: "destructive",
       });
+      setProgress(0);
     } finally {
       setIsSubmitting(false); // Allow interactions after completion
     }
+  };
+  
+  const handleSaveDraft = async () => {
+    const data = form.getValues();
+    await onSubmit(data, true);
   };
 
   const steps = [
@@ -209,6 +311,22 @@ const AddProperty = () => {
   const isLastStep = currentStep === steps.length - 1;
 
   const [savedData, setSavedData] = useState<Record<number, any>>({});
+  
+  // Define step validation fields
+  const stepFields = [
+    // Standard Info (Step 0)
+    ['for','category','propertyType','internalReference','price','priceQualifier','tenure','contractType','salesFee','postCode','propertyNo','propertyName','addressLine1','addressLine2','town','county','country','latitude','longitude','development','yearOfBuild','parking','garden','livingFloorSpace','meetingRooms','workStation','landSize','outBuildings','propertyFeature','Tags'],
+    // Description (Step 1)
+    ['shortSummary','fullDescription','rooms'],
+    // More Info (Step 2)
+    ['Solicitor', 'GuaranteedRentLandlord', 'Branch', 'Negotiator', 'whodoesviewings', 'comments', 'sva', 'tenureA', 'customGarden', 'customParking', 'pets', 'train', 'occupant', 'occupantEmail', 'occupantMobile', 'council', 'councilBrand', 'freeholder', 'freeholderContract', 'freeholderAddress', 'nonGasProperty', 'Insurer'],
+    // Photos/Floor/FPC Plan (Step 3)
+    ['photographs','floorPlans','epcChartOption','currentEERating','potentialEERating','epcChartFile','epcReportOption','epcReportFile','epcReportURL','videoTourDescription','showOnWebsite'],
+    // Attachments (Step 4)
+    ['attachments'],
+    // Publish (Step 5)
+    ['publishOnWeb', 'status', 'detailPageUrl', 'publishOnPortals', 'portalStatus', 'forA', 'propertyTypeA', 'newHome', 'offPlan', 'virtualTour', 'enterUrl', 'virtualTour2', 'propertyBrochureUrl', 'AdminFee', 'ServiceCharges', 'minimumTermForLet', 'annualGroundRent', 'lengthOfLease', 'shortSummaryForPortals', 'fullDescriptionforPortals', 'sendToBoomin', 'sendToRightmoveNow', 'CustomDisplayAddress', 'transactionType', 'sendToOnTheMarket', 'newsAndExclusive', 'selectPortals']
+  ];
 
   const handleNext = async () => {
     const currentStepFields = stepFields[currentStep]; // Validate only current step fields
@@ -216,6 +334,9 @@ const AddProperty = () => {
     const isValid = await form.trigger(currentStepFields as any, { shouldFocus: true });
 
     if (isValid) {
+      // Clear previous validation errors
+      form.clearErrors();
+      
       setSavedData(prev => ({
         ...prev,
         [currentStep]: form.getValues(),
@@ -232,6 +353,11 @@ const AddProperty = () => {
       }
     } else {
       console.log("Validation failed:", form.formState.errors);
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields on this step before proceeding.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -292,29 +418,66 @@ const AddProperty = () => {
           </div>
 
           <Card className="p-6 shadow-md">
-            <form onSubmit={form.handleSubmit(onSubmit)}>
+            <form onSubmit={(e) => e.preventDefault()}>
               {steps[currentStep].component}
 
+              {/* Error Display at Bottom */}
+              {Object.keys(form.formState.errors).length > 0 && (
+                <Alert variant="destructive" className="mt-6">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    <div className="font-semibold mb-2">Please fix the following errors:</div>
+                    <ul className="list-disc list-inside space-y-1 text-sm">
+                      {Object.entries(form.formState.errors).slice(0, 5).map(([key, error]: any) => (
+                        <li key={key}>
+                          {key}: {error?.message || "This field is required"}
+                        </li>
+                      ))}
+                      {Object.keys(form.formState.errors).length > 5 && (
+                        <li className="text-xs italic">
+                          ... and {Object.keys(form.formState.errors).length - 5} more error(s)
+                        </li>
+                      )}
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+              )}
+
               <div className="flex justify-between pt-6">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handlePrevious}
-                  disabled={currentStep === 0}
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" /> Previous
-                </Button>
+                <div className="flex gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handlePrevious}
+                    disabled={currentStep === 0}
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Previous
+                  </Button>
+                  
+                  {/* Save as Draft button - available on all steps */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleSaveDraft}
+                    disabled={isSubmitting}
+                    className="border-gray-400"
+                  >
+                    Save as Draft
+                  </Button>
+                </div>
 
                 {isLastStep ? (
                   <Button
-                    key="submit"
-                    type="submit"
-                    onClick={() => {
-                      console.log("asdkalsjds");
+                    key="publish"
+                    type="button"
+                    onClick={async () => {
+                      const data = form.getValues();
+                      await onSubmit(data, false);
                     }}
-                    className="bg-red-500 text-white px-4 py-2 rounded"
+                    disabled={isSubmitting}
+                    className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
                   >
-                    Submit <Check className="ml-2 h-4 w-4" />
+                    Publish <Check className="ml-2 h-4 w-4" />
                   </Button>
                 ) : (
                   <Button key="next" type="button" onClick={handleNext}>

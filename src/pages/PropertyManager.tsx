@@ -45,9 +45,15 @@ const PropertyManager = () => {
     navigate(`/property/manager`, { state: { property } });
   };
 
-  const filteredProperties = properties.filter(property => 
-    filterStatus === "all" || property.status.toLowerCase() === filterStatus.toLowerCase()
-  );
+  const filteredProperties = properties.filter(property => {
+    // Exclude draft properties from finance view
+    if (property.propertyStatus === 'DRAFT') {
+      return false;
+    }
+    
+    // Apply status filter
+    return filterStatus === "all" || property.status.toLowerCase() === filterStatus.toLowerCase();
+  });
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -233,8 +239,8 @@ const PropertyManager = () => {
                 <Building className="w-6 h-6 text-red-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">Total Properties</p>
-                <p className="text-2xl font-bold text-gray-900">{properties.length}</p>
+                <p className="text-sm text-gray-500">Published Properties</p>
+                <p className="text-2xl font-bold text-gray-900">{filteredProperties.length}</p>
               </div>
             </div>
           </div>

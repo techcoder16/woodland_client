@@ -1,137 +1,170 @@
-
-import React from "react";
+import React, { useEffect } from 'react';
+import { useAppDispatch, useAppSelector } from '../../redux/reduxHooks';
+import { fetchRecentActivities } from '../../redux/dataStore/dashboardSlice';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Badge } from '../ui/badge';
 import { 
   Building, 
-  Check, 
-  Clock, 
-  FileCheck, 
+  Users, 
+  DollarSign, 
   FileText, 
-  Plus, 
-  User
-} from "lucide-react";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+  CheckCircle, 
+  Clock,
+  User,
+  Home,
+  CreditCard
+} from 'lucide-react';
 
-type ActivityType = "property" | "vendor" | "document" | "payment";
-
-interface Activity {
-  id: string;
-  type: ActivityType;
-  title: string;
-  description: string;
-  time: string;
-  isNew?: boolean;
+interface ActivityItemProps {
+  activity: {
+    id: string;
+    type: 'property' | 'tenant' | 'payment' | 'system';
+    action: string;
+    description: string;
+    timestamp: string;
+    userName?: string;
+  };
 }
 
-const activities: Activity[] = [
-  {
-    id: "1",
-    type: "property",
-    title: "Property Added",
-    description: "New property '123 Main St' was added by Admin",
-    time: "1 hour ago",
-    isNew: true,
-  },
-  {
-    id: "2",
-    type: "vendor",
-    title: "Vendor Updated",
-    description: "Vendor 'ABC Maintenance' details were updated",
-    time: "3 hours ago",
-  },
-  {
-    id: "3",
-    type: "document",
-    title: "Document Uploaded",
-    description: "Lease agreement for '456 Oak Ave' was uploaded",
-    time: "5 hours ago",
-  },
-  {
-    id: "4",
-    type: "payment",
-    title: "Payment Received",
-    description: "Received $1,200 for 'Apartment 3B' rent",
-    time: "1 day ago",
-  },
-  {
-    id: "5",
-    type: "property",
-    title: "Property Inspection",
-    description: "Scheduled maintenance inspection for '789 Pine Rd'",
-    time: "2 days ago",
-  },
-];
+const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case 'property':
+        return <Building className="h-4 w-4" />;
+      case 'tenant':
+        return <Users className="h-4 w-4" />;
+      case 'payment':
+        return <CreditCard className="h-4 w-4" />;
+      case 'system':
+        return <CheckCircle className="h-4 w-4" />;
+      default:
+        return <Clock className="h-4 w-4" />;
+    }
+  };
 
-function getActivityIcon(type: ActivityType) {
-  switch (type) {
-    case "property":
-      return Building;
-    case "vendor":
-      return User;
-    case "document":
-      return FileText;
-    case "payment":
-      return Check;
-    default:
-      return Clock;
-  }
-}
+  const getActivityColor = (type: string) => {
+    switch (type) {
+      case 'property':
+        return 'bg-blue-100 text-blue-800';
+      case 'tenant':
+        return 'bg-green-100 text-green-800';
+      case 'payment':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'system':
+        return 'bg-purple-100 text-purple-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
 
-export function RecentActivities() {
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+    return date.toLocaleDateString();
+  };
+
   return (
-    <Card className="glass-card">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle>Recent Activities</CardTitle>
-          <CardDescription>Latest updates and notifications</CardDescription>
+    <div className="flex items-start space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+      <div className={`p-2 rounded-full ${getActivityColor(activity.type)}`}>
+        {getActivityIcon(activity.type)}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium text-gray-900 truncate">
+            {activity.action}
+          </p>
+          <span className="text-xs text-gray-500">
+            {formatTimestamp(activity.timestamp)}
+          </span>
         </div>
-        <Button variant="outline" size="sm">
-          View All
-        </Button>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {activities.map((activity) => {
-            const Icon = getActivityIcon(activity.type);
-            
-            return (
-              <div
-                key={activity.id}
-                className={cn(
-                  "flex items-start gap-4 rounded-lg p-3 transition-colors",
-                  activity.isNew && "bg-muted/50"
-                )}
-              >
-                <div className="flex-shrink-0 mt-1">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <Icon className="h-4 w-4" />
-                  </div>
-                </div>
-                
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium">{activity.title}</p>
-                    {activity.isNew && (
-                      <span className="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-medium text-red-800 dark:border-red-900/20 dark:bg-red-900/10 dark:text-red-500">
-                        New
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-muted-foreground">{activity.description}</p>
-                  <p className="text-xs text-muted-foreground">{activity.time}</p>
+        <p className="text-sm text-gray-600 mt-1">
+          {activity.description}
+        </p>
+        {activity.userName && (
+          <div className="flex items-center mt-1">
+            <User className="h-3 w-3 text-gray-400 mr-1" />
+            <span className="text-xs text-gray-500">{activity.userName}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export const RecentActivities: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const { activities, loading, error } = useAppSelector((state) => state.dashboard);
+
+  useEffect(() => {
+    dispatch(fetchRecentActivities(10));
+  }, [dispatch]);
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Activities</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex items-start space-x-3 p-3">
+                <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse" />
+                <div className="flex-1">
+                  <div className="h-4 w-32 bg-gray-200 rounded animate-pulse mb-2" />
+                  <div className="h-3 w-48 bg-gray-200 rounded animate-pulse" />
                 </div>
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Activities</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center text-red-600">
+            <p>Failed to load activities</p>
+            <p className="text-sm text-gray-500">{error}</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          Recent Activities
+          <Badge variant="secondary">{Array.isArray(activities) ? activities.length : 0}</Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {!Array.isArray(activities) || activities.length === 0 ? (
+          <div className="text-center py-8">
+            <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500">No recent activities</p>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {activities.map((activity) => (
+              <ActivityItem key={activity.id} activity={activity} />
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
-}
+};

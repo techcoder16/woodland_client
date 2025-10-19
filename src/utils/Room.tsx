@@ -31,10 +31,32 @@ const Room: React.FC<RoomProps> = ({
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const { toast } = useToast();
   const watchedRooms = watch("rooms");
-  const rooms =
-    typeof watchedRooms === "string"
-      ? JSON.parse(watchedRooms)
-      : watchedRooms || [];
+  
+  // Parse rooms safely - handle string, null, undefined, and array cases
+  let rooms = [];
+  try {
+    if (typeof watchedRooms === "string") {
+      // If it's a string, try to parse it
+      rooms = watchedRooms ? JSON.parse(watchedRooms) : [];
+    } else if (Array.isArray(watchedRooms)) {
+      // If it's already an array, use it
+      rooms = watchedRooms;
+    } else if (watchedRooms === null || watchedRooms === undefined) {
+      // If it's null or undefined, use empty array
+      rooms = [];
+    } else {
+      // For any other type, try to convert to array or use empty array
+      rooms = [];
+    }
+  } catch (error) {
+    console.error("Error parsing rooms:", error);
+    rooms = [];
+  }
+  
+  // Ensure rooms is always an array
+  if (!Array.isArray(rooms)) {
+    rooms = [];
+  }
 
 
 
@@ -79,7 +101,7 @@ const Room: React.FC<RoomProps> = ({
       <div className="text-lg font-medium underline p-5">Rooms</div>
 
       {/* Rooms Table */}
-      {rooms.length > 0 ? (
+      {rooms && rooms.length > 0 ? (
         <table className="w-full border">
           <thead>
             <tr className="text-left border-b">

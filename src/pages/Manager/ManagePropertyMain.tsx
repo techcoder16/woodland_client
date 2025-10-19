@@ -21,6 +21,7 @@ import SupplierInventory from './SupplierInventory';
 import ManagementAgreement from "./ManagementAgreement";
 import TenancyAgreement from "./TenancyAgreement";
 import TransactionPage from "./TransactionPage";
+import Notes from "./Notes";
 
 // Icons for better visual representation (using Lucide React icons)
 import { 
@@ -73,11 +74,6 @@ const transactionSchema = z.object({
 });
 type TransactionFormData = z.infer<typeof transactionSchema>;
 
-// Note form schema
-const noteSchema = z.object({
-  content: z.string().min(1, "Note content is required"),
-});
-type NoteFormData = z.infer<typeof noteSchema>;
 
 // ----- Main Component ----- //
 
@@ -132,35 +128,7 @@ const ManageProperty = () => {
     resolver: zodResolver(transactionSchema),
   });
 
-  // ----- Note Form Setup ----- //
-  const {
-    register: registerNote,
-    handleSubmit: handleSubmitNote,
-    reset: resetNote,
-    setValue: setNoteValue,
-    formState: { errors: errorsNote },
-  } = useForm<NoteFormData>({
-    resolver: zodResolver(noteSchema),
-  });
 
-  // ----- API Submit Handlers ----- //
-
-  
-
-  const onSubmitNote = async (data: NoteFormData) => {
-    const payload = { ...data };
-    const res = await fetch("/manager/notes/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (res.ok) {
-      alert("Note created successfully");
-      resetNote();
-    } else {
-      alert("Error creating note");
-    }
-  };
 
   return (
     <DashboardLayout>
@@ -252,7 +220,7 @@ const ManageProperty = () => {
                     className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:  data-[state=active]:shadow-sm"
                   >
                     <StickyNote className="h-4 w-4 mr-2" />
-                    Notes
+                   ToDo / Notes
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -293,36 +261,7 @@ const ManageProperty = () => {
             
               {/* ----- Notes Tab ----- */}
               <TabsContent value="notes" className="mt-0">
-                <Card className="shadow-sm border-0 ">
-                  <CardHeader className=" border-b">
-                    <CardTitle className="text-xl font-semibold  flex items-center">
-                      <StickyNote className="h-5 w-5 mr-2 " />
-                      Create Property Note
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <form
-                      onSubmit={handleSubmitNote(onSubmitNote)}
-                      className="space-y-4"
-                    >
-                      <TextAreaField
-                        label="Note Content"
-                        name="content"
-                        register={registerNote}
-                        error={errorsNote.content?.message}
-                        placeholder="Enter your note about this property..."
-                      />
-                      <div className="flex justify-end pt-4">
-                        <Button 
-                          type="submit"
-                          className=" px-8 py-2 rounded-lg font-medium"
-                        >
-                          Save Note
-                        </Button>
-                      </div>
-                    </form>
-                  </CardContent>
-                </Card>
+                <Notes propertyId={property.id} property={property} />
               </TabsContent>
             </div>
           </Tabs>

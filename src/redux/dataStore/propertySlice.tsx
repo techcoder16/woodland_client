@@ -12,6 +12,7 @@ interface Property {
   category: string;
   status: string;
   price: string;
+  propertyStatus?: string;
 }
 
 interface PropertyState {
@@ -38,7 +39,8 @@ export const fetchProperties = createAsyncThunk(
       status,
       postCode,
       country,
-    }: { page: number; search: string; category?: string; status?: string; postCode?: string; country?: string },
+      propertyStatus,
+    }: { page: number; search: string; category?: string; status?: string; postCode?: string; country?: string; propertyStatus?: string },
     { rejectWithValue }
   ) => {
     try {
@@ -49,7 +51,7 @@ export const fetchProperties = createAsyncThunk(
         category ? `&category=${category}` : ""
       }${status ? `&status=${status}` : ""}${postCode ? `&postCode=${postCode}` : ""}${
         country ? `&country=${country}` : ""
-      }`;
+      }${propertyStatus ? `&propertyStatus=${propertyStatus}` : ""}`;
       const data:any = await getApi("properties", params, headers);
       return data?.items;
     } catch (error: any) {

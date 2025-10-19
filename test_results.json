@@ -1,0 +1,17 @@
+{
+  "test_suite": "Enhanced Property Management Test Suite",
+  "start_time": "2025-10-19T11:39:08.637050",
+  "end_time": "2025-10-19T11:39:22.342873",
+  "duration": 13.705829,
+  "results": [
+    {
+      "test": "Login",
+      "success": false,
+      "duration": 2.365753,
+      "error": "Page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8081/login\nCall log:\n  - navigating to \"http://localhost:8081/login\", waiting until \"load\"\n"
+    }
+  ],
+  "screenshots": [
+    "screenshots/login_failed_1760855961.png"
+  ]
+}

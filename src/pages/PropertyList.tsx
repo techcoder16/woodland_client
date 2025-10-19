@@ -25,7 +25,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Pencil, Trash, Filter, SquareChartGantt, Search, Plus, Building, User, Edit, MoreHorizontal } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Pencil, Trash, Filter, SquareChartGantt, Search, Plus, Building, User, Edit, MoreHorizontal, FileText, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
@@ -38,15 +39,25 @@ const PropertyList = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
   const navigate = useNavigate();
   const { toast } = useToast();
   const { properties, totalPages, loading } = useAppSelector(
     (state) => state.properties
   );
+  
   useEffect(() => {
-
-    dispatch(fetchProperties({ page: currentPage, search: searchTerm }));
-  }, [dispatch, currentPage, searchTerm]);
+    const params: any = { page: currentPage, search: searchTerm };
+    
+    // Add propertyStatus filter if not "all"
+    if (statusFilter === "draft") {
+      params.propertyStatus = "DRAFT";
+    } else if (statusFilter === "published") {
+      params.propertyStatus = "PUBLISHED";
+    }
+    
+    dispatch(fetchProperties(params));
+  }, [dispatch, currentPage, searchTerm, statusFilter]);
 
   const handleDeleteProperty = async (id: string) => {
     await dispatch(deleteProperty(id));
@@ -55,7 +66,6 @@ const PropertyList = () => {
 
   const handleEditProperty = (property: any) => {
     navigate(`/property/edit`, { state: { property } });
-
   };
 
   const handlePageChange = (page: number) => {
@@ -80,6 +90,24 @@ const PropertyList = () => {
 <div className="p-6 space-y-6">
 <h1 className="text-3xl font-bold tracking-tight">Properties</h1>
 <div className="space-y-4">
+      {/* Status Filter Tabs */}
+      <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as "all" | "draft" | "published")} className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-3">
+          <TabsTrigger value="all" className="flex items-center gap-2">
+            <Building className="h-4 w-4" />
+            All Properties
+          </TabsTrigger>
+          <TabsTrigger value="draft" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Drafts
+          </TabsTrigger>
+          <TabsTrigger value="published" className="flex items-center gap-2">
+            <CheckCircle className="h-4 w-4" />
+            Published
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+      
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-1 items-center gap-2">
           <div className="relative flex-1 max-w-md">
@@ -118,6 +146,7 @@ const PropertyList = () => {
       <th className="px-4 py-3 text-left font-medium">Address</th>
       <th className="px-4 py-3 text-left font-medium">Category</th>
       <th className="px-4 py-3 text-left font-medium">Status</th>
+      <th className="px-4 py-3 text-left font-medium">Property Status</th>
       <th className="px-4 py-3 text-left font-medium">Price</th>
       
     </tr>
@@ -147,6 +176,17 @@ const PropertyList = () => {
               {property.status}
             </span>
           </td>
+          <td className="px-4 py-3 text-center">
+            <span
+              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                property.propertyStatus === "PUBLISHED"
+                  ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                  : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
+              }`}
+            >
+              {property.propertyStatus === "PUBLISHED" ? "Published" : "Draft"}
+            </span>
+          </td>
           <td className="px-4 py-3">{property.price}</td>
        
           <td className="px-4 py-3 text-right">
@@ -159,13 +199,8 @@ const PropertyList = () => {
          <DropdownMenuContent align="end">
            <DropdownMenuItem onClick={()=>handleEditProperty(property)}>
              <Edit className="mr-2 h-4 w-4" />
-             Edit
+             {property.propertyStatus === "DRAFT" ? "Edit Draft" : "Edit"}
            </DropdownMenuItem>
-          
-
-
-           <DropdownMenuSeparator />
-           
 
            <DropdownMenuSeparator />
            <DropdownMenuItem
@@ -175,8 +210,6 @@ const PropertyList = () => {
              <Trash className="mr-2 h-4 w-4" />
              Delete
            </DropdownMenuItem>
-
-        
          </DropdownMenuContent>
        </DropdownMenu>
      </td>
@@ -186,7 +219,7 @@ const PropertyList = () => {
       ))
     ) : (
       <tr>
-        <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+        <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
           No properties found
         </td>
       </tr>

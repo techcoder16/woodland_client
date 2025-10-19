@@ -41,10 +41,7 @@ z.object({
   workStation: z.string().nullable().default(null).describe("Workstation information is required."),
   landSize: z.string().nullable().default(null).describe("Land size is required."),
   outBuildings: z.string().nullable().default(null).describe("Outbuildings information is required."),
-propertyFeature: z.array(z.string()).min(1, "At least one property feature is required.").refine(
-  (features) => features && features.length > 0 && features.some(feature => feature && feature.trim() !== ''),
-  "At least one property feature must be selected."
-),
+propertyFeature: z.array(z.string()).optional().or(z.string().transform(val => val ? [val] : [])).default([]),
   Tags: z.string().nullable().default(null).describe("Tags field is required."),
   shortSummary: z.string().nullable().default(null).describe("Short summary is required."),
   fullDescription: z.string().nullable().default(null).describe("Full description is required."),
@@ -127,7 +124,7 @@ propertyFeature: z.array(z.string()).min(1, "At least one property feature is re
   transactionType: z.string().nullable().default(null).describe("Transaction type is required."),
   sendToOnTheMarket: z.boolean().nullable().default(false),
   newsAndExclusive: z.boolean().nullable().default(false),
-  selectPortals: z.array(z.string(), { required_error: "At least one portal must be selected." }),
+  selectPortals: z.array(z.string()).optional().or(z.string().transform(val => val ? [val] : [])).default([]),
   vendor: z.string().nullable(),
   rooms: z.array(roomSchema).optional(),
   portalList: z.any(),
@@ -136,5 +133,6 @@ propertyFeature: z.array(z.string()).min(1, "At least one property feature is re
       message: "Only valid image files in Base64 format are allowed.",
     })
   ),
+  propertyStatus: z.enum(["DRAFT", "PUBLISHED"]).default("DRAFT").optional(),
 });
 

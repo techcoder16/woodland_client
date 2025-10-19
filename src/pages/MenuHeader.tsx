@@ -57,7 +57,7 @@ const MenuHeader: React.FC = () => {
     await DEFAULT_COOKIE_DELETE("access_token");
     await DEFAULT_COOKIE_DELETE("user");
     localStorage.removeItem("user_data");
-    navigate("/Login");
+    navigate("/");
   };
 
   const getInitials = (name: string): string => {

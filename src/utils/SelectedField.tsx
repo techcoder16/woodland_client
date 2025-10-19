@@ -26,50 +26,56 @@ const SelectField: React.FC<SelectFieldProps> = ({
   onChange,
 }) => {
   const currentValue = watch(name); // Get the current value of the field
-  console.log(`${name} current value:`, currentValue);
 
-  useEffect(() => {
-    if (defaultValue) {
-      setValue(name, defaultValue);
-    }
-  }, [defaultValue, name, setValue]);
+  console.log(`🔍 SelectField [${name}] Render:`, {
+    currentValue,
+    defaultValue,
+    type: typeof currentValue,
+  });
 
-  // Ensure the value is properly set when component mounts
-  useEffect(() => {
-    // If there's a current value but it's not in the register, set it
-    if (currentValue && !register(name)?.value) {
-      setValue(name, currentValue);
-    }
-  }, [currentValue, name, setValue, register]);
-
-  // Handle value change - FIXED VERSION
+  // Handle value change
   const handleChange = (value: string) => {
-    // Always set the value, regardless of current value
-    setValue(name, value);
+    console.log(`✏️ SelectField [${name}] handleChange called:`, {
+      oldValue: currentValue,
+      newValue: value,
+    });
     
+    // Set value with proper options to trigger form updates
+    setValue(name, value, {
+      shouldValidate: true,
+      shouldDirty: true,
+      shouldTouch: true,
+    });
+    
+    console.log(`✅ SelectField [${name}] setValue completed`);
+    
+    // Call the custom onChange if provided
     if (onChange) {
       onChange(value);
     }
   };
 
+  console.log(`📺 SelectField [${name}] Rendering Select with value:`, currentValue?.toString() || "");
+
   return (
     <div className="p-3 rounded-sm">
       <div className="space-y-2">
-        <label className="text-gray-700   text-sm font-medium mr-4 w-32">{label}</label>
+        <label className="text-gray-700 text-sm font-medium mr-4 w-32">{label}</label>
+        
+        {/* Hidden input for react-hook-form registration */}
+        <input type="hidden" {...register(name)} value={currentValue || ""} />
+        
+        {/* Radix UI Select - controlled by currentValue */}
         <Select
-          {...register(name)}
-          value={currentValue || ""}
+          value={currentValue?.toString() || undefined}
           onValueChange={handleChange}
+          defaultValue={undefined}
         >
           <SelectTrigger className="">
-            <SelectValue placeholder="Select an option">
-              {currentValue
-                ? options && options.find(option => option.value === currentValue)?.label || "Unknown Field"
-                : "Select an option"}
-            </SelectValue>
+            <SelectValue placeholder="Select an option" />
           </SelectTrigger>
-          <SelectContent>
-            {options && options.map((option) => (
+          <SelectContent className="max-h-[300px] overflow-y-auto">
+            {options?.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
               </SelectItem>

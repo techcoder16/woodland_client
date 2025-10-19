@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
 import { Card } from "@/components/ui/card";
-import { Check, ArrowLeft, ArrowRight } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Check, ArrowLeft, ArrowRight, AlertCircle } from "lucide-react";
 import postApi from "@/helper/postApi";
 import { useNavigate, useLocation } from "react-router-dom";
 import Attachments from "./Property/Attachments";
@@ -161,9 +162,11 @@ type FormData = z.infer<typeof formSchema>;
 const EditProperty = () => {
   const location = useLocation();
 
-  // Get the property to edit from location state
-  const property = location.state?.property;
-  console.log(property);
+  // Get the property to edit from location state and memoize it based on ID
+  const property = useMemo(() => {
+    console.log("🏠 Property memoization recalculating - ID:", location.state?.property?.id);
+    return location.state?.property;
+  }, [location.state?.property?.id]); // Only recreate when property ID changes
      const splitFeeValue = (value: string) => {
         if (!value) return { amount: '', type: '' };
         const parts = value.split('-');
@@ -174,9 +177,15 @@ const EditProperty = () => {
       };
   // Use useMemo to memoize the transformed data so it doesn't trigger re-renders on every render.
   const transformedVendorData = useMemo(() => {
+    console.log("🔄 transformedVendorData useMemo recalculating...");
 
     if(property)
     {
+      console.log("📦 Property data:", {
+        id: property.id,
+        currentEERating: property.currentEERating,
+        potentialEERating: property.potentialEERating,
+      });
 
       
  
@@ -205,15 +214,116 @@ const EditProperty = () => {
        console.log(property.newHome,property.offPlan )
       
 
-    return {
+    // Parse rooms if it's a string from the backend
+    let parsedRooms = property?.rooms || [];
+    if (typeof property?.rooms === "string") {
+      try {
+        parsedRooms = JSON.parse(property.rooms);
+      } catch (e) {
+        console.error("Error parsing rooms from backend:", e);
+        parsedRooms = [];
+      }
+    }
+    
+    // Parse propertyFeature if it's a string
+    let parsedPropertyFeature = property?.propertyFeature || [];
+    if (typeof property?.propertyFeature === "string") {
+      parsedPropertyFeature = property.propertyFeature === "" ? [] : [property.propertyFeature];
+    }
+    
+    // Parse selectPortals if it's a string
+    let parsedSelectPortals = property?.selectPortals || [];
+    if (typeof property?.selectPortals === "string") {
+      parsedSelectPortals = property.selectPortals === "" ? [] : [property.selectPortals];
+    }
+    
+    // Ensure EPC ratings are strings (they might come as numbers from backend)
+    const currentEERating = property?.currentEERating 
+      ? String(property.currentEERating) 
+      : "";
+    const potentialEERating = property?.potentialEERating 
+      ? String(property.potentialEERating) 
+      : "";
+    
+    // Parse photographs array (might be JSON string or already an array from backend)
+    let parsedPhotographs = [];
+    if (Array.isArray(property?.photographs)) {
+      // Already an array, use it directly
+      parsedPhotographs = property.photographs;
+    } else if (typeof property?.photographs === "string") {
+      // It's a string, try to parse it
+      try {
+        parsedPhotographs = JSON.parse(property.photographs);
+      } catch (e) {
+        // If parsing fails, it might be a single base64 string, wrap it in array
+        if (property.photographs.startsWith('data:image')) {
+          parsedPhotographs = [property.photographs];
+        } else {
+          parsedPhotographs = [];
+        }
+      }
+    }
+    
+    // Parse floorPlans array (might be JSON string or already an array from backend)
+    let parsedFloorPlans = [];
+    if (Array.isArray(property?.floorPlans)) {
+      // Already an array, use it directly
+      parsedFloorPlans = property.floorPlans;
+    } else if (typeof property?.floorPlans === "string") {
+      // It's a string, try to parse it
+      try {
+        parsedFloorPlans = JSON.parse(property.floorPlans);
+      } catch (e) {
+        // If parsing fails, it might be a single base64 string, wrap it in array
+        if (property.floorPlans.startsWith('data:image')) {
+          parsedFloorPlans = [property.floorPlans];
+        } else {
+          parsedFloorPlans = [];
+        }
+      }
+    }
+    
+    // Ensure epcChartOption has a valid value
+    const epcChartOption = property?.epcChartOption || "ratings";
+    
+    // Ensure epcReportOption has a valid value
+    const epcReportOption = property?.epcReportOption || "uploadReport";
+    
+    // Ensure videoTourDescription is a string
+    const videoTourDescription = property?.videoTourDescription || "";
+    
+    // Ensure epcReportURL is a string
+    const epcReportURL = property?.epcReportURL || "";
+    
+    const transformedData = {
       ...property,
-
       vendor: property?.vendorId ? property.vendorId : "",
+      rooms: parsedRooms, // Always an array, parsed if needed
+      propertyFeature: parsedPropertyFeature, // Always an array
+      selectPortals: parsedSelectPortals, // Always an array
+      currentEERating: currentEERating, // Ensure it's a string
+      potentialEERating: potentialEERating, // Ensure it's a string
+      photographs: parsedPhotographs, // Ensure it's an array
+      floorPlans: parsedFloorPlans, // Ensure it's an array
+      epcChartOption: epcChartOption, // Ensure it has a valid default
+      epcReportOption: epcReportOption, // Ensure it has a valid default
+      videoTourDescription: videoTourDescription, // Ensure it's a string
+      epcReportURL: epcReportURL, // Ensure it's a string
       // Add any additional transformations here.
     };
+    
+    console.log("✅ Transformed data ready:", {
+      currentEERating: transformedData.currentEERating,
+      potentialEERating: transformedData.potentialEERating,
+      photographs: parsedPhotographs.length,
+      floorPlans: parsedFloorPlans.length,
+    });
+    
+    return transformedData;
   }
-  return;
-  }, [property]);
+  console.log("⚠️ No property - returning empty FormData");
+  return {} as FormData; // Return empty object if no property
+  }, [property]); // Depend on memoized property object
 
   const { toast } = useToast();
 
@@ -224,19 +334,77 @@ const EditProperty = () => {
   });
   const { watch, reset } = form;
 
+  // Track if we've loaded this property already to prevent resetting on every render
+  const loadedPropertyId = useRef<string | null>(null);
+  const hasInitialized = useRef<boolean>(false);
+
+  // Reset form ONLY when a new property is loaded (property ID changes)
   useEffect(() => {
-    if (property) {
-      // Reset the form whenever the property changes
-      reset(transformedVendorData);
+    console.log("🔄 Reset Effect Triggered:", {
+      hasProperty: !!property?.id,
+      hasTransformedData: !!transformedVendorData,
+      loadedPropertyId: loadedPropertyId.current,
+      currentPropertyId: property?.id,
+      hasInitialized: hasInitialized.current,
+    });
+    
+    // Only reset if:
+    // 1. We have a property with an ID
+    // 2. We have transformed data
+    // 3. This is either the first load OR a different property
+    if (property?.id && transformedVendorData) {
+      const isDifferentProperty = loadedPropertyId.current !== property.id;
+      const isFirstLoad = !hasInitialized.current;
+      
+      if (isDifferentProperty || isFirstLoad) {
+        console.log("🔄 RESETTING FORM:", {
+          propertyId: property.id,
+          isFirstLoad,
+          isDifferentProperty,
+          currentEERating: transformedVendorData.currentEERating,
+          potentialEERating: transformedVendorData.potentialEERating,
+        });
+        
+        // Reset the form with all transformed values
+        reset(transformedVendorData, {
+          keepDefaultValues: false,
+          keepErrors: false,
+          keepDirty: false,
+          keepIsSubmitted: false,
+          keepTouched: false,
+          keepIsValid: false,
+          keepSubmitCount: false,
+        });
+        
+        console.log("✅ Form reset completed");
+        
+        // Mark this property as loaded
+        loadedPropertyId.current = property.id;
+        hasInitialized.current = true;
+      } else {
+        console.log("⏭️ Skipping reset - same property already loaded");
+      }
     }
-  }, [property, reset, transformedVendorData]);
+  }, [property?.id]); // ONLY depend on property ID, not transformedVendorData
+  
+  // Debug: Watch EPC fields specifically
+  useEffect(() => {
+    const subscription = watch((value, { name, type }) => {
+      if (name === 'currentEERating' || name === 'potentialEERating') {
+        console.log(`🎯 EditProperty Form - Field ${name} changed:`, value[name]);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [watch]);
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [savedData, setSavedData] = useState<Record<number, any>>({});
+  const [submissionType, setSubmissionType] = useState<"DRAFT" | "PUBLISHED">("PUBLISHED");
 
-  const steps = [
+  // Memoize steps to prevent unnecessary re-renders
+  const steps = useMemo(() => [
     {
       label: "Standard Info",
       component: (
@@ -310,7 +478,7 @@ const EditProperty = () => {
         />
       ),
     },
-  ];
+  ], [watch, form.register, form.formState.errors, form.setValue, form.clearErrors, form.unregister]);
 
   const isLastStep = currentStep === steps.length - 1;
 
@@ -339,27 +507,12 @@ const EditProperty = () => {
 
   const handleNext = async () => {
     const currentStepFields = stepFields[currentStep]; // Validate only current step fields
-    console.log(currentStep,currentStepFields)
     const isValid = await form.trigger(currentStepFields as any, { shouldFocus: true });
-  console.log(isValid,"furqan");
-      console.log("Validation errors:", form.formState.errors);
-    console.log("Validation errors:", form.formState.errors);
 
-      if (isValid) {
-      // Double-check propertyFeature again for step 0
-      if (currentStep === 0) {
-        const propertyFeatures = form.getValues("propertyFeature");
-        if (!propertyFeatures || propertyFeatures.length === 0) {
-          toast({
-            title: "Validation Error",
-            description: "Please select at least one property feature before proceeding.",
-            variant: "destructive",
-          });
-          return;
-        }
-      }
-    }
     if (isValid) {
+      // Clear previous validation errors
+      form.clearErrors();
+      
       setSavedData((prev) => ({
         ...prev,
         [currentStep]: form.getValues(),
@@ -376,6 +529,11 @@ const EditProperty = () => {
       }
     } else {
       console.log("Validation failed:", form.formState.errors);
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields on this step before proceeding.",
+        variant: "destructive",
+      });
     }
   };
   
@@ -403,20 +561,41 @@ const EditProperty = () => {
   };
 
   
-  const onSubmit = async (data: FormData) => {
-    const isValid = await form.trigger();
-    if (!isValid) return;
+  const onSubmit = async (data: FormData, isDraft: boolean = false) => {
+    // Only validate if publishing, skip validation for drafts
+    if (!isDraft) {
+      const isValid = await form.trigger();
+      if (!isValid) {
+        toast({
+          title: "Validation Error",
+          description: "Please fill in all required fields before publishing.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
     setProgress(30);
     setIsSubmitting(true);
     try {
       const accessToken = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = {
         Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/x-www-form-urlencoded",
+        // DO NOT set Content-Type for FormData - let the browser set it automatically with the boundary
       };
 
       const formData = new FormData();
+      
+      // Set property status based on submission type
+      const propertyStatus = isDraft ? "DRAFT" : "PUBLISHED";
+      
       for (const [key, value] of Object.entries(data)) {
+        // IMPORTANT: Skip propertyStatus in the loop - we'll add it separately at the end
+        // This prevents it from being added as an array ["DRAFT", "DRAFT"]
+        if (key === "propertyStatus") {
+          continue;
+        }
+        
         if (key === "attachments" && Array.isArray(value)) {
           value.forEach((file: any, index) => {
             if (file) {
@@ -424,29 +603,70 @@ const EditProperty = () => {
             }
           });
         } else if (key === "rooms") {
-          formData.append("rooms", JSON.stringify(value));
+          // Parse rooms if it's a string, then stringify it
+          let roomsValue = value;
+          if (typeof value === "string") {
+            try {
+              roomsValue = JSON.parse(value);
+            } catch (e) {
+              console.error("Error parsing rooms:", e);
+              roomsValue = [];
+            }
+          }
+          // Ensure it's an array before stringifying
+          if (!Array.isArray(roomsValue)) {
+            roomsValue = [];
+          }
+          formData.append("rooms", JSON.stringify(roomsValue));
         } else if (typeof value === "boolean") {
           formData.append(key, JSON.stringify(value));
         } else if (value !== null && value !== undefined) {
-          if (
-            Array.isArray(value) &&
-            (key === "selectPortals" || key === "propertyFeature")
-          ) {
-            value.forEach((item: any, index) => {
-              if (item !== null && item !== undefined) {
-                formData.append(`${key}[${index}]`, item);
-              }
-            });
+          if (key === "propertyFeature" || key === "selectPortals") {
+            // Handle array fields - convert empty string to empty array for drafts
+            let arrayValue = value;
+            if (!Array.isArray(value)) {
+              // If it's a string (empty or not), convert to array
+              arrayValue = value === "" || !value ? [] : [value];
+            }
+            // Only append if there are items (skip empty arrays for drafts)
+            if (arrayValue.length > 0) {
+              arrayValue.forEach((item: any, index: number) => {
+                if (item !== null && item !== undefined && item !== "") {
+                  formData.append(`${key}[${index}]`, item);
+                }
+              });
+            } else if (!isDraft) {
+              // For publishing, we need to send empty array indication
+              formData.append(`${key}[]`, "");
+            }
           } else {
             formData.append(key, String(value));
           }
         }
       }
+      
+      // Append propertyStatus after all other fields as a single string value
+      formData.append("propertyStatus", propertyStatus);
 
       // Include the property ID for updating
       formData.append("id", property?.id || "");
 
-      const { data: apiData, error }:any = await patch("properties/" +Object.fromEntries(formData.entries()).id , formData, headers);
+      // Debug: Log what's being sent
+      console.log("=== FormData being sent ===");
+      console.log("propertyStatus value:", propertyStatus);
+      console.log("Checking for duplicate propertyStatus keys:");
+      const allPropertyStatuses = formData.getAll("propertyStatus");
+      console.log("formData.getAll('propertyStatus'):", allPropertyStatuses);
+      console.log("Count:", allPropertyStatuses.length);
+      
+      // Log all entries
+      console.log("\nAll FormData entries:");
+      for (const [key, value] of formData.entries()) {
+        console.log(`  ${key}:`, value);
+      }
+      console.log("=========================");
+
+      const { data: apiData, error }:any = await patch("properties/" + property?.id , formData, headers);
       setProgress(60);
       if (error && error.message) {
         toast({
@@ -460,23 +680,71 @@ const EditProperty = () => {
       if (updatedPropertyId && updatedPropertyId.length > 0) {
         toast({
           title: "Success",
-          description: apiData.message || "Property updated successfully!",
+          description: isDraft 
+            ? "Property saved as draft successfully!" 
+            : apiData.message || "Property updated and published successfully!",
         });
         setProgress(100);
-        // Optionally navigate away or refresh data here.
+        
+        // Navigate back to property list after a short delay
+        setTimeout(() => {
+          window.location.href = "/properties";
+        }, 1500);
       } else {
         throw new Error("Invalid Property ID or unexpected response format.");
       }
     } catch (error: any) {
       console.error("Error:", error);
+      
+      // Parse and display backend validation errors
+      let errorMessage = "Failed to update property.";
+      
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        
+        // Check if it's a validation error with message array
+        if (errorData.message && Array.isArray(errorData.message)) {
+          const validationErrors = errorData.message.map((err: any) => {
+            if (err.property && err.constraints) {
+              const constraintMessages = Object.values(err.constraints).join(", ");
+              return `${err.property}: ${constraintMessages}`;
+            }
+            return JSON.stringify(err);
+          });
+          errorMessage = validationErrors.join("\n");
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
-        title: "Error",
-        description: error.message || "Failed to update property.",
+        title: isDraft ? "Failed to Save Draft" : "Failed to Update Property",
+        description: errorMessage,
         variant: "destructive",
       });
+      setProgress(0);
     } finally {
       setIsSubmitting(false);
     }
+  };
+  
+  const handleSaveDraft = async () => {
+    // Safety check: Only allow saving as draft if property is already a draft
+    if (property?.propertyStatus !== "DRAFT") {
+      toast({
+        title: "Cannot Save as Draft",
+        description: "Published properties cannot be saved as drafts. Use 'Update Property' instead.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const data = form.getValues();
+    await onSubmit(data, true);
   };
 
   if (!property) {
@@ -495,7 +763,14 @@ const EditProperty = () => {
         <LoadingBar color="rgb(95,126,220)" progress={progress} onLoaderFinished={() => setProgress(0)} />
      
  <div className="p-6 max-w-5xl mx-auto">
-          <h1 className="text-4xl font-bold mb-8">Edit Property</h1>
+          <div className="flex items-center justify-between mb-8">
+            <h1 className="text-4xl font-bold">Edit Property</h1>
+            {property?.propertyStatus === "DRAFT" && (
+              <span className="inline-flex items-center rounded-full px-4 py-2 text-sm font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400">
+                Draft Mode
+              </span>
+            )}
+          </div>
           <div className="mb-8">
             <div className="flex justify-between items-center mb-4">
               {steps.map((step, index) => (
@@ -516,15 +791,68 @@ const EditProperty = () => {
             <Progress value={((currentStep + 1) / steps.length) * 100} className="h-2" />
           </div>
           <Card className="p-6 shadow-md">
-            <form onSubmit={form.handleSubmit(onSubmit)}>
+            <form onSubmit={(e) => e.preventDefault()}>
               {steps[currentStep].component}
+              
+              {/* Error Display at Bottom */}
+              {Object.keys(form.formState.errors).length > 0 && (
+                <Alert variant="destructive" className="mt-6">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    <div className="font-semibold mb-2">Please fix the following errors:</div>
+                    <ul className="list-disc list-inside space-y-1 text-sm">
+                      {Object.entries(form.formState.errors).slice(0, 5).map(([key, error]: any) => (
+                        <li key={key}>
+                          {key}: {error?.message || "This field is required"}
+                        </li>
+                      ))}
+                      {Object.keys(form.formState.errors).length > 5 && (
+                        <li className="text-xs italic">
+                          ... and {Object.keys(form.formState.errors).length - 5} more error(s)
+                        </li>
+                      )}
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+              )}
+              
               <div className="flex justify-between pt-6">
-                <Button type="button" variant="outline" onClick={handlePrevious} disabled={currentStep === 0}>
-                  <ArrowLeft className="mr-2 h-4 w-4" /> Previous
-                </Button>
+                <div className="flex gap-3">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={handlePrevious} 
+                    disabled={currentStep === 0}
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Previous
+                  </Button>
+                  
+                  {/* Save as Draft button - ONLY show if property is currently a DRAFT */}
+                  {property?.propertyStatus === "DRAFT" && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleSaveDraft}
+                      disabled={isSubmitting}
+                      className="border-gray-400"
+                    >
+                      Save as Draft
+                    </Button>
+                  )}
+                </div>
+
                 {isLastStep ? (
-                  <Button key="submit" type="submit" className="bg-red-500 text-white px-4 py-2 rounded">
-                    Submit <Check className="ml-2 h-4 w-4" />
+                  <Button
+                    key="update-publish"
+                    type="button"
+                    onClick={async () => {
+                      const data = form.getValues();
+                      await onSubmit(data, false);
+                    }}
+                    disabled={isSubmitting}
+                    className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                  >
+                    {property?.propertyStatus === "DRAFT" ? "Update & Publish" : "Update Property"} <Check className="ml-2 h-4 w-4" />
                   </Button>
                 ) : (
                   <Button key="next" type="button" onClick={handleNext}>

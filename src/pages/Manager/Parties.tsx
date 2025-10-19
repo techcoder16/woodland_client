@@ -431,9 +431,9 @@ console.log("Selected Tenants:", selectedTenants);
                 postcode: property?.postCode || "",
               }}
               sender={{
-               addressLine1: process.env.NEXT_PUBLIC_OFFICE_ADDRESS || "235 Cranbrook Road",
-                city: process.env.NEXT_PUBLIC_OFFICE_CITY || "Ilford, Essex",
-                postcode: process.env.NEXT_PUBLIC_OFFICE_POSTCODE || "IG1 4TD",
+               addressLine1: import.meta.env.VITE_PUBLIC_OFFICE_ADDRESS || "235 Cranbrook Road",
+                city: import.meta.env.VITE_PUBLIC_OFFICE_CITY || "Ilford, Essex",
+                postcode: import.meta.env.VITE_PUBLIC_OFFICE_POSTCODE || "IG1 4TD",
               }}
             />
           </PDFViewer>
@@ -454,9 +454,9 @@ console.log("Selected Tenants:", selectedTenants);
                 postcode: selectedLandlord?.postcode || "",
               }}
               sender={{
-                addressLine1: process.env.NEXT_PUBLIC_OFFICE_ADDRESS || "235 Cranbrook Road",
-                city: process.env.NEXT_PUBLIC_OFFICE_CITY || "Ilford, Essex",
-                postcode: process.env.NEXT_PUBLIC_OFFICE_POSTCODE || "IG1 4TD",
+                addressLine1: import.meta.env.VITE_PUBLIC_OFFICE_ADDRESS || "235 Cranbrook Road",
+                city: import.meta.env.VITE_PUBLIC_OFFICE_CITY || "Ilford, Essex",
+                postcode: import.meta.env.VITE_PUBLIC_OFFICE_POSTCODE || "IG1 4TD",
               }}
             />
           </PDFViewer>
