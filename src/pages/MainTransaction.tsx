@@ -42,6 +42,7 @@ const MainTransaction = () => {
   // OCR Results state
   const [ocrResults, setOcrResults] = useState<any>(null);
   const [showOcrResults, setShowOcrResults] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
   // Upload states for each document type
   const [letterUpload, setLetterUpload] = useState<UploadState>({
@@ -160,6 +161,7 @@ const MainTransaction = () => {
           
           // Store OCR results and show them
           setOcrResults(response.data);
+          setUploadedFile(currentState.file);
           setShowOcrResults(true);
           toast.success('PDF processed and transaction extracted successfully!');
         }
@@ -191,6 +193,21 @@ const MainTransaction = () => {
         error: error instanceof Error ? error.message : 'Upload failed'
       }));
       toast.error(error instanceof Error ? error.message : 'Upload failed');
+    }
+  };
+
+  // Helper function to parse OCR content
+  const parseOcrContent = (ocrContent: string) => {
+    try {
+      // Extract JSON from the OCR content
+      const jsonMatch = ocrContent.match(/\{.*\}/s);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      }
+      return null;
+    } catch (error) {
+      console.error('Error parsing OCR content:', error);
+      return null;
     }
   };
 
@@ -244,7 +261,7 @@ const MainTransaction = () => {
                     .filter((property) => property.propertyStatus !== 'DRAFT')
                     .map((property) => (
                       <SelectItem key={property.id} value={property.id}>
-                        {property.propertyNumber || property.id} - {property.propertyName}
+                        {property.propertyNo || property.id} - {property.propertyName}
                       </SelectItem>
                     ))}
                 </SelectContent>
@@ -264,6 +281,11 @@ const MainTransaction = () => {
                 <p className="text-gray-600">
                   Transaction data extracted from PDF document
                 </p>
+                {uploadedFile && (
+                  <p className="text-sm text-blue-600 mt-1">
+                    📄 File: {uploadedFile.name} ({(uploadedFile.size / 1024 / 1024).toFixed(2)} MB)
+                  </p>
+                )}
               </div>
               <button
                 onClick={() => setShowOcrResults(false)}
@@ -274,30 +296,54 @@ const MainTransaction = () => {
             </div>
             
             
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-700 mb-3">Extracted Transaction Data:</h3>
-              <div className="space-y-2">
-                {Object.entries(ocrResults).map(([key, value]) => (
-                  <div key={key} className="py-2 border-b border-gray-200 last:border-b-0">
-                    <span className="font-medium text-gray-600 capitalize block mb-1">
-                      {key.replace(/([A-Z])/g, ' $1').trim()}:
-                    </span>
-                    <div className="ml-4">
-                      {typeof value === 'object' && value !== null ? (
-                        <pre className="text-sm text-gray-800 bg-white p-2 rounded border overflow-x-auto">
-                          {JSON.stringify(value, null, 2)}
-                        </pre>
-                      ) : (
-                        <span className="text-gray-800">
-                          {value ? String(value) : 'N/A'}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+            <div className="space-y-6">
+              {/* Parsed OCR Data */}
+              {ocrResults.ocr_content && (
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <h3 className="font-semibold text-blue-800 mb-3">📋 Parsed Invoice Data:</h3>
+                  {(() => {
+                    const parsedData = parseOcrContent(ocrResults.ocr_content);
+                    return parsedData ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {Object.entries(parsedData).map(([key, value]) => (
+                          <div key={key} className="bg-white p-3 rounded border">
+                            <span className="font-medium text-gray-600 text-sm block mb-1">
+                              {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:
+                            </span>
+                            <span className="text-gray-800">
+                              {value !== null && value !== undefined ? String(value) : 'N/A'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
+                        <p className="text-yellow-800 text-sm">
+                          ⚠️ Could not parse OCR content. Raw data shown below.
+                        </p>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* Raw OCR Content */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="font-semibold text-gray-700 mb-3">🔍 Raw OCR Content:</h3>
+                <pre className="text-sm text-gray-800 bg-white p-3 rounded border overflow-x-auto whitespace-pre-wrap">
+                  {ocrResults.ocr_content || 'No OCR content available'}
+                </pre>
+              </div>
+
+              {/* Full API Response */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="font-semibold text-gray-700 mb-3">📊 Full API Response:</h3>
+                <pre className="text-sm text-gray-800 bg-white p-3 rounded border overflow-x-auto">
+                  {JSON.stringify(ocrResults, null, 2)}
+                </pre>
               </div>
               
-              <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
+              <div className="p-3 bg-green-50 border border-green-200 rounded">
                 <p className="text-green-800 text-sm">
                   ✅ Transaction has been saved as a draft and is ready for review.
                 </p>
