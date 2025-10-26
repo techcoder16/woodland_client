@@ -66,10 +66,11 @@ const PropertyManager = () => {
     }
     
     // Apply status filter
-    return filterStatus === "all" || property.status.toLowerCase() === filterStatus.toLowerCase();
+    return filterStatus === "all" || (property.status && property.status.toLowerCase() === filterStatus.toLowerCase());
   });
 
   const getStatusColor = (status: string) => {
+    if (!status) return 'bg-gray-100 text-gray-800';
     switch (status.toLowerCase()) {
       case 'active':
         return 'bg-green-100 text-green-800';

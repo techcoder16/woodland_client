@@ -173,11 +173,11 @@ const PermissionManagement: React.FC = () => {
     const user = users.find(u => u.id === permission.userId);
     const screen = screens.find(s => s.id === permission.screenId);
     return (
-      user?.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user?.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      screen?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      screen?.route.toLowerCase().includes(searchTerm.toLowerCase())
+      (user?.first_name && user.first_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (user?.last_name && user.last_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (user?.email && user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (screen?.name && screen.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (screen?.route && screen.route.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   });
 
@@ -427,13 +427,7 @@ const PermissionManagement: React.FC = () => {
                             </p>
                             
                             {/* Debug Info */}
-                            <div className="mt-4 p-3 bg-gray-50 rounded text-xs text-gray-600">
-                              <div className="font-medium mb-2">Debug Info:</div>
-                              <div>User ID: {bulkAssignData.userId}</div>
-                              <div>Current Screens: {userCurrentScreens.length}</div>
-                              <div>Selected Screens: {bulkAssignData.screenIds.length}</div>
-                              <div>Total Screens: {screens.length}</div>
-                            </div>
+                      
                           </div>
                         )}
                         

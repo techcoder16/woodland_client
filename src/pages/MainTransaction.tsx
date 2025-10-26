@@ -218,7 +218,7 @@ const MainTransaction = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-6 w-full mx-auto min-h-screen bg-gray-50">
+      <div className="p-6 w-full mx-auto min-h-screen ">
         {/* Header Section */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-center justify-between">
@@ -350,7 +350,7 @@ const MainTransaction = () => {
               )}
 
               {/* Raw OCR Content */}
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className=" rounded-lg p-4">
                 <h3 className="font-semibold text-gray-700 mb-3">🔍 Raw OCR Content:</h3>
                 <pre className="text-sm text-gray-800 bg-white p-3 rounded border overflow-x-auto whitespace-pre-wrap">
                   {ocrResults.ocrData?.ocr_content || 'No OCR content available'}
@@ -358,7 +358,7 @@ const MainTransaction = () => {
               </div>
 
               {/* Full API Response */}
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className=" rounded-lg p-4">
                 <h3 className="font-semibold text-gray-700 mb-3">📊 Full API Response:</h3>
                 <pre className="text-sm text-gray-800 bg-white p-3 rounded border overflow-x-auto">
                   {JSON.stringify(ocrResults, null, 2)}

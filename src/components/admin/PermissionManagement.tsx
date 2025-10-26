@@ -143,10 +143,14 @@ const PermissionManagement: React.FC = () => {
       return;
     }
     try {
-      const result = await permissionApi.bulkAssignPermissions({
-        userId: selectedUserForBulk,
-        screenIds: selectedScreensForBulk
-      });
+      const result = await permissionApi.bulkAssignPermissions(
+        selectedUserForBulk,
+        selectedScreensForBulk,
+        {
+          userId: selectedUserForBulk,
+          screenIds: selectedScreensForBulk
+        }
+      );
       toast.success(`Successfully assigned ${result.assigned} screen(s) to user!`);
       setIsBulkAssignModalOpen(false);
       setSelectedUserForBulk('');
@@ -191,20 +195,20 @@ const PermissionManagement: React.FC = () => {
     const screen = screens.find(s => s.id === permission.screenId);
     const searchLower = searchTerm.toLowerCase();
     return (
-      user?.first_name.toLowerCase().includes(searchLower) ||
-      user?.last_name.toLowerCase().includes(searchLower) ||
-      user?.email.toLowerCase().includes(searchLower) ||
-      screen?.name.toLowerCase().includes(searchLower) ||
-      screen?.route.toLowerCase().includes(searchLower)
+      (user?.first_name && user.first_name.toLowerCase().includes(searchLower)) ||
+      (user?.last_name && user.last_name.toLowerCase().includes(searchLower)) ||
+      (user?.email && user.email.toLowerCase().includes(searchLower)) ||
+      (screen?.name && screen.name.toLowerCase().includes(searchLower)) ||
+      (screen?.route && screen.route.toLowerCase().includes(searchLower))
     );
   });
 
   const filteredScreens = screens.filter(screen => {
     const searchLower = searchTerm.toLowerCase();
     return (
-      screen.name.toLowerCase().includes(searchLower) ||
-      screen.description.toLowerCase().includes(searchLower) ||
-      screen.route.toLowerCase().includes(searchLower)
+      (screen.name && screen.name.toLowerCase().includes(searchLower)) ||
+      (screen.description && screen.description.toLowerCase().includes(searchLower)) ||
+      (screen.route && screen.route.toLowerCase().includes(searchLower))
     );
   });
 
@@ -249,9 +253,7 @@ const PermissionManagement: React.FC = () => {
             Assign screen access to users and manage which users have access to which screens in your application.
           </CardDescription>
           {/* Debug Info */}
-          <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-blue-700">
-            <strong>Debug:</strong> Users: {users.length} | Screens: {screens.length} | Permissions: {permissions.length}
-          </div>
+   
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between mb-6">
