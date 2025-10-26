@@ -116,8 +116,8 @@ const AdminDashboard: React.FC = () => {
           </Card>
         </div>
 
-        Admin Test Component
-        <AdminTest />
+        {/* Admin Test Component
+        <AdminTest /> */}
 
       <Tabs defaultValue="users" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
