@@ -37,6 +37,7 @@ const PermissionManagement: React.FC = () => {
     userId: '',
     screenIds: [] as string[]
   });
+  const [userCurrentScreens, setUserCurrentScreens] = useState<string[]>([]);
 
   const { isAdmin } = usePermissions();
 
@@ -133,10 +134,22 @@ const PermissionManagement: React.FC = () => {
   };
 
   const handleUserSelection = (userId: string) => {
+    // Get current screens for this user
+    const userPermissions = permissions.filter(p => p.userId === userId);
+    const currentScreenIds = userPermissions.map(p => p.screenId);
+    
+    setUserCurrentScreens(currentScreenIds);
     setBulkAssignData(prev => ({
       ...prev,
       userId,
       screenIds: []
+    }));
+  };
+
+  const handleSelectCurrentScreens = () => {
+    setBulkAssignData(prev => ({
+      ...prev,
+      screenIds: userCurrentScreens
     }));
   };
 
@@ -189,15 +202,68 @@ const PermissionManagement: React.FC = () => {
         </TabsList>
 
         <TabsContent value="permissions" className="space-y-6">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Permissions</CardTitle>
+                <Shield className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{permissions.length}</div>
+                <p className="text-xs text-muted-foreground">
+                  Active user-screen assignments
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Screens</CardTitle>
+                <Monitor className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{screens.length}</div>
+                <p className="text-xs text-muted-foreground">
+                  Available application screens
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{users.length}</div>
+                <p className="text-xs text-muted-foreground">
+                  Registered system users
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Permission Management
-              </CardTitle>
-              <CardDescription>
-                Assign screen access to users.
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="h-5 w-5" />
+                    Permission Management
+                  </CardTitle>
+                  <CardDescription>
+                    Assign screen access to users.
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={loadData}
+                  disabled={loading}
+                  className="flex items-center gap-2"
+                >
+                  <Search className="h-4 w-4" />
+                  Refresh
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between mb-6">
@@ -307,8 +373,18 @@ const PermissionManagement: React.FC = () => {
                       
                       {bulkAssignData.userId && (
                         <div>
-                          <div className="flex items-center justify-between mb-3">
-                            <Label>Select Screens</Label>
+                        <div className="flex items-center justify-between mb-3">
+                          <Label>Select Screens</Label>
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={handleSelectCurrentScreens}
+                              disabled={userCurrentScreens.length === 0}
+                            >
+                              Select Current ({userCurrentScreens.length})
+                            </Button>
                             <Button
                               type="button"
                               variant="outline"
@@ -318,26 +394,49 @@ const PermissionManagement: React.FC = () => {
                               Select All
                             </Button>
                           </div>
+                        </div>
                           <div className="max-h-60 overflow-y-auto border rounded-md p-3 space-y-2">
-                            {screens.map((screen) => (
-                              <div key={screen.id} className="flex items-center space-x-2">
-                                <input
-                                  type="checkbox"
-                                  id={`screen-${screen.id}`}
-                                  checked={bulkAssignData.screenIds.includes(screen.id)}
-                                  onChange={() => handleScreenToggle(screen.id)}
-                                  className="rounded"
-                                />
-                                <label htmlFor={`screen-${screen.id}`} className="flex-1 cursor-pointer">
-                                  <div className="font-medium">{screen.name}</div>
-                                  <div className="text-sm text-gray-500">{screen.route}</div>
-                                </label>
-                              </div>
-                            ))}
+                            {screens.map((screen) => {
+                              const isCurrentlyAssigned = userCurrentScreens.includes(screen.id);
+                              const isSelected = bulkAssignData.screenIds.includes(screen.id);
+                              return (
+                                <div key={screen.id} className={`flex items-center space-x-2 p-2 rounded ${
+                                  isCurrentlyAssigned ? 'bg-blue-50 border border-blue-200' : ''
+                                }`}>
+                                  <input
+                                    type="checkbox"
+                                    id={`screen-${screen.id}`}
+                                    checked={isSelected}
+                                    onChange={() => handleScreenToggle(screen.id)}
+                                    className="rounded"
+                                  />
+                                  <label htmlFor={`screen-${screen.id}`} className="flex-1 cursor-pointer">
+                                    <div className="flex items-center gap-2">
+                                      <div className="font-medium">{screen.name}</div>
+                                      {isCurrentlyAssigned && (
+                                        <Badge variant="secondary" className="text-xs">
+                                          Currently Assigned
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <div className="text-sm text-gray-500">{screen.route}</div>
+                                  </label>
+                                </div>
+                              );
+                            })}
                           </div>
                           <p className="text-sm text-gray-500 mt-2">
                             Selected: {bulkAssignData.screenIds.length} screens
                           </p>
+                          
+                          {/* Debug Info */}
+                          <div className="mt-4 p-3 bg-gray-50 rounded text-xs text-gray-600">
+                            <div className="font-medium mb-2">Debug Info:</div>
+                            <div>User ID: {bulkAssignData.userId}</div>
+                            <div>Current Screens: {userCurrentScreens.length}</div>
+                            <div>Selected Screens: {bulkAssignData.screenIds.length}</div>
+                            <div>Total Screens: {screens.length}</div>
+                          </div>
                         </div>
                       )}
                       
