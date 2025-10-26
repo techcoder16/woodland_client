@@ -40,7 +40,7 @@ export const EmployeeDropdown: React.FC<EmployeeDropdownProps> = ({
       setLoading(true);
       setError(null);
       
-      const { data, error: apiError } = await get<User[]>('users/all');
+      const { data, error: apiError } = await get<User[]>('user/all');
       
       if (apiError) {
         setError(apiError.message || 'Failed to fetch users');

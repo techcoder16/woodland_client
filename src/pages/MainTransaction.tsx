@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useDispatch } from "react-redux";
+import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
 // import { uploadDocument } from "@/store/slices/documentSlice";
@@ -18,13 +19,29 @@ import {
 } from "lucide-react";
 import { DocumentUploadCard, UploadState } from "@/utils/DocumentUpload";
 import { uploadDocument } from "@/redux/dataStore/documentSlice";
+import axios from "axios";
+import { getAccessToken } from "@/helper/tokenManager";
+import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { fetchProperties } from "@/redux/dataStore/propertySlice";
 
 
 
 const MainTransaction = () => {
   const location = useLocation();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const property: any = location.state?.property;
+  
+  // Redux selectors
+  const { properties } = useAppSelector((state) => state.properties);
+  
+  // Property selection state
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string>(property?.id || '');
+  
+  // OCR Results state
+  const [ocrResults, setOcrResults] = useState<any>(null);
+  const [showOcrResults, setShowOcrResults] = useState(false);
 
   // Upload states for each document type
   const [letterUpload, setLetterUpload] = useState<UploadState>({
@@ -47,6 +64,7 @@ const MainTransaction = () => {
     uploaded: false,
     error: null
   });
+
 
   const handleFileSelect = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -96,10 +114,10 @@ const MainTransaction = () => {
         break;
     }
 
-    if (!currentState.file || !property?.id) {
+    if (!currentState.file || !selectedPropertyId) {
       setState(prev => ({
         ...prev,
-        error: 'Please select a file and ensure property is loaded'
+        error: 'Please select a file and property'
       }));
       return;
     }
@@ -107,23 +125,64 @@ const MainTransaction = () => {
     setState(prev => ({ ...prev, uploading: true, error: null }));
 
     try {
-      const formData = new FormData();
-      formData.append('file', currentState.file);
-      formData.append('propertyId', property.id);
-      formData.append('documentType', type);
+      // Check if it's a PDF file for transaction extraction
+      if (currentState.file.type === 'application/pdf') {
+        // Use PDF extraction API
+        const formData = new FormData();
+        formData.append('file', currentState.file);
+        formData.append('propertyId', selectedPropertyId);
 
-      // Dispatch Redux action
-      const result = await dispatch(uploadDocument(formData) as any);
-      
-      if (result.type.endsWith('/fulfilled')) {
-        setState(prev => ({
-          ...prev,
-          uploading: false,
-          uploaded: true,
-          error: null
-        }));
+        // Get access token
+        const token = await getAccessToken();
+        const API_URL = import.meta.env.VITE_API_URL;
+
+        // Create axios instance with 5-minute timeout
+        const axiosInstance = axios.create({
+          baseURL: API_URL,
+          timeout: 300000, // 5 minutes
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+          }
+        });
+
+        const response = await axiosInstance.post('transaction/extract', formData);
+        
+        console.log('OCR API Response:', response.data);
+        
+        if (response.data) {
+          setState(prev => ({
+            ...prev,
+            uploading: false,
+            uploaded: true,
+            error: null
+          }));
+          
+          // Store OCR results and show them
+          setOcrResults(response.data);
+          setShowOcrResults(true);
+          toast.success('PDF processed and transaction extracted successfully!');
+        }
       } else {
-        throw new Error(result.payload || 'Upload failed');
+        // Regular document upload
+        const formData = new FormData();
+        formData.append('file', currentState.file);
+        formData.append('propertyId', selectedPropertyId);
+        formData.append('documentType', type);
+
+        // Dispatch Redux action
+        const result = await dispatch(uploadDocument(formData) as any);
+        
+        if (result.type.endsWith('/fulfilled')) {
+          setState(prev => ({
+            ...prev,
+            uploading: false,
+            uploaded: true,
+            error: null
+          }));
+        } else {
+          throw new Error(result.payload || 'Upload failed');
+        }
       }
     } catch (error) {
       setState(prev => ({
@@ -131,8 +190,14 @@ const MainTransaction = () => {
         uploading: false,
         error: error instanceof Error ? error.message : 'Upload failed'
       }));
+      toast.error(error instanceof Error ? error.message : 'Upload failed');
     }
   };
+
+  // Load properties for selection
+  React.useEffect(() => {
+    dispatch(fetchProperties({ page: 1, search: '' }));
+  }, [dispatch]);
 
   return (
     <DashboardLayout>
@@ -146,7 +211,7 @@ const MainTransaction = () => {
               </h1>
               {property && (
                 <p className="text-gray-600">
-                  Property: {property.propertyNumber || property.id}
+                  Property: {property.propertyNo || property.id} - {property.propertyName}
                 </p>
               )}
             </div>
@@ -156,14 +221,95 @@ const MainTransaction = () => {
           </div>
         </div>
 
+        {/* Property Selection */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800 mb-2">
+                Select Property
+              </h2>
+              <p className="text-gray-600">
+                Choose the property for document upload and PDF transaction extraction
+              </p>
+            </div>
+            
+            <div className="max-w-md">
+              <Label htmlFor="property-select">Property</Label>
+              <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a property" />
+                </SelectTrigger>
+                <SelectContent>
+                  {properties
+                    .filter((property) => property.propertyStatus !== 'DRAFT')
+                    .map((property) => (
+                      <SelectItem key={property.id} value={property.id}>
+                        {property.propertyNumber || property.id} - {property.propertyName}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        {/* OCR Results Display */}
+        {showOcrResults && ocrResults && (
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-800 mb-2">
+                  OCR Extraction Results
+                </h2>
+                <p className="text-gray-600">
+                  Transaction data extracted from PDF document
+                </p>
+              </div>
+              <button
+                onClick={() => setShowOcrResults(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-700 mb-3">Extracted Transaction Data:</h3>
+              <div className="space-y-2">
+                {Object.entries(ocrResults).map(([key, value]) => (
+                  <div key={key} className="py-2 border-b border-gray-200 last:border-b-0">
+                    <span className="font-medium text-gray-600 capitalize block mb-1">
+                      {key.replace(/([A-Z])/g, ' $1').trim()}:
+                    </span>
+                    <div className="ml-4">
+                      {typeof value === 'object' && value !== null ? (
+                        <pre className="text-sm text-gray-800 bg-white p-2 rounded border overflow-x-auto">
+                          {JSON.stringify(value, null, 2)}
+                        </pre>
+                      ) : (
+                        <span className="text-gray-800">
+                          {value ? String(value) : 'N/A'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
+                <p className="text-green-800 text-sm">
+                  ✅ Transaction has been saved as a draft and is ready for review.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Document Upload Cards */}
         <div className="grid gap-6">
-        
-
-        
           <DocumentUploadCard
             title="Upload Documents"
-            description="Upload contracts, reports, or any other property documents"
+            description="Upload contracts, reports, PDFs for transaction extraction, or any other property documents"
             icon={FolderOpen}
             type="other"
             uploadState={otherDocsUpload}
@@ -176,9 +322,11 @@ const MainTransaction = () => {
         <div className="mt-8 bg-red-50 border border-red-200 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-red-800 mb-2">Upload Guidelines</h3>
           <ul className="text-sm text-red-700 space-y-1">
-            <li>• Supported formats: PDF, DOC, DOCX, JPG, JPEG, PNG</li>
+            <li>• <strong>PDF Files:</strong> Automatically processed for transaction extraction using OCR (up to 5 minutes processing time)</li>
+            <li>• <strong>Other Documents:</strong> Supported formats: DOC, DOCX, JPG, JPEG, PNG</li>
             <li>• Maximum file size: 10MB per document</li>
-            <li>• Documents will be automatically processed and added to transaction records</li>
+            <li>• PDF files will create draft transactions automatically when uploaded</li>
+            <li>• Other documents will be processed and added to property records</li>
             <li>• Ensure all sensitive information is properly handled according to privacy policies</li>
           </ul>
         </div>

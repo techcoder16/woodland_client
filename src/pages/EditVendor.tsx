@@ -15,7 +15,7 @@ import StandardInfo from './Vendor/StandardInfo';
 import InternalInfo from './Vendor/InternalInfo';
 import BankDetails from './Vendor/BankDetails';
 import WebLogin from './Vendor/WebLogin';
-import  postApi  from "@/helper/postApi"; // Ensure you have this utility function
+
 import { useNavigate } from "react-router-dom";
 
 import Attachments from './Vendor/Attachments';
@@ -316,7 +316,7 @@ const { watch } = form;
       }
   
       console.log("Form data before submission:", Object.fromEntries(formData.entries()));
-      // Call postApi with FormData and headers
+ 
       const { data: apiData, error }:any = await patch("vendors/update/"+Object.fromEntries(formData.entries()).id, formData, headers);
       setProgress(60);
   

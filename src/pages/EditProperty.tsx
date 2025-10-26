@@ -652,13 +652,9 @@ const EditProperty = () => {
       formData.append("id", property?.id || "");
 
       // Debug: Log what's being sent
-      console.log("=== FormData being sent ===");
-      console.log("propertyStatus value:", propertyStatus);
-      console.log("Checking for duplicate propertyStatus keys:");
+
       const allPropertyStatuses = formData.getAll("propertyStatus");
-      console.log("formData.getAll('propertyStatus'):", allPropertyStatuses);
-      console.log("Count:", allPropertyStatuses.length);
-      
+ 
       // Log all entries
       console.log("\nAll FormData entries:");
       for (const [key, value] of formData.entries()) {

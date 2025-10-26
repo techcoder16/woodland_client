@@ -188,8 +188,7 @@ const AddVendor = () => {
       }
 
 
-      // Call postApi with FormData and headers
-      const { data: apiData, error } = await post("vendors/create", formData, headers);
+            const { data: apiData, error } = await post("vendors/create", formData, headers);
       setProgress(60);
 
       if (error && error.message) {

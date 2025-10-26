@@ -142,7 +142,7 @@ const PropertyList = () => {
         <table className="w-full">
   <thead>
     <tr className="border-b">
-      <th className="px-4 py-3 text-left font-medium">Name</th>
+      <th className="px-4 py-3 text-left font-medium">No</th>
       <th className="px-4 py-3 text-left font-medium">Address</th>
       <th className="px-4 py-3 text-left font-medium">Category</th>
       <th className="px-4 py-3 text-left font-medium">Status</th>
@@ -158,7 +158,7 @@ const PropertyList = () => {
           key={property.id}
           className="border-b hover:bg-muted/50 transition-colors"
         >
-          <td className="px-4 py-3">{property.propertyName}</td>
+          <td className="px-4 py-3">{property.propertyNumber}</td>
           <td className="px-4 py-3">
             {property.addressLine1}, {property.town}
           </td>

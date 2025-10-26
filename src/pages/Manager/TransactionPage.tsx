@@ -4,11 +4,19 @@ import React, { useCallback, useEffect, useState } from "react";
 
 // UI components
 import { Button } from "@/components/ui/button";
-import { Filter, Plus, Search, Eye, Calendar, CreditCard, User, Building } from "lucide-react";
+import { Filter, Plus, Search, Eye, Calendar, CreditCard, User, Building, AlertCircle, RefreshCw } from "lucide-react";
 
 // Redux
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
-import { deleteTransaction, fetchTransaction } from "@/redux/dataStore/transactionSlice";
+import { 
+  deleteTransaction, 
+  fetchTransaction, 
+  getDraftTransactions, 
+  getActiveTransactions, 
+  publishDraftTransaction, 
+  createDraftTransaction,
+  StatusTransaction 
+} from "@/redux/dataStore/transactionSlice";
 import {
   Table,
   TableBody,
@@ -46,7 +54,15 @@ const TransactionPage: React.FC<{ propertyId: string }> = ({ propertyId }) => {
   const dispatch = useAppDispatch();
   
   // Redux selectors
-  const { transaction, totalPages, loading, error } = useAppSelector((state) => state.transaction);
+  const { transaction, totalPages, total, skip, take, loading, error } = useAppSelector((state) => state.transaction);
+  
+  // Debug logging
+  console.log('TransactionPage state:', { 
+    transactionCount: transaction?.length || 0, 
+    loading, 
+    error, 
+    total
+  });
   
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddTranscationModalOpen, setIsAddTransactionModalOpen] = useState(false);
@@ -54,15 +70,25 @@ const TransactionPage: React.FC<{ propertyId: string }> = ({ propertyId }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [transactionEditSet, setTransactionEdit] = useState("");
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('cards'); // Default to cards for mobile
+  const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'active'>('all');
+  const [pageSize, setPageSize] = useState(10);
 
   const handlePageChange = useCallback(
     (page: number) => {
       if (page > 0 && page <= totalPages) {
         setCurrentPage(page);
-        dispatch(fetchTransaction({ page, search: "" }));
+        const skip = (page - 1) * pageSize;
+        
+        if (statusFilter === 'draft') {
+          dispatch(getDraftTransactions({ propertyId, skip, take: pageSize }));
+        } else if (statusFilter === 'active') {
+          dispatch(getActiveTransactions({ propertyId, skip, take: pageSize }));
+        } else {
+          dispatch(fetchTransaction({ propertyId, skip, take: pageSize }));
+        }
       }
     },
-    [dispatch, totalPages]
+    [dispatch, totalPages, propertyId, pageSize, statusFilter]
   );
 
   const handleDeleteTransaction = useCallback(
@@ -83,9 +109,70 @@ const TransactionPage: React.FC<{ propertyId: string }> = ({ propertyId }) => {
     setIsEditTransactionModalOpen(true);
   }, []);
 
+  const handlePublishDraft = useCallback(
+    async (id: string, propertyId: string) => {
+      try {
+        await dispatch(publishDraftTransaction({ id, propertyId })).unwrap();
+        toast.success("Draft transaction published successfully!");
+      } catch (error) {
+        console.log(error);
+        toast.error(error || "Failed to publish draft transaction");
+      }
+    },
+    [dispatch]
+  );
+
+  // Load transactions based on current filter
+  const loadTransactions = useCallback(() => {
+    const skip = (currentPage - 1) * pageSize;
+    
+    if (statusFilter === 'draft') {
+      dispatch(getDraftTransactions({ propertyId, skip, take: pageSize }));
+    } else if (statusFilter === 'active') {
+      dispatch(getActiveTransactions({ propertyId, skip, take: pageSize }));
+    } else {
+      dispatch(fetchTransaction({ propertyId, skip, take: pageSize }));
+    }
+  }, [dispatch, propertyId, currentPage, pageSize, statusFilter]);
+
   useEffect(() => {
-    dispatch(fetchTransaction({ propertyId }));
+    loadTransactions();
+  }, [loadTransactions]);
+
+  // Handle status filter change
+  const handleStatusFilterChange = useCallback((filter: 'all' | 'draft' | 'active') => {
+    setStatusFilter(filter);
+    setCurrentPage(1); // Reset to first page when changing filter
+  }, []);
+
+  // Test function to create a sample transaction
+  const createTestTransaction = useCallback(async () => {
+    try {
+      const testTransaction = {
+        propertyId,
+        Branch: 'Test Branch',
+        fromTenantDate: new Date().toISOString().split('T')[0],
+        fromTenantMode: 'Cash',
+        fromTenantRentReceived: 1000,
+        fromTenantDescription: 'Test transaction',
+        toLandlordDate: new Date().toISOString().split('T')[0],
+        toLandLordMode: 'Bank Transfer',
+        toLandlordRentReceived: 1000,
+        toLandlordLessManagementFees: 50,
+        toLandlordNetPaid: 950,
+        landlordPaidBy: 'Test User',
+        status: StatusTransaction.DRAFT
+      };
+      
+      await dispatch(createDraftTransaction(testTransaction)).unwrap();
+      toast.success('Test transaction created successfully!');
+    } catch (error: any) {
+      toast.error('Failed to create test transaction: ' + error.message);
+    }
   }, [dispatch, propertyId]);
+
+  // Use transactions directly since filtering is now done server-side
+  const filteredTransactions = transaction;
 
   // Mobile Card Component
   const TransactionCard = ({ tx }: { tx: any }) => (
@@ -104,6 +191,11 @@ const TransactionPage: React.FC<{ propertyId: string }> = ({ propertyId }) => {
               <Badge variant="outline" className="text-xs">
                 {tx.toLandLordMode || 'N/A'}
               </Badge>
+              {tx.status === StatusTransaction.DRAFT && (
+                <Badge variant="destructive" className="text-xs">
+                  DRAFT
+                </Badge>
+              )}
             </div>
           </div>
           <DropdownMenu>
@@ -117,6 +209,12 @@ const TransactionPage: React.FC<{ propertyId: string }> = ({ propertyId }) => {
                 <Edit className="mr-2 h-4 w-4" />
                 Edit
               </DropdownMenuItem>
+              {tx.status === StatusTransaction.DRAFT && (
+                <DropdownMenuItem onClick={() => handlePublishDraft(tx.id, tx.propertyId)}>
+                  <Eye className="mr-2 h-4 w-4" />
+                  Publish Draft
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => handleDeleteTransaction(tx.id, tx.propertyId)}
@@ -250,8 +348,29 @@ const TransactionPage: React.FC<{ propertyId: string }> = ({ propertyId }) => {
                 >
                   Table
                 </Button>
-                <Button variant="outline" size="sm">
-                  <Filter className="h-4 w-4" />
+                <Button
+                  variant={statusFilter === 'all' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleStatusFilterChange('all')}
+                  className="flex-1 sm:flex-none"
+                >
+                  All
+                </Button>
+                <Button
+                  variant={statusFilter === 'draft' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleStatusFilterChange('draft')}
+                  className="flex-1 sm:flex-none"
+                >
+                  Drafts
+                </Button>
+                <Button
+                  variant={statusFilter === 'active' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleStatusFilterChange('active')}
+                  className="flex-1 sm:flex-none"
+                >
+                  Active
                 </Button>
               </div>
             </div>
@@ -264,13 +383,26 @@ const TransactionPage: React.FC<{ propertyId: string }> = ({ propertyId }) => {
             <div className="text-center p-8">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               <p className="mt-2 text-muted-foreground">Loading transactions...</p>
+              <p className="text-sm text-gray-500 mt-1">Fetching {statusFilter === 'all' ? 'all' : statusFilter} transactions...</p>
             </div>
-          ) : transaction && transaction.length > 0 ? (
+          ) : error ? (
+            <div className="text-center p-8">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                <AlertCircle className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Transactions</h3>
+              <p className="text-gray-500 mb-4">{error}</p>
+              <Button onClick={loadTransactions} variant="outline">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Try Again
+              </Button>
+            </div>
+          ) : filteredTransactions && filteredTransactions.length > 0 ? (
             <>
               {viewMode === 'cards' ? (
                 // Mobile Card View
                 <div className="space-y-4">
-                  {transaction.map((tx: any) => (
+                  {filteredTransactions.map((tx: any) => (
                     <TransactionCard key={tx.tranid} tx={tx} />
                   ))}
                 </div>
@@ -289,13 +421,13 @@ const TransactionPage: React.FC<{ propertyId: string }> = ({ propertyId }) => {
                       <div className="col-span-1">Mode</div>
                       <div className="col-span-1">Mgmt Fees</div>
                       <div className="col-span-1">Net Paid</div>
-                      <div className="col-span-1">VAT</div>
+                      <div className="col-span-1">Status</div>
                       <div className="col-span-1">Actions</div>
                     </div>
                     
                     {/* Data Rows */}
                     <div className="divide-y">
-                      {transaction.map((tx: any, index: number) => (
+                      {filteredTransactions.map((tx: any, index: number) => (
                         <div 
                           key={tx.tranid} 
                           className={`grid grid-cols-12 gap-2 p-4 text-sm hover:bg-gray-50 min-w-[1000px] ${
@@ -313,7 +445,17 @@ const TransactionPage: React.FC<{ propertyId: string }> = ({ propertyId }) => {
                           <div className="col-span-1 truncate">{tx.toLandLordMode || '-'}</div>
                           <div className="col-span-1 truncate">£{tx.toLandlordLessManagementFees || '0'}</div>
                           <div className="col-span-1 truncate">£{tx.toLandlordNetPaid || '0'}</div>
-                          <div className="col-span-1 truncate">£{tx.toLandlordLessVAT || '0'}</div>
+                          <div className="col-span-1 flex justify-center">
+                            {tx.status === StatusTransaction.DRAFT ? (
+                              <Badge variant="destructive" className="text-xs">
+                                DRAFT
+                              </Badge>
+                            ) : (
+                              <Badge variant="default" className="text-xs">
+                                ACTIVE
+                              </Badge>
+                            )}
+                          </div>
                           <div className="col-span-1 flex justify-center">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -326,6 +468,12 @@ const TransactionPage: React.FC<{ propertyId: string }> = ({ propertyId }) => {
                                   <Edit className="mr-2 h-4 w-4" />
                                   Edit
                                 </DropdownMenuItem>
+                                {tx.status === StatusTransaction.DRAFT && (
+                                  <DropdownMenuItem onClick={() => handlePublishDraft(tx.id, tx.propertyId)}>
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    Publish Draft
+                                  </DropdownMenuItem>
+                                )}
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   onClick={() => handleDeleteTransaction(tx.id, tx.propertyId)}
@@ -344,6 +492,29 @@ const TransactionPage: React.FC<{ propertyId: string }> = ({ propertyId }) => {
                 </div>
               )}
               
+              {/* Pagination Info */}
+              <div className="mt-4 flex justify-between items-center text-sm text-gray-600">
+                <div>
+                  Showing {skip + 1} to {Math.min(skip + take, total)} of {total} transactions
+                </div>
+                <div className="flex items-center gap-2">
+                  <span>Page size:</span>
+                  <select 
+                    value={pageSize} 
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="border rounded px-2 py-1"
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                </div>
+              </div>
+
               {/* Pagination */}
               <div className="mt-6 flex justify-center">
                 <Pagination>
@@ -392,12 +563,44 @@ const TransactionPage: React.FC<{ propertyId: string }> = ({ propertyId }) => {
             <div className="text-center py-12">
               <div className="mx-auto max-w-md">
                 <Building className="mx-auto h-12 w-12 text-muted-foreground" />
-                <h3 className="mt-4 text-lg font-medium">No transactions found</h3>
-                <p className="mt-2 text-muted-foreground">Get started by adding your first transaction.</p>
-                <Button className="mt-4" onClick={() => setIsAddTransactionModalOpen(true)}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Transaction
-                </Button>
+                <h3 className="mt-4 text-lg font-medium">
+                  {searchTerm ? 'No transactions found' : `No ${statusFilter === 'all' ? '' : statusFilter} transactions found`}
+                </h3>
+                <p className="mt-2 text-muted-foreground">
+                  {searchTerm 
+                    ? `No transactions match "${searchTerm}"` 
+                    : statusFilter === 'draft' 
+                      ? "No draft transactions have been created yet."
+                      : statusFilter === 'active'
+                        ? "No active transactions found."
+                        : "Get started by adding your first transaction."
+                  }
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2 justify-center mt-4">
+                  {!searchTerm && (
+                    <Button onClick={() => setIsAddTransactionModalOpen(true)}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Transaction
+                    </Button>
+                  )}
+                  <Button onClick={loadTransactions} variant="outline">
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Refresh
+                  </Button>
+                  {/* <Button onClick={createTestTransaction} variant="secondary" size="sm">
+                    Create Test Transaction
+                  </Button> */}
+                </div>
+                {/* Debug info */}
+                {/* <div className="mt-6 p-3 bg-gray-50 rounded text-xs text-gray-600 text-left">
+                  <p><strong>Debug Info:</strong></p>
+                  <p>Property ID: {propertyId}</p>
+                  <p>Status Filter: {statusFilter}</p>
+                  <p>Total from API: {total}</p>
+                  <p>Transactions loaded: {transaction?.length || 0}</p>
+                  <p>Loading: {loading ? 'Yes' : 'No'}</p>
+                  <p>Error: {error || 'None'}</p>
+                </div> */}
               </div>
             </div>
           )}

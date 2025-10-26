@@ -142,7 +142,7 @@ const ManageProperty = () => {
               </h1>
               {property && (
                 <p className="">
-                  Property ID: {property.propertyNumber}
+                  Property ID: {property.propertyNo}
                 </p>
               )}
             </div>

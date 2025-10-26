@@ -2,7 +2,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import getApi from "@/helper/getApi";
-import postApi from "@/helper/postApi"; // Helper for POST/PUT requests
+
 import { AppDispatch } from "../store";
 import { post } from "@/helper/api";
 

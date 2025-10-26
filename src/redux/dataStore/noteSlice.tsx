@@ -11,7 +11,7 @@ export interface Note {
   propertyId: string;
   content: string;
   date: string;
-  employee: string;
+  employeeId: string; // Changed from employee to employeeId
   detail?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -41,9 +41,16 @@ export const fetchNotes = createAsyncThunk(
       const access_token = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = { Authorization: `Bearer ${access_token}` };
       const params = `?propertyId=${propertyId}&page=${page}&search=${search}`;
+      
+      console.log('Fetching notes with params:', params);
+      console.log('Notes API URL:', `${import.meta.env.VITE_API_URL}property-management/note?${params}`);
+      
       const data = await getApi("property-management/note", params, headers);
+      console.log('Notes API response:', data);
+      
       return data;
     } catch (error: any) {
+      console.error('Notes API error:', error);
       return rejectWithValue(error.message || "Failed to fetch notes");
     }
   }

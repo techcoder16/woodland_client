@@ -24,6 +24,7 @@ import {
   Settings,
   Users2,
   Wallet,
+  Shield,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import logo from "@/assets/logo.png";
@@ -34,22 +35,37 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, isAdmin, canAccess } = useAuth();
   const navigate = useNavigate();
 
   if (!isAuthenticated) {
     return <Navigate to="/" />;
   }
 
-  const menuItems = [
+  // Define all possible menu items with their routes
+  const allMenuItems = [
     { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
     { label: "Properties", path: "/properties", icon: Building2 },
     { label: "Vendors & Landlords", path: "/vendors", icon: Users2 },
-      { label: "Transactions", path: "/transaction", icon: TbTransactionDollar },
+    { label: "Transactions", path: "/transaction", icon: TbTransactionDollar },
     { label: "Finance", path: "/property-management", icon: Wallet },
     { label: "Tenants", path: "/tenants", icon: CircleUser },
     { label: "Settings", path: "/settings", icon: Settings },
   ];
+
+  // Filter menu items based on user permissions
+  const menuItems = allMenuItems.filter(item => {
+    // Admin can see everything
+    if (isAdmin) return true;
+    
+    // Regular users can only see items they have permission for
+    return canAccess(item.path);
+  });
+
+  // Add admin menu item if user is admin
+  if (isAdmin) {
+    menuItems.push({ label: "Admin Panel", path: "/admin", icon: Shield });
+  }
 
   return (
     <SidebarProvider defaultOpen={true}>

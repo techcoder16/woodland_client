@@ -16,6 +16,7 @@ import EmployeeDropdown from "@/components/EmployeeDropdown";
 import { StickyNote, Plus, Edit, Trash2, Calendar, User } from "lucide-react";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
+import { get } from "@/helper/api";
 import { 
   fetchJobTypes, 
   createJobType, 
@@ -55,12 +56,20 @@ const jobTypeSchema = z.object({
 const noteSchema = z.object({
   content: z.string().min(1, "Note content is required"),
   date: z.string().min(1, "Date is required"),
-  employee: z.string().min(1, "Employee is required"),
+  employeeId: z.string().min(1, "Employee is required"),
   detail: z.string().optional(),
 });
 
 type JobTypeFormData = z.infer<typeof jobTypeSchema>;
 type NoteFormData = z.infer<typeof noteSchema>;
+
+interface User {
+  id: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  role: string;
+}
 
 interface NotesProps {
   propertyId: string;
@@ -74,18 +83,76 @@ const Notes = ({ propertyId, property }: NotesProps) => {
   const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
   const [editingJobType, setEditingJobType] = useState<JobType | null>(null);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
 
   // Redux state
   const { jobTypes, loading: jobTypesLoading, error: jobTypesError } = useAppSelector(state => state.jobTypes);
   const { notes, loading: notesLoading, error: notesError } = useAppSelector(state => state.notes);
+  
+  // Debug logging
+  console.log('Notes component state:', { 
+    notesCount: notes?.length || 0, 
+    notesLoading, 
+    notesError, 
+    propertyId 
+  });
 
   // Fetch data on component mount
+  // Fetch users for employee name lookup
+  const fetchUsers = async () => {
+    try {
+      const { data, error } = await get<User[]>('user/all');
+      if (error) {
+        console.error('Error fetching users:', error);
+        return;
+      }
+      if (data) {
+        setUsers(data);
+        console.log('Users loaded:', data.length);
+      }
+    } catch (err) {
+      console.error('Error fetching users:', err);
+    }
+  };
+
+  // Get employee display name from ID
+  const getEmployeeName = (employeeId: string) => {
+    const user = users.find(u => u.id === employeeId);
+    if (user) {
+      if (user.first_name && user.last_name) {
+        return `${user.first_name} ${user.last_name}`;
+      }
+      return user.email;
+    }
+    return employeeId; // Fallback to ID if user not found
+  };
+
   useEffect(() => {
     if (propertyId) {
+      console.log('Fetching data for propertyId:', propertyId);
       dispatch(fetchJobTypes({ propertyId, page: 1, search: "" }));
       dispatch(fetchNotes({ propertyId, page: 1, search: "" }));
+      fetchUsers(); // Also fetch users for employee name lookup
     }
   }, [dispatch, propertyId]);
+
+  // Test function to create a sample note
+  const createTestNote = async () => {
+    try {
+      const testNote = {
+        propertyId,
+        content: 'Test note content',
+        date: new Date().toISOString().split('T')[0],
+        employeeId: 'test-employee-id', // Changed from employee to employeeId
+        detail: 'This is a test note for debugging'
+      };
+      
+      await dispatch(createNote(testNote)).unwrap();
+      console.log('Test note created successfully');
+    } catch (error: any) {
+      console.error('Failed to create test note:', error);
+    }
+  };
 
   // Date change handlers
   const handleNoteDateChange = (field: keyof NoteFormData, date: Date) => {
@@ -161,7 +228,7 @@ const Notes = ({ propertyId, property }: NotesProps) => {
         propertyId,
         content: data.content,
         date: data.date,
-        employee: data.employee,
+        employeeId: data.employeeId, // Changed from employee to employeeId
         detail: data.detail
       };
       
@@ -203,7 +270,7 @@ const Notes = ({ propertyId, property }: NotesProps) => {
     setEditingNote(note);
     setNoteValue("content", note.content);
     setNoteValue("date", note.date);
-    setNoteValue("employee", note.employee);
+    setNoteValue("employeeId", note.employeeId); // Changed from employee to employeeId
     setNoteValue("detail", note.detail || "");
     setIsNoteDialogOpen(true);
   };
@@ -323,13 +390,13 @@ const Notes = ({ propertyId, property }: NotesProps) => {
                     />
                     <EmployeeDropdown
                       label="Employee"
-                      onEmployeeSelect={(employeeId) => setNoteValue("employee", employeeId || "")}
-                      selectedEmployeeId={watchNote("employee")}
+                      onEmployeeSelect={(employeeId) => setNoteValue("employeeId", employeeId || "")}
+                      selectedEmployeeId={watchNote("employeeId")}
                       placeholder="Select an employee"
                       required={true}
                     />
-                    {errorsNote.employee && (
-                      <p className="text-sm text-red-500">{errorsNote.employee.message}</p>
+                    {errorsNote.employeeId && (
+                      <p className="text-sm text-red-500">{errorsNote.employeeId.message}</p>
                     )}
                   </div>
                   <TextAreaField
@@ -374,7 +441,37 @@ const Notes = ({ propertyId, property }: NotesProps) => {
                   ) : notes.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center py-8">
-                        No notes found
+                        <div className="space-y-2">
+                          <p className="text-lg font-medium">No notes found</p>
+                          {notesError ? (
+                            <div className="text-red-600">
+                              <p>Error: {notesError}</p>
+                              <button 
+                                onClick={() => dispatch(fetchNotes({ propertyId, page: 1, search: "" }))}
+                                className="text-sm underline"
+                              >
+                                Try again
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="text-gray-500">
+                              <p>No notes have been created for this property yet.</p>
+                              <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-left">
+                                <p><strong>Debug Info:</strong></p>
+                                <p>Property ID: {propertyId}</p>
+                                <p>Loading: {notesLoading ? 'Yes' : 'No'}</p>
+                                <p>Error: {notesError || 'None'}</p>
+                                <p>Notes count: {notes?.length || 0}</p>
+                                <button 
+                                  onClick={createTestNote}
+                                  className="mt-2 px-2 py-1 bg-blue-500 text-white rounded text-xs"
+                                >
+                                  Create Test Note
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -384,7 +481,7 @@ const Notes = ({ propertyId, property }: NotesProps) => {
                         <TableCell>
                           <div className="flex items-center">
                             <User className="h-4 w-4 mr-2" />
-                            {note.employee}
+                            {getEmployeeName(note.employeeId)}
                           </div>
                         </TableCell>
                         <TableCell className="max-w-xs truncate">{note.content}</TableCell>
