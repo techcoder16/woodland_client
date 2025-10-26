@@ -228,7 +228,7 @@ const MainTransaction = () => {
               </h1>
               {property && (
                 <p className="text-gray-600">
-                  Property: {property.propertyNo || property.id} - {property.propertyName}
+                  Property: {property.propertyNumber == 0 ? "0" : property.propertyNumber || property.id} - {property.propertyName}
                 </p>
               )}
             </div>
