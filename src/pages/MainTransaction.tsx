@@ -273,6 +273,7 @@ const MainTransaction = () => {
               </button>
             </div>
             
+            
             <div className="bg-gray-50 rounded-lg p-4">
               <h3 className="font-semibold text-gray-700 mb-3">Extracted Transaction Data:</h3>
               <div className="space-y-2">
