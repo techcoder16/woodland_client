@@ -22,6 +22,7 @@ const PermissionManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isScreenModalOpen, setIsScreenModalOpen] = useState(false);
+  const [isBulkAssignModalOpen, setIsBulkAssignModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     userId: '',
     screenId: ''
@@ -31,6 +32,10 @@ const PermissionManagement: React.FC = () => {
     description: '',
     route: '',
     status: ScreenStatus.ACTIVE
+  });
+  const [bulkAssignData, setBulkAssignData] = useState({
+    userId: '',
+    screenIds: [] as string[]
   });
 
   const { isAdmin } = usePermissions();
@@ -94,6 +99,45 @@ const PermissionManagement: React.FC = () => {
         toast.error(error.message || 'Failed to delete permission');
       }
     }
+  };
+
+  const handleBulkAssign = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (bulkAssignData.userId && bulkAssignData.screenIds.length > 0) {
+      try {
+        await permissionApi.bulkAssignPermissions(bulkAssignData.userId, bulkAssignData.screenIds);
+        toast.success(`Assigned ${bulkAssignData.screenIds.length} screens successfully`);
+        setIsBulkAssignModalOpen(false);
+        setBulkAssignData({ userId: '', screenIds: [] });
+        loadData();
+      } catch (error: any) {
+        toast.error(error.message || 'Failed to assign permissions');
+      }
+    }
+  };
+
+  const handleScreenToggle = (screenId: string) => {
+    setBulkAssignData(prev => ({
+      ...prev,
+      screenIds: prev.screenIds.includes(screenId)
+        ? prev.screenIds.filter(id => id !== screenId)
+        : [...prev.screenIds, screenId]
+    }));
+  };
+
+  const handleSelectAllScreens = () => {
+    setBulkAssignData(prev => ({
+      ...prev,
+      screenIds: screens.map(screen => screen.id)
+    }));
+  };
+
+  const handleUserSelection = (userId: string) => {
+    setBulkAssignData(prev => ({
+      ...prev,
+      userId,
+      screenIds: []
+    }));
   };
 
   const resetForm = () => {
