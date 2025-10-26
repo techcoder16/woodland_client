@@ -212,13 +212,24 @@ const PermissionManagement: React.FC = () => {
                     />
                   </div>
                 </div>
-                <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Permission
-                    </Button>
-                  </DialogTrigger>
+                <div className="flex space-x-2">
+                  <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Permission
+                      </Button>
+                    </DialogTrigger>
+                  </Dialog>
+                  <Dialog open={isBulkAssignModalOpen} onOpenChange={setIsBulkAssignModalOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">
+                        <Users className="h-4 w-4 mr-2" />
+                        Bulk Assign
+                      </Button>
+                    </DialogTrigger>
+                  </Dialog>
+                </div>
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>Create New Permission</DialogTitle>
@@ -265,6 +276,81 @@ const PermissionManagement: React.FC = () => {
                           Cancel
                         </Button>
                         <Button type="submit">Create Permission</Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+                <Dialog open={isBulkAssignModalOpen} onOpenChange={setIsBulkAssignModalOpen}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Bulk Assign Permissions</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleBulkAssign} className="space-y-4">
+                      <div>
+                        <Label htmlFor="bulk_user">Select User</Label>
+                        <Select
+                          value={bulkAssignData.userId}
+                          onValueChange={handleUserSelection}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choose a user" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {users.map((user) => (
+                              <SelectItem key={user.id} value={user.id}>
+                                {user.first_name} {user.last_name} ({user.email})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      {bulkAssignData.userId && (
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <Label>Select Screens</Label>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={handleSelectAllScreens}
+                            >
+                              Select All
+                            </Button>
+                          </div>
+                          <div className="max-h-60 overflow-y-auto border rounded-md p-3 space-y-2">
+                            {screens.map((screen) => (
+                              <div key={screen.id} className="flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  id={`screen-${screen.id}`}
+                                  checked={bulkAssignData.screenIds.includes(screen.id)}
+                                  onChange={() => handleScreenToggle(screen.id)}
+                                  className="rounded"
+                                />
+                                <label htmlFor={`screen-${screen.id}`} className="flex-1 cursor-pointer">
+                                  <div className="font-medium">{screen.name}</div>
+                                  <div className="text-sm text-gray-500">{screen.route}</div>
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-sm text-gray-500 mt-2">
+                            Selected: {bulkAssignData.screenIds.length} screens
+                          </p>
+                        </div>
+                      )}
+                      
+                      <div className="flex justify-end space-x-2">
+                        <Button type="button" variant="outline" onClick={() => setIsBulkAssignModalOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button 
+                          type="submit" 
+                          disabled={!bulkAssignData.userId || bulkAssignData.screenIds.length === 0}
+                        >
+                          Assign {bulkAssignData.screenIds.length} Screens
+                        </Button>
                       </div>
                     </form>
                   </DialogContent>
