@@ -105,7 +105,7 @@ const PermissionManagement: React.FC = () => {
     e.preventDefault();
     if (bulkAssignData.userId && bulkAssignData.screenIds.length > 0) {
       try {
-        await permissionApi.bulkAssignPermissions(bulkAssignData.userId, bulkAssignData.screenIds);
+        await permissionApi.bulkAssignPermissions(bulkAssignData.userId, bulkAssignData.screenIds, bulkAssignData);
         toast.success(`Assigned ${bulkAssignData.screenIds.length} screens successfully`);
         setIsBulkAssignModalOpen(false);
         setBulkAssignData({ userId: '', screenIds: [] });
