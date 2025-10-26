@@ -452,6 +452,7 @@ const PermissionManagement: React.FC = () => {
                     </DialogContent>
                   </Dialog>
                 </div>
+              </div>
 
               <Table>
                 <TableHeader>
