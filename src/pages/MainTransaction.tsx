@@ -228,7 +228,7 @@ const MainTransaction = () => {
               </h1>
               {property && (
                 <p className="text-gray-600">
-                  Property: {property.propertyNumber == 0 ? "0" : property.propertyNumber || property.id} - {property.propertyName}
+                  Property: {property.propertyNumber == 0 ? "0" : property.propertyNumber} - {property.propertyName}
                 </p>
               )}
             </div>
@@ -297,12 +297,34 @@ const MainTransaction = () => {
             
             
             <div className="space-y-6">
+              {/* Transaction Data */}
+              {ocrResults.transaction?.transaction && (
+                <div className="bg-green-50 rounded-lg p-4">
+                  <h3 className="font-semibold text-green-800 mb-3">✅ Created Transaction:</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {Object.entries(ocrResults.transaction.transaction).map(([key, value]) => {
+                      if (key === 'property' || key === 'id' || key === 'createdAt' || key === 'updatedAt') return null;
+                      return (
+                        <div key={key} className="bg-white p-3 rounded border">
+                          <span className="font-medium text-gray-600 text-sm block mb-1">
+                            {key.replace(/([A-Z])/g, ' $1').trim()}:
+                          </span>
+                          <span className="text-gray-800">
+                            {value !== null && value !== undefined ? String(value) : 'N/A'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Parsed OCR Data */}
-              {ocrResults.ocr_content && (
+              {ocrResults.ocrData?.ocr_content && (
                 <div className="bg-blue-50 rounded-lg p-4">
                   <h3 className="font-semibold text-blue-800 mb-3">📋 Parsed Invoice Data:</h3>
                   {(() => {
-                    const parsedData = parseOcrContent(ocrResults.ocr_content);
+                    const parsedData = parseOcrContent(ocrResults.ocrData.ocr_content);
                     return parsedData ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {Object.entries(parsedData).map(([key, value]) => (
@@ -331,7 +353,7 @@ const MainTransaction = () => {
               <div className="bg-gray-50 rounded-lg p-4">
                 <h3 className="font-semibold text-gray-700 mb-3">🔍 Raw OCR Content:</h3>
                 <pre className="text-sm text-gray-800 bg-white p-3 rounded border overflow-x-auto whitespace-pre-wrap">
-                  {ocrResults.ocr_content || 'No OCR content available'}
+                  {ocrResults.ocrData?.ocr_content || 'No OCR content available'}
                 </pre>
               </div>
 
