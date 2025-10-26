@@ -485,7 +485,10 @@ const PermissionManagement: React.FC = () => {
                             <code className="bg-gray-100 px-2 py-1 rounded text-sm">{screen?.route || 'N/A'}</code>
                           </TableCell>
                           <TableCell>
-                            {permission.createdAt ? new Date(permission.createdAt).toLocaleDateString() : 'N/A'}
+                            {permission.createdAt ? (() => {
+                              const date = new Date(permission.createdAt);
+                              return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString();
+                            })() : 'N/A'}
                           </TableCell>
                           <TableCell>
                             <Button
@@ -624,7 +627,10 @@ const PermissionManagement: React.FC = () => {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {screen.createdAt ? new Date(screen.createdAt).toLocaleDateString() : 'N/A'}
+                          {screen.createdAt ? (() => {
+                            const date = new Date(screen.createdAt);
+                            return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString();
+                          })() : 'N/A'}
                         </TableCell>
                       </TableRow>
                     ))

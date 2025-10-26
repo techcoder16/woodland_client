@@ -59,6 +59,12 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
+    
+    // Check if the date is valid
+    if (isNaN(date.getTime())) {
+      return 'Invalid date';
+    }
+    
     const now = new Date();
     const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
     

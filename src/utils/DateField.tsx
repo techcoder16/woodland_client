@@ -29,7 +29,10 @@ export const DateField = ({
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {value ? new Date(value).toLocaleDateString() : placeholder}
+          {value ? (() => {
+            const date = new Date(value);
+            return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString();
+          })() : placeholder}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
