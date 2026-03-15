@@ -21,7 +21,7 @@ interface ActivityItemProps {
     type: 'property' | 'tenant' | 'payment' | 'system';
     action: string;
     description: string;
-    timestamp: string;
+    timestamp?: string | null;
     userName?: string;
   };
 }
@@ -57,21 +57,54 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
     }
   };
 
-  const formatTimestamp = (timestamp: string) => {
+  const formatTimestamp = (activity: any,timestamp: string | null | undefined) => {
+    // Handle null, undefined, or empty timestamps
+    console.log(timestamp,'asdasdas',activity)
+    if (!timestamp || timestamp.trim() === '') {
+      return 'Recently';
+    }
+    
+    // Try to parse the date
     const date = new Date(timestamp);
     
     // Check if the date is valid
     if (isNaN(date.getTime())) {
-      return 'Invalid date';
+      // Try alternative date formats or return a fallback
+      const altDate = new Date(timestamp.replace(/-/g, '/'));
+      if (!isNaN(altDate.getTime())) {
+        const now = new Date();
+        const diffInMinutes = Math.floor((now.getTime() - altDate.getTime()) / (1000 * 60));
+        
+        if (diffInMinutes < 1) return 'Just now';
+        if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+        if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+        return altDate.toLocaleDateString();
+      }
+      return 'Recently';
     }
     
     const now = new Date();
     const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
     
+    // Handle negative time differences (future dates)
+    if (diffInMinutes < 0) {
+      return 'Just now';
+    }
+    
     if (diffInMinutes < 1) return 'Just now';
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
-    return date.toLocaleDateString();
+    
+    // Format date properly
+    try {
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    } catch (e) {
+      return 'Recently';
+    }
   };
 
   return (
@@ -85,7 +118,7 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
             {activity.action}
           </p>
           <span className="text-xs text-gray-500">
-            {formatTimestamp(activity.timestamp)}
+            {formatTimestamp(activity,activity.timestamp)}
           </span>
         </div>
         <p className="text-sm text-gray-600 mt-1">

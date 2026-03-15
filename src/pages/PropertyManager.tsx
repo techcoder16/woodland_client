@@ -125,6 +125,15 @@ const PropertyManager = () => {
       {/* Property Details */}
       <CardContent className="p-6">
         <div className="space-y-3">
+          {/* Property Name */}
+          {property.propertyName && (
+            <div className="mb-2">
+              <h3 className="text-lg font-semibold text-gray-900 truncate">
+                {property.propertyName}
+              </h3>
+            </div>
+          )}
+
           {/* Address */}
           <div className="flex items-start space-x-2">
             <MapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
@@ -136,27 +145,27 @@ const PropertyManager = () => {
           </div>
 
           {/* Price */}
-          <div className="flex items-center space-x-2">
+          {/* <div className="flex items-center space-x-2">
             <DollarSign className="w-4 h-4 text-gray-400" />
             <span className="text-lg font-semibold text-gray-900">
               {property.price || 'Price not set'}
             </span>
-          </div>
+          </div> */}
 
           {/* Status */}
-          <div className="flex items-center justify-between">
+          {/* <div className="flex items-center justify-between">
             <Badge className={cn("text-xs", getStatusColor(property.status))}>
               {property.status}
             </Badge>
             <Badge variant="outline" className="text-xs">
               {property.propertyStatus === 'PUBLISHED' ? 'Published' : 'Draft'}
             </Badge>
-          </div>
+          </div> */}
 
           {/* Property Number */}
-          <div className="text-xs text-gray-500">
+          {/* <div className="text-xs text-gray-500">
             Property #{property.propertyNo || property.id}
-          </div>
+          </div> */}
         </div>
 
         {/* Action Button */}

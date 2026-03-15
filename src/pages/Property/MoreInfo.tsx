@@ -274,9 +274,11 @@ const MoreInfo = ({ register, watch, clearErrors, setValue, errors, type }: More
             type="checkbox"
             id="nonGasProperty"
             name="nonGasProperty"
-            {...register("nonGasProperty")}
-            // onChange={(e) => setValue('nonGasProperty', e.target.checked)}
-
+            checked={watch("nonGasProperty") || false}
+            onChange={(e) => {
+              setValue('nonGasProperty', e.target.checked, { shouldValidate: true, shouldDirty: true });
+              clearErrors('nonGasProperty');
+            }}
           />
           <label htmlFor="nonGasProperty" className="ml-2">Non-gas Property</label>
         </div>

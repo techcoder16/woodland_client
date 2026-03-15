@@ -26,20 +26,24 @@ const SelectField: React.FC<SelectFieldProps> = ({
   onChange,
 }) => {
   const currentValue = watch(name); // Get the current value of the field
-
-  console.log(`🔍 SelectField [${name}] Render:`, {
-    currentValue,
-    defaultValue,
-    type: typeof currentValue,
-  });
+  
+  // Convert value to string and handle null/undefined
+  const stringValue = currentValue !== null && currentValue !== undefined 
+    ? String(currentValue) 
+    : "";
+  
+  // Check if the current value exists in options
+  const isValidValue = stringValue && options?.some(opt => String(opt.value) === stringValue);
+  const displayValue = isValidValue ? stringValue : undefined;
+  
+  // Ensure the hidden input is registered properly
+  useEffect(() => {
+    // Register the field if not already registered
+    register(name);
+  }, [name, register]);
 
   // Handle value change
   const handleChange = (value: string) => {
-    console.log(`✏️ SelectField [${name}] handleChange called:`, {
-      oldValue: currentValue,
-      newValue: value,
-    });
-    
     // Set value with proper options to trigger form updates
     setValue(name, value, {
       shouldValidate: true,
@@ -47,29 +51,24 @@ const SelectField: React.FC<SelectFieldProps> = ({
       shouldTouch: true,
     });
     
-    console.log(`✅ SelectField [${name}] setValue completed`);
-    
     // Call the custom onChange if provided
     if (onChange) {
       onChange(value);
     }
   };
 
-  console.log(`📺 SelectField [${name}] Rendering Select with value:`, currentValue?.toString() || "");
+  // Register the field for validation
+  const { ref, ...registerRest } = register(name);
 
   return (
     <div className="p-3 rounded-sm">
       <div className="space-y-2">
         <label className="text-gray-700 text-sm font-medium mr-4 w-32">{label}</label>
         
-        {/* Hidden input for react-hook-form registration */}
-        <input type="hidden" {...register(name)} value={currentValue || ""} />
-        
         {/* Radix UI Select - controlled by currentValue */}
         <Select
-          value={currentValue?.toString() || undefined}
+          value={displayValue}
           onValueChange={handleChange}
-          defaultValue={undefined}
         >
           <SelectTrigger className="">
             <SelectValue placeholder="Select an option" />
@@ -82,6 +81,14 @@ const SelectField: React.FC<SelectFieldProps> = ({
             ))}
           </SelectContent>
         </Select>
+        
+        {/* Hidden input for react-hook-form registration and validation */}
+        <input 
+          type="hidden" 
+          {...registerRest}
+          ref={ref}
+          value={stringValue || ""}
+        />
       </div>
       
       {error && <p className="text-red-500 mt-1 mx-2 justify-center flex">{error}</p>}

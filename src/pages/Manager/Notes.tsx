@@ -457,11 +457,7 @@ const Notes = ({ propertyId, property }: NotesProps) => {
                             <div className="text-gray-500">
                               <p>No notes have been created for this property yet.</p>
                               <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-left">
-                                <p><strong>Debug Info:</strong></p>
-                                <p>Property ID: {propertyId}</p>
-                                <p>Loading: {notesLoading ? 'Yes' : 'No'}</p>
-                                <p>Error: {notesError || 'None'}</p>
-                                <p>Notes count: {notes?.length || 0}</p>
+                              
                                 <button 
                                   onClick={createTestNote}
                                   className="mt-2 px-2 py-1 bg-blue-500 text-white rounded text-xs"

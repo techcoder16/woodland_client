@@ -143,7 +143,7 @@ function generateReport(totalDuration: number) {
     console.log(`${icon} ${result.name} (${duration}s)`);
     
     if (result.status === 'FAIL' && result.errors.length > 0) {
-      console.log(`   Errors: ${result.errors.join(', ')}`);
+      console.log(`   Errors: ${result.errors.join(', ')}`);B 
     }
   });
   

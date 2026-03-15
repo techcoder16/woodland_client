@@ -24,7 +24,7 @@ z.object({
   postCode: z.string().nullable().default(null).describe("Postcode is required."),
 
   propertyNo: z.string().nullable().default(null).describe("Property number is required."),
-  propertyName: z.string().nullable().default(null).describe("Property name is required."),
+  propertyName: z.string({ required_error: "Property name is required." }).min(1, "Property name cannot be empty."),
   addressLine1: z.string().nullable().default(null).describe("Address Line 1 is required."),
   addressLine2: z.string().nullable().default(null).describe("Address Line 2 is required."),
   town: z.string().nullable().default(null).describe("Town is required."),

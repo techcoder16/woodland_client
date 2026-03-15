@@ -168,10 +168,10 @@ export const permissionApi = {
     return response.data!;
   },
 
-  bulkAssignPermissions: async (bulkData: {
-    userId: string;
-    screenIds: string[];
-  }): Promise<{ message: string; assigned: number }> => {
+  bulkAssignPermissions: async (userId: string, screenIds: string[], bulkData: {
+  userId: string;
+  screenIds: string[];
+}): Promise<{ message: string; assigned: number }> => {
     const response = await post<{ message: string; assigned: number }>('permission/bulk-assign', bulkData);
     if (response.error) throw new Error(response.error.message);
     return response.data!;

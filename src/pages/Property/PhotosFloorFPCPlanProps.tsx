@@ -244,7 +244,12 @@ const PhotosFloorFPCPlan = ({
           <input
             type="checkbox"
             id="showOnWebsite"
-            {...register("showOnWebsite")}
+            name="showOnWebsite"
+            checked={watch("showOnWebsite") || false}
+            onChange={(e) => {
+              setValue('showOnWebsite', e.target.checked, { shouldValidate: true, shouldDirty: true });
+              clearErrors('showOnWebsite');
+            }}
             className="form-checkbox h-5 w-5 "
           />
           <label htmlFor="showOnWebsite" className="ml-2 text-gray-700 font-medium">

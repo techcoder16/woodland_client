@@ -307,7 +307,7 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type }: 
           error={errors.for?.message?.toString()}
           onChange={(value) => handleSelectChange('for', value)} // Added onChange
         />
-
+{/* 
         <SelectField
           label="Category"
           name="category"
@@ -319,7 +319,7 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type }: 
           register={register}
           error={errors.category?.message?.toString()}
           onChange={(value) => handleSelectChange('category', value)} // Added onChange
-        />
+        /> */}
 
 
         <SelectField

@@ -77,7 +77,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             className="flex items-center gap-2 cursor-pointer"
           >
             <img src={logo} alt="logo" className="h-8 w-auto" />
-            <span className="font-semibold text-lg">MyApp</span>
+         
           </div>
         </SidebarHeader>
 

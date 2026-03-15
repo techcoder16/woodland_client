@@ -42,7 +42,7 @@ const formSchema = z.object({
   postCode: z.string().nullable().default(null).describe("Postcode is required."),
 
   propertyNo: z.string().nullable().default(null).describe("Property number is required."),
-  propertyName: z.string().nullable().default(null).describe("Property name is required."),
+  propertyName: z.string({ required_error: "Property name is required." }).min(1, "Property name cannot be empty."),
   addressLine1: z.string().nullable().default(null).describe("Address Line 1 is required."),
   addressLine2: z.string().nullable().default(null).describe("Address Line 2 is required."),
   town: z.string().nullable().default(null).describe("Town is required."),
@@ -202,14 +202,23 @@ const EditProperty = () => {
 
 
 
-        property.nonGasProperty = property.nonGasProperty  ?? false;
-        property.showOnWebsite = property.showOnWebsite  ?? false;
-        property.newHome  = property.newHome == "true" ? true   :  false;
-        property.offPlan = property.offPlan == "true" ? true   :   false;
-        property.sendToBoomin = property.sendToBoomin ??  false;
-        property.sendToRightmoveNow  =  property.sendToRightmoveNow ??   false;
-        property.sendToOnTheMarket =   property.sendToOnTheMarket ?? false;
-        property.newsAndExclusive =   property.newsAndExclusive ?? false;
+        // Convert boolean fields - handle both string and boolean values
+        const toBoolean = (value: any): boolean => {
+          if (typeof value === 'boolean') return value;
+          if (typeof value === 'string') {
+            return value.toLowerCase() === 'true' || value === '1';
+          }
+          return Boolean(value);
+        };
+        
+        property.nonGasProperty = toBoolean(property.nonGasProperty);
+        property.showOnWebsite = toBoolean(property.showOnWebsite);
+        property.newHome = toBoolean(property.newHome);
+        property.offPlan = toBoolean(property.offPlan);
+        property.sendToBoomin = toBoolean(property.sendToBoomin);
+        property.sendToRightmoveNow = toBoolean(property.sendToRightmoveNow);
+        property.sendToOnTheMarket = toBoolean(property.sendToOnTheMarket);
+        property.newsAndExclusive = toBoolean(property.newsAndExclusive);
 
        console.log(property.newHome,property.offPlan )
       
@@ -727,22 +736,6 @@ const EditProperty = () => {
       setIsSubmitting(false);
     }
   };
-  
-  const handleSaveDraft = async () => {
-    // Safety check: Only allow saving as draft if property is already a draft
-    if (property?.propertyStatus !== "DRAFT") {
-      toast({
-        title: "Cannot Save as Draft",
-        description: "Published properties cannot be saved as drafts. Use 'Update Property' instead.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    const data = form.getValues();
-    await onSubmit(data, true);
-  };
-
   if (!property) {
     return <div>Loading...</div>;
   }
@@ -822,19 +815,6 @@ const EditProperty = () => {
                   >
                     <ArrowLeft className="mr-2 h-4 w-4" /> Previous
                   </Button>
-                  
-                  {/* Save as Draft button - ONLY show if property is currently a DRAFT */}
-                  {property?.propertyStatus === "DRAFT" && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleSaveDraft}
-                      disabled={isSubmitting}
-                      className="border-gray-400"
-                    >
-                      Save as Draft
-                    </Button>
-                  )}
                 </div>
 
                 {isLastStep ? (

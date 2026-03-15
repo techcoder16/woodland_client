@@ -175,9 +175,11 @@ const Publish = ({ register, watch, clearErrors, setValue, errors }: PublishProp
             type="checkbox"
             id="newHome"
             name="newHome"
-            {...register('newHome')}
-            
-            onChange={(e) => setValue('newHome', e.target.checked)}
+            checked={watch('newHome') || false}
+            onChange={(e) => {
+              setValue('newHome', e.target.checked, { shouldValidate: true, shouldDirty: true });
+              clearErrors('newHome');
+            }}
           />
           <label htmlFor="newHome" className="ml-2">New home</label>
         </div>
@@ -186,9 +188,11 @@ const Publish = ({ register, watch, clearErrors, setValue, errors }: PublishProp
             type="checkbox"
             id="offPlan"
             name="offPlan"
-            {...register('offPlan')}
-
-            onChange={(e) => setValue('offPlan', e.target.checked)}
+            checked={watch('offPlan') || false}
+            onChange={(e) => {
+              setValue('offPlan', e.target.checked, { shouldValidate: true, shouldDirty: true });
+              clearErrors('offPlan');
+            }}
           />
           <label htmlFor="offPlan" className="ml-2">Off plan</label>
         </div>
@@ -305,9 +309,11 @@ const Publish = ({ register, watch, clearErrors, setValue, errors }: PublishProp
             type="checkbox"
             id="sendToBoomin"
             name="sendToBoomin"
-            {...register('sendToBoomin')}
-
-            onChange={(e) => setValue('sendToBoomin', e.target.checked)}
+            checked={watch('sendToBoomin') || false}
+            onChange={(e) => {
+              setValue('sendToBoomin', e.target.checked, { shouldValidate: true, shouldDirty: true });
+              clearErrors('sendToBoomin');
+            }}
           />
           <label htmlFor="sendToBoomin" className="ml-2">Send to Boomin</label>
         </div>
@@ -316,8 +322,11 @@ const Publish = ({ register, watch, clearErrors, setValue, errors }: PublishProp
             type="checkbox"
             id="sendToRightmoveNow"
             name="sendToRightmoveNow"
-            {...register('sendToRightmoveNow')}
-            onChange={(e) => setValue('sendToRightmoveNow', e.target.checked)}
+            checked={watch('sendToRightmoveNow') || false}
+            onChange={(e) => {
+              setValue('sendToRightmoveNow', e.target.checked, { shouldValidate: true, shouldDirty: true });
+              clearErrors('sendToRightmoveNow');
+            }}
           />
           <label htmlFor="sendToRightmoveNow" className="ml-2">Send to Rightmove now</label>
         </div>
@@ -346,8 +355,11 @@ const Publish = ({ register, watch, clearErrors, setValue, errors }: PublishProp
             type="checkbox"
             id="sendToOnTheMarket"
             name="sendToOnTheMarket"
-            {...register('sendToOnTheMarket')}
-            onChange={(e) => setValue('sendToOnTheMarket', e.target.checked)}
+            checked={watch('sendToOnTheMarket') || false}
+            onChange={(e) => {
+              setValue('sendToOnTheMarket', e.target.checked, { shouldValidate: true, shouldDirty: true });
+              clearErrors('sendToOnTheMarket');
+            }}
           />
           <label htmlFor="sendToOnTheMarket" className="ml-2">Send to On The Market</label>
         </div>
@@ -356,9 +368,11 @@ const Publish = ({ register, watch, clearErrors, setValue, errors }: PublishProp
             type="checkbox"
             id="newsAndExclusive"
             name="newsAndExclusive"
-            
-            {...register('newsAndExclusive')}
-            onChange={(e) => setValue('newsAndExclusive', e.target.checked)}
+            checked={watch('newsAndExclusive') || false}
+            onChange={(e) => {
+              setValue('newsAndExclusive', e.target.checked, { shouldValidate: true, shouldDirty: true });
+              clearErrors('newsAndExclusive');
+            }}
           />
           <label htmlFor="newsAndExclusive" className="ml-2">News and Exclusive</label>
         </div>
