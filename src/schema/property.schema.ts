@@ -29,7 +29,7 @@ z.object({
   addressLine2: z.string().nullable().default(null).describe("Address Line 2 is required."),
   town: z.string().nullable().default(null).describe("Town is required."),
   county: z.string().nullable().default(null).describe("County is required."),
-  country: z.string({ required_error: "Country is required." }),
+  country: z.string().nullable().default(null).transform(val => val ?? "").pipe(z.string().min(1, "Country is required.")),
   latitude: z.any().nullable().describe("Latitude is required."),
   longitude: z.any().nullable().describe("Longitude is required."),
   development: z.string().nullable().default(null).describe("Development field is required."),
@@ -81,21 +81,21 @@ propertyFeature: z.array(z.string()).optional().or(z.string().transform(val => v
     { required_error: "At least one floor plan is required." }
   ),
 
-  epcChartOption: z.enum(["ratings", "upload"], {
-    required_error: "EPC Chart Option is required.",
-  }),
+  epcChartOption: z.enum(["ratings", "upload"]).default("ratings"),
   currentEERating: z.string().optional(),
   potentialEERating: z.string().optional(),
   epcChartFile: z.any().optional(),
 
-  epcReportOption: z.enum(["uploadReport", "urlReport"], {
-    required_error: "EPC Report Option is required.",
-  }),
+  epcReportOption: z.enum(["uploadReport", "urlReport"]).default("uploadReport"),
   epcReportFile: z.any().optional(),
-  epcReportURL: z.string().url().optional(),
+  // Allow empty string so a cleared URL field doesn't block save/publish
+  epcReportURL: z.string().optional().refine(
+    (val) => !val || /^https?:\/\/.+/.test(val),
+    { message: "Invalid URL — must start with http:// or https://" }
+  ),
 
   videoTourDescription: z.string().optional(),
-  showOnWebsite: z.boolean({ required_error: "Show on website field is required." }),
+  showOnWebsite: z.boolean().default(false),
 
   publishOnWeb: z.string().nullable().default(null).describe("Publish on web is required."),
   status: z.string().nullable().default(null).describe("Status is required."),

@@ -122,7 +122,6 @@ const PhotosFloorFPCPlan = ({
                 value="ratings"
                 {...register("epcChartOption")}
                 className="mr-2"
-                defaultChecked={epcChartOption === "ratings"}
               />
               Provide Ratings
             </label>
@@ -132,7 +131,6 @@ const PhotosFloorFPCPlan = ({
                 value="upload"
                 {...register("epcChartOption")}
                 className="mr-2"
-                defaultChecked={epcChartOption === "upload"}
               />
               Upload EPC Chart (.jpg)
             </label>
@@ -183,7 +181,6 @@ const PhotosFloorFPCPlan = ({
                 value="uploadReport"
                 {...register("epcReportOption")}
                 className="mr-2"
-                defaultChecked={epcReportOption === "uploadReport"}
               />
               Upload EPC/Home Report (PDF file only)
             </label>
@@ -193,7 +190,6 @@ const PhotosFloorFPCPlan = ({
                 value="urlReport"
                 {...register("epcReportOption")}
                 className="mr-2"
-                defaultChecked={epcReportOption === "urlReport"}
               />
               Enter EPC/Home Report URL
             </label>

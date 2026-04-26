@@ -50,7 +50,8 @@ const FeatureSelection: React.FC<FeatureSelectionProps> = ({
     });
   }, [register, name]);
 
-  const watchedFeatures = watch(name, selectedFeatures);
+  const rawWatched = watch(name) || selectedFeatures;
+  const watchedFeatures = Array.isArray(rawWatched) ? rawWatched : (rawWatched ? [rawWatched] : []);
 
   // If the watched value is a single comma-separated string, split it only once.
   useEffect(() => {
@@ -72,10 +73,11 @@ const FeatureSelection: React.FC<FeatureSelectionProps> = ({
   }, [watchedFeatures, name, setValue]);
 
   const handleFeatureToggle = (feature: string) => {
-    const updatedFeatures = watchedFeatures.includes(feature)
-      ? watchedFeatures.filter((f: string) => f !== feature)
-      : [...watchedFeatures, feature];
-    setValue(name, updatedFeatures);
+    const currentArray = Array.isArray(watchedFeatures) ? watchedFeatures : [];
+    const updatedFeatures = currentArray.includes(feature)
+      ? currentArray.filter((f: string) => f !== feature)
+      : [...currentArray, feature];
+    setValue(name, updatedFeatures, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
   };
 
   const areAllFilteredSelected =
@@ -83,12 +85,13 @@ const FeatureSelection: React.FC<FeatureSelectionProps> = ({
     filteredFeatures.every((feature) => watchedFeatures.includes(feature));
 
   const handleSelectAllToggle = () => {
+    const currentArray = Array.isArray(watchedFeatures) ? watchedFeatures : [];
     const updatedFeatures = areAllFilteredSelected
-      ? watchedFeatures.filter(
+      ? currentArray.filter(
           (feature: string) => !filteredFeatures.includes(feature)
         )
-      : Array.from(new Set([...watchedFeatures, ...filteredFeatures]));
-    setValue(name, updatedFeatures);
+      : Array.from(new Set([...currentArray, ...filteredFeatures]));
+    setValue(name, updatedFeatures, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
   };
 
   return (
