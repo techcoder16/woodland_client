@@ -1,78 +1,51 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
+import { useWatch } from "react-hook-form";
 import InputField from "../../utils/InputField";
-import FileUploadField from "../../utils/FileUploadField"; // adjust the path as needed
-import SelectField from "../../utils/SelectedField";
+import FileUploadField from "../../utils/FileUploadField";
 import EPCRatingSelect from "../../utils/EPCRatingSelect";
 import TextAreaField from "@/utils/TextAreaField";
 
 interface PhotosFloorFPCPlanProps {
   register: any;
+  control: any;
   watch: any;
   clearErrors: any;
   setValue: any;
   errors: any;
   type?: string;
-  unregister:any;
+  unregister: any;
 }
 
 const PhotosFloorFPCPlan = ({
   register,
+  control,
   watch,
   clearErrors,
   setValue,
   unregister,
   errors,
 }: PhotosFloorFPCPlanProps) => {
-  console.log("📸 PhotosFloorFPCPlan component rendering...");
-  
-  // Use watch with default values
-  const epcChartOption = watch("epcChartOption", "ratings");
-  const epcReportOption = watch("epcReportOption", "uploadReport");
-  
-  const currentEERating = watch("currentEERating");
-  const potentialEERating = watch("potentialEERating");
-
-  console.log("📊 EPC Values in PhotosFloorFPCPlan:", {
-    epcChartOption,
-    epcReportOption,
-    currentEERating,
-    potentialEERating
-  });
-  useEffect(() => {
-    if (!watch("epcChartOption")) {
-      setValue("epcChartOption", "ratings", { shouldValidate: true });
-    }
-    if (!watch("epcReportOption")) {
-      setValue("epcReportOption", "uploadReport", { shouldValidate: true });
-    }
-  }, [setValue, watch]);
+  const epcChartOption = useWatch({ control, name: "epcChartOption" }) || "ratings";
+  const epcReportOption = useWatch({ control, name: "epcReportOption" }) || "uploadReport";
+  const showOnWebsite = useWatch({ control, name: "showOnWebsite" }) ?? false;
 
   useEffect(() => {
     if (epcChartOption === "ratings") {
-      // Clear file upload error and reset file field
       unregister("epcChartFile");
-   
-    } else if (epcChartOption === "upload") {
-      // Clear rating errors and reset rating fields
+    } else {
       unregister(["currentEERating", "potentialEERating"]);
-
     }
   }, [epcChartOption]);
-  
+
   useEffect(() => {
-    console.log(epcReportOption)
     if (epcReportOption === "uploadReport") {
       clearErrors("epcReportURL");
-      unregister(['epcReportURL']); // Unregister unnecessary fields
-
-
-    } else if (epcReportOption === "urlReport") {
-      
-      unregister(['epcReportFile']); // Unregister unnecessary fields
-      
-
+      unregister("epcReportURL");
+    } else {
+      unregister("epcReportFile");
     }
   }, [epcReportOption]);
+
   return (
     <div>
       <h2 className="text-2xl font-semibold text-gray-800 border-b border-gray-300 pb-2 mb-4">
@@ -112,6 +85,7 @@ const PhotosFloorFPCPlan = ({
       {/* EPC/Home Report Section */}
       <div className="mb-6">
         <h3 className="text-xl font-medium mb-2">EPC/Home Report</h3>
+
         {/* EPC Chart Option */}
         <div className="mb-4">
           <p className="mb-2 font-medium text-gray-700">EPC Chart Option</p>
@@ -197,16 +171,16 @@ const PhotosFloorFPCPlan = ({
         </div>
         {epcReportOption === "uploadReport" && (
           <div className="mb-4">
-              <FileUploadField
-                label="Upload EPC/Home Report (PDF)"
-                name="epcReportFile"
-                accept="application/pdf"
-                register={register}
-                setValue={setValue}
-                watch={watch}
-                error={errors.epcReportFile?.message}
-                multiple={true}
-              />
+            <FileUploadField
+              label="Upload EPC/Home Report (PDF)"
+              name="epcReportFile"
+              accept="application/pdf"
+              register={register}
+              setValue={setValue}
+              watch={watch}
+              error={errors.epcReportFile?.message}
+              multiple={true}
+            />
           </div>
         )}
         {epcReportOption === "urlReport" && (
@@ -216,7 +190,6 @@ const PhotosFloorFPCPlan = ({
               name="epcReportURL"
               setValue={setValue}
               register={register}
-              
               error={errors.epcReportURL?.message?.toString()}
             />
           </div>
@@ -229,24 +202,20 @@ const PhotosFloorFPCPlan = ({
         <TextAreaField
           placeholder="Video Tour Description"
           label="Video Tour Description"
-          name = "videoTourDescription"
+          name="videoTourDescription"
           register={register}
           error={errors.videoTourDescription?.message?.toString()}
         />
-        {errors.videoTourDescription && (
-          <p className="text-red-500 text-sm mt-1">{errors.videoTourDescription.message}</p>
-        )}
         <div className="flex items-center mt-2">
           <input
             type="checkbox"
             id="showOnWebsite"
-            name="showOnWebsite"
-            checked={watch("showOnWebsite") || false}
+            {...register("showOnWebsite")}
+            checked={showOnWebsite}
             onChange={(e) => {
-              setValue('showOnWebsite', e.target.checked, { shouldValidate: true, shouldDirty: true });
-              clearErrors('showOnWebsite');
+              setValue("showOnWebsite", e.target.checked, { shouldDirty: true });
             }}
-            className="form-checkbox h-5 w-5 "
+            className="form-checkbox h-5 w-5"
           />
           <label htmlFor="showOnWebsite" className="ml-2 text-gray-700 font-medium">
             Show on website
@@ -257,4 +226,4 @@ const PhotosFloorFPCPlan = ({
   );
 };
 
-export default React.memo(PhotosFloorFPCPlan);
+export default PhotosFloorFPCPlan;

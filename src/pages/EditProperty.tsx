@@ -260,7 +260,7 @@ const EditProperty = () => {
                 <MoreInfo watch={watch} register={form.register} errors={currentStep === 2 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
               </div>
               <div className={currentStep !== 3 ? "hidden" : ""}>
-                <PhotosFloorFPCPlan watch={watch} register={form.register} errors={currentStep === 3 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} unregister={form.unregister} />
+                <PhotosFloorFPCPlan control={form.control} watch={watch} register={form.register} errors={currentStep === 3 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} unregister={form.unregister} />
               </div>
               <div className={currentStep !== 4 ? "hidden" : ""}>
                 <Attachments watch={watch} register={form.register} errors={currentStep === 4 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
