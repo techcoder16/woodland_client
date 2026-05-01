@@ -143,12 +143,14 @@ const PropertyList = () => {
   <thead>
     <tr className="border-b">
       <th className="px-4 py-3 text-left font-medium">No</th>
+      <th className="px-4 py-3 text-left font-medium">Property Name</th>
       <th className="px-4 py-3 text-left font-medium">Address</th>
+      <th className="px-4 py-3 text-left font-medium">Country</th>
       <th className="px-4 py-3 text-left font-medium">Category</th>
       <th className="px-4 py-3 text-left font-medium">Status</th>
       <th className="px-4 py-3 text-left font-medium">Property Status</th>
       <th className="px-4 py-3 text-left font-medium">Price</th>
-      
+
     </tr>
   </thead>
   <tbody>
@@ -159,9 +161,11 @@ const PropertyList = () => {
           className="border-b hover:bg-muted/50 transition-colors"
         >
           <td className="px-4 py-3">{property.propertyNumber}</td>
+          <td className="px-4 py-3">{property.propertyName}</td>
           <td className="px-4 py-3">
             {property.addressLine1}, {property.town}
           </td>
+          <td className="px-4 py-3">{property.country}</td>
           <td className="px-4 py-3">{property.category}</td>
           <td className="px-4 py-3 text-center">
             <span
@@ -219,7 +223,7 @@ const PropertyList = () => {
       ))
     ) : (
       <tr>
-        <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+        <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
           No properties found
         </td>
       </tr>

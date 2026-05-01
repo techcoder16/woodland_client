@@ -1,8 +1,5 @@
 import {configureStore} from '@reduxjs/toolkit';
 
-import { useDispatch } from 'react-redux';
-
-// import userSlice from './dataStore/userSlice';
 
 import vendorSlice from './dataStore/vendorSlice';
 import propertySlice from './dataStore/propertySlice';
@@ -15,6 +12,7 @@ import tenancyAgreementSlice from './dataStore/tenancyAgreementSlice';
 import transactionSlice from './dataStore/transactionSlice';
 import jobTypeSlice from './dataStore/jobTypeSlice';
 import noteSlice from './dataStore/noteSlice';
+import historySlice from './dataStore/historySlice';
 import dashboardSlice from './dataStore/dashboardSlice';
 const rootStore  = configureStore({
     
@@ -31,6 +29,7 @@ const rootStore  = configureStore({
         transaction:transactionSlice,
         jobTypes:jobTypeSlice,
         notes:noteSlice,
+        history:historySlice,
         dashboard:dashboardSlice
     }
 

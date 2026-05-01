@@ -456,15 +456,7 @@ const Notes = ({ propertyId, property }: NotesProps) => {
                           ) : (
                             <div className="text-gray-500">
                               <p>No notes have been created for this property yet.</p>
-                              <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-left">
-                              
-                                <button 
-                                  onClick={createTestNote}
-                                  className="mt-2 px-2 py-1 bg-blue-500 text-white rounded text-xs"
-                                >
-                                  Create Test Note
-                                </button>
-                              </div>
+                             
                             </div>
                           )}
                         </div>

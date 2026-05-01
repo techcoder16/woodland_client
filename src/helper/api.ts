@@ -182,10 +182,10 @@ async function request<T>(
       
       switch (e.response.status) {
         case 400:
-          error = { message: e.response.data.error || "Bad Request" };
+          error = { message: e.response.data.message || e.response.data.error || "Bad Request" };
           break;
         case 422:
-          error = { message: e.response.data.error || "Validation Error" };
+          error = { message: e.response.data.message || e.response.data.error || "Validation Error" };
           break;
         case 401:
           error = { message: e.response.data.error || "Unauthorized" };

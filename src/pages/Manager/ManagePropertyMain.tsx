@@ -22,17 +22,19 @@ import ManagementAgreement from "./ManagementAgreement";
 import TenancyAgreement from "./TenancyAgreement";
 import TransactionPage from "./TransactionPage";
 import Notes from "./Notes";
+import History from "./History";
 
 // Icons for better visual representation (using Lucide React icons)
 import { 
-  Building2, 
-  Users, 
-  DollarSign, 
-  Package, 
-  FileText, 
-  HandHeart, 
-  ArrowRightLeft, 
-  StickyNote 
+  Building2,
+  Users,
+  DollarSign,
+  Package,
+  FileText,
+  HandHeart,
+  ArrowRightLeft,
+  StickyNote,
+  History as HistoryIcon,
 } from "lucide-react";
 
 // ----- Zod Schemas & Types ----- //
@@ -215,12 +217,20 @@ const ManageProperty = () => {
                     Transactions
                   </TabsTrigger>
                   
-                  <TabsTrigger 
+                  <TabsTrigger
                     value="notes"
                     className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:  data-[state=active]:shadow-sm"
                   >
                     <StickyNote className="h-4 w-4 mr-2" />
-                   ToDo / Notes
+                    ToDo / Notes
+                  </TabsTrigger>
+
+                  <TabsTrigger
+                    value="history"
+                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:  data-[state=active]:shadow-sm"
+                  >
+                    <HistoryIcon className="h-4 w-4 mr-2" />
+                    History
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -262,6 +272,11 @@ const ManageProperty = () => {
               {/* ----- Notes Tab ----- */}
               <TabsContent value="notes" className="mt-0">
                 <Notes propertyId={property.id} property={property} />
+              </TabsContent>
+
+              {/* ----- History Tab ----- */}
+              <TabsContent value="history" className="mt-0">
+                <History propertyId={property.id} property={property} />
               </TabsContent>
             </div>
           </Tabs>

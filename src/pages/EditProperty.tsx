@@ -154,8 +154,6 @@ const EditProperty = () => {
 
   const handlePrevious = () => setCurrentStep(prev => Math.max(prev - 1, 0));
 
-  const handleSaveDraft = () => onSubmit(form.getValues(), true);
-
   const onSubmit = async (data: FormData, isDraft: boolean = false) => {
     if (!isDraft) {
       const isValid = await form.trigger();
@@ -290,9 +288,6 @@ const EditProperty = () => {
                 <div className="flex gap-3">
                   <Button type="button" variant="outline" onClick={handlePrevious} disabled={currentStep === 0}>
                     <ArrowLeft className="mr-2 h-4 w-4" /> Previous
-                  </Button>
-                  <Button type="button" variant="outline" onClick={handleSaveDraft} disabled={isSubmitting} className="border-gray-400">
-                    Save as Draft
                   </Button>
                 </div>
                 {isLastStep ? (
