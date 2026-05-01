@@ -23,6 +23,7 @@ const StandardInfo = ({ register, watch, clearErrors, setValue, errors, type }: 
     { value: 'miss', label: 'Miss' },
     { value: 'ms', label: 'Ms' },
     { value: 'dr', label: 'Dr' },
+    { value: 'prof', label: 'Prof' },
   ];
 
   const typeOptions = [

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -134,138 +134,109 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
+const splitFeeValue = (value: string) => {
+  if (!value) return { amount: '', type: '' };
+  const parts = value.split('-');
+  return { amount: parts[0] || '', type: parts[1] || '' };
+};
+
+const buildVendorDefaults = (vendor: any) => {
+  if (!vendor) return {};
+  const salesFeeParts = splitFeeValue(vendor.salesFee);
+  const managementFeeParts = splitFeeValue(vendor.managementFee);
+  const findersFeeParts = splitFeeValue(vendor.findersFee);
+  const salesFeeAParts = splitFeeValue(vendor.salesFeeA);
+  const managementFeeAParts = splitFeeValue(vendor.managementFeeA);
+
+  return {
+    id: vendor.id ?? "",
+    landlord: vendor.landlord ?? false,
+    vendor: vendor.vendor ?? false,
+    type: vendor.type || "Individual",
+    title: vendor.title ? vendor.title.toLowerCase() : "mr",
+    firstName: vendor.firstName || "",
+    lastName: vendor.lastName || "",
+    company: vendor.company || "",
+    salutation: vendor.salutation || "",
+    postCode: vendor.postCode || "",
+    addressLine1: vendor.addressLine1 || "",
+    addressLine2: vendor.addressLine2 || "",
+    town: vendor.town || "",
+    country: vendor.country || "",
+    phoneHome: vendor.phoneHome || "",
+    phoneMobile: vendor.phoneMobile || "",
+    phoneWork: vendor.phoneWork || "",
+    fax: vendor.fax || "",
+    email: vendor.email || "",
+    website: vendor.website || "",
+    pager: vendor.pager || "",
+    birthplace: vendor.birthplace || "",
+    nationality: vendor.nationality || "",
+    passportNumber: vendor.passportNumber || "",
+    acceptLHA: vendor.acceptLHA || "",
+    dnrvfn: vendor.dnrvfn ?? false,
+    label: vendor.label || "",
+    status: vendor.status || "",
+    branch: vendor.branch || "",
+    source: vendor.source || "",
+    negotiator: vendor.negotiator || "",
+    ldhor: vendor.ldhor ?? false,
+    salesFee_input: salesFeeParts.amount,
+    salesFee_select: salesFeeParts.type,
+    salesFee: vendor.salesFee || "",
+    managementFee_input: managementFeeParts.amount,
+    managementFee_select: managementFeeParts.type,
+    managementFee: vendor.managementFee || "",
+    findersFee_input: findersFeeParts.amount,
+    findersFee_select: findersFeeParts.type,
+    findersFee: vendor.findersFee || "",
+    salesFeeA_input: salesFeeAParts.amount,
+    salesFeeA_select: salesFeeAParts.type,
+    salesFeeA: vendor.salesFeeA || "",
+    findersFeeA_input: findersFeeParts.amount,
+    findersFeeA_select: findersFeeParts.type,
+    findersFeeA: vendor.findersFee || "",
+    managementFeeA_input: managementFeeAParts.amount,
+    managementFeeA_select: managementFeeAParts.type,
+    managementFeeA: vendor.managementFeeA || "",
+    nrlRef: vendor.nrlRef || "",
+    nrlRate: vendor.nrlRate || "",
+    nrlTax: vendor.nrlTax || "",
+    vatNumber: vendor.vatNumber || "",
+    landlordFullName: vendor.landlordFullName || "",
+    landlordContact: vendor.landlordContact || "",
+    comments: vendor.comments || "",
+    otherInfo: vendor.otherInfo || "",
+    bankBody: vendor.bankBody || "",
+    bankAddressLine1: vendor.bankAddressLine1 || "",
+    bankAddressLine2: vendor.bankAddressLine2 || "",
+    bankTown: vendor.bankTown || "",
+    bankPostCode: vendor.bankPostCode || "",
+    bankCountry: vendor.bankCountry || "",
+    bankIban: vendor.bankIban || "",
+    bic: vendor.bic || "",
+    nib: vendor.nib || "",
+    accountOption: vendor.accountOption || "noAccount",
+    username: vendor.username || "",
+    password: vendor.password || "",
+    existingUsername: vendor.existingUsername || "",
+    attachments: vendor.attachments ? vendor.attachments.map((path: string) => path) : [],
+  };
+};
+
 const EditVendor = () => {
 
   const location = useLocation();
   const vendor = location.state?.vendor;
 
-
-
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     mode: "onSubmit",
+    defaultValues: buildVendorDefaults(vendor) as any,
   });
-  
-const { toast } = useToast();
 
-const { watch } = form;
-  useEffect(() => {
-   
-    if (vendor) {
-
-      const splitFeeValue = (value: string) => {
-        if (!value) return { amount: '', type: '' };
-        const parts = value.split('-');
-        return {
-          amount: parts[0] || '',
-          type: parts[1] || ''
-        };
-      };
-  
-      const salesFeeParts = splitFeeValue(vendor.salesFee);
-      const managementFeeParts = splitFeeValue(vendor.managementFee);
-      const findersFeeParts = splitFeeValue(vendor.findersFee);
-      const salesFeeAParts = splitFeeValue(vendor.salesFeeA);
-      const managementFeeAParts = splitFeeValue(vendor.managementFeeA);
-     
-      const transformedVendorData = {
-        id:vendor.id ?? "",
-
-        landlord: vendor.landlord ?? false,
-        vendor: vendor.vendor ?? false,
-        type: vendor.type || "Individual",
-        title: vendor.title || "mr",
-        firstName: vendor.firstName || "",
-        lastName: vendor.lastName || "",
-        company: vendor.company || "",
-        salutation: vendor.salutation || "",
-        postCode: vendor.postCode || "",
-        addressLine1: vendor.addressLine1 || "",
-        addressLine2: vendor.addressLine2 || "",
-        town: vendor.town || "",
-        country: vendor.country || "",
-
-        phoneHome: vendor.phoneHome || "",
-        phoneMobile: vendor.phoneMobile || "",
-        fax: vendor.fax || "",
-        email: vendor.email || "",
-        website: vendor.website || "",  // Note: Fix potential typo in API response vs. form schema
-        pager: vendor.pager || "",
-        birthplace: vendor.birthplace || "",
-        nationality: vendor.nationality || "",
-        passportNumber: vendor.passportNumber || "",
-        acceptLHA: vendor.acceptLHA || "",
-  
-        dnrvfn: vendor.dnrvfn ?? false,
-        label: vendor.label || "",
-        status: vendor.status || "",
-        branch: vendor.branch || "",
-        source: vendor.source || "",
-        negotiator:vendor.negotiator || "",
-  
-        ldhor: vendor.ldhor ?? false,
-        salesFee_input: salesFeeParts.amount,
-        salesFee_select: salesFeeParts.type,
-        salesFee: vendor.salesFee || "",
-  
-        managementFee_input: managementFeeParts.amount,
-        managementFee_select: managementFeeParts.type,
-        managementFee: vendor.managementFee || "",
-  
-        findersFee_input: findersFeeParts.amount,
-        findersFee_select: findersFeeParts.type,
-        findersFee: vendor.findersFee || "",
-  
-        salesFeeA_input: salesFeeAParts.amount,
-        salesFeeA_select: salesFeeAParts.type,
-        salesFeeA: vendor.salesFeeA || "",
-  
-        findersFeeA_input: findersFeeParts.amount,
-        findersFeeA_select: findersFeeParts.type,
-        findersFeeA: vendor.findersFee || "",
-        managementFeeA_input: managementFeeAParts.amount,
-        managementFeeA_select: managementFeeAParts.type,
-        managementFeeA: vendor.managementFeeA || "",
-      
-        
-
-        nrlRef: vendor.nrlRef || "",
-        nrlRate: vendor.nrlRate || "",
-        vatNumber: vendor.vatNumber || "",
-        landlordFullName: vendor.landlordFullName || "",
-        landlordContact: vendor.landlordContact || "",
-        comments: vendor.comments || "",
-        otherInfo: vendor.otherInfo || "",
-        phoneWork :vendor.phoneWork || "",
-        bankBody: vendor.bankBody || "",
-        bankAddressLine1: vendor.bankAddressLine1 || "",
-        bankAddressLine2: vendor.bankAddressLine2 || "",
-        bankTown: vendor.bankTown || "",
-        bankPostCode: vendor.bankPostCode || "",
-        bankCountry: vendor.bankCountry || "",
-        bankIban: vendor.bankIban || "",
-        bic: vendor.bic || "",
-        nib: vendor.nib || "",
-        nrlTax:vendor.nrlTax || "",
-    
-        accountOption: vendor.accountOption || "noAccount",
-
-        username: vendor.username || "",
-        password: vendor.password || "",
-        existingUsername: vendor.existingUsername || "",
-  
-        attachments: vendor.attachments
-          ? vendor.attachments.map((path: string) => path) // Placeholder files
-          : [],
-          
-      };
-      
-
-      console.log("Transformed vendor data:", transformedVendorData);
-      form.reset(transformedVendorData);
-      console.log("Form values after reset:", form.getValues());
-    }
-  }, [vendor, form]);
+  const { toast } = useToast();
+  const { watch } = form;
   
 
 
