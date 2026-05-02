@@ -8,23 +8,23 @@ import { post } from "@/helper/api";
 
 // Define Rent type
 interface Rent {
-  id: string;
-  propertyId: string;
-  Amount: string;
-  ReceivedOn: string;
-  HoldBy: string;
-  ReturnedOn: string;
-  DateOfAgreement: string;
-  Deposit: any;
-  NoOfOccupant: number;
-  DssRef: string;
-  HowFurnished: string;
-  Note: string;
-  OldRef:string;
-  fees:string;
-  closed:boolean;
-  fees_input:string;
-  fees_select:string;
+  id?: string;
+  propertyId?: string;
+  Amount?: number | string;
+  ReceivedOn?: string;
+  HoldBy?: string;
+  ReturnedOn?: string;
+  DateOfAgreement?: string;
+  Deposit?: any;
+  NoOfOccupant?: number;
+  DssRef?: string;
+  HowFurnished?: string;
+  Note?: string;
+  OldRef?: string;
+  fees?: string;
+  closed?: boolean;
+  fees_input?: string;
+  fees_select?: string;
 }
 
 // Define Rent state type

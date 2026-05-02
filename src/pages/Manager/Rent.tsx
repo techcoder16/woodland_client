@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import InputField from "@/utils/InputField";
 import TextAreaField from "@/utils/TextAreaField";
 
-import { CalendarIcon, Trash } from "lucide-react";
+import { CalendarIcon, Trash, FileText } from "lucide-react";
 import { useDispatch } from "react-redux";
 import { upsertRent, fetchRents } from "@/redux/dataStore/rentSlice";
 import { useAppSelector } from "@/redux/reduxHooks";
@@ -21,7 +21,7 @@ import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogFooter } from 
 import InputSelect from "@/utils/InputSelect";
 import { TableCell } from "@/components/ui/table";
 import { DateField } from "@/utils/DateField";
-import ReceiptPDF from "@/components/pdf/ReceiptPDF";
+import DepositPDF from "@/components/pdf/ReceiptPDF";
 import { PDFViewer } from "@react-pdf/renderer";
 // ----- Zod Schemas ----- //
 
@@ -33,7 +33,7 @@ const depositSchema = z.object({
     errorMap: () => ({ message: "Select a valid period" }),
   }),
   startsOn: z.string().min(1, "Start date is required"),
-  closedOn: z.string().min(1, "Closed date is required"),
+  closedOn: z.string().optional(),
   month: z.enum(["6", "12", "24", "36", "48", "60"], {
     errorMap: () => ({ message: "Select a valid month" }),
   }),
@@ -82,20 +82,22 @@ const monthOptions = monthValues.map(m => ({
   value: m.toString(),
 }));
 
-// Utility to calculate the bill using closedOn date, period type, and inArrears flag.
+// Utility to calculate the bill.
+// endDate = closedOn if the tenancy is closed, otherwise today (open tenancy).
 const calculateBill = (
   rent: number,
   startsOn: string,
-  closedOn: string,
+  closedOn: string | undefined,
   per: string,
   inArrears: boolean = false
 ): number => {
-  if (!startsOn || !closedOn || isNaN(Date.parse(startsOn)) || isNaN(Date.parse(closedOn))) {
+  const endDateStr = closedOn && closedOn.trim() ? closedOn : new Date().toISOString();
+  if (!startsOn || isNaN(Date.parse(startsOn)) || isNaN(Date.parse(endDateStr))) {
     return rent;
   }
 
   const start = new Date(startsOn);
-  const end = new Date(closedOn);
+  const end = new Date(endDateStr);
   const diffInMs = end.getTime() - start.getTime();
   const diffInDays = Math.ceil(diffInMs / (1000 * 60 * 60 * 24));
 
@@ -119,7 +121,7 @@ const calculateBill = (
       periods =
         (end.getFullYear() - start.getFullYear()) * 12 +
         (end.getMonth() - start.getMonth()) +
-        (end.getDate() >= start.getDate() ? 0 : -1);
+        (end.getDate() >= start.getDate() ? 1 : 0);
       break;
     default:
       periods = 1;
@@ -149,7 +151,8 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId, property }) => {
   const dispatch = useDispatch<any>();
   const { rents } = useAppSelector(state => state.rent);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
-const [showReceiptPdf, setShowReceiptPdf] = useState(false);
+  const [showReceiptPdf, setShowReceiptPdf] = useState(false);
+  const [showReturnPdf, setShowReturnPdf] = useState(false);
 
   const {
     register,
@@ -182,7 +185,7 @@ const [showReceiptPdf, setShowReceiptPdf] = useState(false);
       rentsCopy.fees_input = fees_input || "";
       rentsCopy.fees_select = fees_select || "";
 
-      reset(rentsCopy && rentsCopy);
+      reset(rentsCopy as any);
     }
   }, [rents, reset]);
 
@@ -321,21 +324,52 @@ const [showReceiptPdf, setShowReceiptPdf] = useState(false);
               />
             </div>
 
-            {/* Second Row - Returned On, Date of Agreement, No. of Occupants */}
+            {/* Second Row - Returned On, Received On, Date of Agreement */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <DateField
-                label="Returned On"
-                value={watch("ReturnedOn") || ""}
-                onChange={date => handleDateChange("ReturnedOn", date)}
-                error={errors.ReturnedOn?.message}
-                placeholder="Pick return date (optional)"
-              />
-              <DateField
-                label="Received On"
-                value={watch("ReceivedOn")}
-                onChange={date => handleDateChange("ReceivedOn", date)}
-                error={errors.ReceivedOn?.message}
-              />
+              <div className="flex items-end gap-1">
+                <div className="flex-1">
+                  <DateField
+                    label="Returned On"
+                    value={watch("ReturnedOn") || ""}
+                    onChange={date => handleDateChange("ReturnedOn", date)}
+                    error={errors.ReturnedOn?.message}
+                    placeholder="Pick return date (optional)"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="mb-1 shrink-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                  disabled={!watch("ReturnedOn")}
+                  title="Generate Return of Deposit PDF"
+                  onClick={() => setShowReturnPdf(true)}
+                >
+                  <FileText className="h-5 w-5" />
+                </Button>
+              </div>
+
+              <div className="flex items-end gap-1">
+                <div className="flex-1">
+                  <DateField
+                    label="Received On"
+                    value={watch("ReceivedOn")}
+                    onChange={date => handleDateChange("ReceivedOn", date)}
+                    error={errors.ReceivedOn?.message}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="mb-1 shrink-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                  disabled={!watch("ReceivedOn")}
+                  title="Generate Receipt of Deposit PDF"
+                  onClick={() => setShowReceiptPdf(true)}
+                >
+                  <FileText className="h-5 w-5" />
+                </Button>
+              </div>
 
               <DateField
                 label="Date of Agreement"
@@ -444,7 +478,7 @@ const [showReceiptPdf, setShowReceiptPdf] = useState(false);
                           </TableCell>
                           <TableCell>
                             {new Date(field.startsOn).toLocaleDateString()} -{" "}
-                            {new Date(field.closedOn).toLocaleDateString()}
+                            {field.closedOn ? new Date(field.closedOn).toLocaleDateString() : "Open"}
                           </TableCell>
                           <TableCell>
                             <Button
@@ -473,24 +507,6 @@ const [showReceiptPdf, setShowReceiptPdf] = useState(false);
           </form>
         </CardContent>
 
-        <div className="flex justify-end space-x-3 pt-6 border-t">
-
-          <Button
-    type="button"
-    variant="outline"
-    className="px-8 py-2 mb-3 mr-3"
-    disabled={!watch("ReceivedOn") || !watch("ReturnedOn")}
-    onClick={() => {
-      if (!watch("ReceivedOn") || !watch("ReturnedOn")) {
-        toast.error("Please enter both Received On and Returned On dates first");
-      } else {
-        setShowReceiptPdf(true);
-      }
-    }}
-  >
-    Generate Receipt PDF
-  </Button>
-  </div>
 
 
       </Card>
@@ -620,59 +636,59 @@ const [showReceiptPdf, setShowReceiptPdf] = useState(false);
         </DialogContent>
       </Dialog>
 
-      {/* Receipt PDF Viewer */}
-{showReceiptPdf && (
-  <Dialog open={showReceiptPdf} onOpenChange={setShowReceiptPdf}>
-    <DialogContent className="sm:max-w-5xl h-[90vh] w-full">
-      <DialogTitle className="text-lg font-semibold mb-3">
-        Preview Receipt PDF
-      </DialogTitle>
+      {/* Receipt of Deposit PDF */}
+      {showReceiptPdf && (
+        <Dialog open={showReceiptPdf} onOpenChange={setShowReceiptPdf}>
+          <DialogContent className="sm:max-w-5xl h-[90vh] w-full">
+            <DialogTitle className="text-lg font-semibold mb-3">Receipt of Deposit</DialogTitle>
+            <div className="w-full h-[80vh] border rounded-md overflow-hidden">
+              <PDFViewer width="100%" height="100%" showToolbar={false}>
+                <DepositPDF
+                  type="receipt"
+                  data={{
+                    accountNo: property?.propertyNumber || property?.propertyNo || property?.accountNo || "N/A",
+                    propertyRef: `${property?.addressLine1 || property?.DoorNumber || ""} ${property?.Road || ""}, ${property?.town || property?.towns || ""}`,
+                    receivedFrom: `${property?.tenants?.[0]?.title?.toUpperCase() || ""} ${property?.tenants?.[0]?.firstName || property?.tenants?.[0]?.FirstName || ""} ${property?.tenants?.[0]?.lastName || property?.tenants?.[0]?.SureName || ""}`.trim(),
+                    date: watch("ReceivedOn") ? new Date(watch("ReceivedOn")).toLocaleDateString() : "",
+                    amount: `£${watch("Amount") || 0}`,
+                    signature: "Santosh",
+                  }}
+                />
+              </PDFViewer>
+            </div>
+            <DialogFooter className="pt-4 flex justify-end">
+              <Button variant="outline" onClick={() => setShowReceiptPdf(false)}>Close</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
-      <div className="w-full h-[80vh] border rounded-md overflow-hidden">
-        <PDFViewer width="100%" height="100%">
-          <ReceiptPDF
-            data={{
-              company: {
-                name: "WOODLAND",
-                
-                addressLine1: import.meta.env.VITE_PUBLIC_OFFICE_ADDRESS || "235 Cranbrook Road",
-                city: import.meta.env.VITE_PUBLIC_OFFICE_CITY || "Ilford, Essex",
-                postcode: import.meta.env.VITE_PUBLIC_OFFICE_POSTCODE || "IG1 4TD",
-                phone: "0208 554 55440",
-                fax: "020 8554 4433",
-                email: "ig1@woodlandltd.co.uk",
-                website: "www.woodlandltd.co.uk",
-                tagline: "SALES LETTINGS MANAGEMENT",
-              },
-              receipt: {
-                type: "RECEIPT OF DEPOSIT",
-                propertyRef: `${property?.DoorNumber || ""} ${property?.Road || ""}, ${property?.towns || ""}`,
-                accountNo: property?.accountNo || "N/A",
-                receivedFrom: `${property?.tenants?.[0]?.title?.toUpperCase() || ""} ${property?.tenants?.[0]?.FirstName || ""} ${property?.tenants?.[0]?.SureName || ""}`,
-                date: new Date(watch("ReceivedOn")).toLocaleDateString(),
-                amount: `£${watch("Amount") || 0}`,
-                description: `Deposit received for property ${property?.DoorNumber || ""} ${property?.Road || ""}`,
-                signature: "Santosh",
-              },
-            }}
-          />
-        </PDFViewer>
-      </div>
-
-      <DialogFooter className="pt-4 flex justify-end">
-        <Button variant="outline" onClick={() => setShowReceiptPdf(false)}>
-          Close
-        </Button>
-        <Button
-          variant="default"
-          onClick={() => toast.success("Receipt PDF sent successfully (mock)")}
-        >
-          Send Receipt
-        </Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
-)}
+      {/* Return of Deposit PDF */}
+      {showReturnPdf && (
+        <Dialog open={showReturnPdf} onOpenChange={setShowReturnPdf}>
+          <DialogContent className="sm:max-w-5xl h-[90vh] w-full">
+            <DialogTitle className="text-lg font-semibold mb-3">Return of Deposit</DialogTitle>
+            <div className="w-full h-[80vh] border rounded-md overflow-hidden">
+              <PDFViewer width="100%" height="100%" showToolbar={false}>
+                <DepositPDF
+                  type="return"
+                  data={{
+                    accountNo: property?.propertyNumber || property?.propertyNo || property?.accountNo || "N/A",
+                    propertyRef: `${property?.addressLine1 || property?.DoorNumber || ""} ${property?.Road || ""}, ${property?.town || property?.towns || ""}`,
+                    receivedFrom: "Woodland",
+                    date: watch("ReturnedOn") ? new Date(watch("ReturnedOn")).toLocaleDateString() : "",
+                    amount: `£${watch("Amount") || 0}`,
+                    signature: "Santosh",
+                  }}
+                />
+              </PDFViewer>
+            </div>
+            <DialogFooter className="pt-4 flex justify-end">
+              <Button variant="outline" onClick={() => setShowReturnPdf(false)}>Close</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
 
     </div>

@@ -64,6 +64,7 @@ export interface Transaction {
 
 interface TransactionState {
   transaction: Transaction[];
+  summary: any | null;
   loading: boolean;
   totalPages?: number;
   total?: number;
@@ -74,6 +75,7 @@ interface TransactionState {
 
 const initialState: TransactionState = {
   transaction: [],
+  summary: null,
   loading: false,
   error: null,
   totalPages: 0,
@@ -324,6 +326,21 @@ export const getActiveTransactions = createAsyncThunk(
   }
 );
 
+// Fetch summary totals from dedicated backend endpoint (no pagination needed)
+export const fetchTransactionSummary = createAsyncThunk(
+  "transaction/fetchTransactionSummary",
+  async ({ propertyId }: { propertyId: string }, { rejectWithValue }) => {
+    try {
+      const access_token = await DEFAULT_COOKIE_GETTER("access_token");
+      const headers = { Authorization: `Bearer ${access_token}` };
+      const data = await getApi("transaction", `summary?propertyId=${propertyId}`, headers);
+      return data as any;
+    } catch (error: any) {
+      return rejectWithValue(error.message || "Failed to fetch transaction summary");
+    }
+  }
+);
+
 const transactionSlice = createSlice({
   name: "transaction",
   initialState,
@@ -433,6 +450,13 @@ const transactionSlice = createSlice({
       .addCase(getActiveTransactions.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+      // Summary totals from backend endpoint
+      .addCase(fetchTransactionSummary.fulfilled, (state, action) => {
+        state.summary = action.payload || null;
+      })
+      .addCase(fetchTransactionSummary.rejected, (state) => {
+        state.summary = null;
       });
   },
 });

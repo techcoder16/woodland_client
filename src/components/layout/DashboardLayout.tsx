@@ -125,7 +125,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       </Sidebar>
 
       {/* Main */}
-      <SidebarInset className="min-h-screen">
+      <SidebarInset className="min-h-screen overflow-x-hidden">
         <Header />
         <main className="p-6">{children}</main>
       </SidebarInset>

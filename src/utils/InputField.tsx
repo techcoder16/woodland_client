@@ -7,24 +7,27 @@ interface InputFieldProps {
   name: string;
   type?: string;
   register: UseFormRegister<FieldValues>;
-  setValue: UseFormSetValue<FieldValues>; // React Hook Form's setValue
+  setValue: UseFormSetValue<FieldValues>;
   error?: string;
   placeholder?: string;
   onChange?: (value: string) => void;
-  max ?: number; // Optional max length for input
-
+  max?: number;
+  min?: number;
+  step?: number | string;
 }
 
 const InputField: React.FC<InputFieldProps> = ({
   label,
   name,
   type = "text",
+  min = 0,
   register,
   setValue,
   error,
   placeholder = "",
   onChange,
-  max =100000000000,
+  max = 100000000000,
+  step,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -65,10 +68,10 @@ const InputField: React.FC<InputFieldProps> = ({
         <Input
           type={type}
           ref={inputRef}
+          
           className=""
           {...register(name)}
-          {...(type === "number" ? { min: 0 } : {})}
-          {...(type === "number" ? { max: max } : {})}
+          {...(type === "number" ? { min, max, step: step ?? "any" } : {})}
           
           placeholder={placeholder}
         />

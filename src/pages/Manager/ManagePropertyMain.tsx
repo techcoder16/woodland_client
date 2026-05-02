@@ -1,19 +1,12 @@
 // src/components/ManageProperty.tsx
-import React from "react";
+import React, { useEffect } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import InputField from "@/utils/InputField";
-import SelectField from "@/utils/SelectedField";
-import TextAreaField from "@/utils/TextAreaField";
-import { MainNav } from "@/components/MainNav";
-import Dashboard from "../Dashboard";
+
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import postApi from "@/helper/postApi";
 import Features from "./Features";
 import Parties from "./Parties";
 import Rent from "./Rent";
@@ -130,7 +123,9 @@ const ManageProperty = () => {
     resolver: zodResolver(transactionSchema),
   });
 
-
+useEffect(() => {
+console.log("Property data in ManageProperty component:", property);
+});
 
   return (
     <DashboardLayout>
@@ -141,10 +136,10 @@ const ManageProperty = () => {
             <div>
               <h1 className="text-3xl font-bold  mb-2">
                 Manage Property
-              </h1>
+              </h1> 
               {property && (
                 <p className="">
-                  Property ID: {property.propertyNo}
+                  Property ID: {property.propertyNo || (property.propertyNumber != null ? property.propertyNumber : property.id)}
                 </p>
               )}
             </div>
@@ -237,7 +232,7 @@ const ManageProperty = () => {
             </div>
 
             {/* Tab Content */}
-            <div className="p-6">
+            <div className="p-6 overflow-x-hidden">
               {/* ----- Features Tab ----- */}
               <TabsContent value="features" className="mt-0">
                 <Features property={property} />

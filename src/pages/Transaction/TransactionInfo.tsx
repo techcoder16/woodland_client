@@ -43,8 +43,8 @@ const TranscationInfo = ({
     const lessBuildingExpenditure = Number(watch("toLandlordLessBuildingExpenditure")|| 0);
     const lessVat = Number(watch("toLandlordLessVAT")|| 0);
      const toLandlordLessManagementFees = Number(watch("toLandlordLessManagementFees")|| 0);
+      console.log(netRecieved, lessBuildingExpenditure, lessVat, toLandlordLessManagementFees)
     
-   
     setValue("toLandlordNetPaid", netRecieved - (lessBuildingExpenditure + lessVat + toLandlordLessManagementFees));
 
   
@@ -139,7 +139,7 @@ const TranscationInfo = ({
             <InputField label="Difference" name="toLandlordLessBuildingExpenditureDifference" type="number" {...{ register, setValue, errors }} />
             {/* <InputField label="Net Received" name="toLandlordNetReceived" type="number" {...{ register, setValue, errors }} /> */}
             <InputField label="Less VAT" name="toLandlordLessVAT" type="number" {...{ register, setValue, errors }} />
-            <InputField label="Net Paid" name="toLandlordNetPaid" type="number" {...{ register, setValue, errors }} />
+            <InputField  min={-1000000} label="Net Paid" name="toLandlordNetPaid" type="number" {...{ register, setValue, errors }} />
             <InputField label="Cheque No" name="toLandlordChequeNo" {...{ register, setValue, errors }} />
             <TextAreaField label="Detail of  Expenditure" name="toLandlordDefaultExpenditure" {...{ register, setValue, errors }} />
             <TextAreaField label="Expenditure Description" name="toLandlordExpenditureDescription" {...{ register, setValue, errors }} />
