@@ -32,6 +32,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import EditTransaction from "../EditTransaction";
 import { Badge } from "@/components/ui/badge";
+import { PDFViewer } from "@react-pdf/renderer";
+import TenantStatementPDF from "@/components/pdf/TenantStatementPDF";
+import { Dialog, DialogContent, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { FileText } from "lucide-react";
 
 // ── Column widths (must be static strings for Tailwind JIT to detect them) ─────
 const COL = {
@@ -117,7 +121,7 @@ const calcBill = (rent: number, startsOn: string, closedOn: string | undefined, 
   return rent * periods;
 };
 
-const TransactionPage: React.FC<{ propertyId: string }> = ({ propertyId }) => {
+const TransactionPage: React.FC<{ propertyId: string; property?: any }> = ({ propertyId, property }) => {
   const dispatch = useAppDispatch();
   const { transaction, summary: backendSummary, totalPages, total, skip, take, loading, error } = useAppSelector((state) => state.transaction);
   const { rents } = useAppSelector((state) => state.rent);
@@ -129,6 +133,7 @@ const TransactionPage: React.FC<{ propertyId: string }> = ({ propertyId }) => {
   const [editTx, setEditTx]             = useState<any>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "active">("all");
   const [pageSize, setPageSize]         = useState(10);
+  const [showStatement, setShowStatement] = useState(false);
 
   // Synced scrollbars
   const topScrollRef   = useRef<HTMLDivElement>(null);
@@ -249,9 +254,14 @@ const TransactionPage: React.FC<{ propertyId: string }> = ({ propertyId }) => {
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight">Transactions</h1>
-          <Button size="sm" onClick={() => setIsAddOpen(true)}>
-            <Plus className="mr-1 h-4 w-4" /> Add Transaction
-          </Button>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => setShowStatement(true)}>
+              <FileText className="mr-1 h-4 w-4" /> Tenant Statement
+            </Button>
+            <Button size="sm" onClick={() => setIsAddOpen(true)}>
+              <Plus className="mr-1 h-4 w-4" /> Add Transaction
+            </Button>
+          </div>
         </div>
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
@@ -619,6 +629,24 @@ const TransactionPage: React.FC<{ propertyId: string }> = ({ propertyId }) => {
           transaction={editTx}
         />
       )}
+
+      <Dialog open={showStatement} onOpenChange={setShowStatement}>
+        <DialogContent className="sm:max-w-5xl h-[90vh] w-full">
+          <DialogTitle className="text-lg font-semibold">Tenant Statement</DialogTitle>
+          <div className="w-full h-[78vh] border rounded-md overflow-hidden">
+            <PDFViewer width="100%" height="100%" showToolbar={false}>
+              <TenantStatementPDF
+                transactions={displayRows}
+                property={property}
+                rentData={rents}
+              />
+            </PDFViewer>
+          </div>
+          <DialogFooter className="pt-2 flex justify-end">
+            <Button variant="outline" onClick={() => setShowStatement(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

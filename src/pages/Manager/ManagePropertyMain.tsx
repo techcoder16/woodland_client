@@ -252,15 +252,15 @@ console.log("Property data in ManageProperty component:", property);
               </TabsContent>
 
               <TabsContent value="management" className="mt-0">
-                <ManagementAgreement propertyId={property.id} />
+                <ManagementAgreement propertyId={property.id} property={property} />
               </TabsContent>
 
               <TabsContent value="tenancy" className="mt-0">
-                <TenancyAgreement propertyId={property.id} />
+                <TenancyAgreement propertyId={property.id} property={property} />
               </TabsContent>
 
               <TabsContent value="transactions" className="mt-0">
-                <TransactionPage propertyId={property.id} />
+                <TransactionPage propertyId={property.id} property={property} />
               </TabsContent>
 
             

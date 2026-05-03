@@ -23,6 +23,7 @@ import { TableCell } from "@/components/ui/table";
 import { DateField } from "@/utils/DateField";
 import DepositPDF from "@/components/pdf/ReceiptPDF";
 import { PDFViewer } from "@react-pdf/renderer";
+import { useAuth } from "@/context/AuthContext";
 // ----- Zod Schemas ----- //
 
 // Extend the deposit schema with a new computed field "bill"
@@ -150,6 +151,8 @@ interface RentComponentProps {
 const Rent: React.FC<RentComponentProps> = ({ propertyId, property }) => {
   const dispatch = useDispatch<any>();
   const { rents } = useAppSelector(state => state.rent);
+  const { user } = useAuth();
+  const currentUserName = user ? `${user.first_name || ""} ${user.last_name || ""}`.trim() : "Woodland";
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [showReceiptPdf, setShowReceiptPdf] = useState(false);
   const [showReturnPdf, setShowReturnPdf] = useState(false);
@@ -646,12 +649,12 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId, property }) => {
                 <DepositPDF
                   type="receipt"
                   data={{
-                    accountNo: property?.propertyNumber || property?.propertyNo || property?.accountNo || "N/A",
+                    accountNo: property?.propertyNo || property?.propertyNumber || "N/A",
                     propertyRef: `${property?.addressLine1 || property?.DoorNumber || ""} ${property?.Road || ""}, ${property?.town || property?.towns || ""}`,
                     receivedFrom: `${property?.tenants?.[0]?.title?.toUpperCase() || ""} ${property?.tenants?.[0]?.firstName || property?.tenants?.[0]?.FirstName || ""} ${property?.tenants?.[0]?.lastName || property?.tenants?.[0]?.SureName || ""}`.trim(),
                     date: watch("ReceivedOn") ? new Date(watch("ReceivedOn")).toLocaleDateString() : "",
                     amount: `£${watch("Amount") || 0}`,
-                    signature: "Santosh",
+                    signature: currentUserName,
                   }}
                 />
               </PDFViewer>
@@ -673,12 +676,12 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId, property }) => {
                 <DepositPDF
                   type="return"
                   data={{
-                    accountNo: property?.propertyNumber || property?.propertyNo || property?.accountNo || "N/A",
+                    accountNo: property?.propertyNo || property?.propertyNumber || "N/A",
                     propertyRef: `${property?.addressLine1 || property?.DoorNumber || ""} ${property?.Road || ""}, ${property?.town || property?.towns || ""}`,
                     receivedFrom: "Woodland",
                     date: watch("ReturnedOn") ? new Date(watch("ReturnedOn")).toLocaleDateString() : "",
                     amount: `£${watch("Amount") || 0}`,
-                    signature: "Santosh",
+                    signature: currentUserName,
                   }}
                 />
               </PDFViewer>

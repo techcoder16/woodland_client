@@ -4,6 +4,7 @@ import { get, post, patch, del } from "@/helper/api";
 export interface HistoryEntry {
   id?: string;
   propertyId: string;
+  event?: string;
   dated: string;
   jobType?: string;
   jobDone?: string;

@@ -7,14 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import InputField from "@/utils/InputField";
 import TextAreaField from "@/utils/TextAreaField";
+import RichTextEditor from "@/utils/RichTextEditor";
 
 import { useDispatch } from "react-redux";
 import { toast } from "sonner";
-import { useAppSelector } from "@/redux/reduxHooks";
 import { fetchTenancyAgreement, upsertTenancyAgreement } from "@/redux/dataStore/tenancyAgreementSlice";
-import { cn } from "@/lib/utils";
-import jsPDF from "jspdf";
 import SelectedField from "@/utils/SelectedField";
+import { PDFViewer } from "@react-pdf/renderer";
+import { Section21NoticePDF, TenancyAgreementPDF } from "@/components/pdf/TenancyPDF";
+import { Dialog, DialogContent, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { useAppSelector } from "@/redux/reduxHooks";
 
 // Define the form schema for Tenancy Agreement
 const tenancyAgreementSchema = z.object({
@@ -38,9 +40,11 @@ const tenancyAgreementSchema = z.object({
 
 type TenancyAgreementFormData = z.infer<typeof tenancyAgreementSchema>;
 
-const TenancyAgreement: React.FC<{ propertyId: string }> = ({ propertyId }) => {
+const TenancyAgreement: React.FC<{ propertyId: string; property?: any }> = ({ propertyId, property }) => {
   const dispatch = useDispatch<any>();
   const { tenancyAgreement } = useAppSelector((state) => state.tenancyAgreement);
+  const { rents } = useAppSelector((state) => state.rent);
+  const [pdfType, setPdfType] = React.useState<"section21" | "tenancy" | null>(null);
 
   const {
     register,
@@ -88,36 +92,7 @@ console.log(errors)
     }
   };
 
-  const handlePreview = () => {
-    const data = getValues();
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text("Tenancy Agreement Preview", 10, 10);
-    doc.setFontSize(12);
-    let y = 20;
-    doc.text(`Tenant ID: ${data.tenantId}`, 10, y);
-    y += 10;
-    doc.text(`Details: ${data.details}`, 10, y);
-    y += 10;
-    doc.text(`Housing Act: ${data.housingAct}`, 10, y);
-    y += 10;
-    doc.text(`Letter Type: ${data.LetterType}`, 10, y);
-    y += 10;
-    doc.text(`Terms & Conditions: ${data.TermsandCondition}`, 10, y);
-    y += 10;
-    doc.text(`Guarantor: ${data.Guaranteer}`, 10, y);
-    y += 10;
-    doc.text(`Address 1: ${data.Address1}`, 10, y);
-    y += 10;
-    if (data.Address2) {
-      doc.text(`Address 2: ${data.Address2}`, 10, y);
-      y += 10;
-    }
-    if (data.signedDate) {
-      doc.text(`Signed Date: ${new Date(data.signedDate).toLocaleDateString()}`, 10, y);
-    }
-    window.open(doc.output("bloburl"), "_blank");
-  };
+  const handlePreview = (type: "section21" | "tenancy") => setPdfType(type);
 
   return (
     <Card className="shadow">
@@ -239,23 +214,45 @@ console.log(errors)
             />
 
 </div>
-    <TextAreaField
+    <RichTextEditor
             label="Terms and Conditions"
-            name="TermsandCondition"
-            register={register}
+            value={watch("TermsandCondition") || ""}
+            onChange={(html) => setValue("TermsandCondition", html)}
             error={errors.TermsandCondition?.message}
             placeholder="Enter terms and conditions"
           />
 
             
           <div className="flex justify-end space-x-4">
-            <Button type="button" onClick={handlePreview}>
-              Preview Agreement
+            <Button type="button" variant="outline" onClick={() => handlePreview("section21")}>
+              Section 21 Notice
+            </Button>
+            <Button type="button" variant="outline" onClick={() => handlePreview("tenancy")}>
+              Tenancy Agreement
             </Button>
             <Button type="submit">Update Tenancy Agreement</Button>
           </div>
         </form>
       </CardContent>
+      {/* PDF Dialogs */}
+      <Dialog open={!!pdfType} onOpenChange={(o) => !o && setPdfType(null)}>
+        <DialogContent className="sm:max-w-5xl h-[90vh] w-full">
+          <DialogTitle className="text-lg font-semibold">
+            {pdfType === "section21" ? "Section 21 Notice" : "Tenancy Agreement"}
+          </DialogTitle>
+          <div className="w-full h-[78vh] border rounded-md overflow-hidden">
+            <PDFViewer width="100%" height="100%" showToolbar={false}>
+              {pdfType === "section21"
+                ? <Section21NoticePDF data={getValues()} property={property} />
+                : <TenancyAgreementPDF data={getValues()} property={property} rentData={rents} />
+              }
+            </PDFViewer>
+          </div>
+          <DialogFooter className="pt-2 flex justify-end">
+            <Button variant="outline" onClick={() => setPdfType(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

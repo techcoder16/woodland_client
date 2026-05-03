@@ -17,6 +17,24 @@ import {
   Termination,
 } from "@/redux/dataStore/historySlice";
 
+const EVENT_OPTIONS = [
+  "Move In",
+  "Move Out",
+  "Rent Review",
+  "Tenancy Renewal",
+  "Property Inspection",
+  "Maintenance Visit",
+  "Gas Safety Check",
+  "Electrical Check",
+  "EPC Assessment",
+  "Deposit Registration",
+  "Deposit Release",
+  "Notice Served",
+  "Court Hearing",
+  "Key Handover",
+  "Other",
+];
+
 const SUBJECT_OPTIONS = [
   "FINAL RENT REMINDER!!!!!!",
   "RENT REMINDER",
@@ -105,7 +123,7 @@ const History = ({ propertyId, property }: HistoryProps) => {
   const handleAddEntry = () => {
     const today = new Date().toISOString().split("T")[0];
     setLocalEntries((prev) => [
-      { propertyId, dated: today, jobType: "", jobDone: "", subject: "", content: "", _isNew: true, _dirty: true },
+      { propertyId, event: "", dated: today, jobType: "", jobDone: "", subject: "", content: "", _isNew: true, _dirty: true },
       ...prev,
     ]);
   };
@@ -205,6 +223,21 @@ const History = ({ propertyId, property }: HistoryProps) => {
         <div className="space-y-4">
           {localEntries.map((entry, index) => (
             <div key={entry.id || `new-${index}`} className="border rounded-lg p-4 bg-white shadow-sm">
+              {/* Row 0: Event */}
+              <div className="mb-3">
+                <Label className="text-xs text-gray-500 mb-1 block">Event</Label>
+                <select
+                  value={entry.event || ""}
+                  onChange={(e) => updateLocal(index, "event", e.target.value)}
+                  className="w-full h-9 text-sm border border-input rounded-md px-2 bg-background"
+                >
+                  <option value="">Select event...</option>
+                  {EVENT_OPTIONS.map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+              </div>
+
               {/* Row 1: Date, Days Ago, Job Type, Job Done */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
                 <div>

@@ -5,16 +5,18 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import InputField from "@/utils/InputField";
-import TextAreaField from "@/utils/TextAreaField";
+import RichTextEditor from "@/utils/RichTextEditor";
 
 import { useDispatch } from "react-redux";
 import { toast } from "sonner";
 import { useAppSelector } from "@/redux/reduxHooks";
 import { fetchManagementAgreement, upsertManagementAgreement } from "@/redux/dataStore/managementAgreementSlice";
 import { cn } from "@/lib/utils";
-import jsPDF from "jspdf";
 import SelectField from "@/utils/SelectedField";
 import { DateField } from "@/utils/DateField";
+import { PDFViewer } from "@react-pdf/renderer";
+import ManagementContractPDF from "@/components/pdf/ManagementContractPDF";
+import { Dialog, DialogContent, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 const managementAgreementSchema = z.object({
   propertyId: z.string().min(1, "Property ID is required"),
@@ -31,9 +33,11 @@ const managementAgreementSchema = z.object({
 
 type ManagementAgreementFormData = z.infer<typeof managementAgreementSchema>;
 
-const ManagementAgreement: React.FC<{ propertyId: string }> = ({ propertyId }) => {
+const ManagementAgreement: React.FC<{ propertyId: string; property?: any }> = ({ propertyId, property }) => {
   const dispatch = useDispatch<any>();
   const { managementAgreement } = useAppSelector((state) => state.managementAgreement);
+
+  const [showPdf, setShowPdf] = React.useState(false);
 
   const {
     register,
@@ -80,33 +84,7 @@ const ManagementAgreement: React.FC<{ propertyId: string }> = ({ propertyId }) =
     }
   };
 
-  const handlePreview = () => {
-    const data = getValues();
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text("Management Agreement Preview", 10, 10);
-    doc.setFontSize(12);
-    let y = 20;
-
-    doc.text(`Date of Agreement: ${new Date(data.DateofAgreement).toLocaleDateString()}`, 10, y);
-    y += 10;
-    doc.text(`Agreement Start: ${new Date(data.AgreementStart).toLocaleDateString()}`, 10, y);
-    y += 10;
-    doc.text(`Payment Agreement: ${new Date(data.PaymentAgreement).toLocaleDateString()}`, 10, y);
-    y += 10;
-    doc.text(`Agreement End: ${new Date(data.AgreementEnd).toLocaleDateString()}`, 10, y);
-    y += 10;
-    doc.text(`Frequency: ${data.Frequency}`, 10, y);
-    y += 10;
-    doc.text(`Inventory Charges: ${data.InventoryCharges}`, 10, y);
-    y += 10;
-    doc.text(`Management Fees: ${data.ManagementFees}`, 10, y);
-    y += 10;
-    doc.text(`Terms & Conditions: ${data.TermsAndCondition}`, 10, y);
-    y += 10;
-    doc.text(`Check Payable To: ${data.checkPayableTo}`, 10, y);
-    window.open(doc.output("bloburl"), "_blank");
-  };
+  const handlePreview = () => setShowPdf(true);
 
   return (
     <Card className="shadow">
@@ -203,6 +181,7 @@ const ManagementAgreement: React.FC<{ propertyId: string }> = ({ propertyId }) =
             <InputField
               label="Management Fees"
               name="ManagementFees"
+              max={100}
               register={register}
               error={errors.ManagementFees?.message}
               placeholder="Enter management fees"
@@ -224,10 +203,10 @@ const ManagementAgreement: React.FC<{ propertyId: string }> = ({ propertyId }) =
           </div>
 
           <div className="md:col-span-2">
-            <TextAreaField
+            <RichTextEditor
               label="Terms and Conditions"
-              name="TermsAndCondition"
-              register={register}
+              value={watch("TermsAndCondition") || ""}
+              onChange={(html) => setValue("TermsAndCondition", html)}
               error={errors.TermsAndCondition?.message}
               placeholder="Enter terms and conditions"
             />
@@ -242,6 +221,21 @@ const ManagementAgreement: React.FC<{ propertyId: string }> = ({ propertyId }) =
           </div>
         </form>
       </CardContent>
+
+      {/* Management Contract PDF Preview */}
+      <Dialog open={showPdf} onOpenChange={setShowPdf}>
+        <DialogContent className="sm:max-w-5xl h-[90vh] w-full">
+          <DialogTitle className="text-lg font-semibold">Management Contract Preview</DialogTitle>
+          <div className="w-full h-[78vh] border rounded-md overflow-hidden">
+            <PDFViewer width="100%" height="100%" showToolbar={false}>
+              <ManagementContractPDF data={getValues()} property={property} />
+            </PDFViewer>
+          </div>
+          <DialogFooter className="pt-2 flex justify-end">
+            <Button variant="outline" onClick={() => setShowPdf(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
