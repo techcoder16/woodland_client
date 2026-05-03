@@ -47,8 +47,8 @@ const SigCol = ({ title, sub }: { title: string; sub: string }) => (
   </View>
 );
 
-const ManagementContractPDF = ({ data, property }: { data: any; property?: any }) => {
-  const landlord = property?.parties?.find((p: any) => p.role === "LANDLORD")?.party ||
+const ManagementContractPDF = ({ data, property, landlord: landlordProp }: { data: any; property?: any; landlord?: any }) => {
+  const landlord = landlordProp || property?.parties?.find((p: any) => p.role === "LANDLORD")?.party ||
                    property?.landlords?.[0] || {};
   const landlordName = [landlord.title, landlord.firstName || landlord.FirstName, landlord.lastName || landlord.SureName]
     .filter(Boolean).join(" ");
@@ -60,7 +60,7 @@ const ManagementContractPDF = ({ data, property }: { data: any; property?: any }
     property?.Road || "",
     property?.town || property?.towns || "",
   ].filter(Boolean).join(", ");
-  const accountNo = property?.propertyNo || property?.propertyNumber || "";
+  const accountNo = property?.propertyNo || (property?.propertyNumber != null ? String(property.propertyNumber) : "");
 
   const fmt = (iso?: string) => iso ? new Date(iso).toLocaleDateString("en-GB") : "";
 

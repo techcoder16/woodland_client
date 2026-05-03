@@ -25,7 +25,6 @@ const styles = StyleSheet.create({
   tableHeader: { flexDirection: "row", backgroundColor: BLUE_BG, paddingVertical: 3, paddingHorizontal: 2 },
   tableRow: { flexDirection: "row", paddingVertical: 2, paddingHorizontal: 2, borderBottomWidth: 0.3, borderBottomColor: "#ddd" },
   tableRowAlt: { flexDirection: "row", paddingVertical: 2, paddingHorizontal: 2, backgroundColor: "#f0f4fa", borderBottomWidth: 0.3, borderBottomColor: "#ddd" },
-  colTranNo:   { width: 40 },
   colDate:     { width: 55 },
   colMode:     { width: 40 },
   colNote:     { flex: 1 },
@@ -54,12 +53,14 @@ const TenantStatementPDF = ({
   transactions,
   property,
   rentData,
+  tenant: tenantProp,
 }: {
   transactions: any[];
   property?: any;
   rentData?: any;
+  tenant?: any;
 }) => {
-  const tenant = property?.parties?.find((p: any) => p.role === "TENANT")?.party ||
+  const tenant = tenantProp || property?.parties?.find((p: any) => p.role === "TENANT")?.party ||
                  property?.tenants?.[0] || {};
   const tenantName = [tenant.title, tenant.firstName || tenant.FirstName, tenant.lastName || tenant.SureName]
     .filter(Boolean).join(" ") || "";
@@ -77,7 +78,7 @@ const TenantStatementPDF = ({
     property?.postCode || "",
   ].filter(Boolean).join(" ");
 
-  const accountNo = property?.propertyNo || property?.propertyNumber || "";
+  const accountNo = property?.propertyNo || (property?.propertyNumber != null ? String(property.propertyNumber) : "");
   const deposits: any[] = Array.isArray(rentData?.Deposit) ? rentData.Deposit : [];
   const primaryDeposit = deposits[0] || {};
   const rentStartsOn = primaryDeposit.startsOn
@@ -138,7 +139,6 @@ const TenantStatementPDF = ({
 
         {/* Table header */}
         <View style={styles.tableHeader}>
-          <Text style={[styles.thText, styles.colTranNo]}>Tran No</Text>
           <Text style={[styles.thText, styles.colDate]}>Date</Text>
           <Text style={[styles.thText, styles.colMode]}>Mode</Text>
           <Text style={[styles.thText, styles.colNote]}>Note</Text>
@@ -151,7 +151,6 @@ const TenantStatementPDF = ({
         {/* Rows */}
         {transactions.map((tx, i) => (
           <View key={tx.id || i} style={i % 2 === 0 ? styles.tableRow : styles.tableRowAlt}>
-            <Text style={[styles.tdText, styles.colTranNo]}>{tx.tranid || tx.id || ""}</Text>
             <Text style={[styles.tdText, styles.colDate]}>{fmtDate(tx.fromTenantDate)}</Text>
             <Text style={[styles.tdText, styles.colMode]}>{tx.fromTenantMode || ""}</Text>
             <Text style={[styles.tdText, styles.colNote]}>{tx.fromTenantDescription || ""}</Text>

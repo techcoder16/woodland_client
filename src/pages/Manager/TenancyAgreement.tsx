@@ -12,6 +12,9 @@ import RichTextEditor from "@/utils/RichTextEditor";
 import { useDispatch } from "react-redux";
 import { toast } from "sonner";
 import { fetchTenancyAgreement, upsertTenancyAgreement } from "@/redux/dataStore/tenancyAgreementSlice";
+import { fetchPropertyParties } from "@/redux/dataStore/partySlice";
+import { fetchVendors } from "@/redux/dataStore/vendorSlice";
+import { fetchtenants } from "@/redux/dataStore/tenantSlice";
 import SelectedField from "@/utils/SelectedField";
 import { PDFViewer } from "@react-pdf/renderer";
 import { Section21NoticePDF, TenancyAgreementPDF } from "@/components/pdf/TenancyPDF";
@@ -44,6 +47,9 @@ const TenancyAgreement: React.FC<{ propertyId: string; property?: any }> = ({ pr
   const dispatch = useDispatch<any>();
   const { tenancyAgreement } = useAppSelector((state) => state.tenancyAgreement);
   const { rents } = useAppSelector((state) => state.rent);
+  const { propertyParties }: any = useAppSelector((state: any) => state.parties);
+  const { vendors }: any = useAppSelector((state: any) => state.vendors);
+  const { tenants: allTenants }: any = useAppSelector((state: any) => state.tenants);
   const [pdfType, setPdfType] = React.useState<"section21" | "tenancy" | null>(null);
 
   const {
@@ -79,7 +85,19 @@ const TenancyAgreement: React.FC<{ propertyId: string; property?: any }> = ({ pr
 
   useEffect(() => {
     dispatch(fetchTenancyAgreement({ propertyId }));
+    dispatch(fetchPropertyParties(propertyId));
+    dispatch(fetchVendors({ page: 1, search: "" }));
+    dispatch(fetchtenants({ page: 1, search: "" }));
   }, [dispatch, propertyId]);
+
+  const partyData = (propertyParties as any)?.data ?? propertyParties;
+  const pdfLandlord = Array.isArray(vendors)
+    ? vendors.find((v: any) => v.id === partyData?.VendorId) ?? null
+    : null;
+  const firstTenantId = Array.isArray(partyData?.tenants) ? partyData.tenants[0]?.id : undefined;
+  const pdfTenant = Array.isArray(allTenants)
+    ? allTenants.find((t: any) => t.id === firstTenantId) ?? null
+    : null;
 
 console.log(errors)
 
@@ -243,8 +261,8 @@ console.log(errors)
           <div className="w-full h-[78vh] border rounded-md overflow-hidden">
             <PDFViewer width="100%" height="100%" showToolbar={false}>
               {pdfType === "section21"
-                ? <Section21NoticePDF data={getValues()} property={property} />
-                : <TenancyAgreementPDF data={getValues()} property={property} rentData={rents} />
+                ? <Section21NoticePDF data={getValues()} property={property} landlord={pdfLandlord} tenant={pdfTenant} />
+                : <TenancyAgreementPDF data={getValues()} property={property} rentData={rents} landlord={pdfLandlord} tenant={pdfTenant} />
               }
             </PDFViewer>
           </div>

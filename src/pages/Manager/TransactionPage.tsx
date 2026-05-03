@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Eye, AlertCircle, RefreshCw, Edit, MoreHorizontal, Trash, Building } from "lucide-react";
+import { Plus, Search, Eye, AlertCircle, RefreshCw, Edit, MoreHorizontal, Trash, Building, FileText, Bell, BookOpen } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
 import {
   deleteTransaction,
@@ -12,6 +12,11 @@ import {
   StatusTransaction,
 } from "@/redux/dataStore/transactionSlice";
 import { fetchRents } from "@/redux/dataStore/rentSlice";
+import { fetchPropertyParties } from "@/redux/dataStore/partySlice";
+import { fetchVendors } from "@/redux/dataStore/vendorSlice";
+import { fetchtenants } from "@/redux/dataStore/tenantSlice";
+import getApi from "@/helper/getApi";
+import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import {
@@ -34,8 +39,10 @@ import EditTransaction from "../EditTransaction";
 import { Badge } from "@/components/ui/badge";
 import { PDFViewer } from "@react-pdf/renderer";
 import TenantStatementPDF from "@/components/pdf/TenantStatementPDF";
+import RentReminderPDF from "@/components/pdf/RentReminderPDF";
+import ReferenceLetterPDF from "@/components/pdf/ReferenceLetterPDF";
 import { Dialog, DialogContent, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { FileText } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 // ── Column widths (must be static strings for Tailwind JIT to detect them) ─────
 const COL = {
@@ -125,6 +132,11 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any }> = ({ pro
   const dispatch = useAppDispatch();
   const { transaction, summary: backendSummary, totalPages, total, skip, take, loading, error } = useAppSelector((state) => state.transaction);
   const { rents } = useAppSelector((state) => state.rent);
+  const { propertyParties }: any = useAppSelector((state: any) => state.parties);
+  const { vendors }: any = useAppSelector((state: any) => state.vendors);
+  const { tenants: allTenants }: any = useAppSelector((state: any) => state.tenants);
+  const { user } = useAuth();
+  const userName = [user?.first_name, user?.last_name].filter(Boolean).join(" ") || user?.email || "";
 
   const [searchTerm, setSearchTerm]     = useState("");
   const [isAddOpen, setIsAddOpen]       = useState(false);
@@ -133,7 +145,10 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any }> = ({ pro
   const [editTx, setEditTx]             = useState<any>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "active">("all");
   const [pageSize, setPageSize]         = useState(10);
-  const [showStatement, setShowStatement] = useState(false);
+  const [showStatement, setShowStatement]       = useState(false);
+  const [showRentReminder, setShowRentReminder] = useState(false);
+  const [showRefLetter, setShowRefLetter]       = useState(false);
+  const [statementTxs, setStatementTxs]         = useState<any[]>([]);
 
   // Synced scrollbars
   const topScrollRef   = useRef<HTMLDivElement>(null);
@@ -183,6 +198,35 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any }> = ({ pro
       dispatch(fetchRents({ propertyId, page: 1, search: "" }));
     }
   }, [propertyId]);
+
+  // Load party/vendor/tenant data for PDFs
+  useEffect(() => {
+    dispatch(fetchPropertyParties(propertyId));
+    dispatch(fetchVendors({ page: 1, search: "" }));
+    dispatch(fetchtenants({ page: 1, search: "" }));
+  }, [dispatch, propertyId]);
+
+  const partyData = (propertyParties as any)?.data ?? propertyParties;
+  const pdfLandlord = Array.isArray(vendors)
+    ? vendors.find((v: any) => v.id === partyData?.VendorId) ?? null
+    : null;
+  const firstTenantId = Array.isArray(partyData?.tenants) ? partyData.tenants[0]?.id : undefined;
+  const pdfTenant = Array.isArray(allTenants)
+    ? allTenants.find((t: any) => t.id === firstTenantId) ?? null
+    : null;
+
+  const openStatement = useCallback(async () => {
+    try {
+      const access_token = await DEFAULT_COOKIE_GETTER("access_token");
+      const headers = { Authorization: `Bearer ${access_token}` };
+      const data: any = await getApi("transaction", `?propertyId=${propertyId}&skip=0&take=9999`, headers);
+      const rows: any[] = data?.transactions || data?.data || (Array.isArray(data) ? data : []);
+      setStatementTxs(rows.length > 0 ? rows : (transaction ?? []));
+    } catch {
+      setStatementTxs(transaction ?? []);
+    }
+    setShowStatement(true);
+  }, [propertyId, transaction]);
 
   const displayRows = transaction ?? [];
 
@@ -255,8 +299,14 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any }> = ({ pro
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight">Transactions</h1>
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => setShowStatement(true)}>
+            <Button size="sm" variant="outline" onClick={openStatement}>
               <FileText className="mr-1 h-4 w-4" /> Tenant Statement
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setShowRentReminder(true)}>
+              <Bell className="mr-1 h-4 w-4" /> Rent Reminder
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setShowRefLetter(true)}>
+              <BookOpen className="mr-1 h-4 w-4" /> Reference Letter
             </Button>
             <Button size="sm" onClick={() => setIsAddOpen(true)}>
               <Plus className="mr-1 h-4 w-4" /> Add Transaction
@@ -354,8 +404,8 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any }> = ({ pro
                   <div className={`${COL.netPaid}         px-2 py-1`} />
                   <div className={`${COL.chequeNo}        px-2 py-1`} />
                   <div className={`${COL.defaultExp}      px-2 py-1`} />
-                  <div className={`${COL.expDesc}         px-2 py-1`} />
-                 </div>
+                  <div className={`${COL.expDesc}         px-2 py-1 flex items-center`}>To Landlord</div>
+                </div>
                 {/* Meta */}
                 <div className="flex bg-gray-600 text-white">
                   <div className={`${COL.branch}  px-2 py-1 flex items-center`}>Branch</div>
@@ -636,14 +686,57 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any }> = ({ pro
           <div className="w-full h-[78vh] border rounded-md overflow-hidden">
             <PDFViewer width="100%" height="100%" showToolbar={false}>
               <TenantStatementPDF
-                transactions={displayRows}
+                transactions={statementTxs}
                 property={property}
                 rentData={rents}
+                tenant={pdfTenant}
               />
             </PDFViewer>
           </div>
           <DialogFooter className="pt-2 flex justify-end">
             <Button variant="outline" onClick={() => setShowStatement(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showRentReminder} onOpenChange={setShowRentReminder}>
+        <DialogContent className="sm:max-w-4xl h-[90vh] w-full">
+          <DialogTitle className="text-lg font-semibold">Rent Reminder</DialogTitle>
+          <div className="w-full h-[78vh] border rounded-md overflow-hidden">
+            <PDFViewer width="100%" height="100%" showToolbar={false}>
+              <RentReminderPDF
+                property={property}
+                rentData={rents}
+                netOutstanding={summary.netOutstanding}
+                dueDate={summary.dueDate}
+                userName={userName}
+                tenant={pdfTenant}
+              />
+            </PDFViewer>
+          </div>
+          <DialogFooter className="pt-2 flex justify-end">
+            <Button variant="outline" onClick={() => setShowRentReminder(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showRefLetter} onOpenChange={setShowRefLetter}>
+        <DialogContent className="sm:max-w-4xl h-[90vh] w-full">
+          <DialogTitle className="text-lg font-semibold">Reference Letter</DialogTitle>
+          <div className="w-full h-[78vh] border rounded-md overflow-hidden">
+            <PDFViewer width="100%" height="100%" showToolbar={false}>
+              <ReferenceLetterPDF
+                property={property}
+                rentData={rents}
+                netOutstanding={summary.netOutstanding}
+                dueDate={summary.dueDate}
+                userName={userName}
+                tenant={pdfTenant}
+              />
+            </PDFViewer>
+          </div>
+          <DialogFooter className="pt-2 flex justify-end">
+            <Button variant="outline" onClick={() => setShowRefLetter(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

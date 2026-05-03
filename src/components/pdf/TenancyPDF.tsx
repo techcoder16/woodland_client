@@ -31,10 +31,10 @@ const s21 = StyleSheet.create({
   footerLeft: { position: "absolute", bottom: 20, left: 50, fontSize: 8, color: "#888" },
 });
 
-export const Section21NoticePDF = ({ data, property }: { data: any; property?: any }) => {
-  const tenant = property?.parties?.find((p: any) => p.role === "TENANT")?.party ||
+export const Section21NoticePDF = ({ data, property, tenant: tenantProp, landlord: landlordProp }: { data: any; property?: any; tenant?: any; landlord?: any }) => {
+  const tenant = tenantProp || property?.parties?.find((p: any) => p.role === "TENANT")?.party ||
                  property?.tenants?.[0] || {};
-  const landlord = property?.parties?.find((p: any) => p.role === "LANDLORD")?.party ||
+  const landlord = landlordProp || property?.parties?.find((p: any) => p.role === "LANDLORD")?.party ||
                    property?.landlords?.[0] || {};
   const tenantName = [tenant.title, tenant.firstName || tenant.FirstName, tenant.lastName || tenant.SureName]
     .filter(Boolean).join(" ") || data.tenantName || "";
@@ -49,7 +49,7 @@ export const Section21NoticePDF = ({ data, property }: { data: any; property?: a
   const landlordAddress = [landlord.Address || landlord.addressLine1, landlord.Town || landlord.town]
     .filter(Boolean).join(", ");
   const tenantAddress = propertyAddress;
-  const accountNo = property?.propertyNo || property?.propertyNumber || "";
+  const accountNo = property?.propertyNo || (property?.propertyNumber != null ? String(property.propertyNumber) : "");
 
   return (
     <Document>
@@ -152,10 +152,10 @@ const Row = ({ label, children }: { label: string; children: React.ReactNode }) 
   </View>
 );
 
-export const TenancyAgreementPDF = ({ data, property, rentData }: { data: any; property?: any; rentData?: any }) => {
-  const tenant = property?.parties?.find((p: any) => p.role === "TENANT")?.party ||
+export const TenancyAgreementPDF = ({ data, property, rentData, tenant: tenantProp, landlord: landlordProp }: { data: any; property?: any; rentData?: any; tenant?: any; landlord?: any }) => {
+  const tenant = tenantProp || property?.parties?.find((p: any) => p.role === "TENANT")?.party ||
                  property?.tenants?.[0] || {};
-  const landlord = property?.parties?.find((p: any) => p.role === "LANDLORD")?.party ||
+  const landlord = landlordProp || property?.parties?.find((p: any) => p.role === "LANDLORD")?.party ||
                    property?.landlords?.[0] || {};
   const tenantName = [tenant.title, tenant.firstName || tenant.FirstName, tenant.lastName || tenant.SureName]
     .filter(Boolean).join(" ") || "";
@@ -169,7 +169,7 @@ export const TenancyAgreementPDF = ({ data, property, rentData }: { data: any; p
     property?.town || property?.towns || "",
     property?.postCode || "",
   ].filter(Boolean).join(" ");
-  const accountNo = property?.propertyNo || property?.propertyNumber || "";
+  const accountNo = property?.propertyNo || (property?.propertyNumber != null ? String(property.propertyNumber) : "");
 
   const housingActText = data.housingAct === "act1"
     ? "For Letting furnished dwelling house on an assured shorthold tenancy under Part 1 of the Housing Act 1988 amended in 1996"
@@ -179,9 +179,10 @@ export const TenancyAgreementPDF = ({ data, property, rentData }: { data: any; p
 
   const depositDeposits: any[] = Array.isArray(rentData?.Deposit) ? rentData.Deposit : [];
   const primaryDeposit = depositDeposits[0] || {};
-  const rentAmount = rentData?.Amount || "";
+  const rentAmount = rentData?.Amount || primaryDeposit.rent || "";
   const depositAmount = primaryDeposit.rent || "";
-  const termWeeks = primaryDeposit.month ? `${primaryDeposit.month} Weeks` : "";
+  const rentPer = primaryDeposit.per || "";
+  const termMonths = primaryDeposit.month ? `${primaryDeposit.month} Months` : "";
   const startDate = primaryDeposit.startsOn ? new Date(primaryDeposit.startsOn).toLocaleDateString("en-GB") : "";
   const endDate = primaryDeposit.closedOn ? new Date(primaryDeposit.closedOn).toLocaleDateString("en-GB") : "";
   const today = new Date().toLocaleDateString("en-GB", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
@@ -221,10 +222,10 @@ export const TenancyAgreementPDF = ({ data, property, rentData }: { data: any; p
             Together with the Fixtures, Furniture and Effect therein and more particularly specified in the Inventory thereof signed by the parties
           </Text>
         </Row>
-        <Row label="The Term:"><Text>A term certain of {termWeeks}</Text></Row>
+        <Row label="The Term:"><Text>A term certain of {termMonths}</Text></Row>
         <Row label=""><Text>From:  {startDate}</Text></Row>
         <Row label=""><Text>To:    {endDate}</Text></Row>
-        <Row label="The Rent:"><Text>£{rentAmount} per.</Text></Row>
+        <Row label="The Rent:"><Text>{rentAmount ? `£${rentAmount}` : ""}{rentPer ? ` per ${rentPer}` : ""}</Text></Row>
         <Row label="Payable:">
           <Text>Security Deposit:   {depositAmount ? `£${depositAmount}` : "Nil"}</Text>
           <Text>Rent ( in Advance):</Text>

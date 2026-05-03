@@ -11,6 +11,8 @@ import { useDispatch } from "react-redux";
 import { toast } from "sonner";
 import { useAppSelector } from "@/redux/reduxHooks";
 import { fetchManagementAgreement, upsertManagementAgreement } from "@/redux/dataStore/managementAgreementSlice";
+import { fetchPropertyParties } from "@/redux/dataStore/partySlice";
+import { fetchVendors } from "@/redux/dataStore/vendorSlice";
 import { cn } from "@/lib/utils";
 import SelectField from "@/utils/SelectedField";
 import { DateField } from "@/utils/DateField";
@@ -36,6 +38,8 @@ type ManagementAgreementFormData = z.infer<typeof managementAgreementSchema>;
 const ManagementAgreement: React.FC<{ propertyId: string; property?: any }> = ({ propertyId, property }) => {
   const dispatch = useDispatch<any>();
   const { managementAgreement } = useAppSelector((state) => state.managementAgreement);
+  const { propertyParties }: any = useAppSelector((state: any) => state.parties);
+  const { vendors }: any = useAppSelector((state: any) => state.vendors);
 
   const [showPdf, setShowPdf] = React.useState(false);
 
@@ -69,7 +73,14 @@ const ManagementAgreement: React.FC<{ propertyId: string; property?: any }> = ({
 
   useEffect(() => {
     dispatch(fetchManagementAgreement({ propertyId }));
+    dispatch(fetchPropertyParties(propertyId));
+    dispatch(fetchVendors({ page: 1, search: "" }));
   }, [dispatch, propertyId]);
+
+  const partyData = (propertyParties as any)?.data ?? propertyParties;
+  const pdfLandlord = Array.isArray(vendors)
+    ? vendors.find((v: any) => v.id === partyData?.VendorId) ?? null
+    : null;
 
   const handleDateChange = (name: keyof ManagementAgreementFormData, date: Date) => {
     setValue(name, date.toISOString());
@@ -228,7 +239,7 @@ const ManagementAgreement: React.FC<{ propertyId: string; property?: any }> = ({
           <DialogTitle className="text-lg font-semibold">Management Contract Preview</DialogTitle>
           <div className="w-full h-[78vh] border rounded-md overflow-hidden">
             <PDFViewer width="100%" height="100%" showToolbar={false}>
-              <ManagementContractPDF data={getValues()} property={property} />
+              <ManagementContractPDF data={getValues()} property={property} landlord={pdfLandlord} />
             </PDFViewer>
           </div>
           <DialogFooter className="pt-2 flex justify-end">
