@@ -22,7 +22,7 @@ export function buildPropertyFormData(data: Record<string, any>, isDraft: boolea
     } else if (typeof value === "boolean") {
       formData.append(key, JSON.stringify(value));
     } else if (value !== null && value !== undefined) {
-      if (key === "propertyFeature" || key === "selectPortals") {
+      if (key === "propertyFeature" || key === "selectPortals" || key === "photographs" || key === "floorPlans") {
         const arrayValue: any[] = Array.isArray(value)
           ? value
           : value === "" || !value ? [] : [value];

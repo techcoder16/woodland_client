@@ -1,9 +1,9 @@
 import { z } from "zod";
 
 const roomSchema = z.object({
-  title: z.string().optional(),
-  description: z.string().optional(),
-  dimensions: z.string().nullable().optional(),
+  name: z.string().optional(),
+  length: z.union([z.string(), z.number()]).optional(),
+  width: z.union([z.string(), z.number()]).optional(),
 });
 
   
@@ -15,6 +15,14 @@ z.object({
   for: z.string().nullable().default(null).describe("For field is required."),
   category: z.string().nullable().default(null).describe("Category is required."),
   propertyType: z.string().nullable().default(null).describe("Property type is required."),
+  propertyTypeCategory: z.string().nullable().default(null).describe("Property type category is required."),
+  bedrooms: z.union([z.string(), z.number()]).nullable().default(null).describe("Number of bedrooms."),
+  bathrooms: z.union([z.string(), z.number()]).nullable().default(null).describe("Number of bathrooms."),
+  wheelchairAccess: z.boolean().nullable().default(false).describe("Wheelchair access."),
+  hasGarden: z.boolean().nullable().default(false).describe("Garden."),
+  lift: z.boolean().nullable().default(false).describe("Lift."),
+  gas: z.boolean().nullable().default(false).describe("Gas."),
+  electricity: z.boolean().nullable().default(false).describe("Electricity."),
   internalReference: z.string().nullable().default(null).describe("Internal reference is required."),
   price: z.string().nullable().default(null).describe("Price is required."),
   priceQualifier: z.string().nullable().default(null).describe("Price qualifier is required."),
@@ -61,7 +69,6 @@ propertyFeature: z.array(z.string()).optional().or(z.string().transform(val => v
   occupantMobile: z.string().nullable().default(null).describe("Occupant mobile is required."),
   Solicitor:z.string().nullable(),
   council: z.string().nullable().default(null).describe("Council is required."),
-  councilBrand: z.string().nullable().default(null).describe("Council brand is required."),
   freeholder: z.string().nullable().default(null).describe("Freeholder is required."),
   freeholderContract: z.string().nullable().default(null).describe("Freeholder contract is required."),
   freeholderAddress: z.string().nullable().default(null).describe("Freeholder address is required."),
@@ -71,15 +78,23 @@ propertyFeature: z.array(z.string()).optional().or(z.string().transform(val => v
   photographs: z.array(
     z.string().regex(/^data:image\/[a-zA-Z+]+;base64,/, {
       message: "Only valid image files in Base64 format are allowed.",
-    }),
-    { required_error: "At least one photograph is required." }
-  ),
+    })
+  ).optional().default([]),
   floorPlans: z.array(
     z.string().regex(/^data:image\/[a-zA-Z+]+;base64,/, {
       message: "Only valid floor plan images in Base64 format are allowed.",
-    }),
-    { required_error: "At least one floor plan is required." }
-  ),
+    })
+  ).optional().default([]),
+
+  epcCertificate: z.any().nullable().optional(),
+  gasCertificate: z.any().nullable().optional(),
+  electricityCertificate: z.any().nullable().optional(),
+  fireRiskAssessment: z.any().nullable().optional(),
+  insuranceCertificate: z.any().nullable().optional(),
+  emergencyLightingCertificate: z.any().nullable().optional(),
+  propertyLicense: z.any().nullable().optional(),
+  rentalTenure: z.string().nullable().optional(),
+  rentalDescription: z.string().nullable().optional(),
 
   epcChartOption: z.enum(["ratings", "upload"]).default("ratings"),
   currentEERating: z.string().optional(),

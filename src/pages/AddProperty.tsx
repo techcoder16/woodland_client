@@ -8,19 +8,33 @@ import { useToast } from "@/components/ui/use-toast";
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Check, ArrowLeft, ArrowRight, AlertCircle } from "lucide-react";
-import Attachments from "./Property/Attachments";
 import LoadingBar from "react-top-loading-bar";
 import PropertyInfo from "./Property/PropertyInfo";
-import Description from "./Property/Descriptions";
-import MoreInfo from "./Property/MoreInfo";
-import PhotosFloorFPCPlan from "./Property/PhotosFloorFPCPlanProps";
-import Publish from "./Property/Publish";
+import DocumentsCertificates from "./Property/DocumentsCertificates";
+import RentalAgreement from "./Property/RentalAgreement";
+import ManagementAgreement from "./Manager/ManagementAgreement";
+import TenancyAgreement from "./Manager/TenancyAgreement";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { post } from "@/helper/api";
+import { post, patch } from "@/helper/api";
 import { propertySchema } from "@/schema/property.schema";
 import { buildPropertyFormData } from "@/helper/buildPropertyFormData";
 import { parseApiError } from "@/helper/parseApiError";
-import { STEP_LABELS, STEP_FIELDS } from "@/constants/propertySteps";
+
+const STEP_LABELS = [
+  "Standard Info",
+  "Documents/Certificates",
+  "Rental Agreement",
+  "Management Agreement",
+  "Tenancy Agreement",
+] as const;
+
+const STEP_FIELDS: string[][] = [
+  ["vendor", "for", "postCode", "propertyName", "addressLine1", "addressLine2", "town", "country", "propertyTypeCategory", "bedrooms", "bathrooms", "wheelchairAccess", "hasGarden", "lift", "gas", "electricity", "rooms"],
+  ["photographs", "floorPlans", "epcCertificate", "gasCertificate", "electricityCertificate", "fireRiskAssessment", "insuranceCertificate", "emergencyLightingCertificate", "propertyLicense"],
+  ["rentalTenure", "rentalDescription"],
+  [],
+  [],
+];
 
 type FormData = z.infer<typeof propertySchema>;
 
@@ -47,7 +61,26 @@ const AddProperty = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [savedProperty, setSavedProperty] = useState<any>(null);
   const isLastStep = currentStep === STEP_LABELS.length - 1;
+  const requiresSavedProperty = currentStep >= 3; // Management / Tenancy Agreement steps
+
+  const saveDraft = async (): Promise<any | null> => {
+    const formData = buildPropertyFormData(form.getValues() as any, true);
+    const { data: apiData, error }: any = await post("properties", formData);
+
+    if (error?.message) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+      return null;
+    }
+
+    const property = apiData?.property;
+    if (property?.id) {
+      setSavedProperty(property);
+      return property;
+    }
+    return null;
+  };
 
   const onSubmit = async (data: FormData, isDraft: boolean = false) => {
     if (!isDraft) {
@@ -55,7 +88,7 @@ const AddProperty = () => {
       if (!isValid) {
         toast({
           title: "Validation Error",
-          description: "Please fill in all required fields before publishing.",
+          description: "Please fix the highlighted fields before publishing.",
           variant: "destructive",
         });
         return;
@@ -67,7 +100,11 @@ const AddProperty = () => {
 
     try {
       const formData = buildPropertyFormData(data as any, isDraft);
-      const { data: apiData, error }: any = await post("properties", formData);
+      if (savedProperty?.id) formData.append("id", savedProperty.id);
+
+      const { data: apiData, error }: any = savedProperty?.id
+        ? await patch(`properties/${savedProperty.id}`, formData)
+        : await post("properties", formData);
       setProgress(60);
 
       if (error?.message) {
@@ -77,12 +114,15 @@ const AddProperty = () => {
 
       const propertyId = apiData?.property?.id;
       if (propertyId?.length > 0) {
+        setSavedProperty(apiData.property);
         toast({
           title: "Success",
           description: isDraft ? "Property saved as draft successfully!" : apiData.message || "Property published successfully!",
         });
         setProgress(100);
-        setTimeout(() => { window.location.href = "/properties"; }, 1500);
+        if (!isDraft) {
+          setTimeout(() => { window.location.href = "/properties"; }, 1500);
+        }
       } else {
         throw new Error("Invalid Property ID or unexpected response format.");
       }
@@ -102,21 +142,37 @@ const AddProperty = () => {
 
   const handleNext = async () => {
     const isValid = await form.trigger(STEP_FIELDS[currentStep] as any, { shouldFocus: true });
-    if (isValid) {
-      form.clearErrors();
-      setCurrentStep(prev => prev + 1);
-    } else {
+    if (!isValid) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all required fields on this step before proceeding.",
+        description: "Please fix the highlighted fields on this step before proceeding.",
         variant: "destructive",
       });
+      return;
     }
+
+    const nextStep = currentStep + 1;
+
+    if (nextStep >= 3 && !savedProperty?.id) {
+      setIsSubmitting(true);
+      const property = await saveDraft();
+      setIsSubmitting(false);
+      if (!property) {
+        toast({
+          title: "Could not continue",
+          description: "The property must be saved before continuing to agreements.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    form.clearErrors();
+    setCurrentStep(nextStep);
   };
 
-  const handlePrevious = () => setCurrentStep(prev => Math.max(prev - 1, 0));
+  const handlePrevious = () => setCurrentStep((prev) => Math.max(prev - 1, 0));
 
-  // Only pass errors to the visible step — prevents all 6 components re-rendering on every validation change
   const activeErrors = form.formState.errors;
   const noErrors = {};
 
@@ -154,20 +210,17 @@ const AddProperty = () => {
                 <PropertyInfo watch={watch} register={form.register} errors={currentStep === 0 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
               </div>
               <div className={currentStep !== 1 ? "hidden" : ""}>
-                <Description watch={watch} register={form.register} errors={currentStep === 1 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
+                <DocumentsCertificates watch={watch} register={form.register} errors={currentStep === 1 ? activeErrors : noErrors} setValue={form.setValue} />
               </div>
               <div className={currentStep !== 2 ? "hidden" : ""}>
-                <MoreInfo watch={watch} register={form.register} errors={currentStep === 2 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
+                <RentalAgreement watch={watch} register={form.register} errors={currentStep === 2 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
               </div>
-              <div className={currentStep !== 3 ? "hidden" : ""}>
-                <PhotosFloorFPCPlan control={form.control} watch={watch} register={form.register} errors={currentStep === 3 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} unregister={form.unregister} />
-              </div>
-              <div className={currentStep !== 4 ? "hidden" : ""}>
-                <Attachments watch={watch} register={form.register} errors={currentStep === 4 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
-              </div>
-              <div className={currentStep !== 5 ? "hidden" : ""}>
-                <Publish watch={watch} register={form.register} errors={currentStep === 5 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
-              </div>
+              {currentStep === 3 && requiresSavedProperty && savedProperty?.id && (
+                <ManagementAgreement propertyId={savedProperty.id} property={savedProperty} />
+              )}
+              {currentStep === 4 && requiresSavedProperty && savedProperty?.id && (
+                <TenancyAgreement propertyId={savedProperty.id} property={savedProperty} />
+              )}
 
               {Object.keys(activeErrors).length > 0 && (
                 <Alert variant="destructive" className="mt-6">
@@ -175,12 +228,9 @@ const AddProperty = () => {
                   <AlertDescription>
                     <div className="font-semibold mb-2">Please fix the following errors:</div>
                     <ul className="list-disc list-inside space-y-1 text-sm">
-                      {Object.entries(activeErrors).slice(0, 5).map(([key, error]: any) => (
+                      {Object.entries(activeErrors).map(([key, error]: any) => (
                         <li key={key}>{key}: {error?.message || "This field is required"}</li>
                       ))}
-                      {Object.keys(activeErrors).length > 5 && (
-                        <li className="text-xs italic">... and {Object.keys(activeErrors).length - 5} more error(s)</li>
-                      )}
                     </ul>
                   </AlertDescription>
                 </Alert>
@@ -200,7 +250,7 @@ const AddProperty = () => {
                     Publish <Check className="ml-2 h-4 w-4" />
                   </Button>
                 ) : (
-                  <Button type="button" onClick={handleNext}>
+                  <Button type="button" onClick={handleNext} disabled={isSubmitting}>
                     Next <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 )}

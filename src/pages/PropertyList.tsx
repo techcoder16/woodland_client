@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { MainNav } from "@/components/MainNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,7 +25,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Pencil, Trash, Filter, SquareChartGantt, Search, Plus, Building, User, Edit, MoreHorizontal, FileText, CheckCircle } from "lucide-react";
+import { Pencil, Trash, Filter, SquareChartGantt, Search, Plus, Building, User, Edit, MoreHorizontal, FileText, CheckCircle, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";

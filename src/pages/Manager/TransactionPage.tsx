@@ -173,16 +173,23 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any }> = ({ pro
   };
 
   // Server-side pagination for display
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const handle = setTimeout(() => setDebouncedSearch(searchTerm), 300);
+    return () => clearTimeout(handle);
+  }, [searchTerm]);
+
   const loadTransactions = useCallback(() => {
     const s = (currentPage - 1) * pageSize;
     if (statusFilter === "draft") {
-      dispatch(getDraftTransactions({ propertyId, skip: s, take: pageSize }));
+      dispatch(getDraftTransactions({ propertyId, search: debouncedSearch, skip: s, take: pageSize }));
     } else if (statusFilter === "active") {
-      dispatch(getActiveTransactions({ propertyId, skip: s, take: pageSize }));
+      dispatch(getActiveTransactions({ propertyId, search: debouncedSearch, skip: s, take: pageSize }));
     } else {
-      dispatch(fetchTransaction({ propertyId, skip: s, take: pageSize }));
+      dispatch(fetchTransaction({ propertyId, search: debouncedSearch, skip: s, take: pageSize }));
     }
-  }, [dispatch, propertyId, currentPage, pageSize, statusFilter]);
+  }, [dispatch, propertyId, currentPage, pageSize, statusFilter, debouncedSearch]);
 
   // Summary fetched once from dedicated backend endpoint — never changes with page
   const loadSummary = useCallback(() => {

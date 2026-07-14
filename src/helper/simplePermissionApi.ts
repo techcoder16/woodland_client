@@ -56,7 +56,7 @@ export const userApi = {
     internal_info?: string;
     role: string;
   }): Promise<User> => {
-    const response = await post<User>('auth/register', userData);
+    const response = await post<User>('user', userData);
     if (response.error) throw new Error(response.error.message);
     return response.data!;
   },

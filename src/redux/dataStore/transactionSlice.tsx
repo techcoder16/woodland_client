@@ -87,30 +87,36 @@ const initialState: TransactionState = {
 // Fetch all transactions for a property with pagination and status filtering
 export const fetchTransaction = createAsyncThunk(
   "transaction/fetchTransaction",
-  async ({ 
-    propertyId, 
-    status, 
-    skip = 0, 
-    take = 10 
-  }: { 
-    propertyId: string; 
-    status?: 'ACTIVE' | 'DRAFT'; 
-    skip?: number; 
-    take?: number; 
+  async ({
+    propertyId,
+    status,
+    search,
+    skip = 0,
+    take = 10
+  }: {
+    propertyId: string;
+    status?: 'ACTIVE' | 'DRAFT';
+    search?: string;
+    skip?: number;
+    take?: number;
   }, { rejectWithValue }) => {
     try {
       const access_token = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = { Authorization: `Bearer ${access_token}` };
-      
+
       // Build query parameters
       const params = new URLSearchParams({
         propertyId,
         skip: skip.toString(),
         take: take.toString()
       });
-      
+
       if (status) {
         params.append('status', status);
+      }
+
+      if (search) {
+        params.append('search', search);
       }
       
       console.log('Fetching transactions with params:', params.toString());
@@ -258,25 +264,31 @@ export const publishDraftTransaction = createAsyncThunk(
 // Get draft transactions (using drafts endpoint)
 export const getDraftTransactions = createAsyncThunk(
   "transaction/getDraftTransactions",
-  async ({ 
-    propertyId, 
-    skip = 0, 
-    take = 10 
-  }: { 
-    propertyId: string; 
-    skip?: number; 
-    take?: number; 
+  async ({
+    propertyId,
+    search,
+    skip = 0,
+    take = 10
+  }: {
+    propertyId: string;
+    search?: string;
+    skip?: number;
+    take?: number;
   }, { rejectWithValue }) => {
     try {
       const access_token = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = { Authorization: `Bearer ${access_token}` };
-      
+
       const params = new URLSearchParams({
         propertyId,
         skip: skip.toString(),
         take: take.toString()
       });
-      
+
+      if (search) {
+        params.append('search', search);
+      }
+
       const data = await getApi('transaction/drafts', `?${params.toString()}`, headers) as TransactionResponse;
       return {
         transactions: data?.transactions || [],
@@ -293,26 +305,32 @@ export const getDraftTransactions = createAsyncThunk(
 // Get active transactions (using main endpoint with status filter)
 export const getActiveTransactions = createAsyncThunk(
   "transaction/getActiveTransactions",
-  async ({ 
-    propertyId, 
-    skip = 0, 
-    take = 10 
-  }: { 
-    propertyId: string; 
-    skip?: number; 
-    take?: number; 
+  async ({
+    propertyId,
+    search,
+    skip = 0,
+    take = 10
+  }: {
+    propertyId: string;
+    search?: string;
+    skip?: number;
+    take?: number;
   }, { rejectWithValue }) => {
     try {
       const access_token = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = { Authorization: `Bearer ${access_token}` };
-      
+
       const params = new URLSearchParams({
         propertyId,
         skip: skip.toString(),
         take: take.toString(),
         status: 'ACTIVE'
       });
-      
+
+      if (search) {
+        params.append('search', search);
+      }
+
       const data = await getApi('transaction', `?${params.toString()}`, headers) as TransactionResponse;
       return {
         transactions: data?.transactions || [],

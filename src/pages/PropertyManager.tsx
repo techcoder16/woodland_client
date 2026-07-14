@@ -44,8 +44,16 @@ const PropertyManager = () => {
   );
 
   useEffect(() => {
-    dispatch(fetchProperties({ page: currentPage, search: searchTerm }));
-  }, [dispatch, currentPage, searchTerm]);
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus]);
+
+  useEffect(() => {
+    dispatch(fetchProperties({
+      page: currentPage,
+      search: searchTerm,
+      status: filterStatus === "all" ? undefined : filterStatus,
+    }));
+  }, [dispatch, currentPage, searchTerm, filterStatus]);
 
   const handlePageChange = (page: number) => {
     if (page > 0 && page <= totalPages) setCurrentPage(page);
@@ -59,15 +67,10 @@ const PropertyManager = () => {
     navigate(`/property/edit`, { state: { property } });
   };
 
-  const filteredProperties = properties.filter(property => {
-    // Exclude draft properties from finance view
-    if (property.propertyStatus === 'DRAFT') {
-      return false;
-    }
-    
-    // Apply status filter
-    return filterStatus === "all" || (property.status && property.status.toLowerCase() === filterStatus.toLowerCase());
-  });
+  // Exclude draft properties from finance view (status/search filters are applied server-side)
+  const filteredProperties = properties.filter(
+    (property) => property.propertyStatus !== 'DRAFT'
+  );
 
   const getStatusColor = (status: string) => {
     if (!status) return 'bg-gray-100 text-gray-800';

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
 import { deleteTenant, fetchtenants } from "@/redux/dataStore/tenantSlice";
 import { fetchVendors } from "@/redux/dataStore/vendorSlice";
+import VendorPicker from "@/utils/VendorPicker";
 import { fetchPropertyParties, upsertPropertyParty } from "@/redux/dataStore/partySlice";
 import { Button } from "@/components/ui/button";
 import {
@@ -277,22 +278,16 @@ console.log("Selected Tenants:", selectedTenants);
               <Building2 className="h-6 w-6 text-red-500 mb-2" /> Landlord Details
             </h2>
 
-            {/* <label className="block mt-4 mb-2 text-lg font-semibold text-gray-700">Select Landlord</label> */}
-            <select
-              value={selectedLandlord?.id || ""}
-              onChange={e => {
-                const landlord = vendors.find((l: any) => l.id === e.target.value);
+            <VendorPicker
+              label="Select Landlord"
+              name="landlord"
+              watch={() => selectedLandlord?.id || ""}
+              setValue={(_name: string, value: string) => {
+                const landlord = vendors.find((l: any) => l.id === value);
                 setSelectedLandlord(landlord || null);
               }}
-              className="w-full border rounded-md bg-transparent px-4 py-2 text-sm shadow-sm  mb-2"
-            >
-              <option value="">Select a landlord</option>
-              {vendors.map(landlord => (
-                <option className="bg-transparent" key={landlord.id} value={landlord.id}>
-                  {landlord.firstName} {landlord.lastName}
-                </option>
-              ))}
-            </select>
+              clearErrors={() => {}}
+            />
 
             {vendorLoading ? (
               <div className="flex items-center space-x-2">
@@ -309,19 +304,10 @@ console.log("Selected Tenants:", selectedTenants);
                     <strong>Email:</strong> {selectedLandlord.email}
                   </p>
                   <p>
-                    <strong>Phone:</strong> {selectedLandlord.phoneMobile}
-                  </p>
-                  <p>
-                    <strong>Company:</strong> {selectedLandlord.company}
+                    <strong>Phone:</strong> {selectedLandlord.phone}
                   </p>
                   <p>
                     <strong>Address:</strong> {selectedLandlord.addressLine1}
-                  </p>
-                  <p>
-                    <strong>Phone Home:</strong> {selectedLandlord.phoneHome}
-                  </p>
-                  <p>
-                    <strong>Phone Work:</strong> {selectedLandlord.phoneWork}
                   </p>
                 </div>
               </div>
@@ -446,8 +432,6 @@ console.log("Selected Tenants:", selectedTenants);
           <PDFViewer width="100%" height="100%">
             <EnvelopePDF
               recipient={{
-                title: selectedLandlord?.title || "",
-
                 name: `${selectedLandlord?.firstName} ${selectedLandlord?.lastName}`,
                 addressLine1: selectedLandlord?.addressLine1 || "",
                 city: selectedLandlord?.city || "",

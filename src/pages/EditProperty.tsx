@@ -9,23 +9,35 @@ import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Check, ArrowLeft, ArrowRight, AlertCircle } from "lucide-react";
 import { useLocation } from "react-router-dom";
-import Attachments from "./Property/Attachments";
 import LoadingBar from "react-top-loading-bar";
 import PropertyInfo from "./Property/PropertyInfo";
-import Description from "./Property/Descriptions";
-import MoreInfo from "./Property/MoreInfo";
-import PhotosFloorFPCPlan from "./Property/PhotosFloorFPCPlanProps";
-import Publish from "./Property/Publish";
+import DocumentsCertificates from "./Property/DocumentsCertificates";
+import RentalAgreement from "./Property/RentalAgreement";
+import ManagementAgreement from "./Manager/ManagementAgreement";
+import TenancyAgreement from "./Manager/TenancyAgreement";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { patch } from "@/helper/api";
 import { propertySchema } from "@/schema/property.schema";
 import { buildPropertyFormData } from "@/helper/buildPropertyFormData";
 import { parseApiError } from "@/helper/parseApiError";
-import { STEP_LABELS, STEP_FIELDS } from "@/constants/propertySteps";
+
+const STEP_LABELS = [
+  "Standard Info",
+  "Documents/Certificates",
+  "Rental Agreement",
+  "Management Agreement",
+  "Tenancy Agreement",
+] as const;
+
+const STEP_FIELDS: string[][] = [
+  ["vendor", "for", "postCode", "propertyName", "addressLine1", "addressLine2", "town", "country", "propertyTypeCategory", "bedrooms", "bathrooms", "wheelchairAccess", "hasGarden", "lift", "gas", "electricity", "rooms"],
+  ["photographs", "floorPlans", "epcCertificate", "gasCertificate", "electricityCertificate", "fireRiskAssessment", "insuranceCertificate", "emergencyLightingCertificate", "propertyLicense"],
+  ["rentalTenure", "rentalDescription"],
+  [],
+  [],
+];
 
 type FormData = z.infer<typeof propertySchema>;
-
-// Module-level helpers — no re-creation on each render
 
 function splitFeeValue(value: string) {
   if (!value) return { amount: "", type: "" };
@@ -61,14 +73,12 @@ const EditProperty = () => {
   const location = useLocation();
   const { toast } = useToast();
 
-  // Stable reference — only recomputes when the property ID actually changes
   const property = useMemo(
     () => location.state?.property,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [location.state?.property?.id]
   );
 
-  // Transform raw backend data into form-compatible values without mutating the source
   const transformedVendorData = useMemo((): FormData | Record<string, never> => {
     if (!property) return {};
 
@@ -83,6 +93,13 @@ const EditProperty = () => {
       price_select: priceParts.type,
       country: property.country ?? "",
       vendor: property.vendorId ?? "",
+      bedrooms: property.bedrooms ?? "",
+      bathrooms: property.bathrooms ?? "",
+      wheelchairAccess: toBoolean(property.wheelchairAccess),
+      hasGarden: toBoolean(property.hasGarden),
+      lift: toBoolean(property.lift),
+      gas: toBoolean(property.gas),
+      electricity: toBoolean(property.electricity),
       nonGasProperty: toBoolean(property.nonGasProperty),
       showOnWebsite: toBoolean(property.showOnWebsite),
       newHome: toBoolean(property.newHome),
@@ -115,7 +132,6 @@ const EditProperty = () => {
 
   const loadedPropertyId = useRef<string | null>(null);
 
-  // Reset form only when a different property is loaded
   useEffect(() => {
     if (property?.id && property.id !== loadedPropertyId.current) {
       reset(transformedVendorData as FormData, {
@@ -129,7 +145,6 @@ const EditProperty = () => {
       });
       loadedPropertyId.current = property.id;
     }
-    // Intentionally omitting transformedVendorData and reset — only re-run when the property ID changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [property?.id]);
 
@@ -142,17 +157,17 @@ const EditProperty = () => {
     const isValid = await form.trigger(STEP_FIELDS[currentStep] as any, { shouldFocus: true });
     if (isValid) {
       form.clearErrors();
-      setCurrentStep(prev => prev + 1);
+      setCurrentStep((prev) => prev + 1);
     } else {
       toast({
         title: "Validation Error",
-        description: "Please fill in all required fields on this step before proceeding.",
+        description: "Please fix the highlighted fields on this step before proceeding.",
         variant: "destructive",
       });
     }
   };
 
-  const handlePrevious = () => setCurrentStep(prev => Math.max(prev - 1, 0));
+  const handlePrevious = () => setCurrentStep((prev) => Math.max(prev - 1, 0));
 
   const onSubmit = async (data: FormData, isDraft: boolean = false) => {
     if (!isDraft) {
@@ -160,7 +175,7 @@ const EditProperty = () => {
       if (!isValid) {
         toast({
           title: "Validation Error",
-          description: "Please fill in all required fields before publishing.",
+          description: "Please fix the highlighted fields before publishing.",
           variant: "destructive",
         });
         return;
@@ -189,7 +204,9 @@ const EditProperty = () => {
           description: isDraft ? "Property saved as draft successfully!" : apiData.message || "Property updated successfully!",
         });
         setProgress(100);
-        setTimeout(() => { window.location.href = "/properties"; }, 1500);
+        if (!isDraft) {
+          setTimeout(() => { window.location.href = "/properties"; }, 1500);
+        }
       } else {
         throw new Error("Invalid Property ID or unexpected response format.");
       }
@@ -207,7 +224,6 @@ const EditProperty = () => {
 
   if (!property) return <div>Loading...</div>;
 
-  // Only pass errors to the visible step — prevents all 6 components re-rendering on every validation change
   const activeErrors = form.formState.errors;
   const noErrors = {};
 
@@ -252,20 +268,17 @@ const EditProperty = () => {
                 <PropertyInfo watch={watch} register={form.register} errors={currentStep === 0 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
               </div>
               <div className={currentStep !== 1 ? "hidden" : ""}>
-                <Description watch={watch} register={form.register} errors={currentStep === 1 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
+                <DocumentsCertificates watch={watch} register={form.register} errors={currentStep === 1 ? activeErrors : noErrors} setValue={form.setValue} />
               </div>
               <div className={currentStep !== 2 ? "hidden" : ""}>
-                <MoreInfo watch={watch} register={form.register} errors={currentStep === 2 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
+                <RentalAgreement watch={watch} register={form.register} errors={currentStep === 2 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
               </div>
-              <div className={currentStep !== 3 ? "hidden" : ""}>
-                <PhotosFloorFPCPlan control={form.control} watch={watch} register={form.register} errors={currentStep === 3 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} unregister={form.unregister} />
-              </div>
-              <div className={currentStep !== 4 ? "hidden" : ""}>
-                <Attachments watch={watch} register={form.register} errors={currentStep === 4 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
-              </div>
-              <div className={currentStep !== 5 ? "hidden" : ""}>
-                <Publish watch={watch} register={form.register} errors={currentStep === 5 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
-              </div>
+              {currentStep === 3 && (
+                <ManagementAgreement propertyId={property.id} property={property} />
+              )}
+              {currentStep === 4 && (
+                <TenancyAgreement propertyId={property.id} property={property} />
+              )}
 
               {Object.keys(activeErrors).length > 0 && (
                 <Alert variant="destructive" className="mt-6">
@@ -273,12 +286,9 @@ const EditProperty = () => {
                   <AlertDescription>
                     <div className="font-semibold mb-2">Please fix the following errors:</div>
                     <ul className="list-disc list-inside space-y-1 text-sm">
-                      {Object.entries(activeErrors).slice(0, 5).map(([key, error]: any) => (
+                      {Object.entries(activeErrors).map(([key, error]: any) => (
                         <li key={key}>{key}: {error?.message || "This field is required"}</li>
                       ))}
-                      {Object.keys(activeErrors).length > 5 && (
-                        <li className="text-xs italic">... and {Object.keys(activeErrors).length - 5} more error(s)</li>
-                      )}
                     </ul>
                   </AlertDescription>
                 </Alert>

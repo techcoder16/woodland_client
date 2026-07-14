@@ -253,6 +253,7 @@ const UserManagement: React.FC = () => {
                 </form>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
 
           <Table>

@@ -80,6 +80,7 @@ const CreateUser: React.FC = () => {
 
       // If user role, assign selected screens
       if (formData.role === Role.User && selectedScreens.length > 0) {
+        const failedScreens: string[] = [];
         for (const screenId of selectedScreens) {
           try {
             await permissionApi.createPermission({
@@ -87,10 +88,15 @@ const CreateUser: React.FC = () => {
               screenId: screenId
             });
           } catch (error) {
-            console.log(`Permission might already exist for screen ${screenId}`);
+            console.error(`Failed to assign screen ${screenId}:`, error);
+            failedScreens.push(screenId);
           }
         }
-        toast.success('Screen permissions assigned successfully!');
+        if (failedScreens.length > 0) {
+          toast.error(`Failed to assign ${failedScreens.length} screen(s). Please assign them manually.`);
+        } else {
+          toast.success('Screen permissions assigned successfully!');
+        }
       }
 
       // Reset form

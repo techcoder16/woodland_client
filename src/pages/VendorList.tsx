@@ -115,7 +115,6 @@ const VendorList = () => {
                     <th className="px-4 py-3 text-left text-sm font-medium">Vendor</th>
                     <th className="px-4 py-3 text-left text-sm font-medium">Address</th>
                     <th className="px-4 py-3 text-left text-sm font-medium">Contact</th>
-                    <th className="px-4 py-3 text-center text-sm font-medium">Status</th>
                     <th className="px-4 py-3 text-center text-sm font-medium">Actions</th>
                   </tr>
                 </thead>
@@ -124,11 +123,8 @@ const VendorList = () => {
                     vendors.map((vendor: any) => (
                       <tr key={vendor.id} className="border-b hover:bg-muted/50 transition-colors">
                         <td className="px-4 py-3">
-                          <div className="space-y-1">
-                            <div className="font-medium">
-                              {vendor.title} {vendor.firstName} {vendor.lastName}
-                            </div>
-                            <div className="text-sm text-muted-foreground">{vendor.salutation}</div>
+                          <div className="font-medium">
+                            {vendor.firstName} {vendor.lastName}
                           </div>
                         </td>
                         <td className="px-4 py-3">
@@ -143,19 +139,8 @@ const VendorList = () => {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <Phone className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">{vendor.phoneHome}</span>
+                            <span className="text-sm">{vendor.phone}</span>
                           </div>
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <span
-                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                              vendor.status === "Active"
-                                ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                                : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                            }`}
-                          >
-                            {vendor.status}
-                          </span>
                         </td>
                         <td className="px-4 py-3 text-center">
                           <DropdownMenu>
@@ -209,21 +194,10 @@ const VendorList = () => {
                           {vendor.firstName?.[0]}
                           {vendor.lastName?.[0]}
                         </div>
-                        {/* Name and Status */}
+                        {/* Name */}
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-sm truncate">
-                            {vendor.title} {vendor.firstName} {vendor.lastName}
-                          </div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span
-                              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                                vendor.status === "Active"
-                                  ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                                  : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                              }`}
-                            >
-                              {vendor.status}
-                            </span>
+                            {vendor.firstName} {vendor.lastName}
                           </div>
                         </div>
                       </div>
@@ -270,18 +244,10 @@ const VendorList = () => {
                       )}
 
                       {/* Phone */}
-                      {vendor.phoneHome && (
+                      {vendor.phone && (
                         <div className="flex items-center gap-2">
                           <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                          <span className="flex-1">{vendor.phoneHome}</span>
-                        </div>
-                      )}
-
-                      {/* Salutation */}
-                      {vendor.salutation && (
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                          <span className="flex-1 text-muted-foreground">{vendor.salutation}</span>
+                          <span className="flex-1">{vendor.phone}</span>
                         </div>
                       )}
                     </div>

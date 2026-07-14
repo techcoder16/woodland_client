@@ -17,12 +17,8 @@ const VendorPdf = ({ vendor }) => {
     {
       title: "Personal Information",
       fields: [
-        { label: "Type", value: vendor.type },
-        { label: "Title", value: vendor.title },
         { label: "First Name", value: vendor.firstName },
         { label: "Last Name", value: vendor.lastName },
-        { label: "Company", value: vendor.company },
-        { label: "Salutation", value: vendor.salutation },
       ]
     },
     {
@@ -33,45 +29,8 @@ const VendorPdf = ({ vendor }) => {
         { label: "Town", value: vendor.town },
         { label: "Post Code", value: vendor.postCode },
         { label: "Country", value: vendor.country },
-        { label: "Phone (Home)", value: vendor.phoneHome },
-        { label: "Phone (Work)", value: vendor.phoneWork },
-        { label: "Phone (Mobile)", value: vendor.phoneMobile },
+        { label: "Phone", value: vendor.phone },
         { label: "Email", value: vendor.email },
-        { label: "Website", value: vendor.website },
-        { label: "Fax", value: vendor.fax },
-        { label: "Pager", value: vendor.pager },
-      ]
-    },
-    {
-      title: "Personal Details",
-      fields: [
-        { label: "Birthplace", value: vendor.birthplace },
-        { label: "Nationality", value: vendor.nationality },
-        { label: "Passport Number", value: vendor.passportNumber },
-      ]
-    },
-    {
-      title: "Business Information",
-      fields: [
-        { label: "Status", value: vendor.status },
-        { label: "Branch", value: vendor.branch },
-        { label: "Source", value: vendor.source },
-        { label: "Negotiator", value: vendor.negotiator },
-        { label: "VAT Number", value: vendor.vatNumber },
-      ]
-    },
-    {
-      title: "Fees & Financial Details",
-      fields: [
-        { label: "Sales Fee", value: vendor.salesFee },
-        { label: "Management Fee", value: vendor.managementFee },
-        { label: "Finders Fee", value: vendor.findersFee },
-        { label: "Sales Fee (A)", value: vendor.salesFeeA },
-        { label: "Management Fee (A)", value: vendor.managementFeeA },
-        { label: "Finders Fee (A)", value: vendor.findersFeeA },
-        { label: "NRL Tax", value: vendor.nrlTax },
-        { label: "NRL Reference", value: vendor.nrlRef },
-        { label: "NRL Rate", value: vendor.nrlRate },
       ]
     },
     {
@@ -88,23 +47,13 @@ const VendorPdf = ({ vendor }) => {
         { label: "NIB", value: vendor.nib },
       ]
     },
-    {
-      title: "Additional Information",
-      fields: [
-        { label: "Comments", value: vendor.comments },
-        { label: "Other Info", value: vendor.otherInfo },
-        { label: "Label", value: vendor.label },
-        { label: "Landlord Full Name", value: vendor.landlordFullName },
-        { label: "Landlord Contact", value: vendor.landlordContact },
-      ]
-    }
   ];
 
   return (
     <>
-      <Button 
-        variant="ghost" 
-        size="icon" 
+      <Button
+        variant="ghost"
+        size="icon"
         className="hover:bg-muted"
         onClick={() => setOpen(true)}
       >
@@ -118,7 +67,7 @@ const VendorPdf = ({ vendor }) => {
               {vendor.firstName} {vendor.lastName} - Vendor Details
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="px-6 pb-6">
             <ScrollArea className="h-[60vh] w-full rounded-md border p-4">
               <div className="space-y-6">
@@ -135,7 +84,7 @@ const VendorPdf = ({ vendor }) => {
                               {field.label}
                             </p>
                             <p className="text-sm">
-                              {typeof field.value === 'boolean' 
+                              {typeof field.value === 'boolean'
                                 ? field.value ? 'Yes' : 'No'
                                 : field.value.toString()}
                             </p>
