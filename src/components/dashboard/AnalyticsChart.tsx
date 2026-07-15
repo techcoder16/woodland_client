@@ -70,10 +70,10 @@ export function AnalyticsChart() {
 
         // Fetch all analytics data
         const [revenueResponse, occupancyResponse, propertyTypeResponse, propertyStatusResponse] = await Promise.all([
-          get('/dashboard/analytics/revenue'),
-          get('/dashboard/analytics/occupancy'),
-          get('/dashboard/analytics/property-types'),
-          get('/dashboard/analytics/property-status')
+          get<typeof defaultRevenueData>('/dashboard/analytics/revenue'),
+          get<typeof defaultOccupancyData>('/dashboard/analytics/occupancy'),
+          get<typeof defaultPropertyTypeData>('/dashboard/analytics/property-types'),
+          get<typeof defaultPropertyStatusData>('/dashboard/analytics/property-status')
         ]);
 
         // Update state with API data

@@ -2,8 +2,8 @@
 import axios from "axios";
 import { refreshTokenIfNeeded, getAccessToken } from "./tokenManager";
 
-export default async function getApi(url: string, params: any, headers: any = {}) {
-  let getdata = {};
+export default async function getApi(url: string, params: any, headers: any = {}): Promise<any> {
+  let getdata: any = {};
   const API_URL = import.meta.env.VITE_API_URL;
   
   try {

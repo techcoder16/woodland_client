@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useDispatch } from "react-redux";
 import { toast } from "sonner";
 import { useAppSelector } from "@/redux/reduxHooks";
-import { fetchSupplier, upsertSupplier } from "@/redux/dataStore/supplierSlice";
+import { fetchSupplier, upsertSupplier, Supplier } from "@/redux/dataStore/supplierSlice";
 import { INVENTORY, LOCATION } from "@/lib/constant";
 import FileUploadField from "@/utils/FileUploadField";
 import {
@@ -137,7 +137,7 @@ const SupplierInventory: React.FC<SupplierInventoryProps> = ({ propertyId }) => 
 
   const onSubmit = async (data: SupplierFormData) => {
     try {
-      await dispatch(upsertSupplier(data)).unwrap();
+      await dispatch(upsertSupplier(data as unknown as Supplier)).unwrap();
       toast.success("Supplier details updated successfully!");
     } catch (error: any) {
       toast.error(error.message || "Failed to update supplier details");
@@ -145,10 +145,10 @@ const SupplierInventory: React.FC<SupplierInventoryProps> = ({ propertyId }) => 
   };
 
   const handleSupplierChange = (sectionKey?: string, supplierValue?: string) => {
-    setValue(`${sectionKey}Supplier`, supplierValue);
+    setValue(`${sectionKey}Supplier` as any, supplierValue);
     const selected = suppliersList.find(s => s.value === supplierValue);
     if (selected) {
-      setValue(`${sectionKey}Phone`, selected.phone);
+      setValue(`${sectionKey}Phone` as any, selected.phone);
     }
   };
 
@@ -313,9 +313,9 @@ const SupplierInventory: React.FC<SupplierInventoryProps> = ({ propertyId }) => 
                           <TableCell>{field.condition}</TableCell>
                           <TableCell>{field.detail || "-"}</TableCell>
                           <TableCell>
-                            {field.inventoryImage ? (
+                            {field.inventoryImage?.[0] ? (
                               <img
-                                src={field.inventoryImage}
+                                src={field.inventoryImage[0]}
                                 alt="Inventory"
                                 className="w-16 h-16 object-cover rounded-md"
                               />

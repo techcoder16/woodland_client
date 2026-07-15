@@ -10,6 +10,8 @@ interface DashboardStats {
   activeTenants: number;
   monthlyRevenue: number;
   occupancyRate: number;
+  totalTransactions: number;
+  totalRentRecords: number;
   recentActivities: Activity[];
 }
 
@@ -48,7 +50,7 @@ export const fetchDashboardStats = createAsyncThunk(
         return rejectWithValue(response.error.message);
       }
       // Handle the response data structure from your backend
-      return response.data || {};
+      return response.data as DashboardStats;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to fetch dashboard stats');
     }

@@ -71,7 +71,6 @@ const TenancyAgreement: React.FC<TenancyAgreementProps> = ({ propertyId, propert
     resolver: zodResolver(tenancyAgreementSchema),
     defaultValues: {
       propertyId,
-      tenantId: "",
       details: "",
       housingAct: "",
       LetterType: "",
@@ -80,7 +79,6 @@ const TenancyAgreement: React.FC<TenancyAgreementProps> = ({ propertyId, propert
       Address1: "",
       Address2: "",
       HideLandlordAdress: false,
-      signedDate: "",
     },
   });
 

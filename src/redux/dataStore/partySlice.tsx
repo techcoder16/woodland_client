@@ -36,7 +36,7 @@ export const upsertPropertyParty = createAsyncThunk(
       const access_token = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = { Authorization: `Bearer ${access_token}` };
       console.log(partyData)
-      const {data,error} = await post("property-management/party-upsert", partyData, headers);
+      const {data,error} = await post<PropertyParty[]>("property-management/party-upsert", partyData, headers);
             console.log(error)
       if (error?.message)
         { 

@@ -25,8 +25,7 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
 }) => {
   const [previews, setPreviews] = useState<string[]>([]);
 
-  // Destructure to remove the default "value" property.
-  const { onChange: formOnChange, value: _value, ref, ...inputProps } = register(name);
+  const { onChange: formOnChange, ref, ...inputProps } = register(name);
 
   // Helper: Convert files to base64 array.
   const convertFilesToBase64 = (files: FileList | File[]) =>

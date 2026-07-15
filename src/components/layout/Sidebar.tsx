@@ -12,7 +12,7 @@ import {
   Settings,
   Users,
 } from "lucide-react";
-import {logo} from '@/assets/logo.png'
+import logo from '@/assets/logo.png'
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
