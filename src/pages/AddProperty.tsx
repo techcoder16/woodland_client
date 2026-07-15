@@ -262,15 +262,12 @@ const AddProperty = () => {
                 <RentalAgreement watch={watch} register={form.register} errors={currentStep === 2 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
               </div>
               {currentStep === 3 && (
-                savedProperty?.id ? (
-                  <ManagementAgreement propertyId={savedProperty.id} property={savedProperty} />
-                ) : (
-                  <ManagementAgreement
-                    propertyId=""
-                    mode="draft"
-                    onDraftSubmit={setManagementAgreementDraft}
-                  />
-                )
+                <ManagementAgreement
+                  propertyId={savedProperty?.id || ""}
+                  property={savedProperty}
+                  mode={savedProperty?.id ? "edit" : "draft"}
+                  onDataChange={setManagementAgreementDraft}
+                />
               )}
               {currentStep === 4 && (
                 savedProperty?.id ? (

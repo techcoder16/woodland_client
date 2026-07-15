@@ -14,7 +14,6 @@ import { fetchManagementAgreement } from "@/redux/dataStore/managementAgreementS
 import { fetchPropertyParties } from "@/redux/dataStore/partySlice";
 import { fetchVendors } from "@/redux/dataStore/vendorSlice";
 import { cn } from "@/lib/utils";
-import SelectField from "@/utils/SelectedField";
 import { DateField } from "@/utils/DateField";
 import { PDFViewer, pdf } from "@react-pdf/renderer";
 import ManagementContractPDF from "@/components/pdf/ManagementContractPDF";
@@ -24,13 +23,9 @@ const managementAgreementSchema = z.object({
   propertyId: z.string().optional(),
   DateofAgreement: z.string().min(1, "Date of Agreement is required"),
   AgreementStart: z.string().min(1, "Agreement Start is required"),
-  PaymentAgreement: z.string().min(1, "Payment Agreement is required"),
   AgreementEnd: z.string().min(1, "Agreement End is required"),
-  Frequency: z.string().optional(),
-  InventoryCharges: z.coerce.number({ invalid_type_error: "Inventory Charges must be a number" }),
   ManagementFees: z.coerce.number({ invalid_type_error: "Management Fees must be a number" }),
   TermsAndCondition: z.string().min(1, "Terms and Condition is required"),
-  checkPayableTo: z.string().min(1, "Required"),
 });
 
 type ManagementAgreementFormData = z.infer<typeof managementAgreementSchema>;
@@ -65,11 +60,8 @@ const ManagementAgreement: React.FC<ManagementAgreementProps> = ({ propertyId, p
       propertyId,
       DateofAgreement: "",
       AgreementStart: "",
-      PaymentAgreement: "",
       AgreementEnd: "",
-      Frequency: "",
       TermsAndCondition: "",
-      checkPayableTo: "",
     },
   });
 
@@ -132,31 +124,17 @@ const ManagementAgreement: React.FC<ManagementAgreementProps> = ({ propertyId, p
         <CardTitle>Management Agreement</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit(onGenerateAgreement)} className="space-y-6">
+        <div className="space-y-6">
           <input type="hidden" {...register("propertyId")} />
 
-          {/* Date of Agreement & Payment Agreement */}
+          {/* Date of Agreement */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Date of Agreement */}
-
-
             <DateField
               label="Date of Agreement"
               value={watch("DateofAgreement") || ""}
               onChange={(date) => handleDateChange("DateofAgreement", date)}
               error={errors.DateofAgreement?.message}
             />
-
-
-
-            <DateField
-              label="Payment Agreement"
-              value={watch("PaymentAgreement") || ""}
-              onChange={(date) => handleDateChange("PaymentAgreement", date)}
-              error={errors.PaymentAgreement?.message}
-            />
-
-
           </div>
 
           {/* Agreement Start & Agreement End */}
@@ -183,41 +161,8 @@ const ManagementAgreement: React.FC<ManagementAgreementProps> = ({ propertyId, p
             </div>
           </div>
 
-          {/* Frequency & Inventory Charges */}
+          {/* Management Fees */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <SelectField
-                label="Frequency"
-                name="Frequency"
-                register={register}
-                error={errors.Frequency?.message}
-                watch={watch}
-                options={[
-                  { label: "Monthly", value: "monthly" },
-                  { label: "4 Weekly", value: "4-weekly" },
-                  { label: "Quarterly", value: "quarterly" },
-                  { label: "Annually", value: "annually" },
-                ]}
-                setValue={setValue}
-              />
-            </div>
-
-            <div>
-              <InputField
-                label="Inventory Charges"
-                name="InventoryCharges"
-                register={register}
-                error={errors.InventoryCharges?.message}
-                placeholder="Enter inventory charges"
-                type="number"
-                setValue={setValue}
-              />
-            </div>
-          </div>
-
-          {/* Management Fees & Terms and Conditions (textarea spans both columns) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
             <InputField
               label="Management Fees"
               name="ManagementFees"
@@ -228,18 +173,6 @@ const ManagementAgreement: React.FC<ManagementAgreementProps> = ({ propertyId, p
               type="number"
               setValue={setValue}
             />
-            {/* checkPayableTo field */}
-            <InputField
-              label="Check Payable To"
-              name="checkPayableTo"
-              register={register}
-              error={errors.checkPayableTo?.message}
-              placeholder="Enter check payable to"
-              setValue={setValue}
-
-              type="text" />
-
-
           </div>
 
           <div className="md:col-span-2">
@@ -252,13 +185,12 @@ const ManagementAgreement: React.FC<ManagementAgreementProps> = ({ propertyId, p
             />
           </div>
 
-
           <div className="flex justify-end space-x-4">
-            <Button type="submit" disabled={isGenerating}>
+            <Button type="button" onClick={handleSubmit(onGenerateAgreement)} disabled={isGenerating}>
               {isGenerating ? "Generating..." : "Generate Agreement"}
             </Button>
           </div>
-        </form>
+        </div>
       </CardContent>
 
       {/* Management Contract PDF Preview */}

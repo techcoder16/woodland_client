@@ -91,14 +91,9 @@ const ManagementContractPDF = ({ data, property, landlord: landlordProp }: { dat
 
         <View style={styles.spacer} />
 
-        <Field label="Rent Required:" value={data.ManagementFees ? `£${data.ManagementFees}` : ""} />
         <Field label="Management Fee:" value={data.ManagementFees ? `${data.ManagementFees}%` : ""} />
-        <Field label="Payment Arrangement:" value={fmt(data.PaymentAgreement)} />
-        <Field label="Cheque Payable to:" value={data.checkPayableTo} />
-        <Field label="Payment Frequency:" value={data.Frequency} />
         <Field label="Agreement Start Date:" value={fmt(data.AgreementStart)} />
         <Field label="Agreement End Date:" value={fmt(data.AgreementEnd)} />
-        <Field label="Inventory Preparation Charges:" value={data.InventoryCharges ? `£${data.InventoryCharges}` : ""} />
 
         <View style={styles.spacer} />
 

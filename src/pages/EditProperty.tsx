@@ -21,6 +21,8 @@ import { patch } from "@/helper/api";
 import { propertySchema } from "@/schema/property.schema";
 import { buildPropertyFormData } from "@/helper/buildPropertyFormData";
 import { parseApiError } from "@/helper/parseApiError";
+import { useDispatch } from "react-redux";
+import { upsertManagementAgreement } from "@/redux/dataStore/managementAgreementSlice";
 
 const STEP_LABELS = [
   "Standard Info",
@@ -155,6 +157,8 @@ const EditProperty = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [managementAgreementDraft, setManagementAgreementDraft] = useState<any>(null);
+  const dispatch = useDispatch<any>();
   const isLastStep = currentStep === STEP_LABELS.length - 1;
 
   const handleNext = async () => {
@@ -203,6 +207,18 @@ const EditProperty = () => {
 
       const updatedId = apiData?.property?.id;
       if (updatedId?.length > 0) {
+        if (managementAgreementDraft) {
+          try {
+            await dispatch(upsertManagementAgreement({ ...managementAgreementDraft, propertyId: updatedId })).unwrap();
+          } catch (agreementError: any) {
+            toast({
+              title: "Property saved, but Management Agreement failed",
+              description: agreementError?.message || "Please try generating and saving it again.",
+              variant: "destructive",
+            });
+          }
+        }
+
         toast({
           title: "Success",
           description: isDraft ? "Property saved as draft successfully!" : apiData.message || "Property updated successfully!",
@@ -296,7 +312,11 @@ const EditProperty = () => {
                 <RentalAgreement watch={watch} register={form.register} errors={currentStep === 2 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
               </div>
               {currentStep === 3 && (
-                <ManagementAgreement propertyId={property.id} property={property} />
+                <ManagementAgreement
+                  propertyId={property.id}
+                  property={property}
+                  onDataChange={setManagementAgreementDraft}
+                />
               )}
               {currentStep === 4 && (
                 <TenancyAgreement propertyId={property.id} property={property} />
