@@ -24,6 +24,7 @@ import { getAccessToken } from "@/helper/tokenManager";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { fetchProperties } from "@/redux/dataStore/propertySlice";
 
 
@@ -223,17 +224,17 @@ const MainTransaction = () => {
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-800 mb-2">
+              <h1 className="text-2xl font-semibold tracking-tight mb-2">
                 Document Management
               </h1>
               {property && (
-                <p className="text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   Property: {property.propertyNumber == 0 ? "0" : property.propertyNumber} - {property.propertyName}
                 </p>
               )}
             </div>
             <div className="flex items-center space-x-2">
-              <Building2 className="h-8 w-8 text-red-600" />
+              <Building2 className="h-8 w-8 text-primary" />
             </div>
           </div>
         </div>
@@ -242,10 +243,10 @@ const MainTransaction = () => {
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="space-y-4">
             <div>
-              <h2 className="text-xl font-semibold text-gray-800 mb-2">
+              <h2 className="text-xl font-semibold mb-2">
                 Select Property
               </h2>
-              <p className="text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 Choose the property for document upload and PDF transaction extraction
               </p>
             </div>
@@ -275,24 +276,26 @@ const MainTransaction = () => {
           <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-xl font-semibold text-gray-800 mb-2">
+                <h2 className="text-xl font-semibold mb-2">
                   OCR Extraction Results
                 </h2>
-                <p className="text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   Transaction data extracted from PDF document
                 </p>
                 {uploadedFile && (
-                  <p className="text-sm text-blue-600 mt-1">
+                  <p className="text-sm text-primary mt-1">
                     📄 File: {uploadedFile.name} ({(uploadedFile.size / 1024 / 1024).toFixed(2)} MB)
                   </p>
                 )}
               </div>
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setShowOcrResults(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-muted-foreground hover:text-foreground"
               >
                 ✕
-              </button>
+              </Button>
             </div>
             
             
@@ -306,10 +309,10 @@ const MainTransaction = () => {
                       if (key === 'property' || key === 'id' || key === 'createdAt' || key === 'updatedAt') return null;
                       return (
                         <div key={key} className="bg-white p-3 rounded border">
-                          <span className="font-medium text-gray-600 text-sm block mb-1">
+                          <span className="font-medium text-muted-foreground text-sm block mb-1">
                             {key.replace(/([A-Z])/g, ' $1').trim()}:
                           </span>
-                          <span className="text-gray-800">
+                          <span className="text-foreground">
                             {value !== null && value !== undefined ? String(value) : 'N/A'}
                           </span>
                         </div>
@@ -329,10 +332,10 @@ const MainTransaction = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {Object.entries(parsedData).map(([key, value]) => (
                           <div key={key} className="bg-white p-3 rounded border">
-                            <span className="font-medium text-gray-600 text-sm block mb-1">
+                            <span className="font-medium text-muted-foreground text-sm block mb-1">
                               {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:
                             </span>
-                            <span className="text-gray-800">
+                            <span className="text-foreground">
                               {value !== null && value !== undefined ? String(value) : 'N/A'}
                             </span>
                           </div>
@@ -351,16 +354,16 @@ const MainTransaction = () => {
 
               {/* Raw OCR Content */}
               <div className=" rounded-lg p-4">
-                <h3 className="font-semibold text-gray-700 mb-3">🔍 Raw OCR Content:</h3>
-                <pre className="text-sm text-gray-800 bg-white p-3 rounded border overflow-x-auto whitespace-pre-wrap">
+                <h3 className="font-semibold text-muted-foreground mb-3">🔍 Raw OCR Content:</h3>
+                <pre className="text-sm text-foreground bg-white p-3 rounded border overflow-x-auto whitespace-pre-wrap">
                   {ocrResults.ocrData?.ocr_content || 'No OCR content available'}
                 </pre>
               </div>
 
               {/* Full API Response */}
               <div className=" rounded-lg p-4">
-                <h3 className="font-semibold text-gray-700 mb-3">📊 Full API Response:</h3>
-                <pre className="text-sm text-gray-800 bg-white p-3 rounded border overflow-x-auto">
+                <h3 className="font-semibold text-muted-foreground mb-3">📊 Full API Response:</h3>
+                <pre className="text-sm text-foreground bg-white p-3 rounded border overflow-x-auto">
                   {JSON.stringify(ocrResults, null, 2)}
                 </pre>
               </div>
@@ -388,9 +391,9 @@ const MainTransaction = () => {
         </div>
 
         {/* Instructions */}
-        <div className="mt-8 bg-red-50 border border-red-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-red-800 mb-2">Upload Guidelines</h3>
-          <ul className="text-sm text-red-700 space-y-1">
+        <div className="mt-8 bg-accent border border-border rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-accent-foreground mb-2">Upload Guidelines</h3>
+          <ul className="text-sm text-accent-foreground/90 space-y-1">
             <li>• <strong>PDF Files:</strong> Automatically processed for transaction extraction using OCR (up to 5 minutes processing time)</li>
             <li>• <strong>Other Documents:</strong> Supported formats: DOC, DOCX, JPG, JPEG, PNG</li>
             <li>• Maximum file size: 10MB per document</li>

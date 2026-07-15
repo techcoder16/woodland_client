@@ -18,6 +18,7 @@ z.object({
   propertyTypeCategory: z.string().nullable().default(null).describe("Property type category is required."),
   bedrooms: z.union([z.string(), z.number()]).nullable().default(null).describe("Number of bedrooms."),
   bathrooms: z.union([z.string(), z.number()]).nullable().default(null).describe("Number of bathrooms."),
+  receptions: z.union([z.string(), z.number()]).nullable().default(null).describe("Number of receptions."),
   wheelchairAccess: z.boolean().nullable().default(false).describe("Wheelchair access."),
   hasGarden: z.boolean().nullable().default(false).describe("Garden."),
   lift: z.boolean().nullable().default(false).describe("Lift."),

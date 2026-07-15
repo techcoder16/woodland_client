@@ -19,7 +19,10 @@ export interface ManagementAgreement {
   ManagementFees: number;
   TermsAndCondition: string;
   checkPayableTo:string;
+  signedDocument?: string;
 }
+
+export type ManagementAgreementUpsertInput = Omit<ManagementAgreement, "id">;
 
 interface ManagementAgreementState {
   managementAgreement: ManagementAgreement | null;
@@ -51,7 +54,7 @@ export const fetchManagementAgreement = createAsyncThunk(
 
 export const upsertManagementAgreement = createAsyncThunk(
   "managementAgreement/upsertManagementAgreement",
-  async (agreementData: ManagementAgreement, { dispatch, rejectWithValue }) => {
+  async (agreementData: ManagementAgreementUpsertInput, { dispatch, rejectWithValue }) => {
     try {
       const access_token = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = {

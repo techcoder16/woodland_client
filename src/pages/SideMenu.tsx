@@ -58,7 +58,7 @@ const SideMenu = () => {
 
   return (
     <div
-      className={`filter h-screen bg-gray-800 text-white border-r p-5 transition-all duration-300 ease-in-out ${
+      className={`filter h-screen bg-sidebar text-sidebar-foreground border-r border-sidebar-border p-5 transition-all duration-300 ease-in-out ${
         isCollapsed ? "w-16" : "w-64"
       }`}
     >
@@ -79,7 +79,7 @@ const SideMenu = () => {
         )}
       </button>
 
-      <hr className="border-gray-700 my-4" />
+      <hr className="border-sidebar-border my-4" />
 
       {/* Menu Items */}
       <div className="flex flex-col gap-4">
@@ -92,7 +92,7 @@ const SideMenu = () => {
                 navigate("/dashboard");
               }
             }}
-            className={`flex items-center gap-4 px-4 py-2 rounded-lg transition-all duration-200 hover:bg-gray-700 ${
+            className={`flex items-center gap-4 px-4 py-2 rounded-lg transition-all duration-200 hover:bg-sidebar-accent ${
               isCollapsed ? "justify-center" : "justify-start"
             }`}
           >
@@ -104,7 +104,7 @@ const SideMenu = () => {
 
       {/* Footer Section */}
       <div className="absolute bottom-4 left-0 w-full px-4">
-        <hr className="border-gray-700 mb-4" />
+        <hr className="border-sidebar-border mb-4" />
         {!isCollapsed && <p className="text-sm text-center">© 2025 Your Company</p>}
       </div>
     </div>

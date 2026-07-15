@@ -70,7 +70,7 @@ const MenuHeader: React.FC = () => {
 
   return (
     <div className={`flex flex-col ${isDark ? 'dark' : ''}`}>
-      <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 transition-colors duration-200">
+      <nav className="bg-card border-b border-border transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-4">
@@ -82,18 +82,18 @@ const MenuHeader: React.FC = () => {
                 <input
                   type="text"
                   placeholder="Search..."
-                  className="w-64 pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 
-                           bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white 
-                           focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400 transition-colors duration-200"
+                  className="w-64 pl-10 pr-4 py-2 rounded-lg border border-border
+                           bg-secondary text-foreground dark:text-white
+                           focus:ring-2 focus:ring-primary transition-colors duration-200"
                 />
-                <Search className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
+                <Search className="absolute left-3 top-2.5 text-muted-foreground h-5 w-5" />
               </div>
             </div>
 
             <div className="flex items-center gap-4">
               <button
                 onClick={toggleTheme}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                className="p-2 rounded-lg hover:bg-secondary transition-colors duration-200"
               >
                 {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
               </button>
@@ -101,11 +101,11 @@ const MenuHeader: React.FC = () => {
               <div className="relative">
                 <button
                   onClick={() => setOpen(!open)}
-                  className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 
+                  className="flex items-center gap-2 p-2 rounded-lg hover:bg-secondary
                            transition-colors duration-200"
                 >
                   <div className={`h-8 w-8 rounded-full flex items-center justify-center text-white ${
-                    userName ? 'bg-gradient-to-r from-red-500 to-purple-500' : 'bg-gray-400'
+                    userName ? 'bg-gradient-to-r from-primary to-purple-500' : 'bg-muted-foreground'
                   }`}>
                     {userName ? getInitials(userName) : 'U'}
                   </div>
@@ -113,25 +113,25 @@ const MenuHeader: React.FC = () => {
                 </button>
 
                 {open && (
-                  <div className="absolute right-0 mt-2 w-64 rounded-lg bg-white dark:bg-gray-800 shadow-lg 
-                                border border-gray-200 dark:border-gray-700 transition-colors duration-200">
-                    <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                  <div className="absolute right-0 mt-2 w-64 rounded-lg bg-card shadow-lg
+                                border border-border transition-colors duration-200">
+                    <div className="p-4 border-b border-border">
                       <div className="flex items-center gap-3">
-                        <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white 
-                                      bg-gradient-to-r from-red-500 to-purple-500`}>
+                        <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white
+                                      bg-gradient-to-r from-primary to-purple-500`}>
                           {userName ? getInitials(userName) : 'U'}
                         </div>
                         <div>
                           <div className="font-medium dark:text-white">{userName}</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">{email}</div>
+                          <div className="text-sm text-muted-foreground">{email}</div>
                         </div>
                       </div>
                     </div>
                     <div className="p-2">
                       <button
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-2 px-4 py-2 text-left text-red-600 hover:bg-red-50 
-                                 dark:hover:bg-red-900/20 rounded-md transition-colors duration-200"
+                        className="w-full flex items-center gap-2 px-4 py-2 text-left text-destructive hover:bg-accent
+                                 rounded-md transition-colors duration-200"
                       >
                         <LogOut className="h-4 w-4" />
                         <span>Logout</span>
@@ -152,9 +152,9 @@ const MenuHeader: React.FC = () => {
               key={item.id}
               onClick={() => toggleMenu(item.id, item.id - 1)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200
-                         ${activeId === item.id 
-                           ? 'bg-white/10 text-white' 
-                           : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}
+                         ${activeId === item.id
+                           ? 'bg-white/10 text-white'
+                           : 'text-white/70 hover:bg-white/5 hover:text-white'}`}
             >
               <img src={item.icon} alt={item.label} className="h-8 w-8" />
               <span className="font-medium">{item.label}</span>

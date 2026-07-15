@@ -175,19 +175,19 @@ const SetupGuide: React.FC = () => {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="text-center p-4 border rounded">
                       <Badge variant="outline" className="mb-2">READ</Badge>
-                      <p className="text-sm text-gray-600">View content</p>
+                      <p className="text-sm text-muted-foreground">View content</p>
                     </div>
                     <div className="text-center p-4 border rounded">
                       <Badge variant="default" className="mb-2">WRITE</Badge>
-                      <p className="text-sm text-gray-600">Create new content</p>
+                      <p className="text-sm text-muted-foreground">Create new content</p>
                     </div>
                     <div className="text-center p-4 border rounded">
                       <Badge variant="secondary" className="mb-2">UPDATE</Badge>
-                      <p className="text-sm text-gray-600">Modify existing content</p>
+                      <p className="text-sm text-muted-foreground">Modify existing content</p>
                     </div>
                     <div className="text-center p-4 border rounded">
                       <Badge variant="destructive" className="mb-2">DELETE</Badge>
-                      <p className="text-sm text-gray-600">Remove content</p>
+                      <p className="text-sm text-muted-foreground">Remove content</p>
                     </div>
                   </div>
                 </CardContent>
@@ -232,9 +232,9 @@ const SetupGuide: React.FC = () => {
                     </div>
 
                     {isSettingUp && (
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      <div className="w-full bg-secondary rounded-full h-2">
+                        <div
+                          className="bg-primary h-2 rounded-full transition-all duration-300"
                           style={{ width: `${setupProgress}%` }}
                         ></div>
                       </div>
@@ -255,7 +255,7 @@ const SetupGuide: React.FC = () => {
                       </div>
                       <div>
                         <h4 className="font-medium">Create Screens</h4>
-                        <p className="text-sm text-gray-600">Define all the screens/routes in your application that need permission control.</p>
+                        <p className="text-sm text-muted-foreground">Define all the screens/routes in your application that need permission control.</p>
                       </div>
                     </div>
 
@@ -265,7 +265,7 @@ const SetupGuide: React.FC = () => {
                       </div>
                       <div>
                         <h4 className="font-medium">Create Users</h4>
-                        <p className="text-sm text-gray-600">Add users to your system with appropriate roles (Admin, User, Reseller).</p>
+                        <p className="text-sm text-muted-foreground">Add users to your system with appropriate roles (Admin, User, Reseller).</p>
                       </div>
                     </div>
 
@@ -275,7 +275,7 @@ const SetupGuide: React.FC = () => {
                       </div>
                       <div>
                         <h4 className="font-medium">Assign Permissions</h4>
-                        <p className="text-sm text-gray-600">Grant specific permissions to users for different screens.</p>
+                        <p className="text-sm text-muted-foreground">Grant specific permissions to users for different screens.</p>
                       </div>
                     </div>
 
@@ -285,7 +285,7 @@ const SetupGuide: React.FC = () => {
                       </div>
                       <div>
                         <h4 className="font-medium">Test Permissions</h4>
-                        <p className="text-sm text-gray-600">Verify that permissions are working correctly in your application.</p>
+                        <p className="text-sm text-muted-foreground">Verify that permissions are working correctly in your application.</p>
                       </div>
                     </div>
                   </div>
@@ -302,14 +302,14 @@ const SetupGuide: React.FC = () => {
                   <div className="space-y-4">
                     <div>
                       <h4 className="font-medium mb-2">1. Import the permission hook</h4>
-                      <pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
+                      <pre className="bg-secondary p-3 rounded text-sm overflow-x-auto">
 {`import { usePermissions } from '@/hooks/usePermissions';`}
                       </pre>
                     </div>
 
                     <div>
                       <h4 className="font-medium mb-2">2. Use permission checks</h4>
-                      <pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
+                      <pre className="bg-secondary p-3 rounded text-sm overflow-x-auto">
 {`const { canRead, canWrite, canUpdate, canDelete, isAdmin } = usePermissions();
 
 // Check specific permissions
@@ -326,7 +326,7 @@ if (canRead('/dashboard')) {
 
                     <div>
                       <h4 className="font-medium mb-2">3. Use PermissionWrapper component</h4>
-                      <pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
+                      <pre className="bg-secondary p-3 rounded text-sm overflow-x-auto">
 {`import PermissionWrapper from '@/components/PermissionWrapper';
 
 <PermissionWrapper screen="/properties">
@@ -348,8 +348,8 @@ if (canRead('/dashboard')) {
                   <div className="space-y-4">
                     <div>
                       <h4 className="font-medium">Navigation Menu</h4>
-                      <p className="text-sm text-gray-600 mb-2">Show/hide menu items based on permissions:</p>
-                      <pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
+                      <p className="text-sm text-muted-foreground mb-2">Show/hide menu items based on permissions:</p>
+                      <pre className="bg-secondary p-3 rounded text-sm overflow-x-auto">
 {`{canRead('/dashboard') && <MenuItem>Dashboard</MenuItem>}
 {canRead('/users') && <MenuItem>Users</MenuItem>}
 {isAdmin && <MenuItem>Admin Panel</MenuItem>}`}
@@ -358,8 +358,8 @@ if (canRead('/dashboard')) {
 
                     <div>
                       <h4 className="font-medium">Action Buttons</h4>
-                      <p className="text-sm text-gray-600 mb-2">Enable/disable buttons based on permissions:</p>
-                      <pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
+                      <p className="text-sm text-muted-foreground mb-2">Enable/disable buttons based on permissions:</p>
+                      <pre className="bg-secondary p-3 rounded text-sm overflow-x-auto">
 {`<Button disabled={!canWrite('/properties')}>
   Add Property
 </Button>`}
@@ -368,8 +368,8 @@ if (canRead('/dashboard')) {
 
                     <div>
                       <h4 className="font-medium">Data Tables</h4>
-                      <p className="text-sm text-gray-600 mb-2">Show action buttons based on permissions:</p>
-                      <pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
+                      <p className="text-sm text-muted-foreground mb-2">Show action buttons based on permissions:</p>
+                      <pre className="bg-secondary p-3 rounded text-sm overflow-x-auto">
 {`<TableCell>
   {canUpdate('/users') && <EditButton />}
   {canDelete('/users') && <DeleteButton />}

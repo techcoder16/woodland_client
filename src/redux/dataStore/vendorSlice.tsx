@@ -11,6 +11,20 @@ interface Vendor {
   firstName?: string;
   lastName?: string;
   phone: string;
+  postCode?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  town?: string;
+  country?: string;
+  bankBody?: string;
+  bankAddressLine1?: string;
+  bankAddressLine2?: string;
+  bankTown?: string;
+  bankPostCode?: string;
+  bankCountry?: string;
+  bankIban?: string;
+  bic?: string;
+  nib?: string;
 }
 
 // Define the state type

@@ -200,7 +200,7 @@ async function request<T>(
           error = { message: "Server is currently unavailable. Please try again later." };
           break;
         default:
-          error = { message: e.response.data.error || "An error occurred" };
+          error = { message: e.response.data.message || e.response.data.error || "An error occurred" };
           break;
       }
     } else if (e.code === "ECONNREFUSED" || e.code === "ERR_NETWORK") {

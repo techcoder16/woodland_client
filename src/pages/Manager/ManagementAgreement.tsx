@@ -10,18 +10,18 @@ import RichTextEditor from "@/utils/RichTextEditor";
 import { useDispatch } from "react-redux";
 import { toast } from "sonner";
 import { useAppSelector } from "@/redux/reduxHooks";
-import { fetchManagementAgreement, upsertManagementAgreement } from "@/redux/dataStore/managementAgreementSlice";
+import { fetchManagementAgreement } from "@/redux/dataStore/managementAgreementSlice";
 import { fetchPropertyParties } from "@/redux/dataStore/partySlice";
 import { fetchVendors } from "@/redux/dataStore/vendorSlice";
 import { cn } from "@/lib/utils";
 import SelectField from "@/utils/SelectedField";
 import { DateField } from "@/utils/DateField";
-import { PDFViewer } from "@react-pdf/renderer";
+import { PDFViewer, pdf } from "@react-pdf/renderer";
 import ManagementContractPDF from "@/components/pdf/ManagementContractPDF";
 import { Dialog, DialogContent, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 const managementAgreementSchema = z.object({
-  propertyId: z.string().min(1, "Property ID is required"),
+  propertyId: z.string().optional(),
   DateofAgreement: z.string().min(1, "Date of Agreement is required"),
   AgreementStart: z.string().min(1, "Agreement Start is required"),
   PaymentAgreement: z.string().min(1, "Payment Agreement is required"),
@@ -35,13 +35,21 @@ const managementAgreementSchema = z.object({
 
 type ManagementAgreementFormData = z.infer<typeof managementAgreementSchema>;
 
-const ManagementAgreement: React.FC<{ propertyId: string; property?: any }> = ({ propertyId, property }) => {
+interface ManagementAgreementProps {
+  propertyId: string;
+  property?: any;
+  mode?: "edit" | "draft";
+  onDataChange?: (data: ManagementAgreementFormData & { signedDocument?: string }) => void;
+}
+
+const ManagementAgreement: React.FC<ManagementAgreementProps> = ({ propertyId, property, mode = "edit", onDataChange }) => {
   const dispatch = useDispatch<any>();
   const { managementAgreement } = useAppSelector((state) => state.managementAgreement);
   const { propertyParties }: any = useAppSelector((state: any) => state.parties);
   const { vendors }: any = useAppSelector((state: any) => state.vendors);
 
   const [showPdf, setShowPdf] = React.useState(false);
+  const [isGenerating, setIsGenerating] = React.useState(false);
 
   const {
     register,
@@ -66,16 +74,18 @@ const ManagementAgreement: React.FC<{ propertyId: string; property?: any }> = ({
   });
 
   useEffect(() => {
-    if (managementAgreement) {
+    if (mode === "edit" && managementAgreement) {
       reset(managementAgreement && managementAgreement);
     }
-  }, [managementAgreement, reset]);
+  }, [mode, managementAgreement, reset]);
 
   useEffect(() => {
-    dispatch(fetchManagementAgreement({ propertyId }));
-    dispatch(fetchPropertyParties(propertyId));
     dispatch(fetchVendors({ page: 1, search: "" }));
-  }, [dispatch, propertyId]);
+    if (mode === "edit") {
+      dispatch(fetchManagementAgreement({ propertyId }));
+      dispatch(fetchPropertyParties(propertyId));
+    }
+  }, [dispatch, propertyId, mode]);
 
   const partyData = (propertyParties as any)?.data ?? propertyParties;
   const pdfLandlord = Array.isArray(vendors)
@@ -86,16 +96,35 @@ const ManagementAgreement: React.FC<{ propertyId: string; property?: any }> = ({
     setValue(name, date.toISOString());
   };
 
-  const onSubmit = async (data: ManagementAgreementFormData) => {
-    try {
-      await dispatch(upsertManagementAgreement(data)).unwrap();
-      toast.success("Management Agreement updated successfully!");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update Management Agreement");
-    }
+  const generateAgreementPdfBase64 = async (data: ManagementAgreementFormData): Promise<string> => {
+    const blob = await pdf(
+      <ManagementContractPDF data={data} property={property} landlord={pdfLandlord} />
+    ).toBlob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
   };
 
-  const handlePreview = () => setShowPdf(true);
+  const onGenerateAgreement = async (data: ManagementAgreementFormData) => {
+    setIsGenerating(true);
+    let signedDocument: string | undefined;
+    try {
+      signedDocument = await generateAgreementPdfBase64(data);
+    } catch {
+      toast.error("Failed to generate the agreement PDF.");
+      setIsGenerating(false);
+      return;
+    }
+    setIsGenerating(false);
+
+    const dataWithDocument = { ...data, signedDocument };
+    onDataChange?.(dataWithDocument);
+    setShowPdf(true);
+    toast.success("Agreement generated. Use Save as Draft or Publish to save it.");
+  };
 
   return (
     <Card className="shadow">
@@ -103,7 +132,7 @@ const ManagementAgreement: React.FC<{ propertyId: string; property?: any }> = ({
         <CardTitle>Management Agreement</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={handleSubmit(onGenerateAgreement)} className="space-y-6">
           <input type="hidden" {...register("propertyId")} />
 
           {/* Date of Agreement & Payment Agreement */}
@@ -225,10 +254,9 @@ const ManagementAgreement: React.FC<{ propertyId: string; property?: any }> = ({
 
 
           <div className="flex justify-end space-x-4">
-            <Button type="button" onClick={handlePreview}>
-              Preview Agreement
+            <Button type="submit" disabled={isGenerating}>
+              {isGenerating ? "Generating..." : "Generate Agreement"}
             </Button>
-            <Button type="submit">Update Management Agreement</Button>
           </div>
         </form>
       </CardContent>

@@ -126,7 +126,7 @@ const EditTenant = ({ isOpen, onClose, propertyId, tenant }: EditTenantModalProp
       <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="h-5 w-5 text-red-600" /> Edit Tenant
+            <UserPlus className="h-5 w-5 text-primary" /> Edit Tenant
           </DialogTitle>
         </DialogHeader>
 
@@ -148,7 +148,7 @@ const EditTenant = ({ isOpen, onClose, propertyId, tenant }: EditTenantModalProp
               <ArrowLeft className="mr-2 h-4 w-4" /> Previous
             </Button>
             {isLastStep ? (
-              <Button type="submit" className="bg-red-500 text-white px-4 py-2 rounded">
+              <Button type="submit">
                 Submit <Check className="ml-2 h-4 w-4" />
               </Button>
             ) : (

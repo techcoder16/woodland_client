@@ -158,7 +158,7 @@ const user = await DEFAULT_COOKIE_GETTER("user");
                   </div>
 
                   <div className="pt-4">
-                    <Button onClick={handleProfileSave} className="bg-red-600 hover:bg-red-700">
+                    <Button onClick={handleProfileSave}>
                       Save Changes
                     </Button>
                   </div>
@@ -214,7 +214,7 @@ const user = await DEFAULT_COOKIE_GETTER("user");
                   </div>
 
                   <div className="pt-4">
-                    <Button onClick={handlePasswordSave} className="bg-red-600 hover:bg-red-700">
+                    <Button onClick={handlePasswordSave}>
                       Update Password
                     </Button>
                   </div>

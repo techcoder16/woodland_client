@@ -73,16 +73,16 @@ const PropertyManager = () => {
   );
 
   const getStatusColor = (status: string) => {
-    if (!status) return 'bg-gray-100 text-gray-800';
+    if (!status) return 'bg-secondary text-secondary-foreground';
     switch (status.toLowerCase()) {
       case 'active':
         return 'bg-green-100 text-green-800';
       case 'inactive':
-        return 'bg-red-100 text-red-800';
+        return 'bg-accent text-accent-foreground';
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
       case 'sold':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-secondary text-secondary-foreground';
       default:
         return 'bg-blue-100 text-blue-800';
     }
@@ -115,7 +115,7 @@ const PropertyManager = () => {
                 Edit
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-600">
+              <DropdownMenuItem className="text-destructive">
                 <Building className="mr-2 h-4 w-4" />
                 Delete
               </DropdownMenuItem>
@@ -131,7 +131,7 @@ const PropertyManager = () => {
           {/* Property Name */}
           {property.propertyName && (
             <div className="mb-2">
-              <h3 className="text-lg font-semibold text-gray-900 truncate">
+              <h3 className="text-lg font-semibold text-foreground truncate">
                 {property.propertyName}
               </h3>
             </div>
@@ -139,9 +139,9 @@ const PropertyManager = () => {
 
           {/* Address */}
           <div className="flex items-start space-x-2">
-            <MapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+            <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
             <div className="min-w-0 flex-1">
-              <p className="text-sm text-gray-600 truncate">
+              <p className="text-sm text-muted-foreground truncate">
                 {property.addressLine1}, {property.town}
               </p>
             </div>
@@ -149,8 +149,8 @@ const PropertyManager = () => {
 
           {/* Price */}
           {/* <div className="flex items-center space-x-2">
-            <DollarSign className="w-4 h-4 text-gray-400" />
-            <span className="text-lg font-semibold text-gray-900">
+            <DollarSign className="w-4 h-4 text-muted-foreground" />
+            <span className="text-lg font-semibold text-foreground">
               {property.price || 'Price not set'}
             </span>
           </div> */}
@@ -166,7 +166,7 @@ const PropertyManager = () => {
           </div> */}
 
           {/* Property Number */}
-          {/* <div className="text-xs text-gray-500">
+          {/* <div className="text-xs text-muted-foreground">
             Property #{property.propertyNo || property.id}
           </div> */}
         </div>
@@ -187,21 +187,21 @@ const PropertyManager = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+      <div className="p-6 space-y-6 bg-secondary/50 min-h-screen">
         {/* Header Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-border p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Property Finance Management</h1>
-              <p className="text-gray-600">Manage and monitor your property portfolio</p>
+              <h1 className="text-2xl font-semibold tracking-tight text-foreground mb-2">Property Finance Management</h1>
+              <p className="text-sm text-muted-foreground">Manage and monitor your property portfolio</p>
             </div>
             <div className="flex items-center space-x-3">
-              <div className="bg-red-50 rounded-lg p-3">
-                <Building className="w-6 h-6 text-red-600" />
+              <div className="bg-accent rounded-lg p-3">
+                <Building className="w-6 h-6 text-accent-foreground" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">Published Properties</p>
-                <p className="text-2xl font-bold text-gray-900">{filteredProperties.length}</p>
+                <p className="text-sm text-muted-foreground">Published Properties</p>
+                <p className="text-2xl font-bold text-foreground">{filteredProperties.length}</p>
               </div>
             </div>
           </div>
@@ -220,22 +220,22 @@ const PropertyManager = () => {
           {/* Search and Filters */}
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
               <Input
                 type="text"
                 placeholder="Search properties..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                className="pl-10 pr-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
-            
+
             <div className="relative">
-              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="pl-10 pr-8 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent appearance-none bg-white min-w-[150px]"
+                className="pl-10 pr-8 py-3 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent appearance-none bg-white min-w-[150px]"
               >
                 <option value="all">All Status</option>
                 <option value="active">Active</option>
@@ -245,7 +245,7 @@ const PropertyManager = () => {
               </select>
             </div>
 
-            <Button onClick={() => navigate('/property/add')} className="bg-red-600 hover:bg-red-700">
+            <Button onClick={() => navigate('/property/add')} className="bg-primary text-primary-foreground hover:bg-primary/90">
               <Plus className="w-4 h-4 mr-2" />
               Add Property
             </Button>
@@ -255,7 +255,7 @@ const PropertyManager = () => {
         {/* Loading State */}
         {loading && (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
         )}
 
@@ -268,18 +268,18 @@ const PropertyManager = () => {
               ))
             ) : (
               <div className="col-span-full">
-                <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-                  <Building className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No properties found</h3>
-                  <p className="text-gray-500 mb-4">
-                    {searchTerm || filterStatus !== "all" 
+                <div className="text-center py-12 bg-white rounded-xl border border-border">
+                  <Building className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-foreground mb-2">No properties found</h3>
+                  <p className="text-muted-foreground mb-4">
+                    {searchTerm || filterStatus !== "all"
                       ? "Try adjusting your search or filters"
                       : "Get started by adding your first property"
                     }
                   </p>
-                  <Button 
+                  <Button
                     onClick={() => navigate('/property/add')}
-                    className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition-colors"
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-2 rounded-lg transition-colors"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Add Property
@@ -292,9 +292,9 @@ const PropertyManager = () => {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+          <div className="bg-white rounded-xl shadow-sm border border-border p-4">
             <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-muted-foreground">
                 Showing {((currentPage - 1) * 12) + 1} to {Math.min(currentPage * 12, filteredProperties.length)} of {filteredProperties.length} properties
               </div>
               <div className="flex items-center space-x-2">

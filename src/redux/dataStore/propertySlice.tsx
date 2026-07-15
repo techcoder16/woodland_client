@@ -54,7 +54,7 @@ export const fetchProperties = createAsyncThunk(
         country ? `&country=${country}` : ""
       }${propertyStatus ? `&propertyStatus=${propertyStatus}` : ""}`;
       const data:any = await getApi("properties", params, headers);
-      return data?.items;
+      return { items: data?.items ?? [], totalPages: data?.totalPages ?? 1 };
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to fetch properties");
     }
@@ -91,7 +91,7 @@ const propertySlice = createSlice({
       .addCase(fetchProperties.fulfilled, (state, action: any) => {
         state.loading = false;
  
-        state.properties = action.payload || [];
+        state.properties = action.payload?.items || [];
         state.totalPages = action.payload?.totalPages || 1;
       })
       .addCase(fetchProperties.rejected, (state, action) => {

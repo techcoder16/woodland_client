@@ -134,7 +134,7 @@ const EditTransaction = ({ isOpen, onClose, propertyId ,transaction}: EditTransa
     <DialogContent className="sm:max-w-7xl">
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
-          <UserPlus className="h-5 w-5 text-red-600" /> Edit Transaction
+          <UserPlus className="h-5 w-5 text-primary" /> Edit Transaction
         </DialogTitle>
       </DialogHeader>
 
@@ -142,7 +142,7 @@ const EditTransaction = ({ isOpen, onClose, propertyId ,transaction}: EditTransa
 
             <form onSubmit={handleSubmit(onSubmit)}>{steps[currentStep].component}
               <div className="flex justify-between pt-6">
-                {isLastStep ? <Button type="submit" className="bg-red-500 text-white px-4 py-2 rounded">Submit <Check className="ml-2 h-4 w-4" /></Button> : <Button type="button" onClick={() => setCurrentStep(currentStep + 1)}>Next <ArrowRight className="ml-2 h-4 w-4" /></Button>}
+                {isLastStep ? <Button type="submit">Submit <Check className="ml-2 h-4 w-4" /></Button> : <Button type="button" onClick={() => setCurrentStep(currentStep + 1)}>Next <ArrowRight className="ml-2 h-4 w-4" /></Button>}
               </div>
             </form>
          

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useDispatch } from "react-redux";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -14,11 +15,15 @@ import DocumentsCertificates from "./Property/DocumentsCertificates";
 import RentalAgreement from "./Property/RentalAgreement";
 import ManagementAgreement from "./Manager/ManagementAgreement";
 import TenancyAgreement from "./Manager/TenancyAgreement";
+import NotesStep, { DraftNote } from "./Manager/NotesStep";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { post, patch } from "@/helper/api";
 import { propertySchema } from "@/schema/property.schema";
 import { buildPropertyFormData } from "@/helper/buildPropertyFormData";
 import { parseApiError } from "@/helper/parseApiError";
+import { upsertManagementAgreement } from "@/redux/dataStore/managementAgreementSlice";
+import { upsertTenancyAgreement } from "@/redux/dataStore/tenancyAgreementSlice";
+import { createNote } from "@/redux/dataStore/noteSlice";
 
 const STEP_LABELS = [
   "Standard Info",
@@ -26,12 +31,14 @@ const STEP_LABELS = [
   "Rental Agreement",
   "Management Agreement",
   "Tenancy Agreement",
+  "Notes",
 ] as const;
 
 const STEP_FIELDS: string[][] = [
   ["vendor", "for", "postCode", "propertyName", "addressLine1", "addressLine2", "town", "country", "propertyTypeCategory", "bedrooms", "bathrooms", "wheelchairAccess", "hasGarden", "lift", "gas", "electricity", "rooms"],
   ["photographs", "floorPlans", "epcCertificate", "gasCertificate", "electricityCertificate", "fireRiskAssessment", "insuranceCertificate", "emergencyLightingCertificate", "propertyLicense"],
   ["rentalTenure", "rentalDescription"],
+  [],
   [],
   [],
 ];
@@ -57,29 +64,41 @@ const AddProperty = () => {
   });
   const { toast } = useToast();
   const { watch } = form;
+  const dispatch = useDispatch<any>();
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [savedProperty, setSavedProperty] = useState<any>(null);
+  const [managementAgreementDraft, setManagementAgreementDraft] = useState<any>(null);
+  const [tenancyAgreementDraft, setTenancyAgreementDraft] = useState<any>(null);
+  const [noteDrafts, setNoteDrafts] = useState<DraftNote[]>([]);
   const isLastStep = currentStep === STEP_LABELS.length - 1;
-  const requiresSavedProperty = currentStep >= 3; // Management / Tenancy Agreement steps
 
   const saveDraft = async (): Promise<any | null> => {
-    const formData = buildPropertyFormData(form.getValues() as any, true);
-    const { data: apiData, error }: any = await post("properties", formData);
+    try {
+      const formData = buildPropertyFormData(form.getValues() as any, true);
+      const { data: apiData, error }: any = await post("properties", formData);
 
-    if (error?.message) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      if (error?.message) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+        return null;
+      }
+
+      const property = apiData?.property;
+      if (property?.id) {
+        setSavedProperty(property);
+        return property;
+      }
+      return null;
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: parseApiError(error, "Failed to save property."),
+        variant: "destructive",
+      });
       return null;
     }
-
-    const property = apiData?.property;
-    if (property?.id) {
-      setSavedProperty(property);
-      return property;
-    }
-    return null;
   };
 
   const onSubmit = async (data: FormData, isDraft: boolean = false) => {
@@ -115,6 +134,49 @@ const AddProperty = () => {
       const propertyId = apiData?.property?.id;
       if (propertyId?.length > 0) {
         setSavedProperty(apiData.property);
+
+        if (managementAgreementDraft) {
+          try {
+            await dispatch(upsertManagementAgreement({ ...managementAgreementDraft, propertyId })).unwrap();
+          } catch (agreementError: any) {
+            toast({
+              title: "Property saved, but Management Agreement failed",
+              description: agreementError?.message || "You can retry it from Edit Property.",
+              variant: "destructive",
+            });
+          }
+        }
+
+        if (tenancyAgreementDraft) {
+          try {
+            await dispatch(upsertTenancyAgreement({ ...tenancyAgreementDraft, propertyId })).unwrap();
+          } catch (agreementError: any) {
+            toast({
+              title: "Property saved, but Tenancy Agreement failed",
+              description: agreementError?.message || "You can retry it from Edit Property.",
+              variant: "destructive",
+            });
+          }
+        }
+
+        if (noteDrafts.length > 0) {
+          let failedNotes = 0;
+          for (const { localId, ...noteData } of noteDrafts) {
+            try {
+              await dispatch(createNote({ ...noteData, propertyId } as any)).unwrap();
+            } catch {
+              failedNotes += 1;
+            }
+          }
+          if (failedNotes > 0) {
+            toast({
+              title: "Some notes failed to save",
+              description: `${failedNotes} of ${noteDrafts.length} note(s) could not be saved. You can add them again from Manage Property.`,
+              variant: "destructive",
+            });
+          }
+        }
+
         toast({
           title: "Success",
           description: isDraft ? "Property saved as draft successfully!" : apiData.message || "Property published successfully!",
@@ -151,24 +213,8 @@ const AddProperty = () => {
       return;
     }
 
-    const nextStep = currentStep + 1;
-
-    if (nextStep >= 3 && !savedProperty?.id) {
-      setIsSubmitting(true);
-      const property = await saveDraft();
-      setIsSubmitting(false);
-      if (!property) {
-        toast({
-          title: "Could not continue",
-          description: "The property must be saved before continuing to agreements.",
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-
     form.clearErrors();
-    setCurrentStep(nextStep);
+    setCurrentStep((prev) => prev + 1);
   };
 
   const handlePrevious = () => setCurrentStep((prev) => Math.max(prev - 1, 0));
@@ -188,16 +234,16 @@ const AddProperty = () => {
         <LoadingBar color="rgb(95,126,220)" progress={progress} onLoaderFinished={() => setProgress(0)} />
 
         <div className="p-6 max-w-5xl mx-auto">
-          <h1 className="text-4xl font-bold mb-8">Add New Property</h1>
+          <h1 className="text-2xl font-semibold tracking-tight mb-8">Add New Property</h1>
 
           <div className="mb-8">
             <div className="flex justify-between items-center mb-4">
               {STEP_LABELS.map((label, index) => (
                 <div key={index} className="flex-1 text-center">
-                  <div className={`w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center ${index <= currentStep ? "bg-red-600 text-white" : "bg-gray-200 text-gray-600"}`}>
+                  <div className={`w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center ${index <= currentStep ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>
                     {index < currentStep ? <Check className="h-5 w-5" /> : index + 1}
                   </div>
-                  <p className={`text-sm ${index <= currentStep ? "text-red-600" : "text-gray-600"}`}>{label}</p>
+                  <p className={`text-sm ${index <= currentStep ? "text-primary" : "text-muted-foreground"}`}>{label}</p>
                 </div>
               ))}
             </div>
@@ -215,11 +261,39 @@ const AddProperty = () => {
               <div className={currentStep !== 2 ? "hidden" : ""}>
                 <RentalAgreement watch={watch} register={form.register} errors={currentStep === 2 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
               </div>
-              {currentStep === 3 && requiresSavedProperty && savedProperty?.id && (
-                <ManagementAgreement propertyId={savedProperty.id} property={savedProperty} />
+              {currentStep === 3 && (
+                savedProperty?.id ? (
+                  <ManagementAgreement propertyId={savedProperty.id} property={savedProperty} />
+                ) : (
+                  <ManagementAgreement
+                    propertyId=""
+                    mode="draft"
+                    onDraftSubmit={setManagementAgreementDraft}
+                  />
+                )
               )}
-              {currentStep === 4 && requiresSavedProperty && savedProperty?.id && (
-                <TenancyAgreement propertyId={savedProperty.id} property={savedProperty} />
+              {currentStep === 4 && (
+                savedProperty?.id ? (
+                  <TenancyAgreement propertyId={savedProperty.id} property={savedProperty} />
+                ) : (
+                  <TenancyAgreement
+                    propertyId=""
+                    mode="draft"
+                    onDraftSubmit={setTenancyAgreementDraft}
+                  />
+                )
+              )}
+              {currentStep === 5 && (
+                savedProperty?.id ? (
+                  <NotesStep propertyId={savedProperty.id} property={savedProperty} />
+                ) : (
+                  <NotesStep
+                    propertyId=""
+                    mode="draft"
+                    drafts={noteDrafts}
+                    onDraftsChange={setNoteDrafts}
+                  />
+                )
               )}
 
               {Object.keys(activeErrors).length > 0 && (
@@ -241,12 +315,12 @@ const AddProperty = () => {
                   <Button type="button" variant="outline" onClick={handlePrevious} disabled={currentStep === 0}>
                     <ArrowLeft className="mr-2 h-4 w-4" /> Previous
                   </Button>
-                  <Button type="button" variant="outline" onClick={handleSaveDraft} disabled={isSubmitting} className="border-gray-400">
+                  <Button type="button" variant="outline" onClick={handleSaveDraft} disabled={isSubmitting} className="border-border">
                     Save as Draft
                   </Button>
                 </div>
                 {isLastStep ? (
-                  <Button type="button" onClick={() => onSubmit(form.getValues(), false)} disabled={isSubmitting} className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+                  <Button type="button" onClick={() => onSubmit(form.getValues(), false)} disabled={isSubmitting}>
                     Publish <Check className="ml-2 h-4 w-4" />
                   </Button>
                 ) : (

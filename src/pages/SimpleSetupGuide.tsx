@@ -162,18 +162,18 @@ const SimpleSetupGuide: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="text-center p-4 border rounded">
                       <Badge variant="destructive" className="mb-2">Admin</Badge>
-                      <p className="text-sm text-gray-600">admin@woodland.com</p>
-                      <p className="text-sm text-gray-600">admin123</p>
+                      <p className="text-sm text-muted-foreground">admin@woodland.com</p>
+                      <p className="text-sm text-muted-foreground">admin123</p>
                     </div>
                     <div className="text-center p-4 border rounded">
                       <Badge variant="secondary" className="mb-2">User1</Badge>
-                      <p className="text-sm text-gray-600">user1@woodland.com</p>
-                      <p className="text-sm text-gray-600">user123</p>
+                      <p className="text-sm text-muted-foreground">user1@woodland.com</p>
+                      <p className="text-sm text-muted-foreground">user123</p>
                     </div>
                     <div className="text-center p-4 border rounded">
                       <Badge variant="secondary" className="mb-2">User2</Badge>
-                      <p className="text-sm text-gray-600">user2@woodland.com</p>
-                      <p className="text-sm text-gray-600">user123</p>
+                      <p className="text-sm text-muted-foreground">user2@woodland.com</p>
+                      <p className="text-sm text-muted-foreground">user123</p>
                     </div>
                   </div>
                 </CardContent>
@@ -218,7 +218,7 @@ const SimpleSetupGuide: React.FC = () => {
                     </div>
 
                     {isSettingUp && (
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-secondary rounded-full h-2">
                         <div 
                           className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                           style={{ width: `${setupProgress}%` }}
@@ -241,7 +241,7 @@ const SimpleSetupGuide: React.FC = () => {
                       </div>
                       <div>
                         <h4 className="font-medium">Create Screens</h4>
-                        <p className="text-sm text-gray-600">Define all the screens/routes in your application that need permission control.</p>
+                        <p className="text-sm text-muted-foreground">Define all the screens/routes in your application that need permission control.</p>
                       </div>
                     </div>
 
@@ -251,7 +251,7 @@ const SimpleSetupGuide: React.FC = () => {
                       </div>
                       <div>
                         <h4 className="font-medium">Create Users</h4>
-                        <p className="text-sm text-gray-600">Add users to your system with Admin or User roles.</p>
+                        <p className="text-sm text-muted-foreground">Add users to your system with Admin or User roles.</p>
                       </div>
                     </div>
 
@@ -261,7 +261,7 @@ const SimpleSetupGuide: React.FC = () => {
                       </div>
                       <div>
                         <h4 className="font-medium">Assign Screen Access</h4>
-                        <p className="text-sm text-gray-600">Grant screen access to users. Admin automatically gets all screens.</p>
+                        <p className="text-sm text-muted-foreground">Grant screen access to users. Admin automatically gets all screens.</p>
                       </div>
                     </div>
 
@@ -271,7 +271,7 @@ const SimpleSetupGuide: React.FC = () => {
                       </div>
                       <div>
                         <h4 className="font-medium">Test Access</h4>
-                        <p className="text-sm text-gray-600">Verify that users can only access their assigned screens.</p>
+                        <p className="text-sm text-muted-foreground">Verify that users can only access their assigned screens.</p>
                       </div>
                     </div>
                   </div>
@@ -288,14 +288,14 @@ const SimpleSetupGuide: React.FC = () => {
                   <div className="space-y-4">
                     <div>
                       <h4 className="font-medium mb-2">1. Import the permission hook</h4>
-                      <pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
+                      <pre className="bg-muted p-3 rounded text-sm overflow-x-auto">
 {`import { useSimplePermissions } from '@/hooks/useSimplePermissions';`}
                       </pre>
                     </div>
 
                     <div>
                       <h4 className="font-medium mb-2">2. Check screen access</h4>
-                      <pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
+                      <pre className="bg-muted p-3 rounded text-sm overflow-x-auto">
 {`const { canAccess, isAdmin } = useSimplePermissions();
 
 // Check if user can access a screen
@@ -312,7 +312,7 @@ if (isAdmin) {
 
                     <div>
                       <h4 className="font-medium mb-2">3. Use ProtectedRoute component</h4>
-                      <pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
+                      <pre className="bg-muted p-3 rounded text-sm overflow-x-auto">
 {`import ProtectedRoute from '@/components/ProtectedRoute';
 
 <ProtectedRoute route="/vendors">
@@ -334,8 +334,8 @@ if (isAdmin) {
                   <div className="space-y-4">
                     <div>
                       <h4 className="font-medium">Navigation Menu</h4>
-                      <p className="text-sm text-gray-600 mb-2">Show/hide menu items based on screen access:</p>
-                      <pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
+                      <p className="text-sm text-muted-foreground mb-2">Show/hide menu items based on screen access:</p>
+                      <pre className="bg-muted p-3 rounded text-sm overflow-x-auto">
 {`{canAccess('/dashboard') && <MenuItem>Dashboard</MenuItem>}
 {canAccess('/vendors') && <MenuItem>Vendors</MenuItem>}
 {isAdmin && <MenuItem>Admin Panel</MenuItem>}`}
@@ -344,8 +344,8 @@ if (isAdmin) {
 
                     <div>
                       <h4 className="font-medium">Route Protection</h4>
-                      <p className="text-sm text-gray-600 mb-2">Protect entire routes:</p>
-                      <pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
+                      <p className="text-sm text-muted-foreground mb-2">Protect entire routes:</p>
+                      <pre className="bg-muted p-3 rounded text-sm overflow-x-auto">
 {`<Route path="/vendors" element={
   <ProtectedRoute route="/vendors">
     <VendorList />
@@ -356,8 +356,8 @@ if (isAdmin) {
 
                     <div>
                       <h4 className="font-medium">Conditional Rendering</h4>
-                      <p className="text-sm text-gray-600 mb-2">Show different content based on access:</p>
-                      <pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
+                      <p className="text-sm text-muted-foreground mb-2">Show different content based on access:</p>
+                      <pre className="bg-muted p-3 rounded text-sm overflow-x-auto">
 {`{canAccess('/vendors') ? (
   <VendorManagement />
 ) : (

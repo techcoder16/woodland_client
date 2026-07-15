@@ -160,7 +160,7 @@ useEffect(()=>{
       <DialogContent className="sm:max-w-6xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="h-5 w-5 text-red-600" /> Add New Transaction
+            <UserPlus className="h-5 w-5 text-primary" /> Add New Transaction
           </DialogTitle>
         </DialogHeader>
 
@@ -196,9 +196,9 @@ useEffect(()=>{
               <Button 
                 type="submit" 
                 className={`px-4 py-2 rounded flex items-center gap-2 ${
-                  isDraftMode 
-                    ? 'bg-yellow-500 hover:bg-yellow-600 text-white' 
-                    : 'bg-red-500 hover:bg-red-600 text-white'
+                  isDraftMode
+                    ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                    : 'bg-primary hover:bg-primary/90 text-primary-foreground'
                 }`}
               >
                 {isDraftMode ? 'Save as Draft' : 'Submit'} 

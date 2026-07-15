@@ -13,13 +13,17 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import countriesData from '../../data/counteries.json';
+import { useAppSelector } from '@/redux/reduxHooks';
 
 import { TOWN_AREA } from '@/lib/constant';
 
 const propertyTypeCategoryOptions = [
-  { value: 'Home', label: 'Home' },
-  { value: 'HMO', label: 'HMO' },
-  { value: 'Other', label: 'Other' },
+  { value: 'house', label: 'House' },
+  { value: 'studio', label: 'Studio' },
+  { value: 'bungalow', label: 'Bungalow' },
+  { value: 'flat', label: 'Flat' },
+  { value: 'room', label: 'Room' },
+  { value: 'maisonette', label: 'Maisonette' },
 ];
 
 const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type }: any) => {
@@ -40,15 +44,36 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type }: 
     { value: 'management', label: 'Management' },
   ];
 
+  const { vendors } = useAppSelector((state) => state.vendors);
+  const selectedVendorId = watch('vendor');
+  const selectedVendor = (vendors || []).find((v: any) => v.id === selectedVendorId);
+
+  const landlordDetailRows = selectedVendor
+    ? [
+        { label: 'Name', value: `${selectedVendor.firstName ?? ''} ${selectedVendor.lastName ?? ''}`.trim() },
+        {
+          label: 'Address',
+          value: [selectedVendor.addressLine1, selectedVendor.addressLine2, selectedVendor.town, selectedVendor.postCode, selectedVendor.country]
+            .filter(Boolean)
+            .join(', '),
+        },
+        { label: 'Phone', value: selectedVendor.phone },
+        { label: 'Email', value: selectedVendor.email },
+        { label: 'Bank', value: selectedVendor.bankBody },
+      ].filter((row) => row.value)
+    : [];
+
   const rooms = watch('rooms') || [];
 
   const propertyTypeCategory = watch('propertyTypeCategory');
   const bedrooms = watch('bedrooms');
   const bathrooms = watch('bathrooms');
+  const receptions = watch('receptions');
   const detailChips = [
     propertyTypeCategory,
     bedrooms ? `${bedrooms} bed` : null,
     bathrooms ? `${bathrooms} bath` : null,
+    receptions ? `${receptions} reception` : null,
     watch('wheelchairAccess') ? 'Wheelchair Access' : null,
     watch('hasGarden') ? 'Garden' : null,
     watch('lift') ? 'Lift' : null,
@@ -69,6 +94,19 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type }: 
           error={errors.vendor?.message?.toString()}
         />
 
+        {landlordDetailRows.length > 0 && (
+          <div className="mt-3 rounded-md border border-border bg-muted/40 p-4">
+            <p className="text-sm font-medium text-foreground mb-2">Landlord Details</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+              {landlordDetailRows.map((row) => (
+                <div key={row.label}>
+                  <p className="text-xs text-muted-foreground">{row.label}</p>
+                  <p className="text-sm text-foreground">{row.value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="p-4 w-full">
@@ -197,6 +235,14 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type }: 
               type="number"
               register={register}
               error={errors.bathrooms?.message?.toString()}
+            />
+            <InputField
+              setValue={setValue}
+              label="No. of Receptions"
+              name="receptions"
+              type="number"
+              register={register}
+              error={errors.receptions?.message?.toString()}
             />
           </div>
 

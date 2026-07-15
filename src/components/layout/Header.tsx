@@ -127,16 +127,7 @@ export function Header() {
         </SidebarTrigger>
         
         <div className="hidden md:flex items-center">
-          <div className="flex items-center gap-2">
-               <div className="flex w-20 bg-red-600">
-        <img
-                className=""
-                src={logo}
-                >
-               
-                </img>
-          </div>
-          </div>
+          <img src={logo} alt="Woodland" className="h-7 w-auto" />
         </div>
       </div>
 

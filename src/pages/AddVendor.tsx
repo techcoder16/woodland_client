@@ -138,7 +138,7 @@ const AddVendor = () => {
         />
 
         <div className="p-6 max-w-5xl mx-auto">
-          <h1 className="text-4xl font-bold mb-8">Add New Vendor</h1>
+          <h1 className="text-2xl font-semibold tracking-tight mb-8">Add New Vendor</h1>
 
           <Card className="p-6">
             <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -172,7 +172,7 @@ const AddVendor = () => {
               )}
 
               <div className="flex justify-end pt-6">
-                <Button type="submit" className="bg-red-500 text-white px-4 py-2 rounded" disabled={isSubmitting}>
+                <Button type="submit" disabled={isSubmitting}>
                   Save <Check className="ml-2 h-4 w-4" />
                 </Button>
               </div>

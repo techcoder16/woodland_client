@@ -23,7 +23,7 @@ import { useAppSelector } from "@/redux/reduxHooks";
 
 // Define the form schema for Tenancy Agreement
 const tenancyAgreementSchema = z.object({
-  propertyId: z.string().min(1, "Property ID is required"),
+  propertyId: z.string().optional(),
  
   details: z.string().min(1, "Details are required"),
   housingAct: z.string().min(1, "Housing Act is required"),
@@ -43,7 +43,14 @@ const tenancyAgreementSchema = z.object({
 
 type TenancyAgreementFormData = z.infer<typeof tenancyAgreementSchema>;
 
-const TenancyAgreement: React.FC<{ propertyId: string; property?: any }> = ({ propertyId, property }) => {
+interface TenancyAgreementProps {
+  propertyId: string;
+  property?: any;
+  mode?: "edit" | "draft";
+  onDraftSubmit?: (data: TenancyAgreementFormData) => void;
+}
+
+const TenancyAgreement: React.FC<TenancyAgreementProps> = ({ propertyId, property, mode = "edit", onDraftSubmit }) => {
   const dispatch = useDispatch<any>();
   const { tenancyAgreement } = useAppSelector((state) => state.tenancyAgreement);
   const { rents } = useAppSelector((state) => state.rent);
@@ -78,17 +85,19 @@ const TenancyAgreement: React.FC<{ propertyId: string; property?: any }> = ({ pr
   });
 
   useEffect(() => {
-    if (tenancyAgreement) {
+    if (mode === "edit" && tenancyAgreement) {
       reset(tenancyAgreement);
     }
-  }, [tenancyAgreement, reset]);
+  }, [mode, tenancyAgreement, reset]);
 
   useEffect(() => {
-    dispatch(fetchTenancyAgreement({ propertyId }));
-    dispatch(fetchPropertyParties(propertyId));
     dispatch(fetchVendors({ page: 1, search: "" }));
     dispatch(fetchtenants({ page: 1, search: "" }));
-  }, [dispatch, propertyId]);
+    if (mode === "edit") {
+      dispatch(fetchTenancyAgreement({ propertyId }));
+      dispatch(fetchPropertyParties(propertyId));
+    }
+  }, [dispatch, propertyId, mode]);
 
   const partyData = (propertyParties as any)?.data ?? propertyParties;
   const pdfLandlord = Array.isArray(vendors)
@@ -102,6 +111,11 @@ const TenancyAgreement: React.FC<{ propertyId: string; property?: any }> = ({ pr
 console.log(errors)
 
   const onSubmit = async (data: any) => {
+    if (mode === "draft") {
+      onDraftSubmit?.(data);
+      toast.success("Tenancy Agreement saved for this property.");
+      return;
+    }
     try {
       await dispatch(upsertTenancyAgreement(data)).unwrap();
       toast.success("Tenancy Agreement updated successfully!");

@@ -14,8 +14,8 @@ const AdminDashboard: React.FC = () => {
       <div className="flex items-center justify-center min-h-screen">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-              <Shield className="h-6 w-6 text-red-600" />
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+              <Shield className="h-6 w-6 text-destructive" />
             </div>
             <CardTitle className="text-xl">Access Denied</CardTitle>
             <CardDescription>
@@ -31,7 +31,7 @@ const AdminDashboard: React.FC = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Administrator Dashboard</h1>
-        <p className="text-gray-600">
+        <p className="text-sm text-muted-foreground">
           Manage users, permissions, and system settings.
         </p>
       </div>

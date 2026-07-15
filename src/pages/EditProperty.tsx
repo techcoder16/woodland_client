@@ -15,6 +15,7 @@ import DocumentsCertificates from "./Property/DocumentsCertificates";
 import RentalAgreement from "./Property/RentalAgreement";
 import ManagementAgreement from "./Manager/ManagementAgreement";
 import TenancyAgreement from "./Manager/TenancyAgreement";
+import NotesStep from "./Manager/NotesStep";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { patch } from "@/helper/api";
 import { propertySchema } from "@/schema/property.schema";
@@ -27,12 +28,14 @@ const STEP_LABELS = [
   "Rental Agreement",
   "Management Agreement",
   "Tenancy Agreement",
+  "Notes",
 ] as const;
 
 const STEP_FIELDS: string[][] = [
   ["vendor", "for", "postCode", "propertyName", "addressLine1", "addressLine2", "town", "country", "propertyTypeCategory", "bedrooms", "bathrooms", "wheelchairAccess", "hasGarden", "lift", "gas", "electricity", "rooms"],
   ["photographs", "floorPlans", "epcCertificate", "gasCertificate", "electricityCertificate", "fireRiskAssessment", "insuranceCertificate", "emergencyLightingCertificate", "propertyLicense"],
   ["rentalTenure", "rentalDescription"],
+  [],
   [],
   [],
 ];
@@ -95,6 +98,7 @@ const EditProperty = () => {
       vendor: property.vendorId ?? "",
       bedrooms: property.bedrooms ?? "",
       bathrooms: property.bathrooms ?? "",
+      receptions: property.receptions ?? "",
       wheelchairAccess: toBoolean(property.wheelchairAccess),
       hasGarden: toBoolean(property.hasGarden),
       lift: toBoolean(property.lift),
@@ -230,20 +234,28 @@ const EditProperty = () => {
   return (
     <DashboardLayout>
       {isSubmitting && (
-        <div className="fixed inset-0 h-full w-full bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div className="text-white text-lg font-semibold">Processing...</div>
+        <div className="fixed inset-0 h-full w-full bg-background/60 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-5 py-3 shadow-lg">
+            <div className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+            <span className="text-sm font-medium text-foreground">Processing...</span>
+          </div>
         </div>
       )}
 
       <div className="min-h-screen bg-background">
-        <LoadingBar color="rgb(95,126,220)" progress={progress} onLoaderFinished={() => setProgress(0)} />
+        <LoadingBar color="hsl(350, 74%, 45%)" progress={progress} onLoaderFinished={() => setProgress(0)} />
 
         <div className="p-6 max-w-5xl mx-auto">
           <div className="flex items-center justify-between mb-8">
-            <h1 className="text-4xl font-bold">Edit Property</h1>
+            <div>
+              <h1 className="text-3xl font-semibold tracking-tight text-foreground">Edit Property</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Update the details below, then publish when you're ready.
+              </p>
+            </div>
             {property.propertyStatus === "DRAFT" && (
-              <span className="inline-flex items-center rounded-full px-4 py-2 text-sm font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400">
-                Draft Mode
+              <span className="inline-flex items-center rounded-full px-4 py-1.5 text-xs font-medium tracking-wide uppercase bg-secondary text-secondary-foreground border border-border">
+                Draft
               </span>
             )}
           </div>
@@ -252,17 +264,27 @@ const EditProperty = () => {
             <div className="flex justify-between items-center mb-4">
               {STEP_LABELS.map((label, index) => (
                 <div key={index} className="flex-1 text-center">
-                  <div className={`w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center ${index <= currentStep ? "bg-red-600 text-white" : "bg-gray-200 text-gray-600"}`}>
-                    {index < currentStep ? <Check className="h-5 w-5" /> : index + 1}
+                  <div
+                    className={`w-9 h-9 rounded-full mx-auto mb-2 flex items-center justify-center text-sm font-medium transition-colors ${
+                      index < currentStep
+                        ? "bg-primary text-primary-foreground"
+                        : index === currentStep
+                        ? "bg-primary text-primary-foreground ring-4 ring-primary/20"
+                        : "bg-secondary text-muted-foreground"
+                    }`}
+                  >
+                    {index < currentStep ? <Check className="h-4 w-4" /> : index + 1}
                   </div>
-                  <p className={`text-sm ${index <= currentStep ? "text-red-600" : "text-gray-600"}`}>{label}</p>
+                  <p className={`text-xs font-medium ${index <= currentStep ? "text-foreground" : "text-muted-foreground"}`}>
+                    {label}
+                  </p>
                 </div>
               ))}
             </div>
-            <Progress value={((currentStep + 1) / STEP_LABELS.length) * 100} className="h-2" />
+            <Progress value={((currentStep + 1) / STEP_LABELS.length) * 100} className="h-1.5" />
           </div>
 
-          <Card className="p-6 shadow-md">
+          <Card className="p-6 sm:p-8 shadow-sm border-border/80">
             <form onSubmit={(e) => e.preventDefault()}>
               <div className={currentStep !== 0 ? "hidden" : ""}>
                 <PropertyInfo watch={watch} register={form.register} errors={currentStep === 0 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
@@ -279,6 +301,9 @@ const EditProperty = () => {
               {currentStep === 4 && (
                 <TenancyAgreement propertyId={property.id} property={property} />
               )}
+              {currentStep === 5 && (
+                <NotesStep propertyId={property.id} property={property} />
+              )}
 
               {Object.keys(activeErrors).length > 0 && (
                 <Alert variant="destructive" className="mt-6">
@@ -294,14 +319,14 @@ const EditProperty = () => {
                 </Alert>
               )}
 
-              <div className="flex justify-between pt-6">
+              <div className="flex justify-between pt-6 mt-6 border-t border-border">
                 <div className="flex gap-3">
                   <Button type="button" variant="outline" onClick={handlePrevious} disabled={currentStep === 0}>
                     <ArrowLeft className="mr-2 h-4 w-4" /> Previous
                   </Button>
                 </div>
                 {isLastStep ? (
-                  <Button type="button" onClick={() => onSubmit(form.getValues(), false)} disabled={isSubmitting} className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+                  <Button type="button" onClick={() => onSubmit(form.getValues(), false)} disabled={isSubmitting}>
                     {property.propertyStatus === "DRAFT" ? "Update & Publish" : "Update Property"} <Check className="ml-2 h-4 w-4" />
                   </Button>
                 ) : (
