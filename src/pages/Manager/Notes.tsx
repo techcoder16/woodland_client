@@ -13,6 +13,7 @@ import TextAreaField from "@/utils/TextAreaField";
 import SelectField from "@/utils/SelectedField";
 import { DateField } from "@/utils/DateField";
 import EmployeeDropdown from "@/components/EmployeeDropdown";
+import ContractorPicker from "@/utils/ContractorPicker";
 import { StickyNote, Plus, Edit, Trash2, Calendar, User } from "lucide-react";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
@@ -42,14 +43,14 @@ const jobTypeSchema = z.object({
   schedule: z.string().optional(),
   time: z.string().optional(),
   thingsToDo: z.string().optional(),
-  assignedTo: z.string().min(1, "Assigned to is required"),
   assignedType: z.enum(["employee", "contractor"], {
     errorMap: () => ({ message: "Select employee or contractor" }),
   }),
+  employeeId: z.string().optional(),
+  contractorId: z.string().optional(),
+  priority: z.string().optional(),
   dateDone: z.string().optional(),
-  status: z.enum(["pending", "in_progress", "completed"], {
-    errorMap: () => ({ message: "Select a valid status" }),
-  }).default("pending"),
+  status: z.string().default("quoting"),
 });
 
 // Enhanced Note form schema
@@ -130,7 +131,7 @@ const Notes = ({ propertyId, property }: NotesProps) => {
   useEffect(() => {
     if (propertyId) {
       console.log('Fetching data for propertyId:', propertyId);
-      dispatch(fetchJobTypes({ propertyId, page: 1, search: "" }));
+      dispatch(fetchJobTypes({ propertyId, page: 1 }));
       dispatch(fetchNotes({ propertyId, page: 1, search: "" }));
       fetchUsers(); // Also fetch users for employee name lookup
     }
@@ -170,6 +171,7 @@ const Notes = ({ propertyId, property }: NotesProps) => {
     reset: resetJobType,
     setValue: setJobTypeValue,
     watch: watchJobType,
+    clearErrors: clearJobTypeErrors,
     formState: { errors: errorsJobType },
   } = useForm<JobTypeFormData>({
     resolver: zodResolver(jobTypeSchema),
@@ -190,7 +192,7 @@ const Notes = ({ propertyId, property }: NotesProps) => {
   // Submit Handlers
   const onSubmitJobType = async (data: JobTypeFormData) => {
     try {
-      const payload: Omit<JobType, 'id'> = { 
+      const payload: Omit<JobType, 'id'> = {
         propertyId,
         jobType: data.jobType,
         description: data.description,
@@ -198,8 +200,9 @@ const Notes = ({ propertyId, property }: NotesProps) => {
         schedule: data.schedule,
         time: data.time,
         thingsToDo: data.thingsToDo,
-        assignedTo: data.assignedTo,
-        assignedType: data.assignedType,
+        employeeId: data.assignedType === "employee" ? data.employeeId : undefined,
+        contractorId: data.assignedType === "contractor" ? data.contractorId : undefined,
+        priority: data.priority,
         dateDone: data.dateDone,
         status: data.status
       };
@@ -259,8 +262,10 @@ const Notes = ({ propertyId, property }: NotesProps) => {
     setJobTypeValue("schedule", jobType.schedule || "");
     setJobTypeValue("time", jobType.time || "");
     setJobTypeValue("thingsToDo", jobType.thingsToDo || "");
-    setJobTypeValue("assignedTo", jobType.assignedTo);
-    setJobTypeValue("assignedType", jobType.assignedType);
+    setJobTypeValue("assignedType", jobType.contractorId ? "contractor" : "employee");
+    setJobTypeValue("employeeId", jobType.employeeId || "");
+    setJobTypeValue("contractorId", jobType.contractorId || "");
+    setJobTypeValue("priority", jobType.priority || "");
     setJobTypeValue("dateDone", jobType.dateDone || "");
     setJobTypeValue("status", jobType.status);
     setIsJobTypeDialogOpen(true);
@@ -313,9 +318,9 @@ const Notes = ({ propertyId, property }: NotesProps) => {
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
-      case "completed": return "default";
-      case "in_progress": return "secondary";
-      case "pending": return "destructive";
+      case "done": return "default";
+      case "scheduled": return "secondary";
+      case "quoting": return "destructive";
       default: return "outline";
     }
   };
@@ -512,16 +517,16 @@ const Notes = ({ propertyId, property }: NotesProps) => {
                       placeholder="e.g., Property Inspection"
                     />
                     <SelectField
-                      label="Status"
-                      name="status"
+                      label="Priority"
+                      name="priority"
                       register={registerJobType}
                       setValue={setJobTypeValue}
                       watch={watchJobType}
-                      error={errorsJobType.status?.message}
+                      error={errorsJobType.priority?.message}
                       options={[
-                        { value: "pending", label: "Pending" },
-                        { value: "in_progress", label: "In Progress" },
-                        { value: "completed", label: "Completed" }
+                        { value: "Low", label: "Low" },
+                        { value: "Medium", label: "Medium" },
+                        { value: "Critical", label: "Critical" }
                       ]}
                     />
                   </div>
@@ -560,16 +565,6 @@ const Notes = ({ propertyId, property }: NotesProps) => {
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <EmployeeDropdown
-                      label="Assigned To"
-                      onEmployeeSelect={(employeeId) => setJobTypeValue("assignedTo", employeeId || "")}
-                      selectedEmployeeId={watchJobType("assignedTo")}
-                      placeholder="Select an employee"
-                      required={true}
-                    />
-                    {errorsJobType.assignedTo && (
-                      <p className="text-sm text-destructive">{errorsJobType.assignedTo.message}</p>
-                    )}
                     <SelectField
                       label="Assigned Type"
                       name="assignedType"
@@ -582,7 +577,35 @@ const Notes = ({ propertyId, property }: NotesProps) => {
                         { value: "contractor", label: "Contractor" }
                       ]}
                     />
+                    {watchJobType("assignedType") === "contractor" ? (
+                      <ContractorPicker
+                        label="Contractor"
+                        name="contractorId"
+                        watch={watchJobType}
+                        setValue={setJobTypeValue}
+                        clearErrors={clearJobTypeErrors as (name: string) => void}
+                        error={errorsJobType.contractorId?.message}
+                      />
+                    ) : (
+                      <div>
+                        <EmployeeDropdown
+                          label="Employee"
+                          onEmployeeSelect={(employeeId) => setJobTypeValue("employeeId", employeeId || "")}
+                          selectedEmployeeId={watchJobType("employeeId")}
+                          placeholder="Select an employee"
+                        />
+                        {errorsJobType.employeeId && (
+                          <p className="text-sm text-destructive">{errorsJobType.employeeId.message}</p>
+                        )}
+                      </div>
+                    )}
                   </div>
+                  {editingJobType && (
+                    <p className="text-sm text-muted-foreground">
+                      Current status: <Badge variant={getStatusBadgeVariant(editingJobType.status)}>{editingJobType.status}</Badge>
+                      {" "}(assign a contractor to move this from Quoting to Scheduled; set Date Done to mark it Done)
+                    </p>
+                  )}
 
                   <TextAreaField
                     label="Things To Do"
@@ -648,9 +671,13 @@ const Notes = ({ propertyId, property }: NotesProps) => {
                         <TableCell>
                           <div className="flex items-center">
                             <User className="h-4 w-4 mr-2" />
-                            {jobType.assignedTo}
+                            {jobType.contractorRef
+                              ? jobType.contractorRef.name
+                              : jobType.employeeId
+                                ? getEmployeeName(jobType.employeeId)
+                                : "-"}
                             <Badge variant="outline" className="ml-2">
-                              {jobType.assignedType}
+                              {jobType.contractorRef ? "contractor" : "employee"}
                             </Badge>
                           </div>
                         </TableCell>

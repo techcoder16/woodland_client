@@ -18,6 +18,7 @@ import ContractorList from "./pages/ContractorList";
 import AddContractor from "./pages/AddContractor";
 import EditContractor from "./pages/EditContractor";
 import MaintenanceList from "./pages/Maintenance/MaintenanceList";
+import MaintenanceDetail from "./pages/Maintenance/MaintenanceDetail";
 import AddProperty from "./pages/AddProperty";
 import EditProperty from "./pages/EditProperty";
 import ManageProperty from "./pages/Manager/ManagePropertyMain";
@@ -117,6 +118,31 @@ function App() {
                   <Route path="/vendors/edit" element={
                     <ProtectedRoute route="/vendors/edit">
                       <EditVendor />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/contractors" element={
+                    <ProtectedRoute route="/contractors">
+                      <ContractorList />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/contractors/add" element={
+                    <ProtectedRoute route="/contractors/add">
+                      <AddContractor />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/contractors/edit" element={
+                    <ProtectedRoute route="/contractors/edit">
+                      <EditContractor />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/maintenance" element={
+                    <ProtectedRoute route="/maintenance">
+                      <MaintenanceList />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/maintenance/:id" element={
+                    <ProtectedRoute route="/maintenance">
+                      <MaintenanceDetail />
                     </ProtectedRoute>
                   } />
                   {/* <Route path="/tenant/add" element={<AddTenant />} />

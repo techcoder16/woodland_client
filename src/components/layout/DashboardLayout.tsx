@@ -25,6 +25,8 @@ import {
   Users2,
   Wallet,
   Shield,
+  Wrench,
+  HardHat,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import logo from "@/assets/logo.png";
@@ -47,6 +49,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
     { label: "Properties", path: "/properties", icon: Building2 },
     { label: "Landlords", path: "/vendors", icon: Users2 },
+    { label: "Maintenance", path: "/maintenance", icon: Wrench },
+    { label: "Contractors", path: "/contractors", icon: HardHat },
     { label: "Transactions", path: "/transaction", icon: TbTransactionDollar },
     { label: "Finance", path: "/property-management", icon: Wallet },
     { label: "Tenants", path: "/tenants", icon: CircleUser },

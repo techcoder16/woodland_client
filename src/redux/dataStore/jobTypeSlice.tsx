@@ -14,13 +14,30 @@ export interface JobType {
   dueDate: string;
   schedule?: string;
   time?: string;
+  startDate?: string;
+  endDate?: string;
   thingsToDo?: string;
-  assignedTo: string;
-  assignedType: "employee" | "contractor";
+  employeeId?: string;
+  contractorId?: string;
+  priority?: string;
   dateDone?: string;
-  status: "pending" | "in_progress" | "completed";
+  media?: string[];
+  totalCost?: number;
+  totalCharged?: number;
+  status: string; // e.g. "quoting" | "scheduled" | "done" (open-ended)
   createdAt?: string;
   updatedAt?: string;
+  employee?: { id: string; first_name?: string; last_name?: string; email?: string };
+  contractorRef?: { id: string; name: string; company?: string; phone?: string; email?: string };
+  property?: {
+    id: string;
+    addressLine1?: string;
+    addressLine2?: string;
+    town?: string;
+    postCode?: string;
+    propertyTypeCategory?: string;
+    vendor?: { id: string; firstName?: string; lastName?: string; phone?: string; email?: string };
+  };
 }
 
 // Define JobType state type
@@ -42,12 +59,19 @@ const initialState: JobTypeState = {
 // Fetch JobTypes data from API
 export const fetchJobTypes = createAsyncThunk(
   "jobType/fetchJobTypes",
-  async ({ propertyId, page, search }: { propertyId: string; page: number; search: string }, { rejectWithValue }) => {
+  async (
+    { propertyId, page, limit, status, contractorId }: { propertyId?: string; page: number; limit?: number; status?: string; contractorId?: string },
+    { rejectWithValue }
+  ) => {
     try {
       const access_token = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = { Authorization: `Bearer ${access_token}` };
-      const params = `?propertyId=${propertyId}&page=${page}&search=${search}`;
-      const data = await getApi("property-management/job-type", params, headers);
+      const query = new URLSearchParams({ page: String(page) });
+      if (limit) query.set("limit", String(limit));
+      if (propertyId) query.set("propertyId", propertyId);
+      if (status) query.set("status", status);
+      if (contractorId) query.set("contractorId", contractorId);
+      const data = await getApi("property-management/job-type", `?${query.toString()}`, headers);
       return data;
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to fetch job types");
@@ -92,7 +116,6 @@ export const createJobType = createAsyncThunk(
       await (dispatch as AppDispatch)(fetchJobTypes({
         propertyId: jobTypeData.propertyId,
         page: 1,
-        search: ""
       }));
 
       return res.data;
@@ -120,7 +143,6 @@ export const updateJobType = createAsyncThunk(
         await (dispatch as AppDispatch)(fetchJobTypes({
           propertyId: jobTypeData.propertyId,
           page: 1,
-          search: ""
         }));
       }
 
@@ -148,7 +170,6 @@ export const deleteJobType = createAsyncThunk(
       await (dispatch as AppDispatch)(fetchJobTypes({
         propertyId,
         page: 1,
-        search: ""
       }));
 
       return res;
@@ -199,6 +220,8 @@ const jobTypeSlice = createSlice({
           const index = state.jobTypes.findIndex(jt => jt.id === jobType.id);
           if (index !== -1) {
             state.jobTypes[index] = jobType;
+          } else {
+            state.jobTypes.push(jobType);
           }
         }
       })
