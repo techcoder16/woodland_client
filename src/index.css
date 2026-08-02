@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -15,8 +15,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 30% 11%;
 
-    /* Deep, mature red — the one accent, used with intent */
-    --primary: 350 74% 45%;
+    /* Vibrant red — the one accent, used with intent */
+    --primary: 0 81% 43%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 18% 95.5%;
@@ -25,8 +25,8 @@
     --muted: 220 18% 96%;
     --muted-foreground: 222 12% 46%;
 
-    --accent: 350 74% 96%;
-    --accent-foreground: 350 74% 32%;
+    --accent: 0 74% 96%;
+    --accent-foreground: 0 74% 32%;
 
     --destructive: 20 78% 45%;
     --destructive-foreground: 0 0% 100%;
@@ -38,18 +38,18 @@
 
     --border: 220 15% 91%;
     --input: 220 15% 91%;
-    --ring: 350 74% 45%;
+    --ring: 0 81% 43%;
 
     --radius: 0.625rem;
 
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222 15% 30%;
-    --sidebar-primary: 350 74% 45%;
+    --sidebar-primary: 0 81% 43%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 18% 95.5%;
     --sidebar-accent-foreground: 222 25% 12%;
     --sidebar-border: 220 15% 93%;
-    --sidebar-ring: 350 74% 45%;
+    --sidebar-ring: 0 81% 43%;
   }
 
   .dark {
@@ -62,7 +62,7 @@
     --popover: 224 24% 10%;
     --popover-foreground: 220 20% 96%;
 
-    --primary: 350 78% 58%;
+    --primary: 0 82% 56%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 224 18% 15%;
@@ -71,8 +71,8 @@
     --muted: 224 18% 15%;
     --muted-foreground: 220 12% 65%;
 
-    --accent: 350 40% 20%;
-    --accent-foreground: 350 90% 88%;
+    --accent: 0 40% 20%;
+    --accent-foreground: 0 90% 88%;
 
     --destructive: 20 78% 52%;
     --destructive-foreground: 0 0% 100%;
@@ -84,16 +84,16 @@
 
     --border: 224 16% 18%;
     --input: 224 16% 18%;
-    --ring: 350 78% 58%;
+    --ring: 0 82% 56%;
 
     --sidebar-background: 224 24% 9%;
     --sidebar-foreground: 220 15% 88%;
-    --sidebar-primary: 350 78% 58%;
+    --sidebar-primary: 0 82% 56%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 224 18% 15%;
     --sidebar-accent-foreground: 220 20% 96%;
     --sidebar-border: 224 16% 16%;
-    --sidebar-ring: 350 78% 58%;
+    --sidebar-ring: 0 82% 56%;
   }
 }
  

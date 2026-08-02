@@ -62,7 +62,7 @@ const SelectField: React.FC<SelectFieldProps> = ({
 
   return (
     <div className="space-y-1.5">
-      <label className="text-muted-foreground text-sm font-medium">{label}</label>
+      {label && <label className="text-muted-foreground text-sm font-medium">{label}</label>}
 
       {/* Radix UI Select - controlled by currentValue */}
       <Select

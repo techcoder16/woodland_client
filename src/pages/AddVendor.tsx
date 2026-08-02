@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ const AddVendor = () => {
     mode: "onSubmit",
   });
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const { watch, register, setValue } = form;
 
@@ -90,6 +92,7 @@ const AddVendor = () => {
           description: error.message || "Failed to create landlord.",
           variant: "destructive",
         });
+        setIsSubmitting(false);
         return;
       }
 
@@ -102,6 +105,8 @@ const AddVendor = () => {
         });
 
         setProgress(100);
+        navigate("/vendors");
+        return;
       } else {
         throw new Error("Invalid vendor ID or unexpected response format.");
       }
@@ -112,7 +117,6 @@ const AddVendor = () => {
         description: error.message || "Failed to create landlord.",
         variant: "destructive",
       });
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -129,7 +133,7 @@ const AddVendor = () => {
 
       <div className="bg-background">
         <LoadingBar
-          color="hsl(350, 74%, 45%)"
+          color="hsl(0, 81%, 43%)"
           progress={progress}
           onLoaderFinished={() => setProgress(0)}
         />

@@ -131,7 +131,7 @@ const EditTenant = ({ isOpen, onClose, propertyId, tenant }: EditTenantModalProp
         </DialogHeader>
 
         <LoadingBar
-          color="hsl(350, 74%, 45%)"
+          color="hsl(0, 81%, 43%)"
           progress={progress}
           onLoaderFinished={() => setProgress(0)}
         />

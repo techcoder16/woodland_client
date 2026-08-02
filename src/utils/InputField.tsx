@@ -62,7 +62,7 @@ const InputField: React.FC<InputFieldProps> = ({
 
   return (
     <div className="space-y-1.5">
-      <label className="text-muted-foreground font-medium text-sm">{label}</label>
+      {label && <label className="text-muted-foreground font-medium text-sm">{label}</label>}
       <Input
         type={type}
         ref={inputRef}

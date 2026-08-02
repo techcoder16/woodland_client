@@ -5,15 +5,11 @@ import { AppDispatch } from "../store";
 export interface Contractor {
   id: string;
   name: string;
-  company?: string;
   specialty?: string;
   phone?: string;
   email?: string;
-  addressLine1?: string;
-  addressLine2?: string;
-  town?: string;
-  postCode?: string;
-  country?: string;
+  address?: string;
+  logo?: string;
 }
 
 interface ContractorState {

@@ -72,7 +72,7 @@ else{
 
   return (
     <>
-      <LoadingBar color="hsl(350, 74%, 45%)" progress={progress} onLoaderFinished={() => setProgress(0)} />
+      <LoadingBar color="hsl(0, 81%, 43%)" progress={progress} onLoaderFinished={() => setProgress(0)} />
       <div
         style={{
           backgroundImage: `url(${currentImage})`,

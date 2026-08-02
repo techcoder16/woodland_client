@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useDispatch } from "react-redux";
 import { toast } from "sonner";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTriggerLg, TabsContent } from "@/components/ui/tabs";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import Features from "./Features";
@@ -166,80 +166,53 @@ console.log("Property data in ManageProperty component:", property);
         <div className=" rounded-lg shadow-sm ">
           <Tabs defaultValue="features" className="w-full">
             {/* Horizontal Scrollable Tab List */}
-            <div className="border-b  px-6 py-4">
-              <div className="flex space-x-1 overflow-x-auto scrollbar-hide">
-                <TabsList className="inline-flex h-12 items-center justify-center rounded-lg  p-1 ">
-                  <TabsTrigger 
-                    value="features" 
-                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:  data-[state=active]:shadow-sm"
-                  >
+            <div className="px-6 pt-4">
+              <div className="overflow-x-auto scrollbar-hide">
+                <TabsList className="w-max">
+                  <TabsTriggerLg value="features">
                     <Building2 className="h-4 w-4 mr-2" />
                     Property
-                  </TabsTrigger>
-                  
-                  <TabsTrigger 
-                    value="parties"
-                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:  data-[state=active]:shadow-sm"
-                  >
+                  </TabsTriggerLg>
+
+                  <TabsTriggerLg value="parties">
                     <Users className="h-4 w-4 mr-2" />
                     Parties
-                  </TabsTrigger>
-                  
-                  <TabsTrigger 
-                    value="rent"
-                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:  data-[state=active]:shadow-sm"
-                  >
+                  </TabsTriggerLg>
+
+                  <TabsTriggerLg value="rent">
                     <DollarSign className="h-4 w-4 mr-2" />
                     Rent
-                  </TabsTrigger>
-                  
-                  <TabsTrigger 
-                    value="supplier"
-                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:  data-[state=active]:shadow-sm"
-                  >
+                  </TabsTriggerLg>
+
+                  <TabsTriggerLg value="supplier">
                     <Package className="h-4 w-4 mr-2" />
                     Supplier
-                  </TabsTrigger>
-                  
-                  <TabsTrigger 
-                    value="management"
-                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:  data-[state=active]:shadow-sm"
-                  >
+                  </TabsTriggerLg>
+
+                  <TabsTriggerLg value="management">
                     <HandHeart className="h-4 w-4 mr-2" />
                     Management
-                  </TabsTrigger>
-                  
-                  <TabsTrigger 
-                    value="tenancy"
-                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:  data-[state=active]:shadow-sm"
-                  >
+                  </TabsTriggerLg>
+
+                  <TabsTriggerLg value="tenancy">
                     <FileText className="h-4 w-4 mr-2" />
                     Tenancy
-                  </TabsTrigger>
-                  
-                  <TabsTrigger 
-                    value="transactions"
-                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:  data-[state=active]:shadow-sm"
-                  >
+                  </TabsTriggerLg>
+
+                  <TabsTriggerLg value="transactions">
                     <ArrowRightLeft className="h-4 w-4 mr-2" />
                     Transactions
-                  </TabsTrigger>
-                  
-                  <TabsTrigger
-                    value="notes"
-                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:  data-[state=active]:shadow-sm"
-                  >
+                  </TabsTriggerLg>
+
+                  <TabsTriggerLg value="notes">
                     <StickyNote className="h-4 w-4 mr-2" />
                     ToDo / Notes
-                  </TabsTrigger>
+                  </TabsTriggerLg>
 
-                  <TabsTrigger
-                    value="history"
-                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:  data-[state=active]:shadow-sm"
-                  >
+                  <TabsTriggerLg value="history">
                     <HistoryIcon className="h-4 w-4 mr-2" />
                     History
-                  </TabsTrigger>
+                  </TabsTriggerLg>
                 </TabsList>
               </div>
             </div>

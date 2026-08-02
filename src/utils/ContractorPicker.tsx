@@ -62,7 +62,7 @@ const ContractorPicker: React.FC<ContractorPickerProps> = ({
 
   const contractorOptions: ContractorOption[] = (contractors || []).map((contractor: any) => ({
     value: contractor.id,
-    label: contractor.company ? `${contractor.name} (${contractor.company})` : contractor.name,
+    label: contractor.specialty ? `${contractor.name} (${contractor.specialty})` : contractor.name,
   }));
 
   const selectedContractor = contractorOptions.find((c) => c.value === currentValue);

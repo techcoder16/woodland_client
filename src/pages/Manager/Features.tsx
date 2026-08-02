@@ -35,6 +35,7 @@ const featureSchema = z.object({
   ),
   HowDeattached: z.string().optional(),
   Floor: z.string().optional(),
+  NoOfFloors: z.string().optional(),
   DoorNumber: z.string().optional(),
   Road: z.string().optional(),
   towns: z.string().optional(),
@@ -62,6 +63,9 @@ export const Feature = ({ property }: any) => {
     resolver: zodResolver(featureSchema),
   });
   const postCodeValue = watch("PostCode");
+  const isFlatOrMaisonette = ["flat", "maisonette"].includes(
+    (property?.propertyTypeCategory || "").toLowerCase()
+  );
 
   // Always set propertyId in the form.
   useEffect(() => {
@@ -228,24 +232,35 @@ export const Feature = ({ property }: any) => {
             />
           </div>{" "}
           <div className=" grid  grid-cols-3">
-            <SelectField
-              watch={watch}
-              label="Number of Receptions"
-              name="NoOfReceptions"
-              options={[
-                { label: "Not Available", value: "Not-Available" },
+            {isFlatOrMaisonette ? (
+              <InputField
+                label="Number of Receptions"
+                name="NoOfReceptions"
+                type="number"
+                register={registerFeature}
+                error={errorsFeature.NoOfReceptions?.message}
+                setValue={setFeatureValue}
+              />
+            ) : (
+              <SelectField
+                watch={watch}
+                label="Number of Receptions"
+                name="NoOfReceptions"
+                options={[
+                  { label: "Not Available", value: "Not-Available" },
 
-                { label: "One", value: "One" },
-                { label: "Two", value: "Two" },
-                { label: "Three", value: "Three" },
-                { label: "Four", value: "Four" },
-                { label: "Through Lounge", value: "Though-Lounge" },
-              ]}
-              register={registerFeature}
-              error={errorsFeature.NoOfReceptions?.message}
-              setValue={setFeatureValue}
-              onChange={value => handleSelectChange("NoOfReceptions", value)}
-            />
+                  { label: "One", value: "One" },
+                  { label: "Two", value: "Two" },
+                  { label: "Three", value: "Three" },
+                  { label: "Four", value: "Four" },
+                  { label: "Through Lounge", value: "Though-Lounge" },
+                ]}
+                register={registerFeature}
+                error={errorsFeature.NoOfReceptions?.message}
+                setValue={setFeatureValue}
+                onChange={value => handleSelectChange("NoOfReceptions", value)}
+              />
+            )}
 
             <SelectField
               label="Number of Cloak Rooms"
@@ -459,6 +474,17 @@ export const Feature = ({ property }: any) => {
               setValue={setFeatureValue}
               onChange={value => handleSelectChange("Floor", value)}
             />
+
+            {isFlatOrMaisonette && (
+              <InputField
+                label="No. of Floor"
+                name="NoOfFloors"
+                type="number"
+                register={registerFeature}
+                error={errorsFeature.NoOfFloors?.message}
+                setValue={setFeatureValue}
+              />
+            )}
 
             <InputField
               label="Door Number"

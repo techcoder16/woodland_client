@@ -1,11 +1,10 @@
 // src/pages/Dashboard.tsx
 import React, { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "../redux/reduxHooks";
-import { fetchDashboardStats, fetchRecentActivities } from "../redux/dataStore/dashboardSlice";
+import { fetchDashboardStats } from "../redux/dataStore/dashboardSlice";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { AnalyticsChart } from "@/components/dashboard/AnalyticsChart";
-import { RecentActivities } from "@/components/dashboard/RecentActivities";
 
 const Dashboard = () => {
   const dispatch = useAppDispatch();
@@ -13,7 +12,6 @@ const Dashboard = () => {
 
   useEffect(() => {
     dispatch(fetchDashboardStats());
-    dispatch(fetchRecentActivities(10));
   }, [dispatch]);
 
   const unwrap = (v: unknown) =>
@@ -50,15 +48,9 @@ const Dashboard = () => {
 
         <DashboardStats />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 surface p-6">
-            <h2 className="text-sm font-medium text-muted-foreground mb-4">Analytics overview</h2>
-            <AnalyticsChart />
-          </div>
-          <div className="surface p-6">
-            <h2 className="text-sm font-medium text-muted-foreground mb-2">Recent activity</h2>
-            <RecentActivities />
-          </div>
+        <div className="surface p-6">
+          <h2 className="text-sm font-medium text-muted-foreground mb-4">Analytics overview</h2>
+          <AnalyticsChart />
         </div>
       </div>
     </DashboardLayout>

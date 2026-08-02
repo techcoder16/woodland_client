@@ -199,7 +199,7 @@ const EditProperty = () => {
       )}
 
       <div className="bg-background">
-        <LoadingBar color="hsl(350, 74%, 45%)" progress={progress} onLoaderFinished={() => setProgress(0)} />
+        <LoadingBar color="hsl(0, 81%, 43%)" progress={progress} onLoaderFinished={() => setProgress(0)} />
 
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center justify-between mb-8">

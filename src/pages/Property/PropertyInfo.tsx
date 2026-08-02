@@ -78,7 +78,6 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
     watch('hasGarden') ? 'Garden' : null,
     watch('lift') ? 'Lift' : null,
     watch('gas') ? 'Gas' : null,
-    watch('electricity') ? 'Electricity' : null,
   ].filter(Boolean);
 
   return (
@@ -132,34 +131,52 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
         <InputField setValue={setValue} label="Address Line 1" name="addressLine1" register={register} error={errors.addressLine1?.message?.toString()} />
         <InputField setValue={setValue} label="Address Line 2" name="addressLine2" register={register} error={errors.addressLine2?.message?.toString()} />
 
-        {!isAddingArea ? (
-          <SelectField
-            label="Town/Area"
-            name="town"
-            watch={watch}
-            setValue={setValue}
-            options={TOWN_AREA}
-            register={register}
-            error={errors.town?.message?.toString()}
-            onChange={(value) => handleSelectChange('town', value)}
-          />
-        ) : (
-          <InputField
-            setValue={setValue}
-            label="Add Area"
-            name="town"
-            register={register}
-            error={errors.town?.message?.toString()}
-          />
-        )}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <label className="text-muted-foreground font-medium text-sm">Town/Area</label>
+            <div className="inline-flex rounded-md border border-border p-0.5">
+              <button
+                type="button"
+                onClick={() => setIsAddingArea(false)}
+                className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
+                  !isAddingArea ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                From list
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsAddingArea(true)}
+                className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
+                  isAddingArea ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Enter manually
+              </button>
+            </div>
+          </div>
 
-        <button
-          type="button"
-          onClick={() => setIsAddingArea(!isAddingArea)}
-          className="toggle-button"
-        >
-          {isAddingArea ? 'Choose Area' : 'Add Area Manually'}
-        </button>
+          {!isAddingArea ? (
+            <SelectField
+              label=""
+              name="town"
+              watch={watch}
+              setValue={setValue}
+              options={TOWN_AREA}
+              register={register}
+              error={errors.town?.message?.toString()}
+              onChange={(value) => handleSelectChange('town', value)}
+            />
+          ) : (
+            <InputField
+              setValue={setValue}
+              label=""
+              name="town"
+              register={register}
+              error={errors.town?.message?.toString()}
+            />
+          )}
+        </div>
 
         <SelectField
           label="Country"

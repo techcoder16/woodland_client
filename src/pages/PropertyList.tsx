@@ -24,8 +24,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Pencil, Trash, Filter, SquareChartGantt, Search, Plus, Building, User, Edit, MoreHorizontal, FileText, CheckCircle, Eye } from "lucide-react";
+import { Tabs, TabsList, TabsTriggerLg } from "@/components/ui/tabs";
+import { Pencil, Trash, Filter, SquareChartGantt, Search, Plus, User, Edit, MoreHorizontal, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
@@ -88,19 +88,16 @@ const PropertyList = () => {
 <div className="space-y-4">
       {/* Status Filter Tabs */}
       <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as "all" | "draft" | "published")} className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-3">
-          <TabsTrigger value="all" className="flex items-center gap-2">
-            <Building className="h-4 w-4" />
+        <TabsList className="w-full">
+          <TabsTriggerLg value="all">
             All Properties
-          </TabsTrigger>
-          <TabsTrigger value="draft" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
+          </TabsTriggerLg>
+          <TabsTriggerLg value="draft">
             Drafts
-          </TabsTrigger>
-          <TabsTrigger value="published" className="flex items-center gap-2">
-            <CheckCircle className="h-4 w-4" />
+          </TabsTriggerLg>
+          <TabsTriggerLg value="published">
             Published
-          </TabsTrigger>
+          </TabsTriggerLg>
         </TabsList>
       </Tabs>
       

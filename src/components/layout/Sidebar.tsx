@@ -68,11 +68,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         "md:translate-x-0"
       )}
     >
-      <div className="flex h-16 items-center border-b px-4">
+      <div className="flex items-center border-b px-4">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
+          <div className=" rounded-md bg-primary flex items-center justify-center">
            <img
-           className="w-24"
+           className=""
            src={logo}
            >
           

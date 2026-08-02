@@ -138,7 +138,7 @@ const EditTransaction = ({ isOpen, onClose, propertyId ,transaction}: EditTransa
         </DialogTitle>
       </DialogHeader>
 
-      <LoadingBar color="hsl(350, 74%, 45%)" progress={progress} onLoaderFinished={() => setProgress(0)} />
+      <LoadingBar color="hsl(0, 81%, 43%)" progress={progress} onLoaderFinished={() => setProgress(0)} />
 
             <form onSubmit={handleSubmit(onSubmit)}>{steps[currentStep].component}
               <div className="flex justify-between pt-6">

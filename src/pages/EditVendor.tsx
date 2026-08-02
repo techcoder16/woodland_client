@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -162,7 +162,7 @@ const EditVendor = () => {
 
       <div className="bg-background">
         <LoadingBar
-          color="hsl(350, 74%, 45%)"
+          color="hsl(0, 81%, 43%)"
           progress={progress}
           onLoaderFinished={() => setProgress(0)}
         />

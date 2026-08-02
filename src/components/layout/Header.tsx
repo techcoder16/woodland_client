@@ -10,9 +10,17 @@ import {
   Settings,
   User,
   Loader2,
+  Building,
+  Users2,
+  FileText,
+  CreditCard,
+  Receipt,
+  Wrench,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +35,9 @@ import logo from '@/assets/logo.png'
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import getApi from "@/helper/getApi";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
+import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
+import { fetchRecentActivities, markAllActivitiesRead, addActivity } from "@/redux/dataStore/dashboardSlice";
+import { getActivitiesSocket } from "@/helper/socket";
 
 interface GlobalSearchResult {
   type: "property" | "vendor";
@@ -35,9 +46,21 @@ interface GlobalSearchResult {
   sublabel: string;
 }
 
+const activityIconByType: Record<string, React.ElementType> = {
+  property: Building,
+  vendor: Users2,
+  document: FileText,
+  payment: CreditCard,
+  transaction: Receipt,
+  maintenance: Wrench,
+};
+
 export function Header() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const { activities } = useAppSelector((state) => state.dashboard);
+  const unreadCount = activities.filter((a) => a.isNew).length;
 
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<GlobalSearchResult[]>([]);
@@ -45,6 +68,25 @@ export function Header() {
   const [searchLoading, setSearchLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const searchBoxRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    dispatch(fetchRecentActivities(20));
+
+    const socket = getActivitiesSocket();
+    const handleNewActivity = (activity: any) => {
+      dispatch(addActivity({ ...activity, isNew: true }));
+    };
+    socket.on("newActivity", handleNewActivity);
+
+    return () => {
+      socket.off("newActivity", handleNewActivity);
+    };
+  }, [dispatch]);
+
+  const handleMarkAllRead = () => {
+    if (unreadCount === 0) return;
+    dispatch(markAllActivitiesRead());
+  };
 
   useEffect(() => {
     if (!searchTerm.trim()) {
@@ -191,7 +233,60 @@ export function Header() {
         </Button>
         
         <ThemeToggle />
-        
+
+        <DropdownMenu onOpenChange={(open) => open && handleMarkAllRead()}>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="relative">
+              <span className="sr-only">Notifications</span>
+              <Bell className="h-5 w-5" />
+              {unreadCount > 0 && (
+                <Badge
+                  variant="destructive"
+                  className="absolute -top-1 -right-1 h-5 min-w-5 rounded-full px-1 text-[10px] flex items-center justify-center"
+                >
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </Badge>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-80">
+            <DropdownMenuLabel className="flex items-center justify-between">
+              <span>Notifications</span>
+              {unreadCount > 0 && (
+                <span className="text-xs font-normal text-muted-foreground">{unreadCount} new</span>
+              )}
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <div className="max-h-96 overflow-y-auto">
+              {activities.length === 0 ? (
+                <div className="px-3 py-6 text-sm text-center text-muted-foreground">
+                  No recent activity
+                </div>
+              ) : (
+                activities.map((activity) => {
+                  const Icon = activityIconByType[activity.type] || Clock;
+                  return (
+                    <div
+                      key={activity.id}
+                      className="flex items-start gap-3 px-3 py-2.5 border-b last:border-0 hover:bg-muted/40"
+                    >
+                      <div className="p-1.5 rounded-full bg-primary/10 text-primary shrink-0">
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{activity.title}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-2">{activity.description}</p>
+                        <p className="text-xs text-muted-foreground/70 mt-0.5">{activity.time}</p>
+                      </div>
+                      {activity.isNew && <span className="h-2 w-2 rounded-full bg-primary shrink-0 mt-1.5" />}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-9 w-9 rounded-full">

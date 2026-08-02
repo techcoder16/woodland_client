@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import InputField from "@/utils/InputField";
-import TextAreaField from "@/utils/TextAreaField";
+import RichTextEditor from "@/utils/RichTextEditor";
 import SelectField from "@/utils/SelectedField";
 import { DateField } from "@/utils/DateField";
 import EmployeeDropdown from "@/components/EmployeeDropdown";
@@ -325,6 +325,8 @@ const Notes = ({ propertyId, property }: NotesProps) => {
     }
   };
 
+  const stripHtml = (html: string) => html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+
   return (
     <div className="space-y-6">
       {/* Notes Tab */}
@@ -353,10 +355,10 @@ const Notes = ({ propertyId, property }: NotesProps) => {
                   </DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmitNote(onSubmitNote)} className="space-y-4">
-                  <TextAreaField
+                  <RichTextEditor
                     label="Note Content"
-                    name="content"
-                    register={registerNote}
+                    value={watchNote("content") || ""}
+                    onChange={(html) => setNoteValue("content", html)}
                     error={errorsNote.content?.message}
                     placeholder="Enter your note content..."
                   />
@@ -378,10 +380,10 @@ const Notes = ({ propertyId, property }: NotesProps) => {
                       <p className="text-sm text-destructive">{errorsNote.employeeId.message}</p>
                     )}
                   </div>
-                  <TextAreaField
+                  <RichTextEditor
                     label="Additional Details"
-                    name="detail"
-                    register={registerNote}
+                    value={watchNote("detail") || ""}
+                    onChange={(html) => setNoteValue("detail", html)}
                     error={errorsNote.detail?.message}
                     placeholder="Additional details (optional)"
                   />
@@ -451,8 +453,8 @@ const Notes = ({ propertyId, property }: NotesProps) => {
                             {getEmployeeName(note.employeeId)}
                           </div>
                         </TableCell>
-                        <TableCell className="max-w-xs truncate">{note.content}</TableCell>
-                        <TableCell className="max-w-xs truncate">{note.detail || "-"}</TableCell>
+                        <TableCell className="max-w-xs truncate">{stripHtml(note.content)}</TableCell>
+                        <TableCell className="max-w-xs truncate">{note.detail ? stripHtml(note.detail) : "-"}</TableCell>
                         <TableCell>
                           <div className="flex space-x-2">
                             <Button
@@ -531,10 +533,10 @@ const Notes = ({ propertyId, property }: NotesProps) => {
                     />
                   </div>
                   
-                  <TextAreaField
+                  <RichTextEditor
                     label="Description"
-                    name="description"
-                    register={registerJobType}
+                    value={watchJobType("description") || ""}
+                    onChange={(html) => setJobTypeValue("description", html)}
                     error={errorsJobType.description?.message}
                     placeholder="Describe the job type..."
                   />
@@ -607,10 +609,10 @@ const Notes = ({ propertyId, property }: NotesProps) => {
                     </p>
                   )}
 
-                  <TextAreaField
+                  <RichTextEditor
                     label="Things To Do"
-                    name="thingsToDo"
-                    register={registerJobType}
+                    value={watchJobType("thingsToDo") || ""}
+                    onChange={(html) => setJobTypeValue("thingsToDo", html)}
                     error={errorsJobType.thingsToDo?.message}
                     placeholder="List specific tasks to be completed..."
                   />
@@ -666,7 +668,7 @@ const Notes = ({ propertyId, property }: NotesProps) => {
                     jobTypes.map((jobType) => (
                       <TableRow key={jobType.id}>
                         <TableCell className="font-medium">{jobType.jobType}</TableCell>
-                        <TableCell className="max-w-xs truncate">{jobType.description}</TableCell>
+                        <TableCell className="max-w-xs truncate">{stripHtml(jobType.description)}</TableCell>
                         <TableCell>{jobType.dueDate}</TableCell>
                         <TableCell>
                           <div className="flex items-center">

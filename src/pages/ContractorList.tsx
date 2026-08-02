@@ -87,9 +87,9 @@ const ContractorList = () => {
                 <thead className="bg-background">
                   <tr className="border-b border-border/70">
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Name</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Company</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Specialty</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Contact</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Address</th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
@@ -98,9 +98,17 @@ const ContractorList = () => {
                     contractors.map((contractor: any) => (
                       <tr key={contractor.id} className="border-b border-border/50 hover:bg-muted/40 transition-colors">
                         <td className="px-4 py-3">
-                          <div className="font-medium">{contractor.name}</div>
+                          <div className="flex items-center gap-2">
+                            {contractor.logo ? (
+                              <img src={contractor.logo} alt="" className="h-8 w-8 rounded-full object-cover" />
+                            ) : (
+                              <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground">
+                                {contractor.name?.[0]}
+                              </div>
+                            )}
+                            <div className="font-medium">{contractor.name}</div>
+                          </div>
                         </td>
-                        <td className="px-4 py-3 text-sm">{contractor.company || "-"}</td>
                         <td className="px-4 py-3 text-sm">{contractor.specialty || "-"}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
@@ -108,6 +116,7 @@ const ContractorList = () => {
                             <span className="text-sm">{contractor.phone || "-"}</span>
                           </div>
                         </td>
+                        <td className="px-4 py-3 text-sm">{contractor.address || "-"}</td>
                         <td className="px-4 py-3 text-center">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>

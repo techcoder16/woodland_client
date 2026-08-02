@@ -192,7 +192,7 @@ const AddProperty = () => {
       )}
 
       <div className="bg-background">
-        <LoadingBar color="hsl(350, 74%, 45%)" progress={progress} onLoaderFinished={() => setProgress(0)} />
+        <LoadingBar color="hsl(0, 81%, 43%)" progress={progress} onLoaderFinished={() => setProgress(0)} />
 
         <div className="max-w-5xl mx-auto">
           <h1 className="hero-stat text-3xl mb-8">Add New Property</h1>

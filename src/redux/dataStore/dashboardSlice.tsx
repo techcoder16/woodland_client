@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { get } from '../../helper/api';
+import { get, post } from '../../helper/api';
 
 // Types
 interface DashboardStats {
@@ -17,13 +17,15 @@ interface DashboardStats {
 
 interface Activity {
   id: string;
-  type: 'property' | 'tenant' | 'payment' | 'system';
-  action: string;
+  type: 'property' | 'vendor' | 'document' | 'payment' | 'transaction' | 'maintenance';
+  title: string;
   description: string;
-  timestamp: string;
+  time: string;
+  isNew: boolean;
+  propertyId?: string;
+  vendorId?: string;
+  transactionId?: string;
   userId?: string;
-  userName?: string;
-  metadata?: any;
 }
 
 interface DashboardState {
@@ -69,6 +71,21 @@ export const fetchRecentActivities = createAsyncThunk(
       return response.data || [];
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to fetch activities');
+    }
+  }
+);
+
+export const markAllActivitiesRead = createAsyncThunk(
+  'dashboard/markAllActivitiesRead',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await post('/dashboard/activities/mark-all-read', {});
+      if (response.error) {
+        return rejectWithValue(response.error.message);
+      }
+      return true;
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Failed to mark activities as read');
     }
   }
 );
@@ -122,6 +139,10 @@ const dashboardSlice = createSlice({
       .addCase(fetchRecentActivities.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+      // Mark all activities as read
+      .addCase(markAllActivitiesRead.fulfilled, (state) => {
+        state.activities = state.activities.map((activity) => ({ ...activity, isNew: false }));
       });
   },
 });

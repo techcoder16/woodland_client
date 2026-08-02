@@ -13,7 +13,6 @@ import InputField from "@/utils/InputField";
 import TextAreaField from "@/utils/TextAreaField";
 import SelectField from "@/utils/SelectedField";
 import { DateField } from "@/utils/DateField";
-import EmployeeDropdown from "@/components/EmployeeDropdown";
 import ContractorPicker from "@/utils/ContractorPicker";
 import FileUploadField from "@/utils/FileUploadField";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
@@ -30,8 +29,6 @@ const editSchema = z.object({
   endDate: z.string().optional(),
   thingsToDo: z.string().optional(),
   priority: z.string().optional(),
-  assignedType: z.enum(["employee", "contractor"]),
-  employeeId: z.string().optional(),
   contractorId: z.string().optional(),
   dateDone: z.string().optional(),
   media: z.array(z.string()).optional(),
@@ -94,8 +91,6 @@ const MaintenanceDetail = () => {
         endDate: job.endDate || "",
         thingsToDo: job.thingsToDo || "",
         priority: job.priority || "",
-        assignedType: job.contractorId ? "contractor" : "employee",
-        employeeId: job.employeeId || "",
         contractorId: job.contractorId || "",
         dateDone: job.dateDone || "",
         media: job.media || [],
@@ -126,8 +121,7 @@ const MaintenanceDetail = () => {
             endDate: data.endDate,
             thingsToDo: data.thingsToDo,
             priority: data.priority,
-            employeeId: data.assignedType === "employee" ? data.employeeId : undefined,
-            contractorId: data.assignedType === "contractor" ? data.contractorId : undefined,
+            contractorId: data.contractorId,
             dateDone: data.dateDone,
             media: data.media,
             totalCost: data.totalCost,
@@ -256,37 +250,14 @@ const MaintenanceDetail = () => {
                 <InputField label="Total Charged (to landlord)" name="totalCharged" type="number" register={register} setValue={setValue} error={errors.totalCharged?.message} placeholder="What is charged to the landlord" />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <SelectField
-                  label="Assigned Type"
-                  name="assignedType"
-                  register={register}
-                  setValue={setValue}
-                  watch={watch}
-                  error={errors.assignedType?.message}
-                  options={[
-                    { value: "employee", label: "Employee" },
-                    { value: "contractor", label: "Contractor" },
-                  ]}
-                />
-                {watch("assignedType") === "contractor" ? (
-                  <ContractorPicker
-                    label="Contractor"
-                    name="contractorId"
-                    watch={watch}
-                    setValue={setValue}
-                    clearErrors={clearErrors as (name: string) => void}
-                    error={errors.contractorId?.message}
-                  />
-                ) : (
-                  <EmployeeDropdown
-                    label="Employee"
-                    onEmployeeSelect={(employeeId) => setValue("employeeId", employeeId || "")}
-                    selectedEmployeeId={watch("employeeId")}
-                    placeholder="Select an employee"
-                  />
-                )}
-              </div>
+              <ContractorPicker
+                label="Contractor"
+                name="contractorId"
+                watch={watch}
+                setValue={setValue}
+                clearErrors={clearErrors as (name: string) => void}
+                error={errors.contractorId?.message}
+              />
 
               <TextAreaField label="Things To Do" name="thingsToDo" register={register} error={errors.thingsToDo?.message} />
 

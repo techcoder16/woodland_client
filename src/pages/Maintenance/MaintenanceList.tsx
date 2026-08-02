@@ -11,7 +11,6 @@ import InputField from "@/utils/InputField";
 import TextAreaField from "@/utils/TextAreaField";
 import SelectField from "@/utils/SelectedField";
 import { DateField } from "@/utils/DateField";
-import EmployeeDropdown from "@/components/EmployeeDropdown";
 import ContractorPicker from "@/utils/ContractorPicker";
 import { useNavigate } from "react-router-dom";
 import { Plus, Trash2, Search, Phone, Mail, User2, CheckCircle2 } from "lucide-react";
@@ -38,10 +37,6 @@ const maintenanceSchema = z.object({
   endDate: z.string().optional(),
   thingsToDo: z.string().optional(),
   priority: z.string().optional(),
-  assignedType: z.enum(["employee", "contractor"], {
-    errorMap: () => ({ message: "Select employee or contractor" }),
-  }),
-  employeeId: z.string().optional(),
   contractorId: z.string().optional(),
   dateDone: z.string().optional(),
   totalCost: z.coerce.number().optional(),
@@ -148,8 +143,7 @@ const MaintenanceList = () => {
         endDate: data.endDate,
         thingsToDo: data.thingsToDo,
         priority: data.priority,
-        employeeId: data.assignedType === "employee" ? data.employeeId : undefined,
-        contractorId: data.assignedType === "contractor" ? data.contractorId : undefined,
+        contractorId: data.contractorId,
         dateDone: data.dateDone,
         totalCost: data.totalCost,
         totalCharged: data.totalCharged,
@@ -303,37 +297,14 @@ const MaintenanceList = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <SelectField
-                    label="Assigned Type"
-                    name="assignedType"
-                    register={register}
-                    setValue={setValue}
-                    watch={watch}
-                    error={errors.assignedType?.message}
-                    options={[
-                      { value: "employee", label: "Employee" },
-                      { value: "contractor", label: "Contractor" },
-                    ]}
-                  />
-                  {watch("assignedType") === "contractor" ? (
-                    <ContractorPicker
-                      label="Contractor"
-                      name="contractorId"
-                      watch={watch}
-                      setValue={setValue}
-                      clearErrors={clearErrors as (name: string) => void}
-                      error={errors.contractorId?.message}
-                    />
-                  ) : (
-                    <EmployeeDropdown
-                      label="Employee"
-                      onEmployeeSelect={(employeeId) => setValue("employeeId", employeeId || "")}
-                      selectedEmployeeId={watch("employeeId")}
-                      placeholder="Select an employee"
-                    />
-                  )}
-                </div>
+                <ContractorPicker
+                  label="Contractor"
+                  name="contractorId"
+                  watch={watch}
+                  setValue={setValue}
+                  clearErrors={clearErrors as (name: string) => void}
+                  error={errors.contractorId?.message}
+                />
 
                 <TextAreaField
                   label="Things To Do"
