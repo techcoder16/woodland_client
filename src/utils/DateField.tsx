@@ -17,7 +17,7 @@ export const DateField = ({
   placeholder?: string;
 }) => (
   <div className="space-y-4">
-    <label className="block text-sm font-medium text-gray-700">{label}</label>
+    <label className="block text-sm font-medium text-muted-foreground">{label}</label>
     <Popover>
       <PopoverTrigger asChild>
         <Button
@@ -45,6 +45,6 @@ export const DateField = ({
         />
       </PopoverContent>
     </Popover>
-    {error && <p className="text-sm text-red-600">{error}</p>}
+    {error && <p className="text-sm text-destructive">{error}</p>}
   </div>
 );

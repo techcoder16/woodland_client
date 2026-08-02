@@ -1,5 +1,5 @@
 import React from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 
 import {
@@ -46,7 +46,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const allMenuItems = [
     { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
     { label: "Properties", path: "/properties", icon: Building2 },
-    { label: "Vendors & Landlords", path: "/vendors", icon: Users2 },
+    { label: "Landlords", path: "/vendors", icon: Users2 },
     { label: "Transactions", path: "/transaction", icon: TbTransactionDollar },
     { label: "Finance", path: "/property-management", icon: Wallet },
     { label: "Tenants", path: "/tenants", icon: CircleUser },
@@ -67,40 +67,48 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     menuItems.push({ label: "Admin Panel", path: "/admin", icon: Shield });
   }
 
+  const location = useLocation();
+
   return (
     <SidebarProvider defaultOpen={true}>
-      <Sidebar variant="inset" className="border-r">
+      <Sidebar variant="inset" className="border-r border-border/70">
         {/* Logo */}
-        <SidebarHeader className="flex items-center justify-center py-4 border-b">
+        <SidebarHeader className="flex items-center justify-center py-5 border-b border-border/70">
           <div
             onClick={() => navigate("/dashboard")}
             className="flex items-center gap-2 cursor-pointer"
           >
             <img src={logo} alt="logo" className="h-8 w-auto" />
-         
           </div>
         </SidebarHeader>
 
         {/* Menu */}
         <SidebarContent>
-          <SidebarMenu className="px-2 mt-4 space-y-1">
+          <SidebarMenu className="px-2 mt-4 space-y-0.5">
             {menuItems.map(({ label, path, icon: Icon }) => {
-              const active = window.location.pathname === path;
+              const active = location.pathname === path;
               return (
                 <SidebarMenuItem key={path}>
                   <SidebarMenuButton
                     onClick={() => navigate(path)}
                     isActive={active}
-                    className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition
+                    className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-150
                       ${
                         active
-                          ? "bg-muted font-medium"
-                          : "hover:bg-muted/40 text-muted-foreground"
+                          ? "bg-primary/10 text-primary font-medium"
+                          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                       }
                     `}
                   >
-                    <Icon className="w-5 h-5" />
+                    <Icon
+                      className={`w-[18px] h-[18px] transition-colors ${
+                        active ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                      }`}
+                    />
                     <span>{label}</span>
+                    {active && (
+                      <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />
+                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               );
@@ -109,14 +117,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </SidebarContent>
 
         {/* Footer */}
-        <SidebarFooter className="p-3 space-y-2 border-t">
+        <SidebarFooter className="p-3 space-y-2 border-t border-border/70">
           <ThemeToggle />
           <Button
             variant="outline"
             className="w-full justify-start text-sm"
             onClick={logout}
           >
-            <LogOut className="w-5 h-5 mr-2" />
+            <LogOut className="w-4 h-4 mr-2" />
             Logout
           </Button>
         </SidebarFooter>
@@ -125,7 +133,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       </Sidebar>
 
       {/* Main */}
-      <SidebarInset className="min-h-screen overflow-x-hidden">
+      <SidebarInset className="min-h-screen overflow-x-hidden bg-background">
         <Header />
         <main className="p-6">{children}</main>
       </SidebarInset>

@@ -38,6 +38,14 @@ export default {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
         },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",
@@ -64,28 +72,21 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        red: {
-          50: "#FFF1F2",
-          100: "#FFE4E5",
-          200: "#FECDD3",
-          300: "#FDA4AF",
-          400: "#FB7185",
-          500: "#F43F5E",
-          600: "#E11D48",
-          700: "#BE123C",
-          800: "#9F1239",
-          900: "#881337",
-          950: "#4C0519",
-        },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        xl: "calc(var(--radius) + 4px)",
       },
       fontFamily: {
-        sans: ["Inter", "sans-serif"],
-        heading: ["SF Pro Display", "Inter", "sans-serif"],
+        sans: ["Inter", "system-ui", "sans-serif"],
+        heading: ["Inter", "system-ui", "sans-serif"],
+        mono: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+      },
+      boxShadow: {
+        sleek: "0 1px 2px 0 rgb(0 0 0 / 0.03), 0 1px 1px 0 rgb(0 0 0 / 0.02)",
+        "sleek-md": "0 4px 16px -4px rgb(15 20 30 / 0.08), 0 2px 6px -2px rgb(15 20 30 / 0.04)",
       },
       keyframes: {
         "accordion-down": {

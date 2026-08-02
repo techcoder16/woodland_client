@@ -61,22 +61,16 @@ const InputField: React.FC<InputFieldProps> = ({
 
 
   return (
-    <div className="p-3 rounded-sm">
-      <div className="space-y-2">
-
-        <label className="text-gray-700 font-medium  text-sm mr-4 w-32">{label}</label>
-        <Input
-          type={type}
-          ref={inputRef}
-          
-          className=""
-          {...register(name)}
-          {...(type === "number" ? { min, max, step: step ?? "any" } : {})}
-          
-          placeholder={placeholder}
-        />
-      </div>
-      {error && <p className="text-red-500 mt-1 mx-2 justify-center flex">{error}</p>}
+    <div className="space-y-1.5">
+      <label className="text-muted-foreground font-medium text-sm">{label}</label>
+      <Input
+        type={type}
+        ref={inputRef}
+        {...register(name)}
+        {...(type === "number" ? { min, max, step: step ?? "any" } : {})}
+        placeholder={placeholder}
+      />
+      {error && <p className="text-destructive text-xs mt-1">{error}</p>}
     </div>
   );
 };

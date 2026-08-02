@@ -30,3 +30,5 @@ tests/
 playwright-report/
 tests
 playwright.config.ts
+# TypeScript build cache
+*.tsbuildinfo

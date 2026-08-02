@@ -151,9 +151,9 @@ const UserManagement: React.FC = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900">Access Denied</h3>
-          <p className="text-gray-500">You need administrator privileges to manage users.</p>
+          <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-foreground">Access Denied</h3>
+          <p className="text-muted-foreground">You need administrator privileges to manage users.</p>
         </div>
       </div>
     );
@@ -175,7 +175,7 @@ const UserManagement: React.FC = () => {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-2">
               <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search users..."
                   value={searchTerm}
@@ -245,7 +245,7 @@ const UserManagement: React.FC = () => {
                       onChange={(e) => setFormData({ ...formData, phone_number: parseInt(e.target.value) || 0 })}
                       placeholder="e.g., 1234567890"
                     />
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       Format: 1234567890 (numbers only)
                     </p>
                   </div>
@@ -319,7 +319,7 @@ const UserManagement: React.FC = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleDeleteUser(user.id)}
-                            className="text-red-600 hover:text-red-700"
+                            className="text-destructive hover:text-destructive/80"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -372,7 +372,7 @@ const UserManagement: React.FC = () => {
                 type="email"
                 value={formData.email}
                 disabled
-                className="bg-gray-50"
+                className="bg-muted"
               />
             </div>
             <div>
@@ -384,7 +384,7 @@ const UserManagement: React.FC = () => {
                 onChange={(e) => setFormData({ ...formData, phone_number: parseInt(e.target.value) || 0 })}
                 placeholder="e.g., 1234567890"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Format: 1234567890 (numbers only)
               </p>
             </div>

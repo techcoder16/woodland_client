@@ -14,6 +14,10 @@ import PropertyList from "./pages/PropertyList";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import EditVendor from "./pages/EditVendor";
+import ContractorList from "./pages/ContractorList";
+import AddContractor from "./pages/AddContractor";
+import EditContractor from "./pages/EditContractor";
+import MaintenanceList from "./pages/Maintenance/MaintenanceList";
 import AddProperty from "./pages/AddProperty";
 import EditProperty from "./pages/EditProperty";
 import ManageProperty from "./pages/Manager/ManagePropertyMain";
@@ -28,6 +32,7 @@ import MainTransaction from "./pages/MainTransaction";
 import AdminDashboard from "./pages/SimpleAdminDashboard";
 import CreateUser from "./pages/admin/CreateUser";
 import CreateScreen from "./pages/admin/CreateScreen";
+import DesignPreview from "./pages/_DesignPreview";
 function App() {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -59,6 +64,7 @@ function App() {
               <Sonner/>
               <Routes>
               <Route path="/" element={<Index />} />
+                <Route path="/_design-preview" element={<DesignPreview />} />
                 {/* Protected Routes */}
         
                   <Route path="/dashboard" element={

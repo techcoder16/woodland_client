@@ -262,7 +262,7 @@ export function PropertyList() {
                           </DropdownMenuItem>
                           <DropdownMenuItem>
                             <User className="mr-2 h-4 w-4" />
-                            Manage Vendors
+                            Manage Landlords
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => handleDelete(property.id)} className="text-destructive focus:text-destructive">

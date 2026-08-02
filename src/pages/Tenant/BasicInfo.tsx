@@ -36,9 +36,9 @@ const Tenant = ({ register, watch, clearErrors, setValue, errors }: TenantProps)
   };
 
   return (
-    <div className="w-full p-4">
-      <div className="text-lg font-medium underline p-5">Tenants</div>
-      <div className="grid grid-cols-2 gap-4">
+    <div className="w-full space-y-5">
+      <div className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Tenant details</div>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-5">
         <SelectField
           label="Title"
           name="title"
@@ -56,8 +56,6 @@ const Tenant = ({ register, watch, clearErrors, setValue, errors }: TenantProps)
           register={register}
           error={errors?.FirstName?.message?.toString()}
         />
-      </div>{" "}
-      <div className="grid grid-cols-2 gap-4">
         <InputField
           setValue={setValue}
           label="Sure Name"
@@ -65,7 +63,6 @@ const Tenant = ({ register, watch, clearErrors, setValue, errors }: TenantProps)
           register={register}
           error={errors?.SureName?.message?.toString()}
         />
-
         <InputField
           setValue={setValue}
           label="Mobile No"
@@ -73,8 +70,6 @@ const Tenant = ({ register, watch, clearErrors, setValue, errors }: TenantProps)
           register={register}
           error={errors?.MobileNo?.message?.toString()}
         />
-      </div>{" "}
-      <div className="grid grid-cols-2 gap-4">
         <InputField
           setValue={setValue}
           label="Home Phone"
@@ -88,9 +83,7 @@ const Tenant = ({ register, watch, clearErrors, setValue, errors }: TenantProps)
           name="WorkPhone"
           register={register}
           error={errors?.WorkPhone?.message?.toString()}
-        />{" "}
-      </div>{" "}
-      <div className="grid grid-cols-2 gap-4">
+        />
         <InputField
           setValue={setValue}
           label="Email"
@@ -104,9 +97,7 @@ const Tenant = ({ register, watch, clearErrors, setValue, errors }: TenantProps)
           name="EmployeeName"
           register={register}
           error={errors?.EmployeeName?.message?.toString()}
-        />{" "}
-      </div>{" "}
-      <div className="grid grid-cols-2 gap-4">
+        />
         <InputField
           setValue={setValue}
           label="Bank Account No"
@@ -120,9 +111,7 @@ const Tenant = ({ register, watch, clearErrors, setValue, errors }: TenantProps)
           name="SortCode"
           register={register}
           error={errors?.SortCode?.message?.toString()}
-        />{" "}
-      </div>{" "}
-      <div className="grid grid-cols-2 gap-4">
+        />
         <InputField
           setValue={setValue}
           label="Bank Name"
@@ -138,15 +127,13 @@ const Tenant = ({ register, watch, clearErrors, setValue, errors }: TenantProps)
           error={errors?.IDCheck?.message?.toString()}
         />
       </div>
-      <div className="">
-        <TextAreaField
-          label="Address"
-          placeholder="Address"
-          name="Address"
-          register={register}
-          error={errors?.Address?.message?.toString()}
-        />
-      </div>
+      <TextAreaField
+        label="Address"
+        placeholder="Address"
+        name="Address"
+        register={register}
+        error={errors?.Address?.message?.toString()}
+      />
     </div>
   );
 };

@@ -96,8 +96,8 @@ const val   = (v: any) => (v != null && v !== "" ? v : "-");
 // ── Summary box ────────────────────────────────────────────────────────────────
 const SummaryField = ({ label, value }: { label: string; value: string }) => (
   <div className="flex items-center justify-between gap-2 py-0.5">
-    <span className="text-xs text-gray-600 whitespace-nowrap">{label}:</span>
-    <span className="text-xs font-medium bg-white border border-gray-300 rounded px-2 py-0.5 min-w-[80px] text-right">
+    <span className="text-xs text-muted-foreground whitespace-nowrap">{label}:</span>
+    <span className="text-xs font-medium bg-card border border-border rounded px-2 py-0.5 min-w-[80px] text-right">
       {value}
     </span>
   </div>
@@ -355,8 +355,8 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any }> = ({ pro
         </div>
       ) : error ? (
         <div className="text-center p-8">
-          <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-2" />
-          <p className="text-gray-500 mb-4">{error}</p>
+          <AlertCircle className="mx-auto h-12 w-12 text-destructive mb-2" />
+          <p className="text-muted-foreground mb-4">{error}</p>
           <Button onClick={loadTransactions} variant="outline">
             <RefreshCw className="h-4 w-4 mr-2" /> Try Again
           </Button>
@@ -414,7 +414,7 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any }> = ({ pro
                   <div className={`${COL.expDesc}         px-2 py-1 flex items-center`}>To Landlord</div>
                 </div>
                 {/* Meta */}
-                <div className="flex bg-gray-600 text-white">
+                <div className="flex bg-muted-foreground text-white">
                   <div className={`${COL.branch}  px-2 py-1 flex items-center`}>Branch</div>
                   <div className={`${COL.status}  px-2 py-1 flex items-center`}>Status</div>
                   <div className={`${COL.actions} px-2 py-1`} />
@@ -422,7 +422,7 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any }> = ({ pro
               </div>
 
               {/* ── Column headers ── */}
-              <div className={`flex text-xs font-medium text-gray-600 border-b ${TABLE_MIN_W}`}>
+              <div className={`flex text-xs font-medium text-muted-foreground border-b ${TABLE_MIN_W}`}>
                 {/* Tenant */}
                 <div className={`${COL.fromDate}    px-2 py-2 bg-blue-50 border-r border-blue-200`}>Date</div>
                 <div className={`${COL.fromMode}    px-2 py-2 bg-blue-50 border-r border-blue-200`}>Mode</div>
@@ -451,9 +451,9 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any }> = ({ pro
                 <div className={`${COL.defaultExp}      px-2 py-2 bg-amber-50 border-r border-amber-200`}>Default Exp.</div>
                 <div className={`${COL.expDesc}         px-2 py-2 bg-amber-50 border-r border-amber-200`}>Exp. Desc.</div>
                 {/* Meta */}
-                <div className={`${COL.branch}  px-2 py-2 bg-gray-50 border-r border-gray-200`}>Branch</div>
-                <div className={`${COL.status}  px-2 py-2 bg-gray-50 border-r border-gray-200`}>Status</div>
-                <div className={`${COL.actions} px-2 py-2 bg-gray-50`}></div>
+                <div className={`${COL.branch}  px-2 py-2 bg-muted border-r border-border`}>Branch</div>
+                <div className={`${COL.status}  px-2 py-2 bg-muted border-r border-border`}>Status</div>
+                <div className={`${COL.actions} px-2 py-2 bg-muted`}></div>
               </div>
 
               {/* ── Data rows ── */}
@@ -461,8 +461,8 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any }> = ({ pro
                 {displayRows.map((tx: any, i: number) => (
                   <div
                     key={tx.tranid ?? tx.id ?? i}
-                    className={`flex text-xs hover:bg-gray-50 transition-colors ${TABLE_MIN_W} ${
-                      i % 2 === 0 ? "bg-white" : "bg-gray-50/60"
+                    className={`flex text-xs hover:bg-muted transition-colors ${TABLE_MIN_W} ${
+                      i % 2 === 0 ? "bg-card" : "bg-muted/60"
                     }`}
                   >
                     {/* Tenant */}
@@ -493,8 +493,8 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any }> = ({ pro
                     <div className={`${COL.defaultExp}      px-2 py-2 truncate bg-amber-50/30 border-r border-amber-100`}>{val(tx.toLandlordDefaultExpenditure)}</div>
                     <div className={`${COL.expDesc}         px-2 py-2 truncate bg-amber-50/30 border-r border-amber-100`} title={tx.toLandlordExpenditureDescription}>{val(tx.toLandlordExpenditureDescription)}</div>
  {/* Meta */}
-                    <div className={`${COL.branch}  px-2 py-2 truncate border-r border-gray-200`}>{val(tx.Branch)}</div>
-                    <div className={`${COL.status}  px-2 py-2 flex items-center border-r border-gray-200`}>
+                    <div className={`${COL.branch}  px-2 py-2 truncate border-r border-border`}>{val(tx.Branch)}</div>
+                    <div className={`${COL.status}  px-2 py-2 flex items-center border-r border-border`}>
                       <Badge
                         variant={tx.status === StatusTransaction.DRAFT ? "destructive" : "default"}
                         className="text-xs"
@@ -534,7 +534,7 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any }> = ({ pro
 
               {/* ── Totals row ── */}
               {summary && (
-                <div className={`flex text-xs font-semibold bg-gray-800 text-white ${TABLE_MIN_W}`}>
+                <div className={`flex text-xs font-semibold bg-foreground text-background ${TABLE_MIN_W}`}>
                   <div className={`${COL.fromDate}    px-2 py-2`}>Totals</div>
                   <div className={`${COL.fromMode}    px-2 py-2`} />
                   <div className={`${COL.otherDebit}  px-2 py-2`}>£{summary.otherDebitTotal.toFixed(2)}</div>
@@ -570,7 +570,7 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any }> = ({ pro
           </div>
 
           {/* ── Pagination ── */}
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-3 text-sm text-gray-600">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3 text-sm text-muted-foreground">
             <div>
               Showing {(skip ?? 0) + 1}–{Math.min((skip ?? 0) + (take ?? pageSize), total ?? 0)} of {total ?? 0} transactions
             </div>

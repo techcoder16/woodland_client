@@ -142,22 +142,22 @@ console.log("Property data in ManageProperty component:", property);
 
   return (
     <DashboardLayout>
-      <div className="p-6 w-full mx-auto  min-h-screen">
+      <div className="w-full mx-auto">
         {/* Header Section */}
-        <div className=" rounded-lg shadow-sm p-6 mb-6">
+        <div className="surface p-6 mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold  mb-2">
+              <h1 className="text-2xl font-semibold tracking-tight mb-2">
                 Manage Property
-              </h1> 
+              </h1>
               {property && (
-                <p className="">
+                <p className="text-sm text-muted-foreground">
                   Property ID: {property.propertyNo || (property.propertyNumber != null ? property.propertyNumber : property.id)}
                 </p>
               )}
             </div>
             <div className="flex items-center space-x-2">
-              <Building2 className="h-8 w-8 " />
+              <Building2 className="h-8 w-8 text-primary" />
             </div>
           </div>
         </div>

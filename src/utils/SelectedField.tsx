@@ -61,37 +61,35 @@ const SelectField: React.FC<SelectFieldProps> = ({
   const { ref, ...registerRest } = register(name);
 
   return (
-    <div className="p-3 rounded-sm">
-      <div className="space-y-2">
-        <label className="text-gray-700 text-sm font-medium mr-4 w-32">{label}</label>
-        
-        {/* Radix UI Select - controlled by currentValue */}
-        <Select
-          value={displayValue}
-          onValueChange={handleChange}
-        >
-          <SelectTrigger className="">
-            <SelectValue placeholder="Select an option" />
-          </SelectTrigger>
-          <SelectContent className="max-h-[300px] overflow-y-auto">
-            {options?.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        
-        {/* Hidden input for react-hook-form registration and validation */}
-        <input 
-          type="hidden" 
-          {...registerRest}
-          ref={ref}
-          value={stringValue || ""}
-        />
-      </div>
-      
-      {error && <p className="text-red-500 mt-1 mx-2 justify-center flex">{error}</p>}
+    <div className="space-y-1.5">
+      <label className="text-muted-foreground text-sm font-medium">{label}</label>
+
+      {/* Radix UI Select - controlled by currentValue */}
+      <Select
+        value={displayValue}
+        onValueChange={handleChange}
+      >
+        <SelectTrigger>
+          <SelectValue placeholder="Select an option" />
+        </SelectTrigger>
+        <SelectContent className="max-h-[300px] overflow-y-auto">
+          {options?.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      {/* Hidden input for react-hook-form registration and validation */}
+      <input
+        type="hidden"
+        {...registerRest}
+        ref={ref}
+        value={stringValue || ""}
+      />
+
+      {error && <p className="text-destructive text-xs mt-1">{error}</p>}
     </div>
   );
 };

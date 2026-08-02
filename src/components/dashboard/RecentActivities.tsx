@@ -45,15 +45,15 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
   const getActivityColor = (type: string) => {
     switch (type) {
       case 'property':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-primary/10 text-primary';
       case 'tenant':
-        return 'bg-green-100 text-green-800';
+        return 'bg-success/10 text-success';
       case 'payment':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-warning/10 text-warning';
       case 'system':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-accent text-accent-foreground';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -108,26 +108,26 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
   };
 
   return (
-    <div className="flex items-start space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
-      <div className={`p-2 rounded-full ${getActivityColor(activity.type)}`}>
+    <div className="flex items-start gap-3 py-3 border-b border-border/60 last:border-0">
+      <div className={`p-2 rounded-full shrink-0 ${getActivityColor(activity.type)}`}>
         {getActivityIcon(activity.type)}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-medium text-gray-900 truncate">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm font-medium text-foreground truncate">
             {activity.action}
           </p>
-          <span className="text-xs text-gray-500">
+          <span className="text-xs font-mono text-muted-foreground shrink-0">
             {formatTimestamp(activity,activity.timestamp)}
           </span>
         </div>
-        <p className="text-sm text-gray-600 mt-1">
+        <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">
           {activity.description}
         </p>
         {activity.userName && (
           <div className="flex items-center mt-1">
-            <User className="h-3 w-3 text-gray-400 mr-1" />
-            <span className="text-xs text-gray-500">{activity.userName}</span>
+            <User className="h-3 w-3 text-muted-foreground/70 mr-1" />
+            <span className="text-xs text-muted-foreground/70">{activity.userName}</span>
           </div>
         )}
       </div>
@@ -153,10 +153,10 @@ export const RecentActivities: React.FC = () => {
           <div className="space-y-3">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="flex items-start space-x-3 p-3">
-                <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse" />
+                <div className="h-8 w-8 bg-muted rounded-full animate-pulse" />
                 <div className="flex-1">
-                  <div className="h-4 w-32 bg-gray-200 rounded animate-pulse mb-2" />
-                  <div className="h-3 w-48 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-4 w-32 bg-muted rounded animate-pulse mb-2" />
+                  <div className="h-3 w-48 bg-muted rounded animate-pulse" />
                 </div>
               </div>
             ))}
@@ -173,9 +173,9 @@ export const RecentActivities: React.FC = () => {
           <CardTitle>Recent Activities</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center text-red-600">
+          <div className="text-center text-destructive">
             <p>Failed to load activities</p>
-            <p className="text-sm text-gray-500">{error}</p>
+            <p className="text-sm text-muted-foreground">{error}</p>
           </div>
         </CardContent>
       </Card>
@@ -192,12 +192,12 @@ export const RecentActivities: React.FC = () => {
       </CardHeader>
       <CardContent>
         {!Array.isArray(activities) || activities.length === 0 ? (
-          <div className="text-center py-8">
-            <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">No recent activities</p>
+          <div className="text-center py-10">
+            <Clock className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
+            <p className="text-sm text-muted-foreground">No recent activities</p>
           </div>
         ) : (
-          <div className="space-y-1">
+          <div>
             {activities.map((activity) => (
               <ActivityItem key={activity.id} activity={activity} />
             ))}

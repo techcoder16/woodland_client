@@ -83,7 +83,7 @@ const MenuHeader: React.FC = () => {
                   type="text"
                   placeholder="Search..."
                   className="w-64 pl-10 pr-4 py-2 rounded-lg border border-border
-                           bg-secondary text-foreground dark:text-white
+                           bg-secondary text-foreground
                            focus:ring-2 focus:ring-primary transition-colors duration-200"
                 />
                 <Search className="absolute left-3 top-2.5 text-muted-foreground h-5 w-5" />
@@ -105,7 +105,7 @@ const MenuHeader: React.FC = () => {
                            transition-colors duration-200"
                 >
                   <div className={`h-8 w-8 rounded-full flex items-center justify-center text-white ${
-                    userName ? 'bg-gradient-to-r from-primary to-purple-500' : 'bg-muted-foreground'
+                    userName ? 'bg-gradient-to-r from-primary to-accent-foreground' : 'bg-muted-foreground'
                   }`}>
                     {userName ? getInitials(userName) : 'U'}
                   </div>
@@ -118,11 +118,11 @@ const MenuHeader: React.FC = () => {
                     <div className="p-4 border-b border-border">
                       <div className="flex items-center gap-3">
                         <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white
-                                      bg-gradient-to-r from-primary to-purple-500`}>
+                                      bg-gradient-to-r from-primary to-accent-foreground`}>
                           {userName ? getInitials(userName) : 'U'}
                         </div>
                         <div>
-                          <div className="font-medium dark:text-white">{userName}</div>
+                          <div className="font-medium">{userName}</div>
                           <div className="text-sm text-muted-foreground">{email}</div>
                         </div>
                       </div>

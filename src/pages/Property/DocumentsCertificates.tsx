@@ -14,20 +14,20 @@ const DocumentsCertificates = ({ register, watch, setValue, errors }: DocumentsC
         <div className="text-lg font-medium flex justify-start underline p-5">Photographs & Floor Plans</div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-3">
           <FileUploadField
-            label="Photographs"
+            label="Photograph"
             name="photographs"
             accept="image/*"
-            multiple={true}
+            multiple={false}
             register={register}
             setValue={setValue}
             watch={watch}
             error={errors?.photographs?.message?.toString()}
           />
           <FileUploadField
-            label="Floor Plans"
+            label="Floor Plan"
             name="floorPlans"
             accept="image/*"
-            multiple={true}
+            multiple={false}
             register={register}
             setValue={setValue}
             watch={watch}

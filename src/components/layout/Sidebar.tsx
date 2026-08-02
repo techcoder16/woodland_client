@@ -118,7 +118,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-1 pt-1 pl-6">
               <NavItem href="/properties" icon={Building} label="Properties" />
-              <NavItem href="/vendors" icon={Users} label="Vendors" />
+              <NavItem href="/vendors" icon={Users} label="Landlords" />
             </CollapsibleContent>
           </Collapsible>
           

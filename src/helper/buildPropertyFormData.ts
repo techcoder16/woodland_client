@@ -22,23 +22,7 @@ export function buildPropertyFormData(data: Record<string, any>, isDraft: boolea
     } else if (typeof value === "boolean") {
       formData.append(key, JSON.stringify(value));
     } else if (value !== null && value !== undefined) {
-      if (key === "propertyFeature" || key === "selectPortals" || key === "photographs" || key === "floorPlans") {
-        const arrayValue: any[] = Array.isArray(value)
-          ? value
-          : value === "" || !value ? [] : [value];
-
-        if (arrayValue.length > 0) {
-          arrayValue.forEach((item: any, index: number) => {
-            if (item !== null && item !== undefined && item !== "") {
-              formData.append(`${key}[${index}]`, item);
-            }
-          });
-        } else if (!isDraft) {
-          formData.append(`${key}[]`, "");
-        }
-      } else {
-        formData.append(key, String(value));
-      }
+      formData.append(key, String(value));
     }
   }
 

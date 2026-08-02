@@ -69,7 +69,7 @@ const InputSelect: React.FC<SelectFieldProps> = ({
   return (
     <div className={`lg:ml-4 text-sm items-center gap-2 ${className} my-2 space-y-4`}>
       {/* Label */}
-      <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+      <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">
         {label}
       </label>
 
@@ -114,7 +114,7 @@ const InputSelect: React.FC<SelectFieldProps> = ({
 
       {/* Error Message */}
       {error && (
-        <p className="text-red-600 text-sm" role="alert">
+        <p className="text-destructive text-sm" role="alert">
           {error.message}
         </p>
       )}

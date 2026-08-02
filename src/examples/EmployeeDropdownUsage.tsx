@@ -27,7 +27,7 @@ export const EmployeeDropdownUsage: React.FC = () => {
       />
       
       {selectedEmployeeId && (
-        <div className="p-3 bg-green-50 rounded">
+        <div className="p-3 bg-success/10 rounded">
           <p className="text-sm">
             <strong>Selected Employee ID:</strong> {selectedEmployeeId}
           </p>

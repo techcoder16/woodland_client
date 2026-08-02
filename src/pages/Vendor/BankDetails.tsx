@@ -38,7 +38,7 @@ const BankDetails = ({register,watch, clearErrors, setValue, errors }: any) => {
         <div className="text-lg font-medium flex justify-start underline p-5">Bank details</div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-        <InputField setValue={setValue} label="Bank Body" name="bankBody" register={register} error={errors.bankBody?.message?.toString()} />
+        <InputField setValue={setValue} label="Bank Name" name="bankName" register={register} error={errors.bankName?.message?.toString()} />
       </div>
         <div className="text-lg font-medium flex justify-start underline p-5">Bank branch address</div>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -52,23 +52,14 @@ const BankDetails = ({register,watch, clearErrors, setValue, errors }: any) => {
         </div>       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
 
-        <SelectField 
+        <SelectField
         watch={watch}
-          
+
         setValue={setValue}
         onChange={(value) => handleSelectChange("bankCountry", value)}
-        
+
         label="Country" name="bankCountry" options={countriesData} register={register} error={errors.bankCountry?.message?.toString()} />
-
-        <div className="text-lg font-medium flex justify-start underline p-5">International Bank Details</div>
-        <InputField setValue={setValue} label="IBAN" name="bankIban" register={register} error={errors.bankIban?.message?.toString()} />
-       
         </div>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-        <InputField setValue={setValue} label="BIC" name="bic" register={register} error={errors.bank_bic?.message?.toString()} />
-        <InputField setValue={setValue} label="NIB" name="nib" register={register} error={errors.nib?.message?.toString()} />
-      </div>
       </div>
      
     </div>

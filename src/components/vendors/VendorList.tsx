@@ -121,11 +121,11 @@ export function VendorList() {
   };
 
   const handleExport = () => {
-    toast.success("Vendors exported to CSV");
+    toast.success("Landlords exported to CSV");
   };
 
   const handleDelete = (id: string) => {
-    toast.success(`Vendor ${id} deleted successfully`);
+    toast.success(`Landlord ${id} deleted successfully`);
   };
 
   return (
@@ -136,7 +136,7 @@ export function VendorList() {
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search vendors..."
+              placeholder="Search landlords..."
               className="pl-8"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -151,7 +151,7 @@ export function VendorList() {
         <div className="flex flex-wrap items-center gap-2">
           <Select value={vendorType} onValueChange={setVendorType}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Vendor Type" />
+              <SelectValue placeholder="Landlord Type" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Types</SelectItem>
@@ -176,7 +176,7 @@ export function VendorList() {
           
           <Button className="ml-auto" onClick={() => navigate("/vendors/add")}>
             <Plus className="mr-2 h-4 w-4" />
-            Add Vendor
+            Add Landlord
           </Button>
         </div>
       </div>
@@ -192,7 +192,7 @@ export function VendorList() {
                     onCheckedChange={handleSelectAll}
                   />
                 </th>
-                <th className="px-4 py-3 text-left font-medium">Vendor</th>
+                <th className="px-4 py-3 text-left font-medium">Landlord</th>
                 <th className="px-4 py-3 text-left font-medium">Contact</th>
                 <th className="px-4 py-3 text-left font-medium">Type</th>
                 <th className="px-4 py-3 text-center font-medium">Properties</th>
@@ -205,7 +205,7 @@ export function VendorList() {
                 filteredVendors.map((vendor) => (
                   <tr
                     key={vendor.id}
-                    className="border-b hover:bg-red/50 transition-colors"
+                    className="border-b hover:bg-muted/50 transition-colors"
                   >
                     <td className="px-4 py-3">
                       <Checkbox
@@ -215,7 +215,7 @@ export function VendorList() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded bg-red/10 flex items-center justify-center text-red">
+                        <div className="h-10 w-10 rounded bg-primary/10 flex items-center justify-center text-primary">
                           <User className="h-5 w-5" />
                         </div>
                         <div>
@@ -241,8 +241,8 @@ export function VendorList() {
                       <span
                         className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                           vendor.status === "Active"
-                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                            : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                            ? "bg-success/10 text-success"
+                            : "bg-destructive/10 text-destructive"
                         }`}
                       >
                         {vendor.status}
@@ -277,7 +277,7 @@ export function VendorList() {
               ) : (
                 <tr>
                   <td colSpan={7} className=" text-center text-muted-foreground">
-                    No vendors found
+                    No landlords found
                   </td>
                 </tr>
               )}
@@ -289,7 +289,7 @@ export function VendorList() {
           <div className="flex items-center justify-between px-4 py-3 border-t">
             <div className="text-sm text-muted-foreground">
               Showing <span className="font-medium">{filteredVendors.length}</span> of{" "}
-              <span className="font-medium">{vendors.length}</span> vendors
+              <span className="font-medium">{vendors.length}</span> landlords
             </div>
             <Button
               variant="outline"

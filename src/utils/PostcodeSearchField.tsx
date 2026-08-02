@@ -44,8 +44,8 @@ const PostcodeSearchField: React.FC<PostcodeSearchFieldProps> = ({
   };
 
   return (
-    <div className="p-3 rounded-sm">
-      <label className="text-gray-700 font-medium text-sm mr-4 w-32">Post Code</label>
+    <div className="space-y-1.5">
+      <label className="text-muted-foreground font-medium text-sm">Post Code</label>
       <div className="flex gap-2">
         <Input
           value={postcode}

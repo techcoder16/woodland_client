@@ -102,8 +102,8 @@ const user = await DEFAULT_COOKIE_GETTER("user");
 
   return (
     <DashboardLayout>
-      <div className="p-6 max-w-5xl mx-auto">
-        <h1 className="text-3xl font-bold tracking-tight mb-6">Settings</h1>
+      <div className="max-w-5xl mx-auto">
+        <h1 className="hero-stat text-[2rem] mb-6">Settings</h1>
 
         <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="mb-8">

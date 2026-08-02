@@ -13,42 +13,28 @@ import LoadingBar from "react-top-loading-bar";
 import PropertyInfo from "./Property/PropertyInfo";
 import DocumentsCertificates from "./Property/DocumentsCertificates";
 import RentalAgreement from "./Property/RentalAgreement";
-import ManagementAgreement from "./Manager/ManagementAgreement";
-import TenancyAgreement from "./Manager/TenancyAgreement";
 import NotesStep from "./Manager/NotesStep";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { patch } from "@/helper/api";
 import { propertySchema } from "@/schema/property.schema";
 import { buildPropertyFormData } from "@/helper/buildPropertyFormData";
 import { parseApiError } from "@/helper/parseApiError";
-import { useDispatch } from "react-redux";
-import { upsertManagementAgreement } from "@/redux/dataStore/managementAgreementSlice";
 
 const STEP_LABELS = [
   "Standard Info",
   "Documents/Certificates",
   "Rental Agreement",
-  "Management Agreement",
-  "Tenancy Agreement",
   "Notes",
 ] as const;
 
 const STEP_FIELDS: string[][] = [
-  ["vendor", "for", "postCode", "propertyName", "addressLine1", "addressLine2", "town", "country", "propertyTypeCategory", "bedrooms", "bathrooms", "wheelchairAccess", "hasGarden", "lift", "gas", "electricity", "rooms"],
+  ["vendor", "for", "postCode", "addressLine1", "addressLine2", "town", "country", "propertyTypeCategory", "bedrooms", "bathrooms", "wheelchairAccess", "hasGarden", "lift", "gas", "electricity", "rooms"],
   ["photographs", "floorPlans", "epcCertificate", "gasCertificate", "electricityCertificate", "fireRiskAssessment", "insuranceCertificate", "emergencyLightingCertificate", "propertyLicense"],
-  ["rentalTenure", "rentalDescription"],
-  [],
-  [],
+  ["rentEffectiveDate", "rentPerMonth", "rentPayableInAdvance", "rentalTerms"],
   [],
 ];
 
 type FormData = z.infer<typeof propertySchema>;
-
-function splitFeeValue(value: string) {
-  if (!value) return { amount: "", type: "" };
-  const parts = value.split("-");
-  return { amount: parts[0] || "", type: parts[1] || "" };
-}
 
 function toBoolean(value: any): boolean {
   if (typeof value === "boolean") return value;
@@ -65,15 +51,6 @@ function parseJsonArray(value: any, fallback: any[] = []): any[] {
   return fallback;
 }
 
-function parseBase64Array(value: any): string[] {
-  if (Array.isArray(value)) return value;
-  if (typeof value === "string") {
-    try { return JSON.parse(value); }
-    catch { return value.startsWith("data:image") ? [value] : []; }
-  }
-  return [];
-}
-
 const EditProperty = () => {
   const location = useLocation();
   const { toast } = useToast();
@@ -87,15 +64,8 @@ const EditProperty = () => {
   const transformedVendorData = useMemo((): FormData | Record<string, never> => {
     if (!property) return {};
 
-    const salesFeeParts = splitFeeValue(property.salesFee);
-    const priceParts = splitFeeValue(property.price);
-
     return {
       ...property,
-      salesFee_input: salesFeeParts.amount,
-      salesFee_select: salesFeeParts.type,
-      price_input: priceParts.amount,
-      price_select: priceParts.type,
       country: property.country ?? "",
       vendor: property.vendorId ?? "",
       bedrooms: property.bedrooms ?? "",
@@ -106,25 +76,9 @@ const EditProperty = () => {
       lift: toBoolean(property.lift),
       gas: toBoolean(property.gas),
       electricity: toBoolean(property.electricity),
-      nonGasProperty: toBoolean(property.nonGasProperty),
-      showOnWebsite: toBoolean(property.showOnWebsite),
-      newHome: toBoolean(property.newHome),
-      offPlan: toBoolean(property.offPlan),
-      sendToBoomin: toBoolean(property.sendToBoomin),
-      sendToRightmoveNow: toBoolean(property.sendToRightmoveNow),
-      sendToOnTheMarket: toBoolean(property.sendToOnTheMarket),
-      newsAndExclusive: toBoolean(property.newsAndExclusive),
       rooms: parseJsonArray(property.rooms),
-      propertyFeature: parseJsonArray(property.propertyFeature),
-      selectPortals: parseJsonArray(property.selectPortals),
-      currentEERating: property.currentEERating ? String(property.currentEERating) : "",
-      potentialEERating: property.potentialEERating ? String(property.potentialEERating) : "",
-      photographs: parseBase64Array(property.photographs),
-      floorPlans: parseBase64Array(property.floorPlans),
-      epcChartOption: property.epcChartOption || "ratings",
-      epcReportOption: property.epcReportOption || "uploadReport",
-      videoTourDescription: property.videoTourDescription || "",
-      epcReportURL: property.epcReportURL || "",
+      photographs: typeof property.photographs === "string" ? property.photographs : "",
+      floorPlans: typeof property.floorPlans === "string" ? property.floorPlans : "",
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [property]);
@@ -157,8 +111,6 @@ const EditProperty = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [managementAgreementDraft, setManagementAgreementDraft] = useState<any>(null);
-  const dispatch = useDispatch<any>();
   const isLastStep = currentStep === STEP_LABELS.length - 1;
 
   const handleNext = async () => {
@@ -207,18 +159,6 @@ const EditProperty = () => {
 
       const updatedId = apiData?.property?.id;
       if (updatedId?.length > 0) {
-        if (managementAgreementDraft) {
-          try {
-            await dispatch(upsertManagementAgreement({ ...managementAgreementDraft, propertyId: updatedId })).unwrap();
-          } catch (agreementError: any) {
-            toast({
-              title: "Property saved, but Management Agreement failed",
-              description: agreementError?.message || "Please try generating and saving it again.",
-              variant: "destructive",
-            });
-          }
-        }
-
         toast({
           title: "Success",
           description: isDraft ? "Property saved as draft successfully!" : apiData.message || "Property updated successfully!",
@@ -258,13 +198,13 @@ const EditProperty = () => {
         </div>
       )}
 
-      <div className="min-h-screen bg-background">
+      <div className="bg-background">
         <LoadingBar color="hsl(350, 74%, 45%)" progress={progress} onLoaderFinished={() => setProgress(0)} />
 
-        <div className="p-6 max-w-5xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-3xl font-semibold tracking-tight text-foreground">Edit Property</h1>
+              <h1 className="hero-stat text-3xl">Edit Property</h1>
               <p className="mt-1 text-sm text-muted-foreground">
                 Update the details below, then publish when you're ready.
               </p>
@@ -303,7 +243,7 @@ const EditProperty = () => {
           <Card className="p-6 sm:p-8 shadow-sm border-border/80">
             <form onSubmit={(e) => e.preventDefault()}>
               <div className={currentStep !== 0 ? "hidden" : ""}>
-                <PropertyInfo watch={watch} register={form.register} errors={currentStep === 0 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
+                <PropertyInfo watch={watch} register={form.register} errors={currentStep === 0 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} property={property} />
               </div>
               <div className={currentStep !== 1 ? "hidden" : ""}>
                 <DocumentsCertificates watch={watch} register={form.register} errors={currentStep === 1 ? activeErrors : noErrors} setValue={form.setValue} />
@@ -312,16 +252,6 @@ const EditProperty = () => {
                 <RentalAgreement watch={watch} register={form.register} errors={currentStep === 2 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
               </div>
               {currentStep === 3 && (
-                <ManagementAgreement
-                  propertyId={property.id}
-                  property={property}
-                  onDataChange={setManagementAgreementDraft}
-                />
-              )}
-              {currentStep === 4 && (
-                <TenancyAgreement propertyId={property.id} property={property} />
-              )}
-              {currentStep === 5 && (
                 <NotesStep propertyId={property.id} property={property} />
               )}
 

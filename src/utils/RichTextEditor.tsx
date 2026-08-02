@@ -34,15 +34,15 @@ const ToolbarBtn = ({
     className={cn(
       "p-1.5 rounded text-sm transition-colors",
       active
-        ? "bg-gray-800 text-white"
-        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+        ? "bg-primary text-primary-foreground"
+        : "text-muted-foreground hover:bg-muted hover:text-foreground"
     )}
   >
     {children}
   </button>
 );
 
-const Divider = () => <div className="w-px h-5 bg-gray-300 mx-1 self-center" />;
+const Divider = () => <div className="w-px h-5 bg-border mx-1 self-center" />;
 
 const RichTextEditor: React.FC<RichTextEditorProps> = ({
   value, onChange, placeholder = "Enter text…", error, label,
@@ -72,12 +72,12 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   return (
     <div className="space-y-1">
       {label && (
-        <label className="text-sm font-medium text-gray-700">{label}</label>
+        <label className="text-sm font-medium text-muted-foreground">{label}</label>
       )}
 
-      <div className={cn("border rounded-lg overflow-hidden", error ? "border-red-500" : "border-gray-300")}>
+      <div className={cn("border rounded-lg overflow-hidden", error ? "border-destructive" : "border-border")}>
         {/* Toolbar */}
-        <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 border-b bg-gray-50">
+        <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 border-b bg-muted">
           <ToolbarBtn title="Bold" onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive("bold")}>
             <Bold className="w-4 h-4" />
           </ToolbarBtn>
@@ -134,11 +134,11 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         {/* Editor area */}
         <EditorContent
           editor={editor}
-          className="prose prose-sm max-w-none min-h-[200px] px-4 py-3 focus-within:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[180px] [&_.ProseMirror_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)] [&_.ProseMirror_p.is-editor-empty:first-child::before]:text-gray-400 [&_.ProseMirror_p.is-editor-empty:first-child::before]:pointer-events-none [&_.ProseMirror_p.is-editor-empty:first-child::before]:float-left [&_.ProseMirror_p.is-editor-empty:first-child::before]:h-0"
+          className="prose prose-sm max-w-none min-h-[200px] px-4 py-3 focus-within:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[180px] [&_.ProseMirror_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)] [&_.ProseMirror_p.is-editor-empty:first-child::before]:text-muted-foreground [&_.ProseMirror_p.is-editor-empty:first-child::before]:pointer-events-none [&_.ProseMirror_p.is-editor-empty:first-child::before]:float-left [&_.ProseMirror_p.is-editor-empty:first-child::before]:h-0"
         />
       </div>
 
-      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+      {error && <p className="text-destructive text-xs mt-1">{error}</p>}
     </div>
   );
 };

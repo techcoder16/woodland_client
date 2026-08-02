@@ -76,7 +76,7 @@ export const EmployeeDropdown: React.FC<EmployeeDropdownProps> = ({
   if (loading) {
     return (
       <div className="space-y-2">
-        {label && <Label>{label} {required && <span className="text-red-500">*</span>}</Label>}
+        {label && <Label>{label} {required && <span className="text-destructive">*</span>}</Label>}
         <div className="flex items-center space-x-2">
           <Loader2 className="h-4 w-4 animate-spin" />
           <span className="text-sm text-muted-foreground">Loading employees...</span>
@@ -88,12 +88,12 @@ export const EmployeeDropdown: React.FC<EmployeeDropdownProps> = ({
   if (error) {
     return (
       <div className="space-y-2">
-        {label && <Label>{label} {required && <span className="text-red-500">*</span>}</Label>}
-        <div className="text-sm text-red-500">
+        {label && <Label>{label} {required && <span className="text-destructive">*</span>}</Label>}
+        <div className="text-sm text-destructive">
           {error}
-          <button 
+          <button
             onClick={fetchUsers}
-            className="ml-2 text-blue-500 hover:underline"
+            className="ml-2 text-primary hover:underline"
           >
             Retry
           </button>
@@ -104,8 +104,8 @@ export const EmployeeDropdown: React.FC<EmployeeDropdownProps> = ({
 
   return (
     <div className="space-y-2">
-      {label && <Label>{label} {required && <span className="text-red-500">*</span>}</Label>}
-      <Select 
+      {label && <Label>{label} {required && <span className="text-destructive">*</span>}</Label>}
+      <Select
         value={selectedEmployeeId || 'none'} 
         onValueChange={handleValueChange}
       >

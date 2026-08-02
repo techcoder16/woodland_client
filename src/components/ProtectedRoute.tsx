@@ -25,7 +25,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground"></div>
       </div>
     );
   }
@@ -42,11 +42,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   if (!hasAccess) {
     if (showAccessDenied) {
       return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="flex items-center justify-center min-h-screen bg-muted">
           <Card className="w-full max-w-md">
             <CardHeader className="text-center">
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-                <Shield className="h-6 w-6 text-red-600" />
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+                <Shield className="h-6 w-6 text-destructive" />
               </div>
               <CardTitle className="text-xl">Access Denied</CardTitle>
               <CardDescription>
@@ -57,7 +57,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">
-              <p className="text-sm text-gray-500 mb-4">
+              <p className="text-sm text-muted-foreground mb-4">
                 {isAdminRoute 
                   ? "Admin access required"
                   : `Required access to: ${route}`

@@ -29,19 +29,15 @@ const InputField: React.FC<InputFieldProps> = ({
   };
   
  return (
-
-  <div className=" p-3 rounded-sm text-sm items-center gap-2   my-2 space-y-2">
-      <label className="font-medium text-gray-700 whitespace-nowrap">{label}</label>
-      <Textarea 
-     
-        className=""
+  <div className="space-y-1.5">
+      <label className="font-medium text-muted-foreground text-sm">{label}</label>
+      <Textarea
         {...register(name)}
         placeholder={placeholder}
         onChange={handleChange}  // Attach the onChange handler
-
       />
 
-    {error && <p className="text-red-500 mt-1 mx-2">{error}</p>}
+    {error && <p className="text-destructive text-xs mt-1">{error}</p>}
   </div>
  );
 

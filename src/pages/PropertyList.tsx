@@ -32,6 +32,7 @@ import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
 import { fetchProperties, deleteProperty } from "@/redux/dataStore/propertySlice";
 import { useToast } from "@/components/ui/use-toast";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import PropertyPdf from "./Property/PropertyPdf";
 
 const PropertyList = () => {
   const dispatch = useAppDispatch();
@@ -39,6 +40,7 @@ const PropertyList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
+  const [viewProperty, setViewProperty] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { properties, totalPages, loading } = useAppSelector(
@@ -78,16 +80,11 @@ const PropertyList = () => {
 
   };
 
-  
-  function handleDelete(id: string): void {
-    throw new Error("Function not implemented.");
-  }
-
   return (
     <DashboardLayout>
 
-<div className="p-6 space-y-6">
-<h1 className="text-3xl font-bold tracking-tight">Properties</h1>
+<div className="space-y-6">
+<h1 className="hero-stat text-[2rem]">Properties</h1>
 <div className="space-y-4">
       {/* Status Filter Tabs */}
       <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as "all" | "draft" | "published")} className="w-full">
@@ -136,19 +133,18 @@ const PropertyList = () => {
 </div>
 
 
-<div className="glass-card rounded-lg overflow-hidden">
+<div className="surface overflow-hidden">
         <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full text-sm">
   <thead>
-    <tr className="border-b">
-      <th className="px-4 py-3 text-left font-medium">No</th>
-      <th className="px-4 py-3 text-left font-medium">Property Name</th>
-      <th className="px-4 py-3 text-left font-medium">Address</th>
-      <th className="px-4 py-3 text-left font-medium">Country</th>
-      <th className="px-4 py-3 text-left font-medium">Category</th>
-      <th className="px-4 py-3 text-left font-medium">Status</th>
-      <th className="px-4 py-3 text-left font-medium">Property Status</th>
-      <th className="px-4 py-3 text-left font-medium">Price</th>
+    <tr className="border-b border-border/70">
+      <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs">No</th>
+      <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs">Address</th>
+      <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs">Country</th>
+      <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs">Category</th>
+      <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs">Status</th>
+      <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs">Property Status</th>
+      <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs">Price</th>
 
     </tr>
   </thead>
@@ -157,10 +153,10 @@ const PropertyList = () => {
       properties.map((property: any) => (
         <tr
           key={property.id}
-          className="border-b hover:bg-muted/50 transition-colors"
+          className="border-b border-border/50 hover:bg-muted/40 transition-colors cursor-pointer"
+          onClick={() => setViewProperty(property)}
         >
           <td className="px-4 py-3">{property.propertyNumber}</td>
-          <td className="px-4 py-3">{property.propertyName}</td>
           <td className="px-4 py-3">
             {property.addressLine1}, {property.town}
           </td>
@@ -170,10 +166,10 @@ const PropertyList = () => {
             <span
               className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                 property.status === "Active"
-                  ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                  ? "bg-success/10 text-success"
                   : property.status === "Inactive"
                   ? "bg-destructive/10 text-destructive"
-                  : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                  : "bg-warning/10 text-warning"
               }`}
             >
               {property.status}
@@ -183,7 +179,7 @@ const PropertyList = () => {
             <span
               className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                 property.propertyStatus === "PUBLISHED"
-                  ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                  ? "bg-primary/10 text-primary"
                   : "bg-secondary text-secondary-foreground"
               }`}
             >
@@ -192,7 +188,7 @@ const PropertyList = () => {
           </td>
           <td className="px-4 py-3">{property.price}</td>
        
-          <td className="px-4 py-3 text-right">
+          <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
        <DropdownMenu>
          <DropdownMenuTrigger asChild>
            <Button variant="ghost" size="icon">
@@ -200,6 +196,10 @@ const PropertyList = () => {
            </Button>
          </DropdownMenuTrigger>
          <DropdownMenuContent align="end">
+           <DropdownMenuItem onClick={() => setTimeout(() => setViewProperty(property), 0)}>
+             <Eye className="mr-2 h-4 w-4" />
+             View
+           </DropdownMenuItem>
            <DropdownMenuItem onClick={()=>handleEditProperty(property)}>
              <Edit className="mr-2 h-4 w-4" />
              {property.propertyStatus === "DRAFT" ? "Edit Draft" : "Edit"}
@@ -256,9 +256,18 @@ const PropertyList = () => {
             </PaginationItem>
           </PaginationContent>
         </Pagination>
-        
+
     </div>
     </div>
+
+      {viewProperty && (
+        <PropertyPdf
+          property={viewProperty}
+          open={!!viewProperty}
+          onOpenChange={(next: boolean) => !next && setViewProperty(null)}
+          hideTrigger
+        />
+      )}
       </DashboardLayout>
   );
 };

@@ -71,7 +71,7 @@ const TranscationInfo = ({
       <div className="flex flex-col lg:flex-row gap-6">
         
         {/* From Tenant */}
-        <div className="flex-1 border border-gray-200 rounded-lg p-4 shadow-sm">
+        <div className="flex-1 border border-border rounded-lg p-4 shadow-sm">
           <div className="text-lg font-semibold border-b pb-2 mb-4">From Tenant</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             
@@ -105,7 +105,7 @@ const TranscationInfo = ({
         </div>
 
         {/* To Landlord */}
-        <div className="flex-1 border border-gray-200 rounded-lg p-4 shadow-sm">
+        <div className="flex-1 border border-border rounded-lg p-4 shadow-sm">
           <div className="text-lg font-semibold border-b pb-2 mb-4">To Landlord</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             

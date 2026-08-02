@@ -26,7 +26,7 @@ const propertyTypeCategoryOptions = [
   { value: 'maisonette', label: 'Maisonette' },
 ];
 
-const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type }: any) => {
+const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, property }: any) => {
 
   const [isAddingArea, setIsAddingArea] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -59,7 +59,7 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type }: 
         },
         { label: 'Phone', value: selectedVendor.phone },
         { label: 'Email', value: selectedVendor.email },
-        { label: 'Bank', value: selectedVendor.bankBody },
+        { label: 'Bank', value: selectedVendor.bankName },
       ].filter((row) => row.value)
     : [];
 
@@ -92,6 +92,7 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type }: 
           setValue={setValue}
           clearErrors={clearErrors}
           error={errors.vendor?.message?.toString()}
+          selectedLabel={property?.vendor ? `${property.vendor.firstName ?? ''} ${property.vendor.lastName ?? ''}`.trim() : undefined}
         />
 
         {landlordDetailRows.length > 0 && (
@@ -110,7 +111,6 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type }: 
       </div>
 
       <div className="p-4 w-full">
-        <div className="text-lg font-medium flex justify-start underline p-5">Property on market</div>
         <hr />
 
         <SelectField
@@ -129,7 +129,6 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type }: 
         <div className="text-lg font-medium flex justify-start underline p-5">Address of property</div>
 
         <InputField setValue={setValue} label="Post Code" name="postCode" register={register} error={errors.postCode?.message?.toString()} />
-        <InputField setValue={setValue} label="Property Name" name="propertyName" register={register} error={errors.propertyName?.message?.toString()} />
         <InputField setValue={setValue} label="Address Line 1" name="addressLine1" register={register} error={errors.addressLine1?.message?.toString()} />
         <InputField setValue={setValue} label="Address Line 2" name="addressLine2" register={register} error={errors.addressLine2?.message?.toString()} />
 

@@ -343,7 +343,7 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId, property }) => {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="mb-1 shrink-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                  className="mb-1 shrink-0 text-primary hover:text-primary/90 hover:bg-primary/10"
                   disabled={!watch("ReturnedOn")}
                   title="Generate Return of Deposit PDF"
                   onClick={() => setShowReturnPdf(true)}
@@ -365,7 +365,7 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId, property }) => {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="mb-1 shrink-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                  className="mb-1 shrink-0 text-primary hover:text-primary/90 hover:bg-primary/10"
                   disabled={!watch("ReceivedOn")}
                   title="Generate Receipt of Deposit PDF"
                   onClick={() => setShowReceiptPdf(true)}
@@ -594,24 +594,24 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId, property }) => {
               />
 
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Payment Terms</label>
+                <label className="block text-sm font-medium text-foreground">Payment Terms</label>
                 <div className="flex items-center space-x-3 h-10">
                   <input
                     type="checkbox"
                     {...depositRegister("inArrears")}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-primary focus:ring-primary border-border rounded"
                   />
-                  <span className="text-sm text-gray-700">In Arrears</span>
+                  <span className="text-sm text-foreground">In Arrears</span>
                 </div>
                 {depositErrors.inArrears && (
-                  <p className="text-sm text-red-600">{depositErrors.inArrears.message}</p>
+                  <p className="text-sm text-destructive">{depositErrors.inArrears.message}</p>
                 )}
               </div>
             </div>
 
             {/* Bill Calculation Display */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Calculated Bill (£)</label>
+              <label className="block text-sm font-medium text-foreground">Calculated Bill (£)</label>
               <input
                 type="number"
                 readOnly
@@ -622,7 +622,7 @@ const Rent: React.FC<RentComponentProps> = ({ propertyId, property }) => {
                   depositWatch("per"),
                   depositWatch("inArrears")
                 )}
-                className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700 font-medium"
+                className="w-full h-10 px-3 py-2 border border-border rounded-md bg-muted text-foreground font-medium"
               />
             </div>
 

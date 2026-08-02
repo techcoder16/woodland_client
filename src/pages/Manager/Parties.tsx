@@ -212,7 +212,7 @@ console.log("Selected Tenants:", selectedTenants);
 
       <div className="flex flex-col md:flex-row gap-6">
         <div className="w-full md:w-1/2">
-          <label className="block mb-2 text-lg font-semibold text-gray-700">Select Tenants</label>
+          <label className="block mb-2 text-lg font-semibold text-foreground">Select Tenants</label>
 
           <button
             type="button"
@@ -233,8 +233,8 @@ console.log("Selected Tenants:", selectedTenants);
                   <div
                     key={tenant.id}
                     onClick={() => handleTenantChange(tenant.id)}
-                    className={`cursor-pointer px-3 py-1 rounded hover:bg-gray-100 text-sm ${
-                      isSelected ? "bg-blue-100 text-blue-800 font-medium" : ""
+                    className={`cursor-pointer px-3 py-1 rounded hover:bg-muted text-sm ${
+                      isSelected ? "bg-primary/10 text-primary font-medium" : ""
                     }`}
                   >
                     {tenant.FirstName} {tenant.SureName}
@@ -244,13 +244,13 @@ console.log("Selected Tenants:", selectedTenants);
             </div>
           )}
 
-          <div className="p-6 mt-4 rounded-2xl shadow-md border border-gray-200">
+          <div className="p-6 mt-4 rounded-2xl shadow-md border border-border">
             <h2 className="text-2xl font-bold flex items-center gap-2 mb-4">
-              <User className="h-6 w-6 text-red-500" /> Selected Tenant(s)
+              <User className="h-6 w-6 text-primary" /> Selected Tenant(s)
             </h2>
             {selectedTenants.length > 0 ? (
               selectedTenants.map(tenant => (
-                <div key={tenant.id} className="mb-4 p-3 border-b border-gray-200">
+                <div key={tenant.id} className="mb-4 p-3 border-b border-border">
                   <p>
                     <strong>Name:</strong> {tenant.title} {tenant.FirstName} {tenant.SureName}
                   </p>
@@ -263,7 +263,7 @@ console.log("Selected Tenants:", selectedTenants);
                 </div>
               ))
             ) : (
-              <p className="text-gray-500 italic">No tenants selected.</p>
+              <p className="text-muted-foreground italic">No tenants selected.</p>
             )}
 
             <Button onClick={handleSaveParty} className="mt-4">
@@ -273,9 +273,9 @@ console.log("Selected Tenants:", selectedTenants);
         </div>
 
         <div className="w-full md:w-1/2">
-          <div className="p-6 rounded-2xl shadow-md border border-gray-200">
+          <div className="p-6 rounded-2xl shadow-md border border-border">
             <h2 className="text-2xl font-bold flex items-center gap-2 mb-4">
-              <Building2 className="h-6 w-6 text-red-500 mb-2" /> Landlord Details
+              <Building2 className="h-6 w-6 text-primary mb-2" /> Landlord Details
             </h2>
 
             <VendorPicker
@@ -292,11 +292,11 @@ console.log("Selected Tenants:", selectedTenants);
             {vendorLoading ? (
               <div className="flex items-center space-x-2">
                 <Loader2 className="h-5 w-5 animate-spin" />
-                <p>Loading vendors...</p>
+                <p>Loading landlords...</p>
               </div>
             ) : selectedLandlord ? (
               <div className="space-y-4">
-                <div className="p-4 rounded-xl border border-gray-200 shadow-sm">
+                <div className="p-4 rounded-xl border border-border shadow-sm">
                   <p>
                     <strong>Name:</strong> {selectedLandlord.firstName} {selectedLandlord.lastName}
                   </p>
@@ -312,7 +312,7 @@ console.log("Selected Tenants:", selectedTenants);
                 </div>
               </div>
             ) : (
-              <p className="text-gray-500 italic">No landlord selected.</p>
+              <p className="text-muted-foreground italic">No landlord selected.</p>
             )}
           </div>
         </div>

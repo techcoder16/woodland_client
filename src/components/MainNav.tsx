@@ -202,7 +202,7 @@ export function MainNav() {
                 )}
               >
                 <Users className="mr-2 h-4 w-4" />
-                Landlords/Vendors
+                Landlords
               </Link>
               <Link
                 to="/properties"

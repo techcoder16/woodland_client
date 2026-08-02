@@ -6,7 +6,6 @@ import { AppDispatch } from "../store";
 
 interface Property {
   id: string;
-  propertyName: string;
   propertyNo?: string;
   addressLine1: string;
   town: string;

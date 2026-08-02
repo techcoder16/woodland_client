@@ -30,7 +30,7 @@ const AdminTest: React.FC = () => {
         </div>
         <div>
           <strong>User Object:</strong>
-          <pre className="text-xs bg-gray-100 p-2 rounded mt-1 overflow-auto">
+          <pre className="text-xs bg-muted p-2 rounded mt-1 overflow-auto">
             {JSON.stringify(user, null, 2)}
           </pre>
         </div>

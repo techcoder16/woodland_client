@@ -55,8 +55,8 @@ const CreateScreen: React.FC = () => {
       <div className="flex items-center justify-center min-h-screen">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-              <Settings className="h-6 w-6 text-red-600" />
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+              <Settings className="h-6 w-6 text-destructive" />
             </div>
             <CardTitle className="text-xl">Access Denied</CardTitle>
             <CardDescription>
@@ -82,7 +82,7 @@ const CreateScreen: React.FC = () => {
         </Button>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Create New Screen</h1>
-          <p className="text-gray-600">Add a new screen/page to the application</p>
+          <p className="text-muted-foreground">Add a new screen/page to the application</p>
         </div>
       </div>
 
@@ -106,9 +106,9 @@ const CreateScreen: React.FC = () => {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
-                  placeholder="e.g., Dashboard, Vendor Management, Reports"
+                  placeholder="e.g., Dashboard, Landlord Management, Reports"
                 />
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   A descriptive name for this screen (shown in navigation and admin panel)
                 </p>
               </div>
@@ -123,7 +123,7 @@ const CreateScreen: React.FC = () => {
                   placeholder="Brief description of what this screen does"
                   rows={3}
                 />
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Explain what users can do on this screen
                 </p>
               </div>
@@ -131,7 +131,7 @@ const CreateScreen: React.FC = () => {
               <div>
                 <Label htmlFor="route">Route Path *</Label>
                 <div className="flex">
-                  <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                  <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-border bg-muted text-muted-foreground text-sm">
                     /
                   </span>
                   <Input
@@ -139,12 +139,12 @@ const CreateScreen: React.FC = () => {
                     value={formData.route}
                     onChange={(e) => setFormData({ ...formData, route: e.target.value.replace(/^\//, '') })}
                     required
-                    placeholder="dashboard, vendors, reports"
+                    placeholder="dashboard, landlords, reports"
                     className="rounded-l-none"
                   />
                 </div>
-                <p className="text-sm text-gray-500 mt-1">
-                  The URL path for this screen (without leading slash). Examples: dashboard, vendors, reports, settings
+                <p className="text-sm text-muted-foreground mt-1">
+                  The URL path for this screen (without leading slash). Examples: dashboard, landlords, reports, settings
                 </p>
               </div>
 
@@ -160,26 +160,26 @@ const CreateScreen: React.FC = () => {
                   <SelectContent>
                     <SelectItem value={ScreenStatus.ACTIVE}>
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <div className="w-2 h-2 bg-success rounded-full"></div>
                         Active - Users can access this screen
                       </div>
                     </SelectItem>
                     <SelectItem value={ScreenStatus.INACTIVE}>
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                        <div className="w-2 h-2 bg-muted-foreground rounded-full"></div>
                         Inactive - Screen is disabled
                       </div>
                     </SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Inactive screens cannot be accessed by any user
                 </p>
               </div>
 
               {/* Preview */}
               {formData.name && formData.route && (
-                <div className="p-4 bg-gray-50 rounded-lg">
+                <div className="p-4 bg-muted rounded-lg">
                   <h4 className="font-medium mb-2">Preview</h4>
                   <div className="space-y-2 text-sm">
                     <p><strong>Name:</strong> {formData.name}</p>
@@ -188,8 +188,8 @@ const CreateScreen: React.FC = () => {
                     <p><strong>Status:</strong> 
                       <span className={`ml-1 px-2 py-1 rounded text-xs ${
                         formData.status === ScreenStatus.ACTIVE 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-gray-100 text-gray-800'
+                          ? 'bg-success/10 text-success'
+                          : 'bg-muted text-muted-foreground'
                       }`}>
                         {formData.status}
                       </span>

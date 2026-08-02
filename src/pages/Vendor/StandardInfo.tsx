@@ -1,6 +1,6 @@
 import InputField from '../../utils/InputField';
 import SelectField from '../../utils/SelectedField';
-import countriesData from '../../data/counteries.json';
+import countriesData from '../../data/ukCountry.json';
 
 const StandardInfo = ({ register, watch, clearErrors, setValue, errors }: any) => {
   const handleSelectChange = (name: string, value: string) => {

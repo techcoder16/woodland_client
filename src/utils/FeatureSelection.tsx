@@ -99,7 +99,7 @@ const FeatureSelection: React.FC<FeatureSelectionProps> = ({
       <div className="p-4 border rounded-md shadow-md">
         <input
           name="search"
-          className="p-2 border border-gray-300 rounded lg:flex-grow bg-transparent"
+          className="p-2 border border-border rounded lg:flex-grow bg-transparent"
           placeholder={`Search ${label} ...`}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
@@ -133,7 +133,7 @@ const FeatureSelection: React.FC<FeatureSelectionProps> = ({
       </div>
 
       {error && (
-        <p className="text-red-600 text-sm" role="alert">
+        <p className="text-destructive text-sm" role="alert">
           {error}
         </p>
       )}

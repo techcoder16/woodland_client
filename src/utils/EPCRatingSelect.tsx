@@ -21,28 +21,26 @@ const EPCRatingSelect: React.FC<EPCRatingSelectProps> = ({
   console.log(`🏷️ EPCRatingSelect [${name}] render:`, { currentValue });
 
   return (
-    <div className="p-3 rounded-sm">
-      <div className="space-y-2">
-        <label className="text-gray-700 text-sm font-medium mr-4 w-32">{label}</label>
-        
-        <select
-          {...register(name, {
-            onChange: (e) => {
-              console.log(`✏️ EPCRatingSelect [${name}] changed to:`, e.target.value);
-            }
-          })}
-          className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <option value="">Select a rating</option>
-          {Array.from({ length: 101 }, (_, i) => (
-            <option key={i} value={i.toString()}>
-              {i}
-            </option>
-          ))}
-        </select>
-      </div>
-      
-      {error && <p className="text-red-500 mt-1 mx-2 justify-center flex">{error}</p>}
+    <div className="space-y-1.5">
+      <label className="text-muted-foreground text-sm font-medium">{label}</label>
+
+      <select
+        {...register(name, {
+          onChange: (e) => {
+            console.log(`✏️ EPCRatingSelect [${name}] changed to:`, e.target.value);
+          }
+        })}
+        className="flex h-10 w-full items-center justify-between rounded-lg border border-input bg-background px-3 py-2 text-sm transition-colors hover:border-muted-foreground/30 focus-visible:outline-none focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <option value="">Select a rating</option>
+        {Array.from({ length: 101 }, (_, i) => (
+          <option key={i} value={i.toString()}>
+            {i}
+          </option>
+        ))}
+      </select>
+
+      {error && <p className="text-destructive text-xs mt-1">{error}</p>}
     </div>
   );
 };

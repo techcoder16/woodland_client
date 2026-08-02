@@ -164,7 +164,7 @@ useEffect(()=>{
           </DialogTitle>
         </DialogHeader>
 
-        <LoadingBar color="rgb(95,126,220)" progress={progress} onLoaderFinished={() => setProgress(0)} />
+        <LoadingBar color="hsl(350, 74%, 45%)" progress={progress} onLoaderFinished={() => setProgress(0)} />
 
         <form onSubmit={form.handleSubmit(onSubmit)}>
           {steps[currentStep].component}
@@ -187,7 +187,7 @@ useEffect(()=>{
                 type="button" 
                 variant="outline" 
                 onClick={() => setIsDraftMode(!isDraftMode)}
-                className={`flex items-center gap-2 ${isDraftMode ? 'bg-yellow-100 text-yellow-800' : ''}`}
+                className={`flex items-center gap-2 ${isDraftMode ? 'bg-warning/10 text-warning' : ''}`}
               >
                 <Save className="h-4 w-4" />
                 {isDraftMode ? 'Draft Mode' : 'Active Mode'}
@@ -197,7 +197,7 @@ useEffect(()=>{
                 type="submit" 
                 className={`px-4 py-2 rounded flex items-center gap-2 ${
                   isDraftMode
-                    ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                    ? 'bg-warning hover:bg-warning/90 text-white'
                     : 'bg-primary hover:bg-primary/90 text-primary-foreground'
                 }`}
               >

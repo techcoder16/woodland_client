@@ -155,8 +155,8 @@ const CreateUser: React.FC = () => {
       <div className="flex items-center justify-center min-h-screen">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-              <Shield className="h-6 w-6 text-red-600" />
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+              <Shield className="h-6 w-6 text-destructive" />
             </div>
             <CardTitle className="text-xl">Access Denied</CardTitle>
             <CardDescription>
@@ -182,7 +182,7 @@ const CreateUser: React.FC = () => {
         </Button>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Create New User</h1>
-          <p className="text-gray-600">Add a new user and assign screen permissions</p>
+          <p className="text-muted-foreground">Add a new user and assign screen permissions</p>
         </div>
       </div>
 
@@ -258,7 +258,7 @@ const CreateUser: React.FC = () => {
                   placeholder="Enter phone number (e.g., 1234567890)"
                   required
                 />
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Format: 1234567890 (numbers only)
                 </p>
               </div>
@@ -327,13 +327,13 @@ const CreateUser: React.FC = () => {
                     <SelectItem value={Role.User}>
                       <div className="flex items-center gap-2">
                         <Badge variant="secondary">User</Badge>
-                        <span className="text-sm text-gray-500">Limited access to assigned screens</span>
+                        <span className="text-sm text-muted-foreground">Limited access to assigned screens</span>
                       </div>
                     </SelectItem>
                     <SelectItem value={Role.Admin}>
                       <div className="flex items-center gap-2">
                         <Badge variant="destructive">Admin</Badge>
-                        <span className="text-sm text-gray-500">Full access to all screens</span>
+                        <span className="text-sm text-muted-foreground">Full access to all screens</span>
                       </div>
                     </SelectItem>
                   </SelectContent>
@@ -366,9 +366,9 @@ const CreateUser: React.FC = () => {
           <CardContent>
             {formData.role === Role.Admin ? (
               <div className="text-center py-8">
-                <Shield className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-green-700 mb-2">Full Access</h3>
-                <p className="text-gray-600">
+                <Shield className="h-12 w-12 text-success mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-success mb-2">Full Access</h3>
+                <p className="text-muted-foreground">
                   Admin users automatically have access to all screens and features.
                 </p>
               </div>
@@ -390,7 +390,7 @@ const CreateUser: React.FC = () => {
                   {screens.map((screen) => (
                     <div
                       key={screen.id}
-                      className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50"
+                      className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted"
                     >
                       <Checkbox
                         id={screen.id}
@@ -401,16 +401,16 @@ const CreateUser: React.FC = () => {
                         <Label htmlFor={screen.id} className="font-medium cursor-pointer">
                           {screen.name}
                         </Label>
-                        <p className="text-sm text-gray-500">{screen.description}</p>
-                        <code className="text-xs text-gray-400">{screen.route}</code>
+                        <p className="text-sm text-muted-foreground">{screen.description}</p>
+                        <code className="text-xs text-muted-foreground">{screen.route}</code>
                       </div>
                     </div>
                   ))}
                 </div>
 
                 {selectedScreens.length > 0 && (
-                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-blue-700">
+                  <div className="mt-4 p-3 bg-primary/10 rounded-lg">
+                    <p className="text-sm text-primary">
                       <strong>{selectedScreens.length}</strong> screen(s) selected
                     </p>
                   </div>

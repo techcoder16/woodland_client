@@ -19,25 +19,22 @@ import { post } from "@/helper/api";
 
 
 const formSchema = z.object({
-  firstName: z.string().nonempty('First Name is required'),
-  lastName: z.string().nonempty('Last Name is required'),
-  postCode: z.string().nonempty('Post Code is required'),
-  addressLine1: z.string().nonempty('Address Line is required'),
+  firstName: z.string().nullable().optional(),
+  lastName: z.string().nullable().optional(),
+  postCode: z.string().nullable().optional(),
+  addressLine1: z.string().nullable().optional(),
   addressLine2: z.string().nullable().optional(),
   town: z.string().nullable().optional(),
   country: z.string().nullable().optional(),
   phone: z.string().nullable().optional(),
   email: z.string().nullable().optional(),
 
-  bankBody: z.string().nullable().optional(),
+  bankName: z.string().nullable().optional(),
   bankAddressLine1: z.string().nullable().optional(),
   bankAddressLine2: z.string().nullable().optional(),
   bankTown: z.string().nullable().optional(),
   bankPostCode: z.string().nullable().optional(),
   bankCountry: z.string().nullable().optional(),
-  bankIban: z.string().nullable().optional(),
-  bic: z.string().nullable().optional(),
-  nib: z.string().nullable().optional(),
 
   photoId: z.any().nullable().optional(),
   proofOfRelationship: z.any().nullable().optional(),
@@ -90,7 +87,7 @@ const AddVendor = () => {
       if (error && error.message) {
         toast({
           title: "Error",
-          description: error.message || "Failed to create vendor.",
+          description: error.message || "Failed to create landlord.",
           variant: "destructive",
         });
         return;
@@ -101,7 +98,7 @@ const AddVendor = () => {
       if (vendorId && vendorId.length > 0) {
         toast({
           title: "Success",
-          description: apiData.message || "Vendor created successfully!",
+          description: apiData.message || "Landlord created successfully!",
         });
 
         setProgress(100);
@@ -112,7 +109,7 @@ const AddVendor = () => {
       console.error("Error:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create vendor.",
+        description: error.message || "Failed to create landlord.",
         variant: "destructive",
       });
     } finally {
@@ -130,15 +127,15 @@ const AddVendor = () => {
         </div>
       )}
 
-      <div className="min-h-screen bg-background">
+      <div className="bg-background">
         <LoadingBar
-          color="rgb(95,126,220)"
+          color="hsl(350, 74%, 45%)"
           progress={progress}
           onLoaderFinished={() => setProgress(0)}
         />
 
-        <div className="p-6 max-w-5xl mx-auto">
-          <h1 className="text-2xl font-semibold tracking-tight mb-8">Add New Vendor</h1>
+        <div className="max-w-5xl mx-auto">
+          <h1 className="hero-stat text-3xl mb-8">Add New Landlord</h1>
 
           <Card className="p-6">
             <form onSubmit={form.handleSubmit(onSubmit)}>

@@ -1,10 +1,9 @@
-import React, { useEffect } from 'react';
-import { useAppDispatch, useAppSelector } from '../../redux/reduxHooks';
-import { fetchDashboardStats } from '../../redux/dataStore/dashboardSlice';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import React from 'react';
+import { useAppSelector } from '../../redux/reduxHooks';
 import { Building, Users, DollarSign, TrendingUp, FileText, CheckCircle } from 'lucide-react';
+import { Card, CardContent } from '../ui/card';
 
-interface StatCardProps {
+interface StatTileProps {
   title: string;
   value: string | number;
   icon: React.ElementType;
@@ -15,68 +14,55 @@ interface StatCardProps {
   loading?: boolean;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, trend, loading }) => {
+const StatTile: React.FC<StatTileProps> = ({ title, value, icon: Icon, trend, loading }) => {
   if (loading) {
     return (
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">{title}</CardTitle>
-          <div className="h-4 w-4 bg-gray-200 rounded animate-pulse" />
-        </CardHeader>
-        <CardContent>
-          <div className="h-8 w-16 bg-gray-200 rounded animate-pulse" />
-        </CardContent>
-      </Card>
+      <div className="flex flex-col gap-2 py-1">
+        <div className="h-3 w-24 bg-muted rounded animate-pulse" />
+        <div className="h-8 w-16 bg-muted rounded animate-pulse" />
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+    <div className="flex flex-col gap-1.5 py-1">
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <Icon className="h-4 w-4" strokeWidth={1.75} />
+        <span className="text-xs tracking-tight">{title}</span>
+      </div>
+      <div className="flex items-baseline gap-2">
+        <span className="stat-figure">{value}</span>
         {trend && (
-          <p className="text-xs text-muted-foreground">
-            <span className={trend.isPositive ? 'text-green-600' : 'text-red-600'}>
-              {trend.isPositive ? '+' : ''}{trend.value}%
-            </span>{' '}
-            from last month
-          </p>
+          <span
+            className={`text-xs font-mono font-medium ${
+              trend.isPositive ? 'text-success' : 'text-destructive'
+            }`}
+          >
+            {trend.isPositive ? '+' : ''}
+            {trend.value}%
+          </span>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 
 export const DashboardStats: React.FC = () => {
   const { stats, loading, error } = useAppSelector((state) => state.dashboard);
 
-  // Debug logging
-  console.log('DashboardStats - stats:', stats);
-  console.log('DashboardStats - loading:', loading);
-  console.log('DashboardStats - error:', error);
-
   if (error) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <div className="col-span-full">
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-center text-red-600">
-                <p>Failed to load dashboard statistics</p>
-                <p className="text-sm text-gray-500">{error}</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center text-destructive">
+            <p className="text-sm font-medium">Failed to load dashboard statistics</p>
+            <p className="text-xs text-muted-foreground mt-1">{error}</p>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
-  // Helper function to safely extract values from API response
   const getStatValue = (stat: any) => {
     if (typeof stat === 'number') return stat;
     if (typeof stat === 'string') return stat;
@@ -88,58 +74,35 @@ export const DashboardStats: React.FC = () => {
     if (stat && typeof stat === 'object' && 'trend' in stat) {
       return {
         value: stat.trend?.value || 0,
-        isPositive: stat.trend?.isPositive || stat.trend?.percentageChange > 0 || false
+        isPositive: stat.trend?.isPositive || stat.trend?.percentageChange > 0 || false,
       };
     }
     return undefined;
   };
 
+  const tiles = [
+    { title: 'Total Properties', key: 'totalProperties', icon: Building },
+    { title: 'Published', key: 'publishedProperties', icon: CheckCircle },
+    { title: 'Drafts', key: 'draftProperties', icon: FileText },
+    { title: 'Total Tenants', key: 'totalTenants', icon: Users },
+    { title: 'Transactions', key: 'totalTransactions', icon: DollarSign },
+    { title: 'Rent Records', key: 'totalRentRecords', icon: TrendingUp },
+  ] as const;
+
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <StatCard
-        title="Total Properties"
-        value={getStatValue(stats?.totalProperties)}
-        icon={Building}
-        loading={loading}
-        
-        trend={getTrendValue(stats?.totalProperties)}
-      />
-      <StatCard
-        title="Published Properties"
-        value={getStatValue(stats?.publishedProperties)}
-        icon={CheckCircle}
-        loading={loading}
-        trend={getTrendValue(stats?.publishedProperties)}
-      />
-      <StatCard
-        title="Draft Properties"
-        value={getStatValue(stats?.draftProperties)}
-        icon={FileText}
-        loading={loading}
-        trend={getTrendValue(stats?.draftProperties)}
-      />
-      <StatCard
-        title="Total Tenants"
-        value={getStatValue(stats?.totalTenants)}
-        icon={Users}
-        loading={loading}
-        trend={getTrendValue(stats?.totalTenants)}
-      />
-   
-      <StatCard
-        title="Total Transactions"
-        value={getStatValue(stats?.totalTransactions)}
-        icon={DollarSign}
-        loading={loading}
-        trend={getTrendValue(stats?.totalTransactions)}
-      />
-      <StatCard
-        title="Total Rent Records"
-        value={getStatValue(stats?.totalRentRecords)}
-        icon={TrendingUp}
-        loading={loading}
-        trend={getTrendValue(stats?.totalRentRecords)}
-      />
+    <div className="surface px-6 py-5">
+      <div className="grid grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-3 lg:grid-cols-6">
+        {tiles.map(({ title, key, icon }) => (
+          <StatTile
+            key={key}
+            title={title}
+            icon={icon}
+            loading={loading}
+            value={getStatValue((stats as any)?.[key])}
+            trend={getTrendValue((stats as any)?.[key])}
+          />
+        ))}
+      </div>
     </div>
   );
 };

@@ -24,9 +24,9 @@ const SimpleSetupGuide: React.FC = () => {
       
       const screens = [
         { name: 'Dashboard', description: 'Main dashboard', route: '/dashboard', status: ScreenStatus.ACTIVE },
-        { name: 'Vendor List', description: 'Vendor management', route: '/vendors', status: ScreenStatus.ACTIVE },
-        { name: 'Add Vendor', description: 'Add new vendor', route: '/vendors/add', status: ScreenStatus.ACTIVE },
-        { name: 'Edit Vendor', description: 'Edit vendor', route: '/vendors/edit', status: ScreenStatus.ACTIVE },
+        { name: 'Landlord List', description: 'Landlord management', route: '/vendors', status: ScreenStatus.ACTIVE },
+        { name: 'Add Landlord', description: 'Add new landlord', route: '/vendors/add', status: ScreenStatus.ACTIVE },
+        { name: 'Edit Landlord', description: 'Edit landlord', route: '/vendors/edit', status: ScreenStatus.ACTIVE },
         { name: 'Property List', description: 'Property management', route: '/properties', status: ScreenStatus.ACTIVE },
         { name: 'Add Property', description: 'Add new property', route: '/property/add', status: ScreenStatus.ACTIVE },
         { name: 'Edit Property', description: 'Edit property', route: '/property/edit', status: ScreenStatus.ACTIVE },
@@ -210,7 +210,7 @@ const SimpleSetupGuide: React.FC = () => {
                       </Button>
                       
                       {setupComplete && (
-                        <div className="flex items-center gap-2 text-green-600">
+                        <div className="flex items-center gap-2 text-success">
                           <CheckCircle className="h-5 w-5" />
                           <span className="font-medium">Setup Complete!</span>
                         </div>
@@ -219,8 +219,8 @@ const SimpleSetupGuide: React.FC = () => {
 
                     {isSettingUp && (
                       <div className="w-full bg-secondary rounded-full h-2">
-                        <div 
-                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        <div
+                          className="bg-primary h-2 rounded-full transition-all duration-300"
                           style={{ width: `${setupProgress}%` }}
                         ></div>
                       </div>
@@ -236,8 +236,8 @@ const SimpleSetupGuide: React.FC = () => {
                 <CardContent>
                   <div className="space-y-4">
                     <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-blue-600 text-sm font-medium">1</span>
+                      <div className="flex-shrink-0 w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center">
+                        <span className="text-primary text-sm font-medium">1</span>
                       </div>
                       <div>
                         <h4 className="font-medium">Create Screens</h4>
@@ -246,8 +246,8 @@ const SimpleSetupGuide: React.FC = () => {
                     </div>
 
                     <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-blue-600 text-sm font-medium">2</span>
+                      <div className="flex-shrink-0 w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center">
+                        <span className="text-primary text-sm font-medium">2</span>
                       </div>
                       <div>
                         <h4 className="font-medium">Create Users</h4>
@@ -256,8 +256,8 @@ const SimpleSetupGuide: React.FC = () => {
                     </div>
 
                     <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-blue-600 text-sm font-medium">3</span>
+                      <div className="flex-shrink-0 w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center">
+                        <span className="text-primary text-sm font-medium">3</span>
                       </div>
                       <div>
                         <h4 className="font-medium">Assign Screen Access</h4>
@@ -266,8 +266,8 @@ const SimpleSetupGuide: React.FC = () => {
                     </div>
 
                     <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-blue-600 text-sm font-medium">4</span>
+                      <div className="flex-shrink-0 w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center">
+                        <span className="text-primary text-sm font-medium">4</span>
                       </div>
                       <div>
                         <h4 className="font-medium">Test Access</h4>

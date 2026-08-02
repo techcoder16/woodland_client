@@ -11,6 +11,7 @@ import managementAgreementSlice from './dataStore/managementAgreementSlice';
 import tenancyAgreementSlice from './dataStore/tenancyAgreementSlice';
 import transactionSlice from './dataStore/transactionSlice';
 import jobTypeSlice from './dataStore/jobTypeSlice';
+import contractorSlice from './dataStore/contractorSlice';
 import noteSlice from './dataStore/noteSlice';
 import historySlice from './dataStore/historySlice';
 import dashboardSlice from './dataStore/dashboardSlice';
@@ -28,6 +29,7 @@ const rootStore  = configureStore({
         tenancyAgreement:tenancyAgreementSlice,
         transaction:transactionSlice,
         jobTypes:jobTypeSlice,
+        contractors:contractorSlice,
         notes:noteSlice,
         history:historySlice,
         dashboard:dashboardSlice

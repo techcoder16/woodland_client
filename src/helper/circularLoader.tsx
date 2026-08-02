@@ -12,7 +12,7 @@ export const CircularLoader = () => {
             >
               <svg
                 aria-hidden="true"
-                className="w-8 h-8 mr-2 text-gray-200 animate-spin dark:text-green-500 fill-green-950 "
+                className="w-8 h-8 mr-2 text-muted animate-spin fill-primary "
                 viewBox="0 0 100 101"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"

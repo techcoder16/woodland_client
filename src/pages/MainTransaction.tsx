@@ -219,9 +219,9 @@ const MainTransaction = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-6 w-full mx-auto min-h-screen ">
+      <div className="w-full mx-auto">
         {/* Header Section */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div className="surface p-6 mb-6">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-semibold tracking-tight mb-2">
@@ -229,7 +229,7 @@ const MainTransaction = () => {
               </h1>
               {property && (
                 <p className="text-sm text-muted-foreground">
-                  Property: {property.propertyNumber == 0 ? "0" : property.propertyNumber} - {property.propertyName}
+                  Property: {property.propertyNumber == 0 ? "0" : property.propertyNumber} - {property.addressLine1}
                 </p>
               )}
             </div>
@@ -240,7 +240,7 @@ const MainTransaction = () => {
         </div>
 
         {/* Property Selection */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div className="surface p-6 mb-6">
           <div className="space-y-4">
             <div>
               <h2 className="text-xl font-semibold mb-2">
@@ -262,7 +262,7 @@ const MainTransaction = () => {
                     .filter((property) => property.propertyStatus !== 'DRAFT')
                     .map((property) => (
                       <SelectItem key={property.id} value={property.id}>
-                        {property.propertyNo || property.id} - {property.propertyName}
+                        {property.propertyNo || property.id} - {property.addressLine1}
                       </SelectItem>
                     ))}
                 </SelectContent>
@@ -273,7 +273,7 @@ const MainTransaction = () => {
 
         {/* OCR Results Display */}
         {showOcrResults && ocrResults && (
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="surface p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-xl font-semibold mb-2">
@@ -302,13 +302,13 @@ const MainTransaction = () => {
             <div className="space-y-6">
               {/* Transaction Data */}
               {ocrResults.transaction?.transaction && (
-                <div className="bg-green-50 rounded-lg p-4">
-                  <h3 className="font-semibold text-green-800 mb-3">✅ Created Transaction:</h3>
+                <div className="bg-success/5 border border-success/20 rounded-lg p-4">
+                  <h3 className="font-semibold text-success mb-3">✅ Created Transaction:</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {Object.entries(ocrResults.transaction.transaction).map(([key, value]) => {
                       if (key === 'property' || key === 'id' || key === 'createdAt' || key === 'updatedAt') return null;
                       return (
-                        <div key={key} className="bg-white p-3 rounded border">
+                        <div key={key} className="bg-card p-3 rounded border border-border/70">
                           <span className="font-medium text-muted-foreground text-sm block mb-1">
                             {key.replace(/([A-Z])/g, ' $1').trim()}:
                           </span>
@@ -324,14 +324,14 @@ const MainTransaction = () => {
 
               {/* Parsed OCR Data */}
               {ocrResults.ocrData?.ocr_content && (
-                <div className="bg-blue-50 rounded-lg p-4">
-                  <h3 className="font-semibold text-blue-800 mb-3">📋 Parsed Invoice Data:</h3>
+                <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+                  <h3 className="font-semibold text-primary mb-3">📋 Parsed Invoice Data:</h3>
                   {(() => {
                     const parsedData = parseOcrContent(ocrResults.ocrData.ocr_content);
                     return parsedData ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {Object.entries(parsedData).map(([key, value]) => (
-                          <div key={key} className="bg-white p-3 rounded border">
+                          <div key={key} className="bg-card p-3 rounded border border-border/70">
                             <span className="font-medium text-muted-foreground text-sm block mb-1">
                               {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:
                             </span>
@@ -342,8 +342,8 @@ const MainTransaction = () => {
                         ))}
                       </div>
                     ) : (
-                      <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
-                        <p className="text-yellow-800 text-sm">
+                      <div className="bg-warning/10 border border-warning/30 rounded p-3">
+                        <p className="text-warning text-sm">
                           ⚠️ Could not parse OCR content. Raw data shown below.
                         </p>
                       </div>
@@ -353,23 +353,23 @@ const MainTransaction = () => {
               )}
 
               {/* Raw OCR Content */}
-              <div className=" rounded-lg p-4">
+              <div className="rounded-lg p-4">
                 <h3 className="font-semibold text-muted-foreground mb-3">🔍 Raw OCR Content:</h3>
-                <pre className="text-sm text-foreground bg-white p-3 rounded border overflow-x-auto whitespace-pre-wrap">
+                <pre className="text-sm text-foreground bg-card p-3 rounded border border-border/70 overflow-x-auto whitespace-pre-wrap">
                   {ocrResults.ocrData?.ocr_content || 'No OCR content available'}
                 </pre>
               </div>
 
               {/* Full API Response */}
-              <div className=" rounded-lg p-4">
+              <div className="rounded-lg p-4">
                 <h3 className="font-semibold text-muted-foreground mb-3">📊 Full API Response:</h3>
-                <pre className="text-sm text-foreground bg-white p-3 rounded border overflow-x-auto">
+                <pre className="text-sm text-foreground bg-card p-3 rounded border border-border/70 overflow-x-auto">
                   {JSON.stringify(ocrResults, null, 2)}
                 </pre>
               </div>
-              
-              <div className="p-3 bg-green-50 border border-green-200 rounded">
-                <p className="text-green-800 text-sm">
+
+              <div className="p-3 bg-success/5 border border-success/20 rounded">
+                <p className="text-success text-sm">
                   ✅ Transaction has been saved as a draft and is ready for review.
                 </p>
               </div>

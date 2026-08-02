@@ -185,9 +185,9 @@ const PermissionManagement: React.FC = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900">Access Denied</h3>
-          <p className="text-gray-500">You need administrator privileges to manage permissions.</p>
+          <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-foreground">Access Denied</h3>
+          <p className="text-muted-foreground">You need administrator privileges to manage permissions.</p>
         </div>
       </div>
     );
@@ -269,7 +269,7 @@ const PermissionManagement: React.FC = () => {
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center space-x-2">
                   <div className="relative">
-                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="Search permissions..."
                       value={searchTerm}
@@ -398,7 +398,7 @@ const PermissionManagement: React.FC = () => {
                                 const isSelected = bulkAssignData.screenIds.includes(screen.id);
                                 return (
                                   <div key={screen.id} className={`flex items-center space-x-2 p-2 rounded ${
-                                    isCurrentlyAssigned ? 'bg-blue-50 border border-blue-200' : ''
+                                    isCurrentlyAssigned ? 'bg-accent border border-primary/20' : ''
                                   }`}>
                                     <input
                                       type="checkbox"
@@ -416,13 +416,13 @@ const PermissionManagement: React.FC = () => {
                                           </Badge>
                                         )}
                                       </div>
-                                      <div className="text-sm text-gray-500">{screen.route}</div>
+                                      <div className="text-sm text-muted-foreground">{screen.route}</div>
                                     </label>
                                   </div>
                                 );
                               })}
                             </div>
-                            <p className="text-sm text-gray-500 mt-2">
+                            <p className="text-sm text-muted-foreground mt-2">
                               Selected: {bulkAssignData.screenIds.length} screens
                             </p>
                             
@@ -472,11 +472,11 @@ const PermissionManagement: React.FC = () => {
                           <TableCell>
                             {user ? `${user.first_name} ${user.last_name}` : 'Unknown User'}
                             <br />
-                            <span className="text-sm text-gray-500">{user?.email}</span>
+                            <span className="text-sm text-muted-foreground">{user?.email}</span>
                           </TableCell>
                           <TableCell>{screen?.name || 'Unknown Screen'}</TableCell>
                           <TableCell>
-                            <code className="bg-gray-100 px-2 py-1 rounded text-sm">{screen?.route || 'N/A'}</code>
+                            <code className="bg-muted px-2 py-1 rounded text-sm">{screen?.route || 'N/A'}</code>
                           </TableCell>
                           <TableCell>
                             {permission.createdAt ? (() => {
@@ -489,7 +489,7 @@ const PermissionManagement: React.FC = () => {
                               variant="outline"
                               size="sm"
                               onClick={() => handleDeletePermission(permission.id)}
-                              className="text-red-600 hover:text-red-700"
+                              className="text-destructive hover:text-destructive/80"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -521,7 +521,7 @@ const PermissionManagement: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between mb-6">
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-muted-foreground">
                   {screens.length} screens configured
                 </div>
                 <Dialog open={isScreenModalOpen} onOpenChange={setIsScreenModalOpen}>
@@ -613,7 +613,7 @@ const PermissionManagement: React.FC = () => {
                         <TableCell className="font-medium">{screen.name}</TableCell>
                         <TableCell>{screen.description}</TableCell>
                         <TableCell>
-                          <code className="bg-gray-100 px-2 py-1 rounded text-sm">{screen.route}</code>
+                          <code className="bg-muted px-2 py-1 rounded text-sm">{screen.route}</code>
                         </TableCell>
                         <TableCell>
                           <Badge variant={screen.status === ScreenStatus.ACTIVE ? 'default' : 'secondary'}>

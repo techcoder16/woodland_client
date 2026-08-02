@@ -25,7 +25,7 @@ export function VendorForm({ onSuccess }: VendorFormProps) {
     
     // Simulate API call
     setTimeout(() => {
-      toast.success("Vendor added successfully!");
+      toast.success("Landlord added successfully!");
       setIsSubmitting(false);
       if (onSuccess) onSuccess();
     }, 1000);
@@ -46,7 +46,7 @@ export function VendorForm({ onSuccess }: VendorFormProps) {
               <div className="flex flex-col items-center space-y-2">
                 <Avatar className="h-20 w-20">
                   <AvatarImage src="" />
-                  <AvatarFallback className="bg-red-100 text-red-600">
+                  <AvatarFallback className="bg-primary/10 text-primary">
                     <Upload />
                   </AvatarFallback>
                 </Avatar>
@@ -55,15 +55,15 @@ export function VendorForm({ onSuccess }: VendorFormProps) {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Vendor Name</Label>
-                  <Input id="name" placeholder="Enter vendor name" required />
+                  <Label htmlFor="name">Landlord Name</Label>
+                  <Input id="name" placeholder="Enter landlord name" required />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="type">Vendor Type</Label>
+                  <Label htmlFor="type">Landlord Type</Label>
                   <Select>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select vendor type" />
+                      <SelectValue placeholder="Select landlord type" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="landlord">Landlord</SelectItem>
@@ -76,7 +76,7 @@ export function VendorForm({ onSuccess }: VendorFormProps) {
                 
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="description">Description</Label>
-                  <Textarea id="description" placeholder="Enter vendor description" rows={3} />
+                  <Textarea id="description" placeholder="Enter landlord description" rows={3} />
                 </div>
               </div>
               
@@ -84,7 +84,7 @@ export function VendorForm({ onSuccess }: VendorFormProps) {
                 <Button 
                   type="button" 
                   onClick={() => setActiveTab("contact")}
-                  className="bg-red-600 hover:bg-red-700"
+                  className="bg-primary hover:bg-primary/90"
                 >
                   Next: Contact Details
                 </Button>
@@ -149,7 +149,7 @@ export function VendorForm({ onSuccess }: VendorFormProps) {
                 <Button 
                   type="button" 
                   onClick={() => setActiveTab("payment")}
-                  className="bg-red-600 hover:bg-red-700"
+                  className="bg-primary hover:bg-primary/90"
                 >
                   Next: Payment Info
                 </Button>
@@ -204,9 +204,9 @@ export function VendorForm({ onSuccess }: VendorFormProps) {
                 <Button 
                   type="submit" 
                   disabled={isSubmitting}
-                  className="bg-red-600 hover:bg-red-700"
+                  className="bg-primary hover:bg-primary/90"
                 >
-                  {isSubmitting ? "Saving..." : "Save Vendor"}
+                  {isSubmitting ? "Saving..." : "Save Landlord"}
                 </Button>
               </div>
             </CardContent>

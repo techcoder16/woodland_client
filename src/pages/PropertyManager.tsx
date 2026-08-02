@@ -76,22 +76,22 @@ const PropertyManager = () => {
     if (!status) return 'bg-secondary text-secondary-foreground';
     switch (status.toLowerCase()) {
       case 'active':
-        return 'bg-green-100 text-green-800';
+        return 'bg-success/10 text-success';
       case 'inactive':
         return 'bg-accent text-accent-foreground';
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-warning/10 text-warning';
       case 'sold':
         return 'bg-secondary text-secondary-foreground';
       default:
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-primary/10 text-primary';
     }
   };
 
   const PropertyCard = ({ property }: { property: any }) => (
-    <Card className="group hover:shadow-lg transition-all duration-300 border-0 bg-white overflow-hidden">
+    <Card className="group hover:shadow-lg transition-all duration-300 border-0 bg-card overflow-hidden">
       {/* Property Image/Icon Header */}
-      <div className="relative h-32 bg-gradient-to-br from-pink-500 via-purple-500 to-indigo-600 flex items-center justify-center">
+      <div className="relative h-32 bg-gradient-to-br from-primary via-primary/80 to-foreground/80 flex items-center justify-center">
         <div className="absolute top-3 left-3">
           <Badge className="bg-white/20 text-white border-0 hover:bg-white/30">
             <Home className="w-3 h-3 mr-1" />
@@ -128,11 +128,11 @@ const PropertyManager = () => {
       {/* Property Details */}
       <CardContent className="p-6">
         <div className="space-y-3">
-          {/* Property Name */}
-          {property.propertyName && (
+          {/* Property Address */}
+          {property.addressLine1 && (
             <div className="mb-2">
               <h3 className="text-lg font-semibold text-foreground truncate">
-                {property.propertyName}
+                {property.addressLine1}
               </h3>
             </div>
           )}
@@ -173,9 +173,9 @@ const PropertyManager = () => {
 
         {/* Action Button */}
         <div className="mt-4 pt-4 border-t">
-          <Button 
+          <Button
             onClick={() => handleManageProperty(property)}
-            className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white"
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             <Settings className="w-4 h-4 mr-2" />
             Manage Property
@@ -187,36 +187,16 @@ const PropertyManager = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6 bg-secondary/50 min-h-screen">
+      <div className="space-y-8">
         {/* Header Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-border p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground mb-2">Property Finance Management</h1>
-              <p className="text-sm text-muted-foreground">Manage and monitor your property portfolio</p>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="bg-accent rounded-lg p-3">
-                <Building className="w-6 h-6 text-accent-foreground" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Published Properties</p>
-                <p className="text-2xl font-bold text-foreground">{filteredProperties.length}</p>
-              </div>
-            </div>
-          </div>
+        <div>
+          <h1 className="hero-stat max-w-2xl">
+            <b className="text-primary">{filteredProperties.length}</b>{' '}
+            {filteredProperties.length === 1 ? 'property' : 'properties'} in your portfolio.
+          </h1>
+        </div>
 
-          {/* Property Count Display */}
-          <div className="text-center py-8 mb-6">
-            <div className="bg-gradient-to-r from-pink-500 to-purple-600 rounded-2xl p-6 text-white">
-              <Building className="w-12 h-12 mx-auto mb-3 opacity-80" />
-              <h2 className="text-3xl font-bold mb-2">{filteredProperties.length}</h2>
-              <p className="text-lg opacity-90">
-                {filteredProperties.length === 1 ? 'Property' : 'Properties'} in Portfolio
-              </p>
-            </div>
-          </div>
-
+        <div className="surface p-6 space-y-6">
           {/* Search and Filters */}
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
@@ -235,7 +215,7 @@ const PropertyManager = () => {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="pl-10 pr-8 py-3 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent appearance-none bg-white min-w-[150px]"
+                className="pl-10 pr-8 py-3 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent appearance-none bg-card min-w-[150px]"
               >
                 <option value="all">All Status</option>
                 <option value="active">Active</option>
@@ -245,7 +225,7 @@ const PropertyManager = () => {
               </select>
             </div>
 
-            <Button onClick={() => navigate('/property/add')} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button onClick={() => navigate('/property/add')}>
               <Plus className="w-4 h-4 mr-2" />
               Add Property
             </Button>
@@ -268,7 +248,7 @@ const PropertyManager = () => {
               ))
             ) : (
               <div className="col-span-full">
-                <div className="text-center py-12 bg-white rounded-xl border border-border">
+                <div className="text-center py-12 surface">
                   <Building className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-foreground mb-2">No properties found</h3>
                   <p className="text-muted-foreground mb-4">
@@ -292,7 +272,7 @@ const PropertyManager = () => {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="bg-white rounded-xl shadow-sm border border-border p-4">
+          <div className="surface p-4">
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
                 Showing {((currentPage - 1) * 12) + 1} to {Math.min(currentPage * 12, filteredProperties.length)} of {filteredProperties.length} properties

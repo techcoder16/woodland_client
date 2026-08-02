@@ -322,32 +322,6 @@ const Notes = ({ propertyId, property }: NotesProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Tab Navigation */}
-      <div className="flex space-x-1 border-b">
-        <button
-          onClick={() => setActiveTab("notes")}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === "notes"
-              ? "border-blue-500 text-blue-600"
-              : "border-transparent text-gray-500 hover:text-gray-700"
-          }`}
-        >
-          <StickyNote className="h-4 w-4 inline mr-2" />
-          Notes
-        </button>
-        <button
-          onClick={() => setActiveTab("jobtypes")}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === "jobtypes"
-              ? "border-blue-500 text-blue-600"
-              : "border-transparent text-gray-500 hover:text-gray-700"
-          }`}
-        >
-          <Calendar className="h-4 w-4 inline mr-2" />
-          Job Types
-        </button>
-      </div>
-
       {/* Notes Tab */}
       {activeTab === "notes" && (
         <div className="space-y-4">
@@ -396,7 +370,7 @@ const Notes = ({ propertyId, property }: NotesProps) => {
                       required={true}
                     />
                     {errorsNote.employeeId && (
-                      <p className="text-sm text-red-500">{errorsNote.employeeId.message}</p>
+                      <p className="text-sm text-destructive">{errorsNote.employeeId.message}</p>
                     )}
                   </div>
                   <TextAreaField
@@ -444,9 +418,9 @@ const Notes = ({ propertyId, property }: NotesProps) => {
                         <div className="space-y-2">
                           <p className="text-lg font-medium">No notes found</p>
                           {notesError ? (
-                            <div className="text-red-600">
+                            <div className="text-destructive">
                               <p>Error: {notesError}</p>
-                              <button 
+                              <button
                                 onClick={() => dispatch(fetchNotes({ propertyId, page: 1, search: "" }))}
                                 className="text-sm underline"
                               >
@@ -454,9 +428,9 @@ const Notes = ({ propertyId, property }: NotesProps) => {
                               </button>
                             </div>
                           ) : (
-                            <div className="text-gray-500">
+                            <div className="text-muted-foreground">
                               <p>No notes have been created for this property yet.</p>
-                             
+
                             </div>
                           )}
                         </div>
@@ -594,7 +568,7 @@ const Notes = ({ propertyId, property }: NotesProps) => {
                       required={true}
                     />
                     {errorsJobType.assignedTo && (
-                      <p className="text-sm text-red-500">{errorsJobType.assignedTo.message}</p>
+                      <p className="text-sm text-destructive">{errorsJobType.assignedTo.message}</p>
                     )}
                     <SelectField
                       label="Assigned Type"

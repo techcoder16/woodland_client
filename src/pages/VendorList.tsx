@@ -16,7 +16,10 @@ import {
   MoreHorizontal,
   Edit,
   MapPin,
+  Eye,
 } from "lucide-react";
+import VendorPdf from "./Vendor/VendorPdf";
+import PropertyPdf from "./Property/PropertyPdf";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,6 +49,8 @@ const VendorList = () => {
   const { vendors, totalPages, loading } = useAppSelector(state => state.vendors);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [viewVendor, setViewVendor] = useState<any>(null);
+  const [viewProperty, setViewProperty] = useState<any>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -56,7 +61,7 @@ const VendorList = () => {
     try {
       await dispatch(deleteVendor(id)).unwrap();
 
-      toast.success("Vendor deleted successfully!");
+      toast.success("Landlord deleted successfully!");
     } catch (error) {
       console.log(error);
 
@@ -80,9 +85,9 @@ const VendorList = () => {
   };
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
+      <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h1 className="text-3xl font-bold tracking-tight">Vendors & Landlords</h1>
+          <h1 className="hero-stat text-[2rem]">Landlords</h1>
         </div>
         <div className="space-y-4">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -91,7 +96,7 @@ const VendorList = () => {
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 px-4 py-3 text-left font-medium" />
                 <Input
                   type="search"
-                  placeholder="Search vendors..."
+                  placeholder="Search landlords..."
                   className="pl-8"
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
@@ -100,28 +105,29 @@ const VendorList = () => {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <Button className="" onClick={() => navigate("/vendors/add")}>
-                <Plus className="" />
-                Add Vendor
+              <Button onClick={() => navigate("/vendors/add")}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Landlord
               </Button>
             </div>
           </div>
-          <div className="glass-card rounded-lg">
+          <div className="surface">
             {/* Desktop Table - Hidden on mobile */}
             <div className="hidden lg:block overflow-x-auto max-h-[60vh]">
               <table className="min-w-full border-collapse table-auto">
-                <thead className="sticky top-0 bg-background z-10">
-                  <tr className="border-b">
-                    <th className="px-4 py-3 text-left text-sm font-medium">Vendor</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium">Address</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium">Contact</th>
-                    <th className="px-4 py-3 text-center text-sm font-medium">Actions</th>
+                <thead className="bg-background">
+                  <tr className="border-b border-border/70">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Landlord</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Address</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Property</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Contact</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {vendors && vendors.length > 0 ? (
                     vendors.map((vendor: any) => (
-                      <tr key={vendor.id} className="border-b hover:bg-muted/50 transition-colors">
+                      <tr key={vendor.id} className="border-b border-border/50 hover:bg-muted/40 transition-colors">
                         <td className="px-4 py-3">
                           <div className="font-medium">
                             {vendor.firstName} {vendor.lastName}
@@ -137,6 +143,25 @@ const VendorList = () => {
                           </div>
                         </td>
                         <td className="px-4 py-3">
+                          {vendor.property && vendor.property.length > 0 ? (
+                            <div className="text-sm space-y-1">
+                              {vendor.property.map((property: any) => (
+                                <button
+                                  key={property.id}
+                                  type="button"
+                                  className="flex items-start gap-1 text-left hover:underline"
+                                  onClick={() => setViewProperty({ ...property, vendor })}
+                                >
+                                  <MapPin className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                                  <span>{property.addressLine1}</span>
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">-</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <Phone className="h-4 w-4 text-muted-foreground" />
                             <span className="text-sm">{vendor.phone}</span>
@@ -150,6 +175,10 @@ const VendorList = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => setTimeout(() => setViewVendor(vendor), 0)}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleEditVendor(vendor)}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit
@@ -170,7 +199,7 @@ const VendorList = () => {
                   ) : (
                     <tr>
                       <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                        No vendors found
+                        No landlords found
                       </td>
                     </tr>
                   )}
@@ -184,13 +213,13 @@ const VendorList = () => {
                 vendors.map((vendor: any) => (
                   <div
                     key={vendor.id}
-                    className="border rounded-lg p-4 bg-card hover:bg-muted/30 transition-colors"
+                    className="border border-border/70 rounded-lg p-4 bg-card hover:bg-muted/30 transition-colors"
                   >
                     {/* Header Row */}
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         {/* Avatar */}
-                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-primary-foreground font-semibold text-sm flex-shrink-0">
                           {vendor.firstName?.[0]}
                           {vendor.lastName?.[0]}
                         </div>
@@ -209,6 +238,10 @@ const VendorList = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setViewVendor(vendor)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleEditVendor(vendor)}>
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
@@ -250,6 +283,23 @@ const VendorList = () => {
                           <span className="flex-1">{vendor.phone}</span>
                         </div>
                       )}
+
+                      {/* Linked Property */}
+                      {vendor.property && vendor.property.length > 0 && (
+                        <div className="flex flex-col gap-1">
+                          {vendor.property.map((property: any) => (
+                            <button
+                              key={property.id}
+                              type="button"
+                              className="flex items-center gap-2 text-left hover:underline"
+                              onClick={() => setViewProperty({ ...property, vendor })}
+                            >
+                              <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                              <span className="flex-1">{property.addressLine1}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))
@@ -258,7 +308,7 @@ const VendorList = () => {
                   <div className="mx-auto h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
                     <User className="h-8 w-8 text-muted-foreground" />
                   </div>
-                  <h3 className="text-lg font-medium mb-2">No vendors found</h3>
+                  <h3 className="text-lg font-medium mb-2">No landlords found</h3>
                   <p className="text-muted-foreground text-sm">
                     Try adjusting your search or filters
                   </p>
@@ -289,6 +339,24 @@ const VendorList = () => {
           </Pagination>
         </div>
       </div>
+
+      {viewVendor && (
+        <VendorPdf
+          vendor={viewVendor}
+          open={!!viewVendor}
+          onOpenChange={(next: boolean) => !next && setViewVendor(null)}
+          hideTrigger
+        />
+      )}
+
+      {viewProperty && (
+        <PropertyPdf
+          property={viewProperty}
+          open={!!viewProperty}
+          onOpenChange={(next: boolean) => !next && setViewProperty(null)}
+          hideTrigger
+        />
+      )}
     </DashboardLayout>
   );
 };

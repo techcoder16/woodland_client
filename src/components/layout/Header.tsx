@@ -67,7 +67,7 @@ export function Header() {
         const propertyResults: GlobalSearchResult[] = (propertiesRes?.items || []).map((p: any) => ({
           type: "property",
           id: p.id,
-          label: p.propertyName || "Unnamed property",
+          label: p.addressLine1 || "Unnamed property",
           sublabel: [p.addressLine1, p.town].filter(Boolean).join(", "),
         }));
 
@@ -136,7 +136,7 @@ export function Header() {
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search properties, vendors..."
+            placeholder="Search properties, landlords..."
             className="w-full pl-8 bg-muted/40"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}

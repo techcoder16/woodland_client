@@ -13,33 +13,25 @@ import LoadingBar from "react-top-loading-bar";
 import PropertyInfo from "./Property/PropertyInfo";
 import DocumentsCertificates from "./Property/DocumentsCertificates";
 import RentalAgreement from "./Property/RentalAgreement";
-import ManagementAgreement from "./Manager/ManagementAgreement";
-import TenancyAgreement from "./Manager/TenancyAgreement";
 import NotesStep, { DraftNote } from "./Manager/NotesStep";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { post, patch } from "@/helper/api";
 import { propertySchema } from "@/schema/property.schema";
 import { buildPropertyFormData } from "@/helper/buildPropertyFormData";
 import { parseApiError } from "@/helper/parseApiError";
-import { upsertManagementAgreement } from "@/redux/dataStore/managementAgreementSlice";
-import { upsertTenancyAgreement } from "@/redux/dataStore/tenancyAgreementSlice";
 import { createNote } from "@/redux/dataStore/noteSlice";
 
 const STEP_LABELS = [
   "Standard Info",
   "Documents/Certificates",
   "Rental Agreement",
-  "Management Agreement",
-  "Tenancy Agreement",
   "Notes",
 ] as const;
 
 const STEP_FIELDS: string[][] = [
-  ["vendor", "for", "postCode", "propertyName", "addressLine1", "addressLine2", "town", "country", "propertyTypeCategory", "bedrooms", "bathrooms", "wheelchairAccess", "hasGarden", "lift", "gas", "electricity", "rooms"],
+  ["vendor", "for", "postCode", "addressLine1", "addressLine2", "town", "country", "propertyTypeCategory", "bedrooms", "bathrooms", "wheelchairAccess", "hasGarden", "lift", "gas", "electricity", "rooms"],
   ["photographs", "floorPlans", "epcCertificate", "gasCertificate", "electricityCertificate", "fireRiskAssessment", "insuranceCertificate", "emergencyLightingCertificate", "propertyLicense"],
-  ["rentalTenure", "rentalDescription"],
-  [],
-  [],
+  ["rentEffectiveDate", "rentPerMonth", "rentPayableInAdvance", "rentalTerms"],
   [],
 ];
 
@@ -51,14 +43,9 @@ const AddProperty = () => {
     mode: "onSubmit",
     defaultValues: {
       country: "",
-      epcChartOption: "ratings",
-      epcReportOption: "uploadReport",
-      showOnWebsite: false,
-      photographs: [],
-      floorPlans: [],
+      photographs: "",
+      floorPlans: "",
       attachments: [],
-      propertyFeature: [],
-      selectPortals: [],
       rooms: [],
     },
   });
@@ -70,8 +57,6 @@ const AddProperty = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [savedProperty, setSavedProperty] = useState<any>(null);
-  const [managementAgreementDraft, setManagementAgreementDraft] = useState<any>(null);
-  const [tenancyAgreementDraft, setTenancyAgreementDraft] = useState<any>(null);
   const [noteDrafts, setNoteDrafts] = useState<DraftNote[]>([]);
   const isLastStep = currentStep === STEP_LABELS.length - 1;
 
@@ -134,30 +119,6 @@ const AddProperty = () => {
       const propertyId = apiData?.property?.id;
       if (propertyId?.length > 0) {
         setSavedProperty(apiData.property);
-
-        if (managementAgreementDraft) {
-          try {
-            await dispatch(upsertManagementAgreement({ ...managementAgreementDraft, propertyId })).unwrap();
-          } catch (agreementError: any) {
-            toast({
-              title: "Property saved, but Management Agreement failed",
-              description: agreementError?.message || "You can retry it from Edit Property.",
-              variant: "destructive",
-            });
-          }
-        }
-
-        if (tenancyAgreementDraft) {
-          try {
-            await dispatch(upsertTenancyAgreement({ ...tenancyAgreementDraft, propertyId })).unwrap();
-          } catch (agreementError: any) {
-            toast({
-              title: "Property saved, but Tenancy Agreement failed",
-              description: agreementError?.message || "You can retry it from Edit Property.",
-              variant: "destructive",
-            });
-          }
-        }
 
         if (noteDrafts.length > 0) {
           let failedNotes = 0;
@@ -230,11 +191,11 @@ const AddProperty = () => {
         </div>
       )}
 
-      <div className="min-h-screen bg-background">
-        <LoadingBar color="rgb(95,126,220)" progress={progress} onLoaderFinished={() => setProgress(0)} />
+      <div className="bg-background">
+        <LoadingBar color="hsl(350, 74%, 45%)" progress={progress} onLoaderFinished={() => setProgress(0)} />
 
-        <div className="p-6 max-w-5xl mx-auto">
-          <h1 className="text-2xl font-semibold tracking-tight mb-8">Add New Property</h1>
+        <div className="max-w-5xl mx-auto">
+          <h1 className="hero-stat text-3xl mb-8">Add New Property</h1>
 
           <div className="mb-8">
             <div className="flex justify-between items-center mb-4">
@@ -262,25 +223,6 @@ const AddProperty = () => {
                 <RentalAgreement watch={watch} register={form.register} errors={currentStep === 2 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
               </div>
               {currentStep === 3 && (
-                <ManagementAgreement
-                  propertyId={savedProperty?.id || ""}
-                  property={savedProperty}
-                  mode={savedProperty?.id ? "edit" : "draft"}
-                  onDataChange={setManagementAgreementDraft}
-                />
-              )}
-              {currentStep === 4 && (
-                savedProperty?.id ? (
-                  <TenancyAgreement propertyId={savedProperty.id} property={savedProperty} />
-                ) : (
-                  <TenancyAgreement
-                    propertyId=""
-                    mode="draft"
-                    onDraftSubmit={setTenancyAgreementDraft}
-                  />
-                )
-              )}
-              {currentStep === 5 && (
                 savedProperty?.id ? (
                   <NotesStep propertyId={savedProperty.id} property={savedProperty} />
                 ) : (

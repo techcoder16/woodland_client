@@ -77,14 +77,10 @@ const TenantList = ({ property }: any) => {
   return (
 
     <DashboardLayout>
-      <div className="p-6 space-y-6">
+      <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h1 className="text-3xl font-bold tracking-tight">Tenants</h1>
+          <h1 className="hero-stat text-[2rem]">Tenants</h1>
         </div>
-
-
-
-
 
 
         {/* Tenant List with Pagination */}
@@ -122,28 +118,28 @@ const TenantList = ({ property }: any) => {
             </div>
   </div>
 
-            <div className="glass-card rounded-lg overflow-hidden">
+            <div className="surface overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="min-w-full border">
+                <table className="min-w-full">
                   <thead>
-                    <tr className="border-b">
-                      <th className="px-4 py-3 text-left font-medium">Title</th>
-                      <th className="px-4 py-3 text-left font-medium">Name</th>
-                      <th className="px-4 py-3 text-left font-medium">Email</th>
-                      <th className="px-4 py-3 text-left font-medium">Phone</th>
-                      <th className="px-4 py-3 text-left font-medium">Actions</th>
+                    <tr className="border-b border-border/70">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Title</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Name</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Email</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Phone</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td aria-colspan={5} className="text-center p-4">
+                        <td aria-colspan={5} className="text-center p-4 text-muted-foreground">
                           Loading...
                         </td>
                       </tr>
                     ) : tenants && tenants.length > 0 ? (
                       tenants.map((tenant: any) => (
-                        <tr key={tenant.id} className="border-b">
+                        <tr key={tenant.id} className="border-b border-border/50 hover:bg-muted/40 transition-colors">
                           <td className="px-4 py-3 text-sm">{tenant.title}</td>
                           <td className="px-4 py-3 text-sm">{tenant.FirstName}</td>
                           <td className="px-4 py-3 text-sm">{tenant.Email}</td>
@@ -180,7 +176,7 @@ const TenantList = ({ property }: any) => {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={5} className="px-4 py-8text-center p-4">
+                        <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
                           No tenants found.
                         </td>
                       </tr>

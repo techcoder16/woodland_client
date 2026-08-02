@@ -61,8 +61,8 @@ const AdminDashboard: React.FC = () => {
           <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/admin/create-user')}>
             <CardHeader className="pb-3">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <UserPlus className="h-6 w-6 text-blue-600" />
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <UserPlus className="h-6 w-6 text-primary" />
                 </div>
                 <div>
                   <CardTitle className="text-lg">Create User</CardTitle>
@@ -80,8 +80,8 @@ const AdminDashboard: React.FC = () => {
           <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/admin/create-screen')}>
             <CardHeader className="pb-3">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <Monitor className="h-6 w-6 text-green-600" />
+                <div className="p-2 bg-success/10 rounded-lg">
+                  <Monitor className="h-6 w-6 text-success" />
                 </div>
                 <div>
                   <CardTitle className="text-lg">Create Screen</CardTitle>
@@ -99,8 +99,8 @@ const AdminDashboard: React.FC = () => {
           <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/admin?tab=permissions')}>
             <CardHeader className="pb-3">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Shield className="h-6 w-6 text-purple-600" />
+                <div className="p-2 bg-accent rounded-lg">
+                  <Shield className="h-6 w-6 text-accent-foreground" />
                 </div>
                 <div>
                   <CardTitle className="text-lg">Manage Permissions</CardTitle>

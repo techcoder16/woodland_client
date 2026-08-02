@@ -26,7 +26,7 @@ const SetupGuide: React.FC = () => {
         { name: 'Dashboard', description: 'Main dashboard', route: '/dashboard', status: ScreenStatus.ACTIVE },
         { name: 'Properties', description: 'Property management', route: '/properties', status: ScreenStatus.ACTIVE },
         { name: 'Tenants', description: 'Tenant management', route: '/tenants', status: ScreenStatus.ACTIVE },
-        { name: 'Vendors', description: 'Vendor management', route: '/vendors', status: ScreenStatus.ACTIVE },
+        { name: 'Landlords', description: 'Landlord management', route: '/vendors', status: ScreenStatus.ACTIVE },
         { name: 'Users', description: 'User management', route: '/users', status: ScreenStatus.ACTIVE },
         { name: 'Admin Panel', description: 'Administrator panel', route: '/admin', status: ScreenStatus.ACTIVE },
         { name: 'Parties', description: 'Property parties management', route: '/parties', status: ScreenStatus.ACTIVE },
@@ -224,7 +224,7 @@ const SetupGuide: React.FC = () => {
                       </Button>
                       
                       {setupComplete && (
-                        <div className="flex items-center gap-2 text-green-600">
+                        <div className="flex items-center gap-2 text-success">
                           <CheckCircle className="h-5 w-5" />
                           <span className="font-medium">Setup Complete!</span>
                         </div>
@@ -250,8 +250,8 @@ const SetupGuide: React.FC = () => {
                 <CardContent>
                   <div className="space-y-4">
                     <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-blue-600 text-sm font-medium">1</span>
+                      <div className="flex-shrink-0 w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center">
+                        <span className="text-primary text-sm font-medium">1</span>
                       </div>
                       <div>
                         <h4 className="font-medium">Create Screens</h4>
@@ -260,8 +260,8 @@ const SetupGuide: React.FC = () => {
                     </div>
 
                     <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-blue-600 text-sm font-medium">2</span>
+                      <div className="flex-shrink-0 w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center">
+                        <span className="text-primary text-sm font-medium">2</span>
                       </div>
                       <div>
                         <h4 className="font-medium">Create Users</h4>
@@ -270,8 +270,8 @@ const SetupGuide: React.FC = () => {
                     </div>
 
                     <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-blue-600 text-sm font-medium">3</span>
+                      <div className="flex-shrink-0 w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center">
+                        <span className="text-primary text-sm font-medium">3</span>
                       </div>
                       <div>
                         <h4 className="font-medium">Assign Permissions</h4>
@@ -280,8 +280,8 @@ const SetupGuide: React.FC = () => {
                     </div>
 
                     <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-blue-600 text-sm font-medium">4</span>
+                      <div className="flex-shrink-0 w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center">
+                        <span className="text-primary text-sm font-medium">4</span>
                       </div>
                       <div>
                         <h4 className="font-medium">Test Permissions</h4>
