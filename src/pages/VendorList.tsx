@@ -43,19 +43,21 @@ import { fetchVendors, deleteVendor } from "@/redux/dataStore/vendorSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks"; // ✅ Use typed hooks
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 const VendorList = () => {
   const dispatch = useAppDispatch(); // ✅ Use typed dispatch
   const { vendors, totalPages, loading } = useAppSelector(state => state.vendors);
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
   const [currentPage, setCurrentPage] = useState(1);
   const [viewVendor, setViewVendor] = useState<any>(null);
   const [viewProperty, setViewProperty] = useState<any>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    dispatch(fetchVendors({ page: currentPage, search: searchTerm }));
-  }, [dispatch, currentPage, searchTerm]);
+    dispatch(fetchVendors({ page: currentPage, search: debouncedSearchTerm }));
+  }, [dispatch, currentPage, debouncedSearchTerm]);
 
   const handleDeleteVendor = useCallback(async (id: string) => {
     try {

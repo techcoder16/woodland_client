@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { Phone } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Input } from "@/components/ui/input";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 const TenantList = ({ property }: any) => {
   const dispatch = useAppDispatch();
@@ -33,6 +34,7 @@ const TenantList = ({ property }: any) => {
   const { tenants, totalPages, loading, error } = useAppSelector((state) => state.tenants);
 
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
   // Local state
   const [isAddTenantModalOpen, setIsAddTenantModalOpen] = useState(false);
   const [isEditTenantModalOpen, setIsEditTenantModalOpen] = useState(false);
@@ -41,8 +43,8 @@ const TenantList = ({ property }: any) => {
 
 
   useEffect(() => {
-    dispatch(fetchtenants({ page: currentPage, search: searchTerm }));
-  }, [dispatch, currentPage, searchTerm,isAddTenantModalOpen, isEditTenantModalOpen]);
+    dispatch(fetchtenants({ page: currentPage, search: debouncedSearchTerm }));
+  }, [dispatch, currentPage, debouncedSearchTerm,isAddTenantModalOpen, isEditTenantModalOpen]);
   // Memoized handler for pagination change
   const handlePageChange = useCallback(
     (page: number) => {

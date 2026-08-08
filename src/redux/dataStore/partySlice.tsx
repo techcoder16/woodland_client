@@ -79,10 +79,13 @@ export const deletePropertyParty = createAsyncThunk<
       const headers = { Authorization: `Bearer ${access_token}` };
      const {data,error} =  await deleteApi(`property-management/party/${id}`, headers);
 
+      if (error?.message) {
+        return rejectWithValue(error.message);
+      }
+
       dispatch(fetchPropertyParties(id)); // Refresh list after deletion
 
-
-      return data || error
+      return data;
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to delete PropertyParty");
     }

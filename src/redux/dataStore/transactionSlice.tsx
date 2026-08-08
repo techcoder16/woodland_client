@@ -199,7 +199,10 @@ export const deleteTransaction = createAsyncThunk(
       const access_token = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = { Authorization: `Bearer ${access_token}` };
       console.log(id,"myid")
-      await deleteApi(`transaction/${id}`, headers);
+      const { error } = await deleteApi(`transaction/${id}`, headers);
+      if (error?.message) {
+        return rejectWithValue(error.message);
+      }
 
       await (dispatch as AppDispatch)(fetchTransaction({ propertyId }));
       return id;

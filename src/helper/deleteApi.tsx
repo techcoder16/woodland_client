@@ -35,14 +35,16 @@ export default async function deleteApi(url: string, headers: object) {
     }
   } catch (e: any) {
     // Handling Axios errors
-    if (e.response && e.response.status === 400) {
-      error.message = e.response.data.message;
-    } else if (e.response && e.response.status === 503) {
+    if (e.response && e.response.status === 503) {
       error.message = "Server is currently unavailable. Please try again later.";
-    } else if (e.response && e.response.status === 401) {
-      error.message = e.response.data.message || "Unauthorized";
     } else if (e.code === "ECONNREFUSED" || e.code === "ERR_NETWORK") {
       error.message = "Server is currently unavailable. Please try again later.";
+    } else if (e.response?.data?.message) {
+      // Forward the server's actual message for any other status (400, 401,
+      // 403, 500, etc.) instead of hiding it behind a generic string.
+      error.message = Array.isArray(e.response.data.message)
+        ? e.response.data.message.join(", ")
+        : e.response.data.message;
     } else {
       error.message = "An error occurred while deleting data.";
     }

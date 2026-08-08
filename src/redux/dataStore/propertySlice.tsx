@@ -70,7 +70,10 @@ export const deleteProperty = createAsyncThunk<
     try {
       const access_token = await DEFAULT_COOKIE_GETTER("access_token");
       const headers = { Authorization: `Bearer ${access_token}` };
-      await deleteApi(`properties/${propertyId}`, headers);
+      const { error } = await deleteApi(`properties/${propertyId}`, headers);
+      if (error?.message) {
+        return rejectWithValue(error.message);
+      }
       await dispatch(fetchProperties({ page: 1, search: "" }));
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to delete property");

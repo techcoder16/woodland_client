@@ -33,11 +33,13 @@ import { fetchProperties, deleteProperty } from "@/redux/dataStore/propertySlice
 import { useToast } from "@/components/ui/use-toast";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import PropertyPdf from "./Property/PropertyPdf";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 const PropertyList = () => {
   const dispatch = useAppDispatch();
 
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
   const [viewProperty, setViewProperty] = useState<any>(null);
@@ -46,23 +48,32 @@ const PropertyList = () => {
   const { properties, totalPages, loading } = useAppSelector(
     (state) => state.properties
   );
-  
+
   useEffect(() => {
-    const params: any = { page: currentPage, search: searchTerm };
-    
+    const params: any = { page: currentPage, search: debouncedSearchTerm };
+
     // Add propertyStatus filter if not "all"
     if (statusFilter === "draft") {
       params.propertyStatus = "DRAFT";
     } else if (statusFilter === "published") {
       params.propertyStatus = "PUBLISHED";
     }
-    
+
     dispatch(fetchProperties(params));
-  }, [dispatch, currentPage, searchTerm, statusFilter]);
+  }, [dispatch, currentPage, debouncedSearchTerm, statusFilter]);
 
   const handleDeleteProperty = async (id: string) => {
-    await dispatch(deleteProperty(id));
-    toast({ title: "Success", description: "Property deleted successfully!" });
+    try {
+      await dispatch(deleteProperty(id)).unwrap();
+      toast({ title: "Success", description: "Property deleted successfully!" });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: typeof error === "string" ? error : error?.message || "Failed to delete property",
+        variant: "destructive",
+      });
+      return;
+    }
   };
 
   const handleEditProperty = (property: any) => {
