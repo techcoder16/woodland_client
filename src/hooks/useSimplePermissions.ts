@@ -1,5 +1,4 @@
 import { useAuth } from '@/context/AuthContext';
-import { Role } from '@/types/permissions';
 
 /**
  * Simple permission hook for Admin/User system

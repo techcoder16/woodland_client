@@ -11,7 +11,6 @@ import InputField from "@/utils/InputField";
 import TextAreaField from "@/utils/TextAreaField";
 import SelectField from "@/utils/SelectedField";
 import { DateField } from "@/utils/DateField";
-import ContractorPicker from "@/utils/ContractorPicker";
 import { useNavigate } from "react-router-dom";
 import { Plus, Trash2, Search, Phone, Mail, User2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
@@ -23,9 +22,15 @@ import {
   updateJobType,
   deleteJobType,
   JobType,
+  ReportingStatus,
 } from "@/redux/dataStore/jobTypeSlice";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { useAuth } from "@/context/AuthContext";
+import { Department } from "@/types/permissions";
 
+// Matches what CreateJobTypeDto actually persists on create — the backend
+// always forces status: QUOTING and ignores contractorId/dates/status here;
+// those only become settable afterward via the detail page (admin-gated).
 const maintenanceSchema = z.object({
   propertyId: z.string().min(1, "Property is required"),
   jobType: z.string().min(1, "Type is required"),
@@ -33,14 +38,8 @@ const maintenanceSchema = z.object({
   dueDate: z.string().min(1, "Due date is required"),
   schedule: z.string().optional(),
   time: z.string().optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
   thingsToDo: z.string().optional(),
   priority: z.string().optional(),
-  contractorId: z.string().optional(),
-  dateDone: z.string().optional(),
-  totalCost: z.coerce.number().optional(),
-  totalCharged: z.coerce.number().optional(),
 });
 
 type MaintenanceFormData = z.infer<typeof maintenanceSchema>;
@@ -60,11 +59,21 @@ interface User {
   last_name?: string;
 }
 
-const getStatusBadgeVariant = (status: string) => {
+const STATUS_LABELS: Record<ReportingStatus, string> = {
+  QUOTING: "Quoting",
+  ASSIGNED: "Assigned",
+  IN_PROGRESS: "In Progress",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+};
+
+const getStatusBadgeVariant = (status: ReportingStatus) => {
   switch (status) {
-    case "done": return "default";
-    case "scheduled": return "secondary";
-    case "quoting": return "destructive";
+    case "COMPLETED": return "default";
+    case "ASSIGNED":
+    case "IN_PROGRESS": return "secondary";
+    case "QUOTING": return "destructive";
+    case "CANCELLED": return "outline";
     default: return "outline";
   }
 };
@@ -80,11 +89,13 @@ const MaintenanceList = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { jobTypes, loading } = useAppSelector((state) => state.jobTypes);
+  const { isDepartmentAdmin } = useAuth();
+  const canManageMaintenance = isDepartmentAdmin(Department.Maintenance);
 
   const [properties, setProperties] = useState<Property[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<ReportingStatus | "">("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -115,7 +126,6 @@ const MaintenanceList = () => {
     reset,
     setValue,
     watch,
-    clearErrors,
     formState: { errors },
   } = useForm<MaintenanceFormData>({
     resolver: zodResolver(maintenanceSchema),
@@ -132,6 +142,9 @@ const MaintenanceList = () => {
 
   const onSubmit = async (data: MaintenanceFormData) => {
     try {
+      // Backend always forces status: QUOTING on create and ignores
+      // contractorId/dates/cost fields here — they're set later via the
+      // detail page once a Maintenance Department Admin assigns a contractor.
       const payload: Omit<JobType, "id"> = {
         propertyId: data.propertyId,
         jobType: data.jobType,
@@ -139,15 +152,9 @@ const MaintenanceList = () => {
         dueDate: data.dueDate,
         schedule: data.schedule,
         time: data.time,
-        startDate: data.startDate,
-        endDate: data.endDate,
         thingsToDo: data.thingsToDo,
         priority: data.priority,
-        contractorId: data.contractorId,
-        dateDone: data.dateDone,
-        totalCost: data.totalCost,
-        totalCharged: data.totalCharged,
-        status: "quoting",
+        status: "QUOTING",
       };
 
       await dispatch(createJobType(payload));
@@ -177,7 +184,7 @@ const MaintenanceList = () => {
       await dispatch(
         updateJobType({
           id: job.id,
-          jobTypeData: { propertyId: job.propertyId, dateDone: new Date().toISOString().split("T")[0], status: "done" },
+          jobTypeData: { propertyId: job.propertyId, dateDone: new Date().toISOString().split("T")[0], status: "COMPLETED" },
         })
       );
       toast.success("Maintenance job marked as done");
@@ -282,30 +289,6 @@ const MaintenanceList = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <DateField
-                    label="Start Date"
-                    value={watch("startDate") || ""}
-                    onChange={(date) => handleDateChange("startDate", date)}
-                    error={errors.startDate?.message}
-                  />
-                  <DateField
-                    label="End Date"
-                    value={watch("endDate") || ""}
-                    onChange={(date) => handleDateChange("endDate", date)}
-                    error={errors.endDate?.message}
-                  />
-                </div>
-
-                <ContractorPicker
-                  label="Contractor"
-                  name="contractorId"
-                  watch={watch}
-                  setValue={setValue}
-                  clearErrors={clearErrors as (name: string) => void}
-                  error={errors.contractorId?.message}
-                />
-
                 <TextAreaField
                   label="Things To Do"
                   name="thingsToDo"
@@ -314,33 +297,10 @@ const MaintenanceList = () => {
                   placeholder="List specific tasks to be completed..."
                 />
 
-                <DateField
-                  label="Date Done"
-                  value={watch("dateDone") || ""}
-                  onChange={(date) => handleDateChange("dateDone", date)}
-                  error={errors.dateDone?.message}
-                />
-
-                <div className="grid grid-cols-2 gap-4">
-                  <InputField
-                    label="Total Cost"
-                    name="totalCost"
-                    type="number"
-                    register={register}
-                    setValue={setValue}
-                    error={errors.totalCost?.message}
-                    placeholder="What the contractor charges"
-                  />
-                  <InputField
-                    label="Total Charged (to landlord)"
-                    name="totalCharged"
-                    type="number"
-                    register={register}
-                    setValue={setValue}
-                    error={errors.totalCharged?.message}
-                    placeholder="What is charged to the landlord"
-                  />
-                </div>
+                <p className="text-sm text-muted-foreground">
+                  Contractor assignment, scheduling dates, and cost tracking become available
+                  once a Maintenance Department Admin reviews this request.
+                </p>
 
                 <div className="flex justify-end space-x-2">
                   <Button type="button" variant="outline" onClick={closeDialog}>
@@ -365,14 +325,14 @@ const MaintenanceList = () => {
             />
           </div>
           <div className="flex items-center gap-2">
-            {["", "quoting", "scheduled", "done"].map((status) => (
+            {(["", "QUOTING", "ASSIGNED", "IN_PROGRESS", "COMPLETED", "CANCELLED"] as const).map((status) => (
               <Button
                 key={status || "all"}
                 variant={statusFilter === status ? "default" : "outline"}
                 size="sm"
                 onClick={() => setStatusFilter(status)}
               >
-                {status ? status.charAt(0).toUpperCase() + status.slice(1) : "All"}
+                {status ? STATUS_LABELS[status] : "All"}
               </Button>
             ))}
           </div>
@@ -451,21 +411,23 @@ const MaintenanceList = () => {
                           </td>
                           <td className="px-4 py-3 text-sm whitespace-nowrap">{job.dueDate}</td>
                           <td className="px-4 py-3 text-sm">
-                            <Badge variant={getStatusBadgeVariant(job.status)}>{job.status}</Badge>
+                            <Badge variant={getStatusBadgeVariant(job.status)}>{STATUS_LABELS[job.status] ?? job.status}</Badge>
                           </td>
                           <td className="px-4 py-3 text-center">
                             <div className="flex justify-center space-x-2">
                               <Button size="sm" variant="outline" onClick={() => navigate(`/maintenance/${job.id}`)}>
                                 View details
                               </Button>
-                              {job.status !== "done" && (
+                              {canManageMaintenance && job.status !== "COMPLETED" && (
                                 <Button size="sm" variant="outline" onClick={() => handleCompleteJob(job)}>
                                   <CheckCircle2 className="h-4 w-4" />
                                 </Button>
                               )}
-                              <Button size="sm" variant="outline" onClick={() => handleDelete(job)}>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              {canManageMaintenance && (
+                                <Button size="sm" variant="outline" onClick={() => handleDelete(job)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </td>
                         </tr>

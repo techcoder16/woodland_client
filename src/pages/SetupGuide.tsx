@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CheckCircle, AlertCircle, Info, Shield, Users, Monitor, Settings } from 'lucide-react';
 import { screenApi, userApi, permissionApi } from '@/helper/simplePermissionApi';
-import { ScreenStatus, Role } from '@/types/permissions';
+import { ScreenStatus, StaffRole } from '@/types/permissions';
 import { toast } from 'sonner';
 
 const SetupGuide: React.FC = () => {
@@ -51,7 +51,7 @@ const SetupGuide: React.FC = () => {
       toast.info('Loading existing users...');
       
       const users = await userApi.getAllUsers();
-      const regularUsers = users.filter(user => user.role !== Role.Admin);
+      const regularUsers = users.filter(user => user.role !== StaffRole.SuperUser);
 
       setSetupProgress(80);
       toast.info('Setting up permissions...');

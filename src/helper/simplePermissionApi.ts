@@ -55,6 +55,7 @@ export const userApi = {
     accpet_LHA_DWP?: string;
     internal_info?: string;
     role: string;
+    department?: string;
   }): Promise<User> => {
     const response = await post<User>('user', userData);
     if (response.error) throw new Error(response.error.message);
@@ -72,6 +73,7 @@ export const userApi = {
     last_name?: string;
     phone_number?: number;
     role?: string;
+    department?: string;
   }): Promise<User> => {
     const response = await put<User>(`user/${userId}`, userData);
     if (response.error) throw new Error(response.error.message);

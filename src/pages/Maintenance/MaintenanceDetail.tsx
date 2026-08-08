@@ -16,8 +16,10 @@ import { DateField } from "@/utils/DateField";
 import ContractorPicker from "@/utils/ContractorPicker";
 import FileUploadField from "@/utils/FileUploadField";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
-import { fetchJobTypeById, updateJobType, JobType } from "@/redux/dataStore/jobTypeSlice";
+import { fetchJobTypeById, updateJobType, JobType, ReportingStatus } from "@/redux/dataStore/jobTypeSlice";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { useAuth } from "@/context/AuthContext";
+import { Department } from "@/types/permissions";
 
 const editSchema = z.object({
   jobType: z.string().min(1, "Type is required"),
@@ -30,6 +32,7 @@ const editSchema = z.object({
   thingsToDo: z.string().optional(),
   priority: z.string().optional(),
   contractorId: z.string().optional(),
+  status: z.string().optional(),
   dateDone: z.string().optional(),
   media: z.array(z.string()).optional(),
   totalCost: z.coerce.number().optional(),
@@ -38,11 +41,23 @@ const editSchema = z.object({
 
 type EditFormData = z.infer<typeof editSchema>;
 
-const getStatusBadgeVariant = (status: string) => {
+const STATUS_LABELS: Record<ReportingStatus, string> = {
+  QUOTING: "Quoting",
+  ASSIGNED: "Assigned",
+  IN_PROGRESS: "In Progress",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+};
+
+const STATUS_OPTIONS: ReportingStatus[] = ["QUOTING", "ASSIGNED", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
+
+const getStatusBadgeVariant = (status: ReportingStatus) => {
   switch (status) {
-    case "done": return "default";
-    case "scheduled": return "secondary";
-    case "quoting": return "destructive";
+    case "COMPLETED": return "default";
+    case "ASSIGNED":
+    case "IN_PROGRESS": return "secondary";
+    case "QUOTING": return "destructive";
+    case "CANCELLED": return "outline";
     default: return "outline";
   }
 };
@@ -60,6 +75,8 @@ const MaintenanceDetail = () => {
   const dispatch = useAppDispatch();
   const { jobTypes, loading } = useAppSelector((state) => state.jobTypes);
   const job = jobTypes.find((j) => j.id === id) || null;
+  const { isDepartmentAdmin } = useAuth();
+  const canManageMaintenance = isDepartmentAdmin(Department.Maintenance);
 
   const [isEditing, setIsEditing] = useState(false);
 
@@ -92,6 +109,7 @@ const MaintenanceDetail = () => {
         thingsToDo: job.thingsToDo || "",
         priority: job.priority || "",
         contractorId: job.contractorId || "",
+        status: job.status,
         dateDone: job.dateDone || "",
         media: job.media || [],
         totalCost: job.totalCost,
@@ -103,6 +121,11 @@ const MaintenanceDetail = () => {
   const handleDateChange = (field: keyof EditFormData, date: Date) => {
     setValue(field, date.toISOString().split("T")[0]);
   };
+
+  const watchedContractorId = watch("contractorId");
+  const watchedStartDate = watch("startDate");
+  const canSetStartDate = !!watchedContractorId;
+  const canSetEndDate = !!watchedStartDate;
 
   const onSubmit = async (data: EditFormData) => {
     if (!job?.id) return;
@@ -121,11 +144,15 @@ const MaintenanceDetail = () => {
             endDate: data.endDate,
             thingsToDo: data.thingsToDo,
             priority: data.priority,
-            contractorId: data.contractorId,
-            dateDone: data.dateDone,
             media: data.media,
             totalCost: data.totalCost,
             totalCharged: data.totalCharged,
+            // Contractor assignment and status changes are Maintenance
+            // Department Admin only — the backend rejects these fields from
+            // anyone else, so omit them entirely rather than send-and-fail.
+            ...(canManageMaintenance
+              ? { contractorId: data.contractorId, status: data.status as ReportingStatus, dateDone: data.dateDone }
+              : {}),
           },
         })
       );
@@ -143,7 +170,7 @@ const MaintenanceDetail = () => {
       await dispatch(
         updateJobType({
           id: job.id,
-          jobTypeData: { propertyId: job.propertyId, dateDone: new Date().toISOString().split("T")[0], status: "done" },
+          jobTypeData: { propertyId: job.propertyId, dateDone: new Date().toISOString().split("T")[0], status: "COMPLETED" },
         })
       );
       await dispatch(fetchJobTypeById(job.id));
@@ -157,7 +184,7 @@ const MaintenanceDetail = () => {
     if (!job?.id) return;
     try {
       await dispatch(
-        updateJobType({ id: job.id, jobTypeData: { propertyId: job.propertyId, status: "cancelled" } })
+        updateJobType({ id: job.id, jobTypeData: { propertyId: job.propertyId, status: "CANCELLED" } })
       );
       await dispatch(fetchJobTypeById(job.id));
       toast.success("Maintenance job cancelled");
@@ -241,8 +268,22 @@ const MaintenanceDetail = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <DateField label="Start Date" value={watch("startDate") || ""} onChange={(date) => handleDateChange("startDate", date)} error={errors.startDate?.message} />
-                <DateField label="End Date" value={watch("endDate") || ""} onChange={(date) => handleDateChange("endDate", date)} error={errors.endDate?.message} />
+                <DateField
+                  label="Start Date"
+                  value={watch("startDate") || ""}
+                  onChange={(date) => handleDateChange("startDate", date)}
+                  error={errors.startDate?.message}
+                  disabled={!canSetStartDate}
+                  placeholder={canSetStartDate ? "Pick a date" : "Assign a contractor first"}
+                />
+                <DateField
+                  label="End Date"
+                  value={watch("endDate") || ""}
+                  onChange={(date) => handleDateChange("endDate", date)}
+                  error={errors.endDate?.message}
+                  disabled={!canSetEndDate}
+                  placeholder={canSetEndDate ? "Pick a date" : "Set a start date first"}
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -250,18 +291,40 @@ const MaintenanceDetail = () => {
                 <InputField label="Total Charged (to landlord)" name="totalCharged" type="number" register={register} setValue={setValue} error={errors.totalCharged?.message} placeholder="What is charged to the landlord" />
               </div>
 
-              <ContractorPicker
-                label="Contractor"
-                name="contractorId"
-                watch={watch}
-                setValue={setValue}
-                clearErrors={clearErrors as (name: string) => void}
-                error={errors.contractorId?.message}
-              />
+              {canManageMaintenance ? (
+                <>
+                  <ContractorPicker
+                    label="Contractor"
+                    name="contractorId"
+                    watch={watch}
+                    setValue={setValue}
+                    clearErrors={clearErrors as (name: string) => void}
+                    error={errors.contractorId?.message}
+                  />
+
+                  <SelectField
+                    label="Reporting Status"
+                    name="status"
+                    register={register}
+                    setValue={setValue}
+                    watch={watch}
+                    error={errors.status?.message}
+                    options={STATUS_OPTIONS.map((s) => ({ value: s, label: STATUS_LABELS[s] }))}
+                  />
+                </>
+              ) : (
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Contractor:</span>{" "}
+                  {job.contractorRef ? job.contractorRef.name : "Not assigned yet"}
+                  <span className="text-muted-foreground ml-1">(only Maintenance Department Admin can assign)</span>
+                </div>
+              )}
 
               <TextAreaField label="Things To Do" name="thingsToDo" register={register} error={errors.thingsToDo?.message} />
 
-              <DateField label="Date Done" value={watch("dateDone") || ""} onChange={(date) => handleDateChange("dateDone", date)} error={errors.dateDone?.message} />
+              {canManageMaintenance && (
+                <DateField label="Date Completed" value={watch("dateDone") || ""} onChange={(date) => handleDateChange("dateDone", date)} error={errors.dateDone?.message} />
+              )}
 
               <FileUploadField
                 label="Attach media to the job"
@@ -309,7 +372,7 @@ const MaintenanceDetail = () => {
                 </div>
                 <div className="flex gap-2 mb-2">
                   {job.priority && <Badge variant="outline">Priority: {job.priority}</Badge>}
-                  <Badge variant={getStatusBadgeVariant(job.status)}>Status: {job.status}</Badge>
+                  <Badge variant={getStatusBadgeVariant(job.status)}>Status: {STATUS_LABELS[job.status] ?? job.status}</Badge>
                 </div>
                 <div className="space-y-1 text-sm">
                   <div><span className="text-muted-foreground">Description:</span> {job.description}</div>
@@ -351,14 +414,16 @@ const MaintenanceDetail = () => {
               </Card>
             </div>
 
-            <div className="flex justify-end gap-2">
-              {job.status !== "cancelled" && job.status !== "done" && (
-                <Button variant="outline" onClick={handleCancelJob}>Cancel Job</Button>
-              )}
-              {job.status !== "done" && (
-                <Button onClick={handleCompleteJob}>Complete Job</Button>
-              )}
-            </div>
+            {canManageMaintenance && (
+              <div className="flex justify-end gap-2">
+                {job.status !== "CANCELLED" && job.status !== "COMPLETED" && (
+                  <Button variant="outline" onClick={handleCancelJob}>Cancel Job</Button>
+                )}
+                {job.status !== "COMPLETED" && (
+                  <Button onClick={handleCompleteJob}>Complete Job</Button>
+                )}
+              </div>
+            )}
 
             <Card>
               <CardContent className="p-4">

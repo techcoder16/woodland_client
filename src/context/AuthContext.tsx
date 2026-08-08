@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { DEFAULT_COOKIE_DELETE, DEFAULT_COOKIE_GETTER, DEFAULT_COOKIE_SETTER } from "@/helper/Cookie";
 import { storeTokens, clearTokens, checkTokenInfo, startTokenValidation, stopTokenValidation } from "@/helper/tokenManager";
 import { userPermissionApi, userApi } from "@/helper/simplePermissionApi";
-import { User, UserPermission, Role } from "@/types/permissions";
+import { User, UserPermission, StaffRole, Department } from "@/types/permissions";
 import axios from "axios";
 
 interface AuthContextType {
@@ -13,6 +13,8 @@ interface AuthContextType {
   isLoading: boolean;
   permissions: UserPermission[];
   isAdmin: boolean;
+  canAccessFinance: boolean;
+  isDepartmentAdmin: (department: Department) => boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   refreshToken: () => Promise<boolean>;
@@ -97,11 +99,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Check if user can access a screen
   const canAccess = (screen: string): boolean => {
     if (!user) return false;
-    
-    if (user.role === Role.Admin) return true; // Admin can access everything
-    
-    return permissions.some(p => 
-      p.screen.route === screen && 
+
+    if (user.role === StaffRole.SuperUser) return true; // Super User can access everything
+
+    return permissions.some(p =>
+      p.screen.route === screen &&
       p.screen.status === 'ACTIVE'
     );
   };
@@ -215,42 +217,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     navigate("/");
   };
 
-  // Handle different role formats from backend
   const userRole = user?.role;
-  
-  // Check if user is admin - handle both enum and string formats
-  const isAdmin = userRole === Role.Admin || 
-                  (userRole as string) === 'Admin' || 
-                  (userRole as string) === 'admin' || 
-                  (userRole as string) === 'ADMIN' ||
-                  (user?.email && (
-                    user.email.toLowerCase().includes('admin') ||
-                    user.email === 'admin@woodland.com' ||
-                    user.email === 'admin@example.com'
-                  ));
-  
-  // Debug logging
-  console.log('=== AUTH DEBUG ===');
-  console.log('AuthContext - user:', user);
-  console.log('AuthContext - user.role:', user?.role);
-  console.log('AuthContext - userRole variable:', userRole);
-  console.log('AuthContext - user.email:', user?.email);
-  console.log('AuthContext - Role.Admin:', Role.Admin);
-  console.log('AuthContext - isAdmin:', isAdmin);
-  console.log('AuthContext - user object keys:', user ? Object.keys(user) : 'No user');
-  console.log('Email check for admin:', user?.email && user.email.toLowerCase().includes('admin'));
-  console.log('=== END AUTH DEBUG ===');
+
+  // Only Super User counts as the app's top-level "admin" (creates users, manages admin settings).
+  const isAdmin = userRole === StaffRole.SuperUser;
+
+  const canAccessFinance =
+    userRole === StaffRole.SuperUser || userRole === StaffRole.FinanceUser;
+
+  const isDepartmentAdmin = (department: Department): boolean => {
+    if (userRole === StaffRole.SuperUser) return true;
+    return userRole === StaffRole.DepartmentAdmin && user?.department === department;
+  };
 
   try {
-    return <AuthContext.Provider value={{ 
-      user, 
-      isAuthenticated: !!user, 
-      isLoading, 
+    return <AuthContext.Provider value={{
+      user,
+      isAuthenticated: !!user,
+      isLoading,
       permissions,
       isAdmin,
-      login, 
-      logout, 
-      refreshToken, 
+      canAccessFinance,
+      isDepartmentAdmin,
+      login,
+      logout,
+      refreshToken,
       checkTokenInfo,
       canAccess,
       refreshPermissions

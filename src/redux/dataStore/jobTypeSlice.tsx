@@ -5,6 +5,8 @@ import getApi from "@/helper/getApi";
 import { AppDispatch } from "../store";
 import { post, patch, del } from "@/helper/api";
 
+export type ReportingStatus = "QUOTING" | "ASSIGNED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+
 // Define JobType interface
 export interface JobType {
   id?: string;
@@ -24,7 +26,7 @@ export interface JobType {
   media?: string[];
   totalCost?: number;
   totalCharged?: number;
-  status: string; // e.g. "quoting" | "scheduled" | "done" (open-ended)
+  status: ReportingStatus;
   createdAt?: string;
   updatedAt?: string;
   employee?: { id: string; first_name?: string; last_name?: string; email?: string };
@@ -60,7 +62,7 @@ const initialState: JobTypeState = {
 export const fetchJobTypes = createAsyncThunk(
   "jobType/fetchJobTypes",
   async (
-    { propertyId, page, limit, status, contractorId }: { propertyId?: string; page: number; limit?: number; status?: string; contractorId?: string },
+    { propertyId, page, limit, status, contractorId }: { propertyId?: string; page: number; limit?: number; status?: ReportingStatus; contractorId?: string },
     { rejectWithValue }
   ) => {
     try {

@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, UserPlus, Monitor, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { userApi, screenApi, permissionApi } from '@/helper/simplePermissionApi';
-import { User, Screen, Role, ScreenStatus } from '@/types/permissions';
+import { User, Screen, StaffRole, Department, ScreenStatus } from '@/types/permissions';
 import { usePermissions } from '@/hooks/usePermissions';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { validatePhoneNumber, getPhoneNumberError } from '@/utils/phoneValidation';
@@ -41,7 +41,8 @@ const CreateUser: React.FC = () => {
     passport: '',
     accpet_LHA_DWP: '',
     internal_info: '',
-    role: Role.User
+    role: StaffRole.BasicUser,
+    department: undefined as Department | undefined,
   });
 
   useEffect(() => {
@@ -78,8 +79,9 @@ const CreateUser: React.FC = () => {
       });
       toast.success('User created successfully!');
 
-      // If user role, assign selected screens
-      if (formData.role === Role.User && selectedScreens.length > 0) {
+      // Screen permissions still apply for non-Super-User roles (the role itself
+      // gates broad capabilities like Finance/Delete/User-management server-side).
+      if (formData.role !== StaffRole.SuperUser && selectedScreens.length > 0) {
         const failedScreens: string[] = [];
         for (const screenId of selectedScreens) {
           try {
@@ -120,7 +122,8 @@ const CreateUser: React.FC = () => {
         passport: '',
         accpet_LHA_DWP: '',
         internal_info: '',
-        role: Role.User
+        role: StaffRole.BasicUser,
+        department: undefined,
       });
       setSelectedScreens([]);
 
@@ -318,27 +321,72 @@ const CreateUser: React.FC = () => {
                 <Label htmlFor="role">User Role *</Label>
                 <Select
                   value={formData.role}
-                  onValueChange={(value) => setFormData({ ...formData, role: value as Role })}
+                  onValueChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      role: value as StaffRole,
+                      department: value === StaffRole.DepartmentAdmin ? formData.department : undefined,
+                    })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={Role.User}>
+                    <SelectItem value={StaffRole.SuperUser}>
                       <div className="flex items-center gap-2">
-                        <Badge variant="secondary">User</Badge>
-                        <span className="text-sm text-muted-foreground">Limited access to assigned screens</span>
+                        <Badge variant="destructive">Super User</Badge>
+                        <span className="text-sm text-muted-foreground">Full control — create users, manage admin settings</span>
                       </div>
                     </SelectItem>
-                    <SelectItem value={Role.Admin}>
+                    <SelectItem value={StaffRole.AdminUser}>
                       <div className="flex items-center gap-2">
-                        <Badge variant="destructive">Admin</Badge>
-                        <span className="text-sm text-muted-foreground">Full access to all screens</span>
+                        <Badge variant="secondary">Admin User</Badge>
+                        <span className="text-sm text-muted-foreground">Create/edit/delete records — no Finance, no user management</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value={StaffRole.FinanceUser}>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary">Finance User</Badge>
+                        <span className="text-sm text-muted-foreground">Admin User access plus Finance</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value={StaffRole.DepartmentAdmin}>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary">Department Admin</Badge>
+                        <span className="text-sm text-muted-foreground">Full access within one department — no Finance</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value={StaffRole.BasicUser}>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">Basic User</Badge>
+                        <span className="text-sm text-muted-foreground">Create/edit only, on assigned screens</span>
                       </div>
                     </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
+              {formData.role === StaffRole.DepartmentAdmin && (
+                <div>
+                  <Label htmlFor="department">Department *</Label>
+                  <Select
+                    value={formData.department}
+                    onValueChange={(value) => setFormData({ ...formData, department: value as Department })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={Department.Maintenance}>Maintenance</SelectItem>
+                      <SelectItem value={Department.Properties}>Properties</SelectItem>
+                      <SelectItem value={Department.Lettings}>Lettings</SelectItem>
+                      <SelectItem value={Department.Vendors}>Vendors</SelectItem>
+                      <SelectItem value={Department.Other}>Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <div className="pt-4">
                 <Button type="submit" disabled={loading} className="w-full">
@@ -357,19 +405,19 @@ const CreateUser: React.FC = () => {
               Screen Permissions
             </CardTitle>
             <CardDescription>
-              {formData.role === Role.Admin 
-                ? "Admins automatically have access to all screens"
+              {formData.role === StaffRole.SuperUser
+                ? "Super Users automatically have access to all screens"
                 : "Select which screens this user can access"
               }
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {formData.role === Role.Admin ? (
+            {formData.role === StaffRole.SuperUser ? (
               <div className="text-center py-8">
                 <Shield className="h-12 w-12 text-success mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-success mb-2">Full Access</h3>
                 <p className="text-muted-foreground">
-                  Admin users automatically have access to all screens and features.
+                  Super Users automatically have access to all screens and features.
                 </p>
               </div>
             ) : (

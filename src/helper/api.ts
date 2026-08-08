@@ -152,6 +152,13 @@ async function request<T>(
       defaultHeaders["Content-Type"] = "application/json";
     }
 
+    // One key per logical submission: a 401-triggered retry reuses this same
+    // axios config/headers object, so it carries the same key automatically.
+    // A fresh call to post() (e.g. the user resubmitting the form) gets a new one.
+    if (method === "post") {
+      defaultHeaders["Idempotency-Key"] = crypto.randomUUID();
+    }
+
     const mergedHeaders = {
       ...defaultHeaders,
       ...(headers || {}),

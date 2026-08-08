@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Plus, Edit, Trash2, Search, Users, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { userApi } from '@/helper/simplePermissionApi';
-import { User, Role } from '@/types/permissions';
+import { User, StaffRole } from '@/types/permissions';
 import { usePermissions } from '@/hooks/usePermissions';
 
 const UserManagement: React.FC = () => {
@@ -28,7 +28,7 @@ const UserManagement: React.FC = () => {
     first_name: '',
     last_name: '',
     phone_number: '',
-    role: Role.User
+    role: StaffRole.BasicUser
   });
 
   const { isAdmin } = usePermissions();
@@ -116,7 +116,7 @@ const UserManagement: React.FC = () => {
       first_name: '',
       last_name: '',
       phone_number: '',
-      role: Role.User
+      role: StaffRole.BasicUser
     });
   };
 
@@ -233,14 +233,14 @@ const UserManagement: React.FC = () => {
                     <Label htmlFor="role">Role</Label>
                     <Select
                       value={formData.role}
-                      onValueChange={(value) => setFormData({ ...formData, role: value as Role })}
+                      onValueChange={(value) => setFormData({ ...formData, role: value as StaffRole })}
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value={Role.User}>User</SelectItem>
-                        <SelectItem value={Role.Admin}>Admin</SelectItem>
+                        <SelectItem value={StaffRole.BasicUser}>User</SelectItem>
+                        <SelectItem value={StaffRole.SuperUser}>Admin</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -279,7 +279,7 @@ const UserManagement: React.FC = () => {
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.phone_number || 'N/A'}</TableCell>
                     <TableCell>
-                      <Badge variant={user.role === Role.Admin ? 'destructive' : 'secondary'}>
+                      <Badge variant={user.role === StaffRole.SuperUser ? 'destructive' : 'secondary'}>
                         {user.role}
                       </Badge>
                     </TableCell>
@@ -367,14 +367,14 @@ const UserManagement: React.FC = () => {
               <Label htmlFor="edit_role">Role</Label>
               <Select
                 value={formData.role}
-                onValueChange={(value) => setFormData({ ...formData, role: value as Role })}
+                onValueChange={(value) => setFormData({ ...formData, role: value as StaffRole })}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={Role.User}>User</SelectItem>
-                  <SelectItem value={Role.Admin}>Admin</SelectItem>
+                  <SelectItem value={StaffRole.BasicUser}>User</SelectItem>
+                  <SelectItem value={StaffRole.SuperUser}>Admin</SelectItem>
                 </SelectContent>
               </Select>
             </div>

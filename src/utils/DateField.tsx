@@ -9,20 +9,23 @@ export const DateField = ({
   onChange,
   error,
   placeholder = "Pick a date",
+  disabled = false,
 }: {
   label: string;
   value: string;
   onChange: (date: Date) => void;
   error?: string;
   placeholder?: string;
+  disabled?: boolean;
 }) => (
   <div className="space-y-4">
     <label className="block text-sm font-medium text-muted-foreground">{label}</label>
     <Popover>
-      <PopoverTrigger asChild>
+      <PopoverTrigger asChild disabled={disabled}>
         <Button
           type="button"
           variant="outline"
+          disabled={disabled}
           className={cn(
             "w-full justify-start text-left font-normal h-10",
             !value && "text-muted-foreground"

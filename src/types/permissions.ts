@@ -1,8 +1,19 @@
 // Simple Permission Management Types
 
-export enum Role {
-  Admin = "Admin",
-  User = "User"
+export enum StaffRole {
+  SuperUser = "SUPER_USER",
+  AdminUser = "ADMIN_USER",
+  FinanceUser = "FINANCE_USER",
+  DepartmentAdmin = "DEPARTMENT_ADMIN",
+  BasicUser = "BASIC_USER",
+}
+
+export enum Department {
+  Maintenance = "MAINTENANCE",
+  Properties = "PROPERTIES",
+  Lettings = "LETTINGS",
+  Vendors = "VENDORS",
+  Other = "OTHER",
 }
 
 export enum ScreenStatus {
@@ -30,7 +41,8 @@ export interface User {
   passport?: string;
   accpet_LHA_DWP?: string;
   internal_info?: string;
-  role: Role;
+  role: StaffRole;
+  department?: Department | null;
   createdAt?: string;
   updatedAt?: string;
 }

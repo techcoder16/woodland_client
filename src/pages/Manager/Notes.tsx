@@ -50,7 +50,7 @@ const jobTypeSchema = z.object({
   contractorId: z.string().optional(),
   priority: z.string().optional(),
   dateDone: z.string().optional(),
-  status: z.string().default("quoting"),
+  status: z.enum(["QUOTING", "ASSIGNED", "IN_PROGRESS", "COMPLETED", "CANCELLED"]).default("QUOTING"),
 });
 
 // Enhanced Note form schema
@@ -618,7 +618,7 @@ const Notes = ({ propertyId, property }: NotesProps) => {
                   />
 
                   <DateField
-                    label="Date Done"
+                    label="Date Completed"
                     value={watchJobType("dateDone") || ""}
                     onChange={(date) => handleJobTypeDateChange("dateDone", date)}
                     error={errorsJobType.dateDone?.message}
@@ -647,7 +647,7 @@ const Notes = ({ propertyId, property }: NotesProps) => {
                     <TableHead>Due Date</TableHead>
                     <TableHead>Assigned To</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Date Done</TableHead>
+                    <TableHead>Date Completed</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
