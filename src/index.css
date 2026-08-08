@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,6 +6,8 @@
 
 @layer base {
   :root {
+    --font-sans-override: "Plus Jakarta Sans", system-ui, sans-serif;
+
     --background: 220 20% 99%;
     --foreground: 222 30% 11%;
 
@@ -104,6 +106,7 @@
 
   body {
     @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans-override);
     font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
     -webkit-font-smoothing: antialiased;
   }

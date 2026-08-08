@@ -89,7 +89,7 @@ function ChartTooltip({ active, payload, label }: any) {
 function Donut({ data, colors }: { data: { name: string; value: number }[]; colors: string[] }) {
   const total = data.reduce((s, d) => s + (d.value || 0), 0);
   return (
-    <div className="relative flex-1 min-h-[180px]">
+    <div className="relative h-[180px] shrink-0">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
@@ -152,7 +152,7 @@ function ChartCard({
       <h3 className="text-xs font-medium text-muted-foreground mb-1">{title}</h3>
       {stat && <div className="stat-figure text-lg text-primary mb-1">{stat}</div>}
       {caption && <p className="text-[11px] text-muted-foreground/80 mb-2">{caption}</p>}
-      <div className="flex-1 min-h-[220px]">{children}</div>
+      <div className="h-[220px] shrink-0">{children}</div>
     </Card>
   );
 }

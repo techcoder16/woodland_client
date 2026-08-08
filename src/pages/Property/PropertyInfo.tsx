@@ -66,6 +66,7 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
   const rooms = watch('rooms') || [];
 
   const propertyTypeCategory = watch('propertyTypeCategory');
+  const isFlatOrMaisonette = ['flat', 'maisonette'].includes((propertyTypeCategory || '').toLowerCase());
   const bedrooms = watch('bedrooms');
   const bathrooms = watch('bathrooms');
   const receptions = watch('receptions');
@@ -260,6 +261,16 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
               register={register}
               error={errors.receptions?.message?.toString()}
             />
+            {isFlatOrMaisonette && (
+              <InputField
+                setValue={setValue}
+                label="No. of Floor"
+                name="floorNumber"
+                type="number"
+                register={register}
+                error={errors.floorNumber?.message?.toString()}
+              />
+            )}
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 px-1">
@@ -290,13 +301,6 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
                 onCheckedChange={(v) => setValue('gas', !!v)}
               />
               Gas
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <Checkbox
-                checked={!!watch('electricity')}
-                onCheckedChange={(v) => setValue('electricity', !!v)}
-              />
-              Electricity
             </label>
           </div>
 

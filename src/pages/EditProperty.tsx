@@ -28,7 +28,7 @@ const STEP_LABELS = [
 ] as const;
 
 const STEP_FIELDS: string[][] = [
-  ["vendor", "for", "postCode", "addressLine1", "addressLine2", "town", "country", "propertyTypeCategory", "bedrooms", "bathrooms", "wheelchairAccess", "hasGarden", "lift", "gas", "electricity", "rooms"],
+  ["vendor", "for", "postCode", "addressLine1", "addressLine2", "town", "country", "propertyTypeCategory", "bedrooms", "bathrooms", "receptions", "floorNumber", "wheelchairAccess", "hasGarden", "lift", "gas", "rooms"],
   ["photographs", "floorPlans", "epcCertificate", "gasCertificate", "electricityCertificate", "fireRiskAssessment", "insuranceCertificate", "emergencyLightingCertificate", "propertyLicense"],
   ["rentEffectiveDate", "rentPerMonth", "rentPayableInAdvance", "rentalTerms"],
   [],
@@ -71,11 +71,11 @@ const EditProperty = () => {
       bedrooms: property.bedrooms ?? "",
       bathrooms: property.bathrooms ?? "",
       receptions: property.receptions ?? "",
+      floorNumber: property.floorNumber ?? "",
       wheelchairAccess: toBoolean(property.wheelchairAccess),
       hasGarden: toBoolean(property.hasGarden),
       lift: toBoolean(property.lift),
       gas: toBoolean(property.gas),
-      electricity: toBoolean(property.electricity),
       rooms: parseJsonArray(property.rooms),
       photographs: typeof property.photographs === "string" ? property.photographs : "",
       floorPlans: typeof property.floorPlans === "string" ? property.floorPlans : "",

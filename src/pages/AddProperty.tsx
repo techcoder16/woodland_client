@@ -29,7 +29,7 @@ const STEP_LABELS = [
 ] as const;
 
 const STEP_FIELDS: string[][] = [
-  ["vendor", "for", "postCode", "addressLine1", "addressLine2", "town", "country", "propertyTypeCategory", "bedrooms", "bathrooms", "wheelchairAccess", "hasGarden", "lift", "gas", "electricity", "rooms"],
+  ["vendor", "for", "postCode", "addressLine1", "addressLine2", "town", "country", "propertyTypeCategory", "bedrooms", "bathrooms", "receptions", "floorNumber", "wheelchairAccess", "hasGarden", "lift", "gas", "rooms"],
   ["photographs", "floorPlans", "epcCertificate", "gasCertificate", "electricityCertificate", "fireRiskAssessment", "insuranceCertificate", "emergencyLightingCertificate", "propertyLicense"],
   ["rentEffectiveDate", "rentPerMonth", "rentPayableInAdvance", "rentalTerms"],
   [],

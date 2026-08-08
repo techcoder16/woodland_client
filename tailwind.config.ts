@@ -80,8 +80,8 @@ export default {
         xl: "calc(var(--radius) + 4px)",
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
-        heading: ["Inter", "system-ui", "sans-serif"],
+        sans: ["var(--font-sans-override)"],
+        heading: ["var(--font-sans-override)"],
         mono: ["JetBrains Mono", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
       boxShadow: {

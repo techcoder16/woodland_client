@@ -1,16 +1,21 @@
 import React, { useEffect, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useTheme } from "@/context/ThemeContext";
+import { useFont } from "@/context/FontContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Check } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import { patch } from "@/helper/api";
 
 const Settings = () => {
+  const { isAdmin } = usePermissions();
+  const { fontId, setFontId, options: fontOptions } = useFont();
   const [activeTab, setActiveTab] = useState("profile");
   const [profileValues, setProfileValues] = useState({
     id: "user-unique-id", // Provide user id from your auth context/state
@@ -109,6 +114,7 @@ const user = await DEFAULT_COOKIE_GETTER("user");
           <TabsList className="mb-8">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
+            {isAdmin && <TabsTrigger value="appearance">Appearance</TabsTrigger>}
           </TabsList>
 
           {/* Profile Tab */}
@@ -222,6 +228,58 @@ const user = await DEFAULT_COOKIE_GETTER("user");
               </Card>
             </div>
           </TabsContent>
+
+          {/* Appearance Tab (admin only) */}
+          {isAdmin && (
+            <TabsContent value="appearance">
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Site Font</CardTitle>
+                    <CardDescription>
+                      Pick a font to preview across the whole site. Your choice is saved to this browser.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
+                      {fontOptions.map((option) => {
+                        const isSelected = option.id === fontId;
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            onClick={() => setFontId(option.id)}
+                            className={`text-left rounded-lg border p-4 transition-colors ${
+                              isSelected
+                                ? "border-primary bg-primary/5"
+                                : "border-border hover:border-muted-foreground/40"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs text-muted-foreground">{option.label}</span>
+                              {isSelected && <Check className="h-4 w-4 text-primary" />}
+                            </div>
+                            <div
+                              className="text-2xl leading-tight"
+                              style={{ fontFamily: `"${option.family}", system-ui, sans-serif` }}
+                            >
+                              Aa Bb Cc
+                            </div>
+                            <div
+                              className="text-sm text-muted-foreground mt-1"
+                              style={{ fontFamily: `"${option.family}", system-ui, sans-serif` }}
+                            >
+                              You're managing 12 properties
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </DashboardLayout>

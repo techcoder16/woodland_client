@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Provider } from "react-redux";
 import store from "./redux/store";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { FontProvider } from "@/context/FontContext";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "./components/ui/toaster";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
@@ -56,7 +57,7 @@ function App() {
   return (
     <Provider store={store}>
       <ThemeProvider >
-
+      <FontProvider>
 
         <TooltipProvider>
           <Toaster />
@@ -184,6 +185,7 @@ function App() {
             </AuthProvider>
           </BrowserRouter>
         </TooltipProvider>
+      </FontProvider>
       </ThemeProvider>
     </Provider>
   );

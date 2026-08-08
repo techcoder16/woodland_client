@@ -35,7 +35,6 @@ const featureSchema = z.object({
   ),
   HowDeattached: z.string().optional(),
   Floor: z.string().optional(),
-  NoOfFloors: z.string().optional(),
   DoorNumber: z.string().optional(),
   Road: z.string().optional(),
   towns: z.string().optional(),
@@ -474,17 +473,6 @@ export const Feature = ({ property }: any) => {
               setValue={setFeatureValue}
               onChange={value => handleSelectChange("Floor", value)}
             />
-
-            {isFlatOrMaisonette && (
-              <InputField
-                label="No. of Floor"
-                name="NoOfFloors"
-                type="number"
-                register={registerFeature}
-                error={errorsFeature.NoOfFloors?.message}
-                setValue={setFeatureValue}
-              />
-            )}
 
             <InputField
               label="Door Number"
