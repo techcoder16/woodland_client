@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,7 @@ const AddProperty = () => {
   const { toast } = useToast();
   const { watch } = form;
   const dispatch = useDispatch<any>();
+  const navigate = useNavigate();
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -144,7 +146,7 @@ const AddProperty = () => {
         });
         setProgress(100);
         if (!isDraft) {
-          setTimeout(() => { window.location.href = "/properties"; }, 1500);
+          setTimeout(() => { navigate("/properties"); }, 1500);
         }
       } else {
         throw new Error("Invalid Property ID or unexpected response format.");

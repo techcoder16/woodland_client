@@ -8,7 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Check } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import StandardInfo from './Vendor/StandardInfo';
 import BankDetails from './Vendor/BankDetails';
 import Documents from './Vendor/Documents';
@@ -123,6 +123,10 @@ const AddVendor = () => {
 
   const activeErrors = form.formState.errors;
 
+  const TAB_ORDER = ["personal", "bank", "documents"] as const;
+  const currentTabIndex = TAB_ORDER.indexOf(activeTab as typeof TAB_ORDER[number]);
+  const isLastTab = currentTabIndex === TAB_ORDER.length - 1;
+
   return (
     <DashboardLayout>
       {isSubmitting && (
@@ -172,10 +176,28 @@ const AddVendor = () => {
                 </div>
               )}
 
-              <div className="flex justify-end pt-6">
-                <Button type="submit" disabled={isSubmitting}>
-                  Save <Check className="ml-2 h-4 w-4" />
+              <div className="flex justify-between pt-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={currentTabIndex === 0}
+                  onClick={() => setActiveTab(TAB_ORDER[currentTabIndex - 1])}
+                >
+                  <ChevronLeft className="mr-2 h-4 w-4" /> Back
                 </Button>
+
+                {isLastTab ? (
+                  <Button type="submit" disabled={isSubmitting}>
+                    Save <Check className="ml-2 h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    onClick={() => setActiveTab(TAB_ORDER[currentTabIndex + 1])}
+                  >
+                    Next <ChevronRight className="ml-2 h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </form>
           </Card>

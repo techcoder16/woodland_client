@@ -35,6 +35,10 @@ import AdminDashboard from "./pages/SimpleAdminDashboard";
 import CreateUser from "./pages/admin/CreateUser";
 import CreateScreen from "./pages/admin/CreateScreen";
 import DesignPreview from "./pages/_DesignPreview";
+import PartyLogin from "./pages/PartyLogin";
+import PartySetPassword from "./pages/PartySetPassword";
+import PartyMaintenance from "./pages/PartyMaintenance";
+import PartyProtectedRoute from "@/components/PartyProtectedRoute";
 function App() {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -178,6 +182,33 @@ function App() {
                     </ProtectedRoute>
                   } />
             
+                  {/* Landlord (Vendor) portal */}
+                  <Route path="/landlord/login" element={<PartyLogin kind="vendor" />} />
+                  <Route path="/landlord/set-password" element={
+                    <PartyProtectedRoute kind="vendor"><PartySetPassword kind="vendor" /></PartyProtectedRoute>
+                  } />
+                  <Route path="/landlord/maintenance" element={
+                    <PartyProtectedRoute kind="vendor"><PartyMaintenance kind="vendor" /></PartyProtectedRoute>
+                  } />
+
+                  {/* Tenant portal */}
+                  <Route path="/tenant/login" element={<PartyLogin kind="tenant" />} />
+                  <Route path="/tenant/set-password" element={
+                    <PartyProtectedRoute kind="tenant"><PartySetPassword kind="tenant" /></PartyProtectedRoute>
+                  } />
+                  <Route path="/tenant/maintenance" element={
+                    <PartyProtectedRoute kind="tenant"><PartyMaintenance kind="tenant" /></PartyProtectedRoute>
+                  } />
+
+                  {/* Contractor portal */}
+                  <Route path="/contractor/login" element={<PartyLogin kind="contractor" />} />
+                  <Route path="/contractor/set-password" element={
+                    <PartyProtectedRoute kind="contractor"><PartySetPassword kind="contractor" /></PartyProtectedRoute>
+                  } />
+                  <Route path="/contractor/maintenance" element={
+                    <PartyProtectedRoute kind="contractor"><PartyMaintenance kind="contractor" /></PartyProtectedRoute>
+                  } />
+
                 {/* Redirect unknown routes to login */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

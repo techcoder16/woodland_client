@@ -39,30 +39,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const accessToken = await DEFAULT_COOKIE_GETTER("access_token");
         
         if (accessToken) {
-          console.log('Access token found, fetching current user profile from /api/user/me...');
-          
           try {
-            // Get current user profile from /api/user/me
+            // Role/permissions are authorization data — always trust the live
+            // /api/user/me response, never a cached cookie (which can go
+            // silently stale, e.g. after a role rename/migration server-side).
             const currentUser = await userApi.getCurrentUser();
-            console.log('Current user from API:', currentUser);
-            console.log('User role from API:', currentUser?.role);
             setUser(currentUser);
-            
-            // Load user permissions
             await loadUserPermissions();
-            
+
             // Start periodic token validation when user is logged in
             tokenValidationInterval.current = startTokenValidation(0.083); // Check every 5 seconds
           } catch (apiError) {
             console.error('Error fetching user from API:', apiError);
-            // Fallback to cookie if API fails
-            const savedUser = await DEFAULT_COOKIE_GETTER("user");
-            if (savedUser) {
-              console.log('Falling back to cookie data...');
-              const userData = typeof savedUser === 'string' ? JSON.parse(savedUser) : savedUser;
-              setUser(userData);
-              await loadUserPermissions();
-            }
+            // Do not fall back to a cached cookie for role/permission data —
+            // treat this as logged out rather than risk granting a stale role.
+            await DEFAULT_COOKIE_DELETE("access_token");
+            await DEFAULT_COOKIE_DELETE("refresh_token");
+            await DEFAULT_COOKIE_DELETE("user");
+            setUser(null);
           }
         } else {
           console.log('No access token found, user not logged in');

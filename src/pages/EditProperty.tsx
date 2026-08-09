@@ -8,7 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Check, ArrowLeft, ArrowRight, AlertCircle } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import LoadingBar from "react-top-loading-bar";
 import PropertyInfo from "./Property/PropertyInfo";
 import DocumentsCertificates from "./Property/DocumentsCertificates";
@@ -53,6 +53,7 @@ function parseJsonArray(value: any, fallback: any[] = []): any[] {
 
 const EditProperty = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   const property = useMemo(
@@ -165,7 +166,7 @@ const EditProperty = () => {
         });
         setProgress(100);
         if (!isDraft) {
-          setTimeout(() => { window.location.href = "/properties"; }, 1500);
+          setTimeout(() => { navigate("/properties"); }, 1500);
         }
       } else {
         throw new Error("Invalid Property ID or unexpected response format.");
