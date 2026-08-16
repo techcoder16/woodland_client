@@ -17,6 +17,7 @@ import wall2 from "@/assets/wall2.jpg";
 import wall3 from "@/assets/wall3.jpg";
 import wall5 from "@/assets/wall5.jpg";
 import wall6 from "@/assets/wall6.jpg";
+import logo from "@/assets/logo.png";
 import { toast } from "sonner";
 
 const Login = () => {
@@ -86,9 +87,7 @@ else{
        
             <div className="glass-card rounded-xl p-6 w-full max-w-md mx-auto">
               <div className="space-y-2 text-center">
-                <div className="mx-auto h-12 w-12 rounded-full bg-primary flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">PM</span>
-                </div>
+                <img src={logo} alt="Woodland" className="mx-auto h-12 w-auto" />
                 <h1 className="text-2xl font-bold tracking-tight">Property Management</h1>
                 <p className="text-sm text-muted-foreground">Enter your credentials to access your account</p>
               </div>

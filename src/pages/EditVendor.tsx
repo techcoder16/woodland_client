@@ -110,7 +110,13 @@ const EditVendor = () => {
         if (key === "id") continue;
         if (Array.isArray(value)) {
           payload[key] = value[0] ?? null;
-        } else if (value !== null && value !== undefined) {
+        } else if (
+          value !== null &&
+          value !== undefined &&
+          // An untouched file field (photoId/proofOfRelationship/proofOfOwnership)
+          // can default to {} rather than undefined — that's "no file", not a value.
+          !(typeof value === "object" && Object.keys(value).length === 0)
+        ) {
           payload[key] = value;
         }
       }
@@ -219,11 +225,12 @@ const EditVendor = () => {
                 </Button>
 
                 {isLastTab ? (
-                  <Button type="submit" disabled={isSubmitting}>
+                  <Button key="save" type="submit" disabled={isSubmitting}>
                     Save <Check className="ml-2 h-4 w-4" />
                   </Button>
                 ) : (
                   <Button
+                    key="next"
                     type="button"
                     onClick={() => setActiveTab(TAB_ORDER[currentTabIndex + 1])}
                   >

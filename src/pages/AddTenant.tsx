@@ -120,11 +120,11 @@ console.log(formData)
             </Button>
 
             {isLastStep ? (
-              <Button type="submit">
+              <Button key="submit" type="submit">
                 Submit <Check className="ml-2 h-4 w-4" />
               </Button>
             ) : (
-              <Button type="button" onClick={handleNext}>
+              <Button key="next" type="button" onClick={handleNext}>
                 Next <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             )}

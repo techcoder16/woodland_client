@@ -86,7 +86,7 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
       <div className="p-4 w-full">
         <div className="text-lg font-medium flex justify-start underline p-5">Landlord</div>
         <VendorPicker
-          label="Landlord"
+          label="Landlord *"
           name="vendor"
           watch={watch}
           setValue={setValue}
@@ -129,7 +129,7 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
         <div className="text-lg font-medium flex justify-start underline p-5">Address of property</div>
 
         <InputField setValue={setValue} label="Post Code" name="postCode" register={register} error={errors.postCode?.message?.toString()} />
-        <InputField setValue={setValue} label="Address Line 1" name="addressLine1" register={register} error={errors.addressLine1?.message?.toString()} />
+        <InputField setValue={setValue} label="Address Line 1 *" name="addressLine1" register={register} error={errors.addressLine1?.message?.toString()} />
         <InputField setValue={setValue} label="Address Line 2" name="addressLine2" register={register} error={errors.addressLine2?.message?.toString()} />
 
         <div className="space-y-1.5">
@@ -180,7 +180,7 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
         </div>
 
         <SelectField
-          label="Country"
+          label="Country *"
           setValue={setValue}
           watch={watch}
           name="country"

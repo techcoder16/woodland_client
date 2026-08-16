@@ -1,6 +1,8 @@
 import { UploadCloud, X } from "lucide-react";
 import React, { useState, useEffect, useCallback } from "react";
 import { UseFormRegister, UseFormSetValue, UseFormWatch } from "react-hook-form";
+import { renderLabel } from "./FieldLabel";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 interface FileUploadFieldProps {
   label?: string;
@@ -25,6 +27,7 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
 }) => {
   const [previews, setPreviews] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [pendingRemoveIndex, setPendingRemoveIndex] = useState<number | null>(null);
 
   const { onChange: formOnChange, ref, ...inputProps } = register(name);
 
@@ -139,7 +142,7 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
 
   return (
     <div>
-      {label && <label className="block text-muted-foreground mb-2">{label}</label>}
+      {label && <label className="block text-muted-foreground mb-2">{renderLabel(label)}</label>}
       <div
         className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-colors ${
           isDragging ? "border-primary bg-primary/5" : ""
@@ -170,20 +173,20 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
         <div className="mt-4 grid grid-cols-2 gap-2">
           {previews.map((src, index) => (
             <div key={index} className="relative group">
-              {accept.includes("image") ? (
+              {src.startsWith("data:application/pdf") ? (
+                <embed src={src} type="application/pdf" className="w-full h-64" />
+              ) : (
                 <img
                   src={src}
                   alt={`Preview ${index}`}
                   className="object-cover rounded-md shadow-sm w-full h-32"
                 />
-              ) : (
-                <embed src={src} type={accept} className="w-full h-64" />
               )}
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  removeAt(index);
+                  setPendingRemoveIndex(index);
                 }}
                 className="absolute top-1 right-1 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                 aria-label="Remove image"
@@ -194,6 +197,16 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
           ))}
         </div>
       )}
+      <ConfirmDialog
+        open={pendingRemoveIndex !== null}
+        onOpenChange={(open) => !open && setPendingRemoveIndex(null)}
+        title="Remove this file?"
+        description="This will remove the file from the form. This can't be undone once you save."
+        confirmLabel="Remove"
+        onConfirm={() => {
+          if (pendingRemoveIndex !== null) removeAt(pendingRemoveIndex);
+        }}
+      />
       {error && <p className="text-destructive text-sm mt-1">{error}</p>}
     </div>
   );

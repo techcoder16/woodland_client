@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { UseFormRegister, UseFormWatch, UseFormSetValue } from "react-hook-form";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { renderLabel } from "./FieldLabel";
 
 interface SelectFieldProps {
   label: string;
@@ -62,7 +63,7 @@ const SelectField: React.FC<SelectFieldProps> = ({
 
   return (
     <div className="space-y-1.5">
-      {label && <label className="text-muted-foreground text-sm font-medium">{label}</label>}
+      {label && <label className="text-muted-foreground text-sm font-medium">{renderLabel(label)}</label>}
 
       {/* Radix UI Select - controlled by currentValue */}
       <Select

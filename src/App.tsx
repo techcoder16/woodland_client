@@ -38,6 +38,8 @@ import DesignPreview from "./pages/_DesignPreview";
 import PartyLogin from "./pages/PartyLogin";
 import PartySetPassword from "./pages/PartySetPassword";
 import PartyMaintenance from "./pages/PartyMaintenance";
+import PartyAccount from "./pages/PartyAccount";
+import PartyProperty from "./pages/PartyProperty";
 import PartyProtectedRoute from "@/components/PartyProtectedRoute";
 function App() {
   const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -190,6 +192,12 @@ function App() {
                   <Route path="/landlord/maintenance" element={
                     <PartyProtectedRoute kind="vendor"><PartyMaintenance kind="vendor" /></PartyProtectedRoute>
                   } />
+                  <Route path="/landlord/account" element={
+                    <PartyProtectedRoute kind="vendor"><PartyAccount kind="vendor" /></PartyProtectedRoute>
+                  } />
+                  <Route path="/landlord/property" element={
+                    <PartyProtectedRoute kind="vendor"><PartyProperty kind="vendor" /></PartyProtectedRoute>
+                  } />
 
                   {/* Tenant portal */}
                   <Route path="/tenant/login" element={<PartyLogin kind="tenant" />} />
@@ -199,6 +207,12 @@ function App() {
                   <Route path="/tenant/maintenance" element={
                     <PartyProtectedRoute kind="tenant"><PartyMaintenance kind="tenant" /></PartyProtectedRoute>
                   } />
+                  <Route path="/tenant/account" element={
+                    <PartyProtectedRoute kind="tenant"><PartyAccount kind="tenant" /></PartyProtectedRoute>
+                  } />
+                  <Route path="/tenant/property" element={
+                    <PartyProtectedRoute kind="tenant"><PartyProperty kind="tenant" /></PartyProtectedRoute>
+                  } />
 
                   {/* Contractor portal */}
                   <Route path="/contractor/login" element={<PartyLogin kind="contractor" />} />
@@ -207,6 +221,9 @@ function App() {
                   } />
                   <Route path="/contractor/maintenance" element={
                     <PartyProtectedRoute kind="contractor"><PartyMaintenance kind="contractor" /></PartyProtectedRoute>
+                  } />
+                  <Route path="/contractor/account" element={
+                    <PartyProtectedRoute kind="contractor"><PartyAccount kind="contractor" /></PartyProtectedRoute>
                   } />
 
                 {/* Redirect unknown routes to login */}

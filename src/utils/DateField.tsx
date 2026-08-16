@@ -3,6 +3,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { renderLabel } from "./FieldLabel";
 export const DateField = ({
   label,
   value,
@@ -19,7 +20,7 @@ export const DateField = ({
   disabled?: boolean;
 }) => (
   <div className="space-y-4">
-    <label className="block text-sm font-medium text-muted-foreground">{label}</label>
+    <label className="block text-sm font-medium text-muted-foreground">{renderLabel(label)}</label>
     <Popover>
       <PopoverTrigger asChild disabled={disabled}>
         <Button

@@ -142,7 +142,7 @@ const EditTransaction = ({ isOpen, onClose, propertyId ,transaction}: EditTransa
 
             <form onSubmit={handleSubmit(onSubmit)}>{steps[currentStep].component}
               <div className="flex justify-between pt-6">
-                {isLastStep ? <Button type="submit">Submit <Check className="ml-2 h-4 w-4" /></Button> : <Button type="button" onClick={() => setCurrentStep(currentStep + 1)}>Next <ArrowRight className="ml-2 h-4 w-4" /></Button>}
+                {isLastStep ? <Button key="submit" type="submit">Submit <Check className="ml-2 h-4 w-4" /></Button> : <Button key="next" type="button" onClick={() => setCurrentStep(currentStep + 1)}>Next <ArrowRight className="ml-2 h-4 w-4" /></Button>}
               </div>
             </form>
          

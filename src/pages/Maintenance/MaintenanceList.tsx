@@ -7,6 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import InputField from "@/utils/InputField";
 import TextAreaField from "@/utils/TextAreaField";
 import SelectField from "@/utils/SelectedField";
@@ -16,6 +24,7 @@ import { Plus, Trash2, Search, Phone, Mail, User2, CheckCircle2 } from "lucide-r
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
 import { get } from "@/helper/api";
+import { formatLocalDate } from "@/helper/formatLocalDate";
 import {
   fetchJobTypes,
   createJobType,
@@ -27,6 +36,8 @@ import {
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/context/AuthContext";
 import { Department } from "@/types/permissions";
+import FileUploadField from "@/utils/FileUploadField";
+import { JOB_TYPE_OPTIONS, JOB_LOCATION_OPTIONS, JOB_SCHEDULE_OPTIONS } from "@/helper/jobTypeOptions";
 
 // Matches what CreateJobTypeDto actually persists on create — the backend
 // always forces status: QUOTING and ignores contractorId/dates/status here;
@@ -34,12 +45,14 @@ import { Department } from "@/types/permissions";
 const maintenanceSchema = z.object({
   propertyId: z.string().min(1, "Property is required"),
   jobType: z.string().min(1, "Type is required"),
+  location: z.string().min(1, "Location is required"),
   description: z.string().min(1, "Description is required"),
   dueDate: z.string().min(1, "Due date is required"),
   schedule: z.string().optional(),
   time: z.string().optional(),
   thingsToDo: z.string().optional(),
   priority: z.string().optional(),
+  media: z.array(z.string()).min(1, "At least one photo is required"),
 });
 
 type MaintenanceFormData = z.infer<typeof maintenanceSchema>;
@@ -63,6 +76,7 @@ const STATUS_LABELS: Record<ReportingStatus, string> = {
   QUOTING: "Quoting",
   ASSIGNED: "Assigned",
   IN_PROGRESS: "In Progress",
+  CONTRACTOR_DONE: "Pending",
   COMPLETED: "Completed",
   CANCELLED: "Cancelled",
 };
@@ -70,6 +84,7 @@ const STATUS_LABELS: Record<ReportingStatus, string> = {
 const getStatusBadgeVariant = (status: ReportingStatus) => {
   switch (status) {
     case "COMPLETED": return "default";
+    case "CONTRACTOR_DONE":
     case "ASSIGNED":
     case "IN_PROGRESS": return "secondary";
     case "QUOTING": return "destructive";
@@ -85,10 +100,23 @@ const formatAddress = (property?: JobType["property"]) => {
     .join(", ");
 };
 
+const AddressCell = ({ property }: { property?: JobType["property"] }) => {
+  if (!property) return <span className="text-muted-foreground">-</span>;
+  const line2 = [property.town, property.postCode].filter(Boolean).join(", ");
+  return (
+    <div className="min-w-[10rem] max-w-[16rem]">
+      <div className="font-medium leading-snug">
+        {[property.addressLine1, property.addressLine2].filter(Boolean).join(", ") || "-"}
+      </div>
+      {line2 && <div className="text-xs text-muted-foreground leading-snug">{line2}</div>}
+    </div>
+  );
+};
+
 const MaintenanceList = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { jobTypes, loading } = useAppSelector((state) => state.jobTypes);
+  const { jobTypes, loading, totalPages } = useAppSelector((state) => state.jobTypes);
   const { isDepartmentAdmin } = useAuth();
   const canManageMaintenance = isDepartmentAdmin(Department.Maintenance);
 
@@ -97,10 +125,24 @@ const MaintenanceList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<ReportingStatus | "">("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Changing the status filter always resets to page 1 — combined into one
+  // effect (rather than a separate "reset page" effect + "fetch" effect) so
+  // there's no race between two effects dispatching fetchJobTypes with two
+  // different page numbers for the same filter change, where the stale
+  // request could resolve after the correct one and overwrite it.
+  useEffect(() => {
+    setCurrentPage(1);
+    dispatch(fetchJobTypes({ page: 1, limit: 20, status: statusFilter || undefined }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch, statusFilter]);
 
   useEffect(() => {
-    dispatch(fetchJobTypes({ page: 1, status: statusFilter || undefined }));
-  }, [dispatch, statusFilter]);
+    if (currentPage === 1) return; // already fetched by the effect above
+    dispatch(fetchJobTypes({ page: currentPage, limit: 20, status: statusFilter || undefined }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch, currentPage]);
 
   useEffect(() => {
     (async () => {
@@ -132,7 +174,7 @@ const MaintenanceList = () => {
   });
 
   const handleDateChange = (field: keyof MaintenanceFormData, date: Date) => {
-    setValue(field, date.toISOString().split("T")[0]);
+    setValue(field, formatLocalDate(date));
   };
 
   const closeDialog = () => {
@@ -148,19 +190,22 @@ const MaintenanceList = () => {
       const payload: Omit<JobType, "id"> = {
         propertyId: data.propertyId,
         jobType: data.jobType,
+        location: data.location,
         description: data.description,
         dueDate: data.dueDate,
         schedule: data.schedule,
         time: data.time,
         thingsToDo: data.thingsToDo,
         priority: data.priority,
+        media: data.media,
         status: "QUOTING",
       };
 
       await dispatch(createJobType(payload));
       toast.success("Maintenance job created successfully");
 
-      dispatch(fetchJobTypes({ page: 1, status: statusFilter || undefined }));
+      setCurrentPage(1);
+      dispatch(fetchJobTypes({ page: 1, limit: 20, status: statusFilter || undefined }));
       closeDialog();
     } catch (error) {
       toast.error("Error saving maintenance job");
@@ -172,7 +217,7 @@ const MaintenanceList = () => {
     try {
       await dispatch(deleteJobType({ id: job.id, propertyId: job.propertyId }));
       toast.success("Maintenance job deleted successfully");
-      dispatch(fetchJobTypes({ page: 1, status: statusFilter || undefined }));
+      dispatch(fetchJobTypes({ page: currentPage, limit: 20, status: statusFilter || undefined }));
     } catch (error) {
       toast.error("Error deleting maintenance job");
     }
@@ -184,11 +229,11 @@ const MaintenanceList = () => {
       await dispatch(
         updateJobType({
           id: job.id,
-          jobTypeData: { propertyId: job.propertyId, dateDone: new Date().toISOString().split("T")[0], status: "COMPLETED" },
+          jobTypeData: { propertyId: job.propertyId, dateDone: formatLocalDate(new Date()), status: "COMPLETED" },
         })
       );
       toast.success("Maintenance job marked as done");
-      dispatch(fetchJobTypes({ page: 1, status: statusFilter || undefined }));
+      dispatch(fetchJobTypes({ page: currentPage, limit: 20, status: statusFilter || undefined }));
     } catch (error) {
       toast.error("Error completing maintenance job");
     }
@@ -233,51 +278,74 @@ const MaintenanceList = () => {
                 />
 
                 <div className="grid grid-cols-2 gap-4">
-                  <InputField
-                    label="Type"
+                  <SelectField
+                    label="Type *"
                     name="jobType"
                     register={register}
                     setValue={setValue}
+                    watch={watch}
                     error={errors.jobType?.message}
-                    placeholder="e.g., Leak, Broken window"
+                    options={JOB_TYPE_OPTIONS.map((o) => ({ value: o, label: o }))}
                   />
                   <SelectField
-                    label="Priority"
-                    name="priority"
+                    label="Location *"
+                    name="location"
                     register={register}
                     setValue={setValue}
                     watch={watch}
-                    error={errors.priority?.message}
-                    options={[
-                      { value: "Low", label: "Low" },
-                      { value: "Medium", label: "Medium" },
-                      { value: "Critical", label: "Critical" },
-                    ]}
+                    error={errors.location?.message}
+                    options={JOB_LOCATION_OPTIONS.map((o) => ({ value: o, label: o }))}
                   />
                 </div>
 
+                <SelectField
+                  label="Priority"
+                  name="priority"
+                  register={register}
+                  setValue={setValue}
+                  watch={watch}
+                  error={errors.priority?.message}
+                  options={[
+                    { value: "Low", label: "Low" },
+                    { value: "Medium", label: "Medium" },
+                    { value: "Critical", label: "Critical" },
+                  ]}
+                />
+
                 <TextAreaField
-                  label="Description"
+                  label="Description *"
                   name="description"
                   register={register}
                   error={errors.description?.message}
                   placeholder="Describe the issue..."
                 />
 
+                <FileUploadField
+                  label="Photos *"
+                  name="media"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  register={register}
+                  setValue={setValue}
+                  watch={watch}
+                  error={errors.media?.message as string | undefined}
+                />
+
                 <div className="grid grid-cols-3 gap-4">
                   <DateField
-                    label="Due Date"
+                    label="Due Date *"
                     value={watch("dueDate") || ""}
                     onChange={(date) => handleDateChange("dueDate", date)}
                     error={errors.dueDate?.message}
                   />
-                  <InputField
+                  <SelectField
                     label="Schedule"
                     name="schedule"
                     register={register}
                     setValue={setValue}
+                    watch={watch}
                     error={errors.schedule?.message}
-                    placeholder="e.g., One-off, Monthly"
+                    options={JOB_SCHEDULE_OPTIONS.map((o) => ({ value: o, label: o }))}
                   />
                   <InputField
                     label="Arrival Time"
@@ -325,7 +393,7 @@ const MaintenanceList = () => {
             />
           </div>
           <div className="flex items-center gap-2">
-            {(["", "QUOTING", "ASSIGNED", "IN_PROGRESS", "COMPLETED", "CANCELLED"] as const).map((status) => (
+            {(["", "QUOTING", "ASSIGNED", "IN_PROGRESS", "CONTRACTOR_DONE", "COMPLETED", "CANCELLED"] as const).map((status) => (
               <Button
                 key={status || "all"}
                 variant={statusFilter === status ? "default" : "outline"}
@@ -376,7 +444,9 @@ const MaintenanceList = () => {
                           <td className="px-4 py-3 text-sm whitespace-nowrap">
                             {job.createdAt ? new Date(job.createdAt).toLocaleDateString() : "-"}
                           </td>
-                          <td className="px-4 py-3 text-sm">{formatAddress(job.property)}</td>
+                          <td className="px-4 py-3 text-sm">
+                            <AddressCell property={job.property} />
+                          </td>
                           <td className="px-4 py-3 text-sm">
                             {vendor ? (
                               <div className="space-y-0.5">
@@ -439,6 +509,29 @@ const MaintenanceList = () => {
             </div>
           </CardContent>
         </Card>
+
+        {totalPages > 1 && (
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))} />
+              </PaginationItem>
+              {Array.from({ length: totalPages }, (_, index) => (
+                <PaginationItem key={index}>
+                  <PaginationLink
+                    onClick={() => setCurrentPage(index + 1)}
+                    isActive={currentPage === index + 1}
+                  >
+                    {index + 1}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+              <PaginationItem>
+                <PaginationNext onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))} />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        )}
       </div>
     </DashboardLayout>
   );

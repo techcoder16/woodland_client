@@ -9,9 +9,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import TextAreaField from "@/utils/TextAreaField";
 import { DateField } from "@/utils/DateField";
-import EmployeeDropdown from "@/components/EmployeeDropdown";
 import { Plus, Edit, Trash2, User } from "lucide-react";
 import Notes from "./Notes";
+import { useAuth } from "@/context/AuthContext";
 
 const noteSchema = z.object({
   content: z.string().min(1, "Note content is required"),
@@ -39,6 +39,7 @@ const NotesStep: React.FC<NotesStepProps> = ({ propertyId, property, mode = "edi
     return <Notes propertyId={propertyId} property={property} />;
   }
 
+  const { user } = useAuth();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingLocalId, setEditingLocalId] = useState<string | null>(null);
 
@@ -89,7 +90,17 @@ const NotesStep: React.FC<NotesStepProps> = ({ propertyId, property, mode = "edi
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Property Notes</h3>
-        <Dialog open={isDialogOpen} onOpenChange={(open) => (open ? setIsDialogOpen(true) : closeDialog())}>
+        <Dialog
+          open={isDialogOpen}
+          onOpenChange={(open) => {
+            if (open) {
+              setIsDialogOpen(true);
+              if (user?.id) setValue("employeeId", user.id);
+            } else {
+              closeDialog();
+            }
+          }}
+        >
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
@@ -115,15 +126,13 @@ const NotesStep: React.FC<NotesStepProps> = ({ propertyId, property, mode = "edi
                   onChange={handleDateChange}
                   error={errors.date?.message}
                 />
-                <EmployeeDropdown
-                  label="Employee"
-                  onEmployeeSelect={(employeeId) => setValue("employeeId", employeeId || "")}
-                  selectedEmployeeId={watch("employeeId")}
-                  placeholder="Select an employee"
-                  required
-                />
+                <div className="space-y-1.5">
+                  <label className="text-muted-foreground font-medium text-sm">Added by</label>
+                  <p className="text-sm py-2">
+                    {user ? `${user.first_name} ${user.last_name}`.trim() || user.email : "-"}
+                  </p>
+                </div>
               </div>
-              {errors.employeeId && <p className="text-sm text-destructive">{errors.employeeId.message}</p>}
               <TextAreaField
                 label="Additional Details"
                 name="detail"

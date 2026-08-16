@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { FieldValues, UseFormRegister, UseFormSetValue } from "react-hook-form";
 import { Input } from "@/components/ui/input";
+import { renderLabel } from "./FieldLabel";
 
 interface InputFieldProps {
   label: string;
@@ -62,7 +63,7 @@ const InputField: React.FC<InputFieldProps> = ({
 
   return (
     <div className="space-y-1.5">
-      {label && <label className="text-muted-foreground font-medium text-sm">{label}</label>}
+      {label && <label className="text-muted-foreground font-medium text-sm">{renderLabel(label)}</label>}
       <Input
         type={type}
         ref={inputRef}

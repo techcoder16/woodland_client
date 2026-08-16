@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -10,6 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { partyLogin, PartyKind } from "@/helper/partyAuth";
+import logo from "@/assets/logo.png";
+import wall2 from "@/assets/wall2.jpg";
+import wall3 from "@/assets/wall3.jpg";
+import wall5 from "@/assets/wall5.jpg";
+import wall6 from "@/assets/wall6.jpg";
+
+const BACKGROUND_IMAGES = [wall2, wall3, wall5, wall6];
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }).min(1, "Email is required"),
@@ -37,9 +44,20 @@ const KIND_SET_PASSWORD: Record<PartyKind, string> = {
 const PartyLogin = ({ kind }: { kind: PartyKind }) => {
   const navigate = useNavigate();
   const [progress, setProgress] = useState(0);
+  const [currentImage, setCurrentImage] = useState(BACKGROUND_IMAGES[0]);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const label = KIND_LABELS[kind];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImage((prevImage) => {
+        const currentIndex = BACKGROUND_IMAGES.indexOf(prevImage);
+        return BACKGROUND_IMAGES[(currentIndex + 1) % BACKGROUND_IMAGES.length];
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const {
     register,
@@ -66,12 +84,19 @@ const PartyLogin = ({ kind }: { kind: PartyKind }) => {
   return (
     <>
       <LoadingBar color="hsl(0, 81%, 43%)" progress={progress} onLoaderFinished={() => setProgress(0)} />
-      <div className="min-h-screen flex items-center justify-center bg-muted/40">
-        <div className="glass-card rounded-xl p-6 w-full max-w-md mx-auto border bg-background">
+      <div
+        style={{
+          backgroundImage: `url(${currentImage})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          transition: "background-image 1s ease-in-out",
+        }}
+        className="min-h-screen flex items-center justify-center relative"
+      >
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-md" />
+        <div className="glass-card rounded-xl p-6 w-full max-w-md mx-auto relative">
           <div className="space-y-2 text-center">
-            <div className="mx-auto h-12 w-12 rounded-full bg-primary flex items-center justify-center">
-              <span className="text-white font-bold text-lg">W</span>
-            </div>
+            <img src={logo} alt="Woodland" className="mx-auto h-12 w-auto" />
             <h1 className="text-2xl font-bold tracking-tight">{label} Portal</h1>
             <p className="text-sm text-muted-foreground">Enter your credentials to access your account</p>
           </div>

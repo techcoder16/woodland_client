@@ -148,11 +148,11 @@ const EditTenant = ({ isOpen, onClose, propertyId, tenant }: EditTenantModalProp
               <ArrowLeft className="mr-2 h-4 w-4" /> Previous
             </Button>
             {isLastStep ? (
-              <Button type="submit">
+              <Button key="submit" type="submit">
                 Submit <Check className="ml-2 h-4 w-4" />
               </Button>
             ) : (
-              <Button type="button" onClick={() => setCurrentStep(currentStep + 1)}>
+              <Button key="next" type="button" onClick={() => setCurrentStep(currentStep + 1)}>
                 Next <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             )}

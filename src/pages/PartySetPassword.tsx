@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { partyChangePassword, PartyKind } from "@/helper/partyAuth";
+import logo from "@/assets/logo.png";
 
 const formSchema = z
   .object({
@@ -52,6 +53,7 @@ const PartySetPassword = ({ kind }: { kind: PartyKind }) => {
     <div className="min-h-screen flex items-center justify-center bg-muted/40">
       <div className="glass-card rounded-xl p-6 w-full max-w-md mx-auto border bg-background">
         <div className="space-y-2 text-center">
+          <img src={logo} alt="Woodland" className="mx-auto h-12 w-auto" />
           <h1 className="text-2xl font-bold tracking-tight">Set a new password</h1>
           <p className="text-sm text-muted-foreground">
             You're using a temporary password. Please set a new one to continue.

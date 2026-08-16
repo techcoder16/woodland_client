@@ -130,6 +130,25 @@ const EditProperty = () => {
 
   const handlePrevious = () => setCurrentStep((prev) => Math.max(prev - 1, 0));
 
+  const handleStepClick = async (index: number) => {
+    if (index === currentStep) return;
+    if (index < currentStep) {
+      setCurrentStep(index);
+      return;
+    }
+    const isValid = await form.trigger(STEP_FIELDS[currentStep] as any, { shouldFocus: true });
+    if (!isValid) {
+      toast({
+        title: "Validation Error",
+        description: "Please fix the highlighted fields on this step before proceeding.",
+        variant: "destructive",
+      });
+      return;
+    }
+    form.clearErrors();
+    setCurrentStep(index);
+  };
+
   const onSubmit = async (data: FormData, isDraft: boolean = false) => {
     if (!isDraft) {
       const isValid = await form.trigger();
@@ -220,14 +239,19 @@ const EditProperty = () => {
           <div className="mb-8">
             <div className="flex justify-between items-center mb-4">
               {STEP_LABELS.map((label, index) => (
-                <div key={index} className="flex-1 text-center">
+                <button
+                  type="button"
+                  key={index}
+                  onClick={() => handleStepClick(index)}
+                  className="flex-1 text-center cursor-pointer"
+                >
                   <div
                     className={`w-9 h-9 rounded-full mx-auto mb-2 flex items-center justify-center text-sm font-medium transition-colors ${
                       index < currentStep
                         ? "bg-primary text-primary-foreground"
                         : index === currentStep
                         ? "bg-primary text-primary-foreground ring-4 ring-primary/20"
-                        : "bg-secondary text-muted-foreground"
+                        : "bg-secondary text-muted-foreground hover:bg-secondary/80"
                     }`}
                   >
                     {index < currentStep ? <Check className="h-4 w-4" /> : index + 1}
@@ -235,7 +259,7 @@ const EditProperty = () => {
                   <p className={`text-xs font-medium ${index <= currentStep ? "text-foreground" : "text-muted-foreground"}`}>
                     {label}
                   </p>
-                </div>
+                </button>
               ))}
             </div>
             <Progress value={((currentStep + 1) / STEP_LABELS.length) * 100} className="h-1.5" />

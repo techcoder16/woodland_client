@@ -14,6 +14,7 @@ import SelectField from "@/utils/SelectedField";
 import { DateField } from "@/utils/DateField";
 import EmployeeDropdown from "@/components/EmployeeDropdown";
 import ContractorPicker from "@/utils/ContractorPicker";
+import { useAuth } from "@/context/AuthContext";
 import { StickyNote, Plus, Edit, Trash2, Calendar, User } from "lucide-react";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
@@ -79,6 +80,7 @@ interface NotesProps {
 
 const Notes = ({ propertyId, property }: NotesProps) => {
   const dispatch = useAppDispatch();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<"notes" | "jobtypes">("notes");
   const [isJobTypeDialogOpen, setIsJobTypeDialogOpen] = useState(false);
   const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
@@ -338,6 +340,7 @@ const Notes = ({ propertyId, property }: NotesProps) => {
               if (open) {
                 setIsNoteDialogOpen(true);
                 setEditingNote(null);
+                if (user?.id) setNoteValue("employeeId", user.id);
               } else {
                 handleNoteDialogClose();
               }
@@ -369,16 +372,12 @@ const Notes = ({ propertyId, property }: NotesProps) => {
                       onChange={(date) => handleNoteDateChange("date", date)}
                       error={errorsNote.date?.message}
                     />
-                    <EmployeeDropdown
-                      label="Employee"
-                      onEmployeeSelect={(employeeId) => setNoteValue("employeeId", employeeId || "")}
-                      selectedEmployeeId={watchNote("employeeId")}
-                      placeholder="Select an employee"
-                      required={true}
-                    />
-                    {errorsNote.employeeId && (
-                      <p className="text-sm text-destructive">{errorsNote.employeeId.message}</p>
-                    )}
+                    <div className="space-y-1.5">
+                      <label className="text-muted-foreground font-medium text-sm">Added by</label>
+                      <p className="text-sm py-2">
+                        {user ? `${user.first_name} ${user.last_name}`.trim() || user.email : "-"}
+                      </p>
+                    </div>
                   </div>
                   <RichTextEditor
                     label="Additional Details"

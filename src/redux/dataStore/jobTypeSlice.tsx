@@ -5,13 +5,14 @@ import getApi from "@/helper/getApi";
 import { AppDispatch } from "../store";
 import { post, patch, del } from "@/helper/api";
 
-export type ReportingStatus = "QUOTING" | "ASSIGNED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+export type ReportingStatus = "QUOTING" | "ASSIGNED" | "IN_PROGRESS" | "CONTRACTOR_DONE" | "COMPLETED" | "CANCELLED";
 
 // Define JobType interface
 export interface JobType {
   id?: string;
   propertyId: string;
   jobType: string;
+  location?: string;
   description: string;
   dueDate: string;
   schedule?: string;
@@ -24,8 +25,11 @@ export interface JobType {
   priority?: string;
   dateDone?: string;
   media?: string[];
-  totalCost?: number;
-  totalCharged?: number;
+  invoice?: string | null;
+  totalCost?: number | null;
+  totalCharged?: number | null;
+  marginPercent?: number | null;
+  marginAmount?: number | null;
   status: ReportingStatus;
   createdAt?: string;
   updatedAt?: string;

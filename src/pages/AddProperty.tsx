@@ -182,6 +182,28 @@ const AddProperty = () => {
 
   const handlePrevious = () => setCurrentStep((prev) => Math.max(prev - 1, 0));
 
+  const handleStepClick = async (index: number) => {
+    if (index === currentStep) return;
+    // Jumping backward never needs validation — the data already entered is
+    // still there. Jumping forward past the current step must validate the
+    // current step's fields first, same rule as the Next button.
+    if (index < currentStep) {
+      setCurrentStep(index);
+      return;
+    }
+    const isValid = await form.trigger(STEP_FIELDS[currentStep] as any, { shouldFocus: true });
+    if (!isValid) {
+      toast({
+        title: "Validation Error",
+        description: "Please fix the highlighted fields on this step before proceeding.",
+        variant: "destructive",
+      });
+      return;
+    }
+    form.clearErrors();
+    setCurrentStep(index);
+  };
+
   const activeErrors = form.formState.errors;
   const noErrors = {};
 
@@ -202,12 +224,17 @@ const AddProperty = () => {
           <div className="mb-8">
             <div className="flex justify-between items-center mb-4">
               {STEP_LABELS.map((label, index) => (
-                <div key={index} className="flex-1 text-center">
-                  <div className={`w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center ${index <= currentStep ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>
+                <button
+                  type="button"
+                  key={index}
+                  onClick={() => handleStepClick(index)}
+                  className="flex-1 text-center cursor-pointer"
+                >
+                  <div className={`w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center transition-colors ${index <= currentStep ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}>
                     {index < currentStep ? <Check className="h-5 w-5" /> : index + 1}
                   </div>
                   <p className={`text-sm ${index <= currentStep ? "text-primary" : "text-muted-foreground"}`}>{label}</p>
-                </div>
+                </button>
               ))}
             </div>
             <Progress value={((currentStep + 1) / STEP_LABELS.length) * 100} className="h-2" />

@@ -15,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { fetchVendors } from "@/redux/dataStore/vendorSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
+import { renderLabel } from "./FieldLabel";
 
 interface VendorOption {
   value: string;
@@ -77,7 +78,7 @@ const VendorPicker: React.FC<VendorPickerProps> = ({
 
   return (
     <div className="space-y-1.5">
-      <label className="text-muted-foreground font-medium text-sm">{label}</label>
+      <label className="text-muted-foreground font-medium text-sm">{renderLabel(label)}</label>
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <Button

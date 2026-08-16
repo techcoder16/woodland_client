@@ -32,18 +32,8 @@ z.object({
   town: z.string().nullable().default(null).describe("Town is required."),
   country: z.string().nullable().default(null).transform(val => val ?? "").pipe(z.string().min(1, "Country is required.")),
 
-  photographs: z.string()
-    .regex(/^data:image\/[a-zA-Z+]+;base64,/, {
-      message: "Only valid image files in Base64 format are allowed.",
-    })
-    .or(z.literal(""))
-    .nullable().optional(),
-  floorPlans: z.string()
-    .regex(/^data:image\/[a-zA-Z+]+;base64,/, {
-      message: "Only valid floor plan images in Base64 format are allowed.",
-    })
-    .or(z.literal(""))
-    .nullable().optional(),
+  photographs: z.any().nullable().optional(),
+  floorPlans: z.any().nullable().optional(),
 
   epcCertificate: z.any().nullable().optional(),
   gasCertificate: z.any().nullable().optional(),

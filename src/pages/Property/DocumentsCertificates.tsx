@@ -16,7 +16,7 @@ const DocumentsCertificates = ({ register, watch, setValue, errors }: DocumentsC
           <FileUploadField
             label="Photograph"
             name="photographs"
-            accept="image/*"
+            accept="image/*,.pdf"
             multiple={false}
             register={register}
             setValue={setValue}
@@ -26,7 +26,7 @@ const DocumentsCertificates = ({ register, watch, setValue, errors }: DocumentsC
           <FileUploadField
             label="Floor Plan"
             name="floorPlans"
-            accept="image/*"
+            accept="image/*,.pdf"
             multiple={false}
             register={register}
             setValue={setValue}
