@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import countriesData from '../../data/counteries.json';
 import { useAppSelector } from '@/redux/reduxHooks';
+import AddressSearchField from '@/components/AddressSearchField';
 
 import { TOWN_AREA } from '@/lib/constant';
 
@@ -127,6 +128,19 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
 
       <div className="p-4 w-full">
         <div className="text-lg font-medium flex justify-start underline p-5">Address of property</div>
+
+        <AddressSearchField
+          onSelect={(address) => {
+            if (address.addressLine1) setValue('addressLine1', address.addressLine1, { shouldValidate: true });
+            if (address.addressLine2) setValue('addressLine2', address.addressLine2);
+            if (address.town) setValue('town', address.town);
+            if (address.postCode) setValue('postCode', address.postCode);
+            // Ideal Postcodes returns England/Wales/Scotland/Northern Ireland;
+            // the country field only offers "GB" as an option, so normalize.
+            setValue('country', 'GB', { shouldValidate: true });
+            clearErrors(['addressLine1', 'country']);
+          }}
+        />
 
         <InputField setValue={setValue} label="Post Code" name="postCode" register={register} error={errors.postCode?.message?.toString()} />
         <InputField setValue={setValue} label="Address Line 1 *" name="addressLine1" register={register} error={errors.addressLine1?.message?.toString()} />

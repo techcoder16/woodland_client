@@ -175,12 +175,17 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
             <div key={index} className="relative group">
               {src.startsWith("data:application/pdf") ? (
                 <embed src={src} type="application/pdf" className="w-full h-64" />
-              ) : (
+              ) : src.startsWith("data:image/") ? (
                 <img
                   src={src}
-                  alt={`Preview ${index}`}
+                  alt=""
                   className="object-cover rounded-md shadow-sm w-full h-32"
+                  onError={() => console.error(`FileUploadField(${name}): preview ${index} failed to load; value starts with "${src.slice(0, 30)}"`)}
                 />
+              ) : (
+                <div className="w-full h-32 rounded-md border border-dashed flex items-center justify-center text-xs text-muted-foreground p-2 text-center">
+                  File attached — preview unavailable
+                </div>
               )}
               <button
                 type="button"
