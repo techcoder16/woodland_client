@@ -13,7 +13,7 @@ import { Check, ArrowLeft, ArrowRight, AlertCircle } from "lucide-react";
 import LoadingBar from "react-top-loading-bar";
 import PropertyInfo from "./Property/PropertyInfo";
 import DocumentsCertificates from "./Property/DocumentsCertificates";
-import RentalAgreement from "./Property/RentalAgreement";
+import ManagementAgreementStep from "./Property/ManagementAgreementStep";
 import NotesStep, { DraftNote } from "./Manager/NotesStep";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { post, patch } from "@/helper/api";
@@ -25,7 +25,7 @@ import { createNote } from "@/redux/dataStore/noteSlice";
 const STEP_LABELS = [
   "Standard Info",
   "Documents/Certificates",
-  "Rental Agreement",
+  "Management Agreement",
   "Notes",
 ] as const;
 
@@ -249,7 +249,7 @@ const AddProperty = () => {
                 <DocumentsCertificates watch={watch} register={form.register} errors={currentStep === 1 ? activeErrors : noErrors} setValue={form.setValue} />
               </div>
               <div className={currentStep !== 2 ? "hidden" : ""}>
-                <RentalAgreement watch={watch} register={form.register} errors={currentStep === 2 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
+                <ManagementAgreementStep watch={watch} register={form.register} errors={currentStep === 2 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
               </div>
               {currentStep === 3 && (
                 savedProperty?.id ? (

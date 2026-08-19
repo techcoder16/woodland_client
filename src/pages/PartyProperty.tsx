@@ -6,7 +6,7 @@ import { FileText } from "lucide-react";
 import { toast } from "sonner";
 import { partyGet, getPartyInfo, PartyKind } from "@/helper/partyAuth";
 import PartyDashboardLayout from "@/components/layout/PartyDashboardLayout";
-import { generateRentalAgreementPdf } from "@/helper/generateRentalAgreement";
+import { generateManagementAgreementPdf } from "@/helper/generateManagementAgreement";
 
 interface RoomRow {
   name: string;
@@ -77,14 +77,14 @@ const PropertyDetail = ({ kind, property }: { kind: PartyKind; property: Propert
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [property.id]);
 
-  const handleGenerateRentalAgreement = async () => {
+  const handleGenerateManagementAgreement = async () => {
     const party = await getPartyInfo(kind);
     const vendorName =
       kind === "vendor"
         ? [party?.firstName, party?.lastName].filter(Boolean).join(" ")
         : undefined;
 
-    generateRentalAgreementPdf({
+    generateManagementAgreementPdf({
       addressLine1: property.addressLine1,
       addressLine2: property.addressLine2,
       town: property.town,
@@ -229,9 +229,9 @@ const PropertyDetail = ({ kind, property }: { kind: PartyKind; property: Propert
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={handleGenerateRentalAgreement}>
+          <Button type="button" variant="outline" size="sm" onClick={handleGenerateManagementAgreement}>
             <FileText className="h-4 w-4 mr-2" />
-            Rental Agreement
+            Management Agreement
           </Button>
         </div>
       </CardContent>

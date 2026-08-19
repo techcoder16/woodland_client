@@ -12,7 +12,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import LoadingBar from "react-top-loading-bar";
 import PropertyInfo from "./Property/PropertyInfo";
 import DocumentsCertificates from "./Property/DocumentsCertificates";
-import RentalAgreement from "./Property/RentalAgreement";
+import ManagementAgreementStep from "./Property/ManagementAgreementStep";
 import NotesStep from "./Manager/NotesStep";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { patch } from "@/helper/api";
@@ -23,7 +23,7 @@ import { parseApiError } from "@/helper/parseApiError";
 const STEP_LABELS = [
   "Standard Info",
   "Documents/Certificates",
-  "Rental Agreement",
+  "Management Agreement",
   "Notes",
 ] as const;
 
@@ -274,7 +274,7 @@ const EditProperty = () => {
                 <DocumentsCertificates watch={watch} register={form.register} errors={currentStep === 1 ? activeErrors : noErrors} setValue={form.setValue} />
               </div>
               <div className={currentStep !== 2 ? "hidden" : ""}>
-                <RentalAgreement watch={watch} register={form.register} errors={currentStep === 2 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
+                <ManagementAgreementStep watch={watch} register={form.register} errors={currentStep === 2 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
               </div>
               {currentStep === 3 && (
                 <NotesStep propertyId={property.id} property={property} />

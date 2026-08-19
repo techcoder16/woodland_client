@@ -4,9 +4,9 @@ import TextAreaField from "@/utils/TextAreaField";
 import { DateField } from "@/utils/DateField";
 import { Button } from "@/components/ui/button";
 import { FileText } from "lucide-react";
-import { generateRentalAgreementPdf } from "@/helper/generateRentalAgreement";
+import { generateManagementAgreementPdf } from "@/helper/generateManagementAgreement";
 
-interface RentalAgreementProps {
+interface ManagementAgreementStepProps {
   register: any;
   watch: any;
   setValue: any;
@@ -21,11 +21,11 @@ const PAYABLE_IN_ADVANCE_OPTIONS = [
   { value: "1_year", label: "1 Year" },
 ];
 
-const RentalAgreement = ({ register, watch, setValue, clearErrors, errors }: RentalAgreementProps) => {
+const ManagementAgreementStep = ({ register, watch, setValue, clearErrors, errors }: ManagementAgreementStepProps) => {
   return (
     <div className="w-full">
       <div className="p-4 w-full">
-        <div className="text-lg font-medium flex justify-start underline p-5">Rental Agreement</div>
+        <div className="text-lg font-medium flex justify-start underline p-5">Management Agreement</div>
 
         <DateField
           label="Rent Effective Date"
@@ -73,7 +73,7 @@ const RentalAgreement = ({ register, watch, setValue, clearErrors, errors }: Ren
             type="button"
             variant="outline"
             onClick={() =>
-              generateRentalAgreementPdf({
+              generateManagementAgreementPdf({
                 addressLine1: watch("addressLine1"),
                 addressLine2: watch("addressLine2"),
                 town: watch("town"),
@@ -94,4 +94,4 @@ const RentalAgreement = ({ register, watch, setValue, clearErrors, errors }: Ren
   );
 };
 
-export default RentalAgreement;
+export default ManagementAgreementStep;

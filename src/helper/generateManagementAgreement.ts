@@ -1,6 +1,6 @@
 import { LOGO_BASE64 } from "./logoBase64";
 
-interface RentalAgreementData {
+interface ManagementAgreementData {
   addressLine1?: string;
   addressLine2?: string;
   town?: string;
@@ -26,7 +26,7 @@ function formatDate(value?: string): string {
   return d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
 }
 
-export function generateRentalAgreementPdf(data: RentalAgreementData) {
+export function generateManagementAgreementPdf(data: ManagementAgreementData) {
   const win = window.open("", "_blank");
   if (!win) return;
 
@@ -37,7 +37,7 @@ export function generateRentalAgreementPdf(data: RentalAgreementData) {
   win.document.write(`
     <html>
       <head>
-        <title>Rental Agreement</title>
+        <title>Management Agreement</title>
         <style>
           body { font-family: Arial, sans-serif; margin: 40px; font-size: 14px; color: #10131A; }
           .logo { margin-bottom: 24px; }
@@ -55,13 +55,13 @@ export function generateRentalAgreementPdf(data: RentalAgreementData) {
       </head>
       <body>
         <div class="logo"><img src="${LOGO_BASE64}" alt="Woodland" /></div>
-        <h1>LEASE / RENTAL AGREEMENT</h1>
+        <h1>MANAGEMENT AGREEMENT</h1>
         <table>
           <tr><td class="label">Property</td><td>${propertyAddress || ""}</td></tr>
           <tr><td class="label">Rent Effective Date</td><td>${formatDate(data.rentEffectiveDate)}</td></tr>
-          <tr><td class="label">Parties to the Lease</td><td>
-            Lessor:<br/><br/>
-            Lessee:<br/>
+          <tr><td class="label">Parties to the Agreement</td><td>
+            Owner:<br/><br/>
+            Managing Agent:<br/>
             Woodland Properties Management Ltd<br/>
             ${data.vendorName ? `<br/>Landlord: ${data.vendorName}` : ""}
           </td></tr>
@@ -75,8 +75,8 @@ export function generateRentalAgreementPdf(data: RentalAgreementData) {
         </div>
 
         <div class="sign">
-          <div><p>Signed (Lessor)</p></div>
-          <div><p>Signed (Lessee) — Woodland Properties Management Ltd</p></div>
+          <div><p>Signed (Owner)</p></div>
+          <div><p>Signed (Managing Agent) — Woodland Properties Management Ltd</p></div>
         </div>
       </body>
     </html>
