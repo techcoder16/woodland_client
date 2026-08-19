@@ -12,9 +12,10 @@ interface TenantProps {
   setValue: any;
   errors: any;
   type?: string;
+  isEdit?: boolean;
 }
 
-const Tenant = ({ register, watch, clearErrors, setValue, errors }: TenantProps) => {
+const Tenant = ({ register, watch, clearErrors, setValue, errors, isEdit }: TenantProps) => {
   const titleOptions = [
     { value: "mr", label: "Mr" },
     { value: "mrs", label: "Mrs" },
@@ -90,6 +91,8 @@ const Tenant = ({ register, watch, clearErrors, setValue, errors }: TenantProps)
           name="Email"
           register={register}
           error={errors?.Email?.message?.toString()}
+          disabled={isEdit}
+          helperText={isEdit ? "Email is the tenant's login and can't be changed here." : undefined}
         />
         <InputField
           setValue={setValue}

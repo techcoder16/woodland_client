@@ -2,7 +2,7 @@ import InputField from '../../utils/InputField';
 import SelectField from '../../utils/SelectedField';
 import countriesData from '../../data/ukCountry.json';
 
-const StandardInfo = ({ register, watch, clearErrors, setValue, errors }: any) => {
+const StandardInfo = ({ register, watch, clearErrors, setValue, errors, isEdit }: any) => {
   const handleSelectChange = (name: string, value: string) => {
     setValue(name, value);
     clearErrors(name);
@@ -52,7 +52,15 @@ const StandardInfo = ({ register, watch, clearErrors, setValue, errors }: any) =
         <div className="text-lg font-medium flex justify-start underline p-5">Contact Info</div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <InputField setValue={setValue} label="Phone" name="phone" register={register} error={errors.phone?.message?.toString()} />
-          <InputField setValue={setValue} label="Email" name="email" register={register} error={errors.email?.message?.toString()} />
+          <InputField
+            setValue={setValue}
+            label="Email"
+            name="email"
+            register={register}
+            error={errors.email?.message?.toString()}
+            disabled={isEdit}
+            helperText={isEdit ? "Email is the landlord's login and can't be changed here." : undefined}
+          />
         </div>
       </div>
     </div>

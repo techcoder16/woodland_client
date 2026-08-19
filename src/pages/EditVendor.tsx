@@ -193,7 +193,7 @@ const EditVendor = () => {
                 </TabsList>
 
                 <TabsContent value="personal" className="mt-0">
-                  <StandardInfo watch={watch} register={register} errors={activeErrors} setValue={setValue} clearErrors={form.clearErrors} />
+                  <StandardInfo watch={watch} register={register} errors={activeErrors} setValue={setValue} clearErrors={form.clearErrors} isEdit />
                 </TabsContent>
                 <TabsContent value="bank" className="mt-0">
                   <BankDetails watch={watch} register={register} errors={activeErrors} setValue={setValue} clearErrors={form.clearErrors} />

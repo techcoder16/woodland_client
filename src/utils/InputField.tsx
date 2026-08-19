@@ -15,6 +15,8 @@ interface InputFieldProps {
   max?: number;
   min?: number;
   step?: number | string;
+  disabled?: boolean;
+  helperText?: string;
 }
 
 const InputField: React.FC<InputFieldProps> = ({
@@ -29,6 +31,8 @@ const InputField: React.FC<InputFieldProps> = ({
   onChange,
   max = 100000000000,
   step,
+  disabled = false,
+  helperText,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -70,7 +74,9 @@ const InputField: React.FC<InputFieldProps> = ({
         {...register(name)}
         {...(type === "number" ? { min, max, step: step ?? "any" } : {})}
         placeholder={placeholder}
+        disabled={disabled}
       />
+      {helperText && !error && <p className="text-muted-foreground text-xs mt-1">{helperText}</p>}
       {error && <p className="text-destructive text-xs mt-1">{error}</p>}
     </div>
   );

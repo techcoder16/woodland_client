@@ -113,7 +113,15 @@ const EditContractor = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <InputField label="Phone" name="phone" register={register} setValue={setValue} error={errors.phone?.message} />
-                <InputField label="Email" name="email" register={register} setValue={setValue} error={errors.email?.message} />
+                <InputField
+                  label="Email"
+                  name="email"
+                  register={register}
+                  setValue={setValue}
+                  error={errors.email?.message}
+                  disabled
+                  helperText="Email is the contractor's login and can't be changed here."
+                />
               </div>
               <InputField label="Address" name="address" register={register} setValue={setValue} error={errors.address?.message} />
               <FileUploadField

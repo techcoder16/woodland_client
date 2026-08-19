@@ -115,6 +115,7 @@ const EditTenant = ({ isOpen, onClose, propertyId, tenant }: EditTenantModalProp
           errors={formState.errors}
           setValue={setValue}
           clearErrors={clearErrors}
+          isEdit
         />
       ),
     },
