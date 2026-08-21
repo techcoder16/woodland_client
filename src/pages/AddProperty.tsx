@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useDispatch } from "react-redux";
+import { useAppSelector } from "@/redux/reduxHooks";
 import { useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -54,6 +55,9 @@ const AddProperty = () => {
   const { watch } = form;
   const dispatch = useDispatch<any>();
   const navigate = useNavigate();
+  const { vendors } = useAppSelector((state) => state.vendors);
+  const selectedVendor = (vendors || []).find((v: any) => v.id === watch("vendor"));
+  const vendorName = selectedVendor ? [selectedVendor.firstName, selectedVendor.lastName].filter(Boolean).join(" ") : undefined;
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -249,7 +253,7 @@ const AddProperty = () => {
                 <DocumentsCertificates watch={watch} register={form.register} errors={currentStep === 1 ? activeErrors : noErrors} setValue={form.setValue} />
               </div>
               <div className={currentStep !== 2 ? "hidden" : ""}>
-                <ManagementAgreementStep watch={watch} register={form.register} errors={currentStep === 2 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
+                <ManagementAgreementStep watch={watch} register={form.register} errors={currentStep === 2 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} vendorName={vendorName} />
               </div>
               {currentStep === 3 && (
                 savedProperty?.id ? (

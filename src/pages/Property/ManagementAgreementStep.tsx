@@ -12,6 +12,7 @@ interface ManagementAgreementStepProps {
   setValue: any;
   clearErrors: any;
   errors: any;
+  vendorName?: string;
 }
 
 const PAYABLE_IN_ADVANCE_OPTIONS = [
@@ -21,7 +22,7 @@ const PAYABLE_IN_ADVANCE_OPTIONS = [
   { value: "1_year", label: "1 Year" },
 ];
 
-const ManagementAgreementStep = ({ register, watch, setValue, clearErrors, errors }: ManagementAgreementStepProps) => {
+const ManagementAgreementStep = ({ register, watch, setValue, clearErrors, errors, vendorName }: ManagementAgreementStepProps) => {
   return (
     <div className="w-full">
       <div className="p-4 w-full">
@@ -82,6 +83,7 @@ const ManagementAgreementStep = ({ register, watch, setValue, clearErrors, error
                 rentPerMonth: watch("rentPerMonth"),
                 rentPayableInAdvance: watch("rentPayableInAdvance"),
                 rentalTerms: watch("rentalTerms"),
+                vendorName,
               })
             }
           >

@@ -274,7 +274,7 @@ const EditProperty = () => {
                 <DocumentsCertificates watch={watch} register={form.register} errors={currentStep === 1 ? activeErrors : noErrors} setValue={form.setValue} />
               </div>
               <div className={currentStep !== 2 ? "hidden" : ""}>
-                <ManagementAgreementStep watch={watch} register={form.register} errors={currentStep === 2 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
+                <ManagementAgreementStep watch={watch} register={form.register} errors={currentStep === 2 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} vendorName={property?.vendor ? [property.vendor.firstName, property.vendor.lastName].filter(Boolean).join(" ") : undefined} />
               </div>
               {currentStep === 3 && (
                 <NotesStep propertyId={property.id} property={property} />
