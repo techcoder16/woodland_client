@@ -17,7 +17,6 @@ const noteSchema = z.object({
   content: z.string().min(1, "Note content is required"),
   date: z.string().min(1, "Date is required"),
   employeeId: z.string().min(1, "Employee is required"),
-  detail: z.string().optional(),
 });
 
 type NoteFormData = z.infer<typeof noteSchema>;
@@ -61,7 +60,7 @@ const NotesStep: React.FC<NotesStepProps> = ({ propertyId, property, mode = "edi
   const closeDialog = () => {
     setIsDialogOpen(false);
     setEditingLocalId(null);
-    reset({ content: "", date: "", employeeId: "", detail: "" });
+    reset({ content: "", date: "", employeeId: "" });
   };
 
   const onSubmit = (data: NoteFormData) => {
@@ -78,7 +77,6 @@ const NotesStep: React.FC<NotesStepProps> = ({ propertyId, property, mode = "edi
     setValue("content", note.content);
     setValue("date", note.date);
     setValue("employeeId", note.employeeId);
-    setValue("detail", note.detail || "");
     setIsDialogOpen(true);
   };
 
@@ -133,13 +131,6 @@ const NotesStep: React.FC<NotesStepProps> = ({ propertyId, property, mode = "edi
                   </p>
                 </div>
               </div>
-              <TextAreaField
-                label="Additional Details"
-                name="detail"
-                register={register}
-                error={errors.detail?.message}
-                placeholder="Additional details (optional)"
-              />
               <div className="flex justify-end space-x-2">
                 <Button type="button" variant="outline" onClick={closeDialog}>
                   Cancel
@@ -158,14 +149,13 @@ const NotesStep: React.FC<NotesStepProps> = ({ propertyId, property, mode = "edi
               <TableRow>
                 <TableHead>Date</TableHead>
                 <TableHead>Content</TableHead>
-                <TableHead>Details</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {drafts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
                     No notes added yet. These will be saved once the property is published.
                   </TableCell>
                 </TableRow>
@@ -174,7 +164,6 @@ const NotesStep: React.FC<NotesStepProps> = ({ propertyId, property, mode = "edi
                   <TableRow key={note.localId}>
                     <TableCell>{note.date}</TableCell>
                     <TableCell className="max-w-xs truncate">{note.content}</TableCell>
-                    <TableCell className="max-w-xs truncate">{note.detail || "-"}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
                         <Button size="sm" variant="outline" onClick={() => handleEdit(note)}>

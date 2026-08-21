@@ -59,7 +59,6 @@ const noteSchema = z.object({
   content: z.string().min(1, "Note content is required"),
   date: z.string().min(1, "Date is required"),
   employeeId: z.string().min(1, "Employee is required"),
-  detail: z.string().optional(),
 });
 
 type JobTypeFormData = z.infer<typeof jobTypeSchema>;
@@ -229,12 +228,11 @@ const Notes = ({ propertyId, property }: NotesProps) => {
 
   const onSubmitNote = async (data: NoteFormData) => {
     try {
-      const payload: Omit<Note, 'id'> = { 
+      const payload: Omit<Note, 'id'> = {
         propertyId,
         content: data.content,
         date: data.date,
         employeeId: data.employeeId, // Changed from employee to employeeId
-        detail: data.detail
       };
       
       if (editingNote && editingNote.id) {
@@ -278,7 +276,6 @@ const Notes = ({ propertyId, property }: NotesProps) => {
     setNoteValue("content", note.content);
     setNoteValue("date", note.date);
     setNoteValue("employeeId", note.employeeId); // Changed from employee to employeeId
-    setNoteValue("detail", note.detail || "");
     setIsNoteDialogOpen(true);
   };
 
@@ -379,13 +376,6 @@ const Notes = ({ propertyId, property }: NotesProps) => {
                       </p>
                     </div>
                   </div>
-                  <RichTextEditor
-                    label="Additional Details"
-                    value={watchNote("detail") || ""}
-                    onChange={(html) => setNoteValue("detail", html)}
-                    error={errorsNote.detail?.message}
-                    placeholder="Additional details (optional)"
-                  />
                   <div className="flex justify-end space-x-2">
                     <Button type="button" variant="outline" onClick={handleNoteDialogClose}>
                       Cancel
@@ -407,20 +397,19 @@ const Notes = ({ propertyId, property }: NotesProps) => {
                     <TableHead>Date</TableHead>
                     <TableHead>Employee</TableHead>
                     <TableHead>Content</TableHead>
-                    <TableHead>Details</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {notesLoading ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8">
+                      <TableCell colSpan={4} className="text-center py-8">
                         Loading notes...
                       </TableCell>
                     </TableRow>
                   ) : notes.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8">
+                      <TableCell colSpan={4} className="text-center py-8">
                         <div className="space-y-2">
                           <p className="text-lg font-medium">No notes found</p>
                           {notesError ? (
@@ -453,7 +442,6 @@ const Notes = ({ propertyId, property }: NotesProps) => {
                           </div>
                         </TableCell>
                         <TableCell className="max-w-xs truncate">{stripHtml(note.content)}</TableCell>
-                        <TableCell className="max-w-xs truncate">{note.detail ? stripHtml(note.detail) : "-"}</TableCell>
                         <TableCell>
                           <div className="flex space-x-2">
                             <Button
