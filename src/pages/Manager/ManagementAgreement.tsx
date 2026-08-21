@@ -1,121 +1,59 @@
 import React, { useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import InputField from "@/utils/InputField";
-import RichTextEditor from "@/utils/RichTextEditor";
-
-import { useDispatch } from "react-redux";
-import { toast } from "sonner";
-import { useAppSelector } from "@/redux/reduxHooks";
-import { fetchManagementAgreement } from "@/redux/dataStore/managementAgreementSlice";
+import { FileText } from "lucide-react";
+import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
 import { fetchPropertyParties } from "@/redux/dataStore/partySlice";
+import { fetchtenants } from "@/redux/dataStore/tenantSlice";
 import { fetchVendors } from "@/redux/dataStore/vendorSlice";
-import { cn } from "@/lib/utils";
-import { DateField } from "@/utils/DateField";
-import { PDFViewer, pdf } from "@react-pdf/renderer";
-import ManagementContractPDF from "@/components/pdf/ManagementContractPDF";
-import { Dialog, DialogContent, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-
-const managementAgreementSchema = z.object({
-  propertyId: z.string().optional(),
-  DateofAgreement: z.string().min(1, "Date of Agreement is required"),
-  AgreementStart: z.string().min(1, "Agreement Start is required"),
-  AgreementEnd: z.string().min(1, "Agreement End is required"),
-  ManagementFees: z.coerce.number({ invalid_type_error: "Management Fees must be a number" }),
-  TermsAndCondition: z.string().min(1, "Terms and Condition is required"),
-});
-
-type ManagementAgreementFormData = z.infer<typeof managementAgreementSchema>;
+import { generateManagementAgreementPdf } from "@/helper/generateManagementAgreement";
 
 interface ManagementAgreementProps {
   propertyId: string;
   property?: any;
-  mode?: "edit" | "draft";
-  onDataChange?: (data: ManagementAgreementFormData & { signedDocument?: string }) => void;
 }
 
-const ManagementAgreement: React.FC<ManagementAgreementProps> = ({ propertyId, property, mode = "edit", onDataChange }) => {
-  const dispatch = useDispatch<any>();
-  const { managementAgreement } = useAppSelector((state) => state.managementAgreement);
+const ManagementAgreement: React.FC<ManagementAgreementProps> = ({ propertyId, property }) => {
+  const dispatch = useAppDispatch();
   const { propertyParties }: any = useAppSelector((state: any) => state.parties);
+  const { tenants }: any = useAppSelector((state: any) => state.tenants);
   const { vendors }: any = useAppSelector((state: any) => state.vendors);
 
-  const [showPdf, setShowPdf] = React.useState(false);
-  const [isGenerating, setIsGenerating] = React.useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    getValues,
-    watch,
-    reset,
-    formState: { errors },
-  } = useForm<ManagementAgreementFormData>({
-    resolver: zodResolver(managementAgreementSchema),
-    defaultValues: {
-      propertyId,
-      DateofAgreement: "",
-      AgreementStart: "",
-      AgreementEnd: "",
-      TermsAndCondition: "",
-    },
-  });
-
   useEffect(() => {
-    if (mode === "edit" && managementAgreement) {
-      reset(managementAgreement && managementAgreement);
-    }
-  }, [mode, managementAgreement, reset]);
-
-  useEffect(() => {
+    if (propertyId) dispatch(fetchPropertyParties(propertyId));
+    dispatch(fetchtenants({ page: 1, search: "" }));
     dispatch(fetchVendors({ page: 1, search: "" }));
-    if (mode === "edit") {
-      dispatch(fetchManagementAgreement({ propertyId }));
-      dispatch(fetchPropertyParties(propertyId));
-    }
-  }, [dispatch, propertyId, mode]);
+  }, [dispatch, propertyId]);
 
-  const partyData = (propertyParties as any)?.data ?? propertyParties;
-  const pdfLandlord = Array.isArray(vendors)
-    ? vendors.find((v: any) => v.id === partyData?.VendorId) ?? null
+  const existingParty = Array.isArray(propertyParties)
+    ? propertyParties
+    : propertyParties?.data ?? [];
+
+  const linkedTenantNames = existingParty
+    .map((p: any) => (Array.isArray(tenants) ? tenants.find((t: any) => t.id === p.Tenantid) : null))
+    .filter(Boolean)
+    .map((t: any) => [t.FirstName, t.SureName].filter(Boolean).join(" "))
+    .filter(Boolean)
+    .join(", ");
+
+  const landlord = Array.isArray(vendors)
+    ? vendors.find((v: any) => v.id === property?.vendorId)
     : null;
+  const vendorName = landlord ? [landlord.firstName, landlord.lastName].filter(Boolean).join(" ") : undefined;
 
-  const handleDateChange = (name: keyof ManagementAgreementFormData, date: Date) => {
-    setValue(name, date.toISOString());
-  };
-
-  const generateAgreementPdfBase64 = async (data: ManagementAgreementFormData): Promise<string> => {
-    const blob = await pdf(
-      <ManagementContractPDF data={data} property={property} landlord={pdfLandlord} />
-    ).toBlob();
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
+  const handleGenerate = () => {
+    generateManagementAgreementPdf({
+      addressLine1: property?.addressLine1,
+      addressLine2: property?.addressLine2,
+      town: property?.town,
+      postCode: property?.postCode,
+      rentEffectiveDate: property?.rentEffectiveDate,
+      rentPerMonth: property?.rentPerMonth,
+      rentPayableInAdvance: property?.rentPayableInAdvance,
+      rentalTerms: property?.rentalTerms,
+      vendorName,
+      tenantName: linkedTenantNames || undefined,
     });
-  };
-
-  const onGenerateAgreement = async (data: ManagementAgreementFormData) => {
-    setIsGenerating(true);
-    let signedDocument: string | undefined;
-    try {
-      signedDocument = await generateAgreementPdfBase64(data);
-    } catch {
-      toast.error("Failed to generate the agreement PDF.");
-      setIsGenerating(false);
-      return;
-    }
-    setIsGenerating(false);
-
-    const dataWithDocument = { ...data, signedDocument };
-    onDataChange?.(dataWithDocument);
-    setShowPdf(true);
-    toast.success("Agreement generated. Use Save as Draft or Publish to save it.");
   };
 
   return (
@@ -124,89 +62,17 @@ const ManagementAgreement: React.FC<ManagementAgreementProps> = ({ propertyId, p
         <CardTitle>Management Agreement</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-6">
-          <input type="hidden" {...register("propertyId")} />
-
-          {/* Date of Agreement */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <DateField
-              label="Date of Agreement"
-              value={watch("DateofAgreement") || ""}
-              onChange={(date) => handleDateChange("DateofAgreement", date)}
-              error={errors.DateofAgreement?.message}
-            />
-          </div>
-
-          {/* Agreement Start & Agreement End */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Agreement Start */}
-            <DateField
-              label="Agreement Start On"
-              value={watch("AgreementStart") || ""}
-              onChange={(date) => handleDateChange("AgreementStart", date)}
-              error={errors.AgreementStart?.message}
-            />
-            {/* Agreement End */}
-            <div>
-
-              <DateField
-                label="Agreement Ended On"
-                value={watch("AgreementEnd") || ""}
-                onChange={(date) => handleDateChange("AgreementEnd", date)}
-                error={errors.AgreementStart?.message}
-                placeholder="Pick return date (optional)"
-
-
-              />
-            </div>
-          </div>
-
-          {/* Management Fees */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <InputField
-              label="Management Fees"
-              name="ManagementFees"
-              max={100}
-              register={register}
-              error={errors.ManagementFees?.message}
-              placeholder="Enter management fees"
-              type="number"
-              setValue={setValue}
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <RichTextEditor
-              label="Terms and Conditions"
-              value={watch("TermsAndCondition") || ""}
-              onChange={(html) => setValue("TermsAndCondition", html)}
-              error={errors.TermsAndCondition?.message}
-              placeholder="Enter terms and conditions"
-            />
-          </div>
-
-          <div className="flex justify-end space-x-4">
-            <Button type="button" onClick={handleSubmit(onGenerateAgreement)} disabled={isGenerating}>
-              {isGenerating ? "Generating..." : "Generate Agreement"}
-            </Button>
-          </div>
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Generated from the property's saved address, rent, and linked landlord/tenant details.
+            Update those on the Property and Parties tabs if anything here needs to change.
+          </p>
+          <Button type="button" onClick={handleGenerate}>
+            <FileText className="mr-2 h-4 w-4" />
+            Generate PDF
+          </Button>
         </div>
       </CardContent>
-
-      {/* Management Contract PDF Preview */}
-      <Dialog open={showPdf} onOpenChange={setShowPdf}>
-        <DialogContent className="sm:max-w-5xl h-[90vh] w-full">
-          <DialogTitle className="text-lg font-semibold">Management Contract Preview</DialogTitle>
-          <div className="w-full h-[78vh] border rounded-md overflow-hidden">
-            <PDFViewer width="100%" height="100%" showToolbar={false}>
-              <ManagementContractPDF data={getValues()} property={property} landlord={pdfLandlord} />
-            </PDFViewer>
-          </div>
-          <DialogFooter className="pt-2 flex justify-end">
-            <Button variant="outline" onClick={() => setShowPdf(false)}>Close</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </Card>
   );
 };

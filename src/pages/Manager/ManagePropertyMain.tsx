@@ -4,8 +4,6 @@ import { useLocation, useParams } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useDispatch } from "react-redux";
-import { toast } from "sonner";
 import { Tabs, TabsList, TabsTriggerLg, TabsContent } from "@/components/ui/tabs";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -18,7 +16,6 @@ import TenancyAgreement from "./TenancyAgreement";
 import TransactionPage from "./TransactionPage";
 import Notes from "./Notes";
 import History from "./History";
-import { upsertManagementAgreement } from "@/redux/dataStore/managementAgreementSlice";
 
 // Icons for better visual representation (using Lucide React icons)
 import { 
@@ -79,16 +76,6 @@ const ManageProperty = () => {
   // Get property.id from URL parameters
   const location = useLocation();
   const property: any = location.state?.property;
-  const dispatch = useDispatch<any>();
-
-  const handleManagementAgreementChange = async (data: any) => {
-    try {
-      await dispatch(upsertManagementAgreement({ ...data, propertyId: property.id })).unwrap();
-      toast.success("Management Agreement saved successfully!");
-    } catch (error: any) {
-      toast.error(error?.message || "Failed to save Management Agreement");
-    }
-  };
 
   console.log(property, "property asdadka");
 
@@ -241,7 +228,6 @@ console.log("Property data in ManageProperty component:", property);
                 <ManagementAgreement
                   propertyId={property.id}
                   property={property}
-                  onDataChange={handleManagementAgreementChange}
                 />
               </TabsContent>
 
