@@ -1,6 +1,7 @@
 import InputField from '../../utils/InputField';
 import SelectField from '../../utils/SelectedField';
 import countriesData from '../../data/ukCountry.json';
+import AddressSearchField from '@/components/AddressSearchField';
 
 const StandardInfo = ({ register, watch, clearErrors, setValue, errors, isEdit }: any) => {
   const handleSelectChange = (name: string, value: string) => {
@@ -23,6 +24,18 @@ const StandardInfo = ({ register, watch, clearErrors, setValue, errors, isEdit }
 
       <div className="mt-3">
         <div className="text-lg font-medium flex justify-start underline p-5">Address</div>
+
+        <div className="px-5 pb-4">
+          <AddressSearchField
+            onSelect={(address) => {
+              if (address.addressLine1) setValue('addressLine1', address.addressLine1, { shouldValidate: true });
+              if (address.addressLine2) setValue('addressLine2', address.addressLine2);
+              if (address.town) setValue('town', address.town);
+              if (address.postCode) setValue('postCode', address.postCode);
+              clearErrors(['addressLine1', 'postCode']);
+            }}
+          />
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <InputField setValue={setValue} label="Post Code" name="postCode" register={register} error={errors.postCode?.message?.toString()} />
