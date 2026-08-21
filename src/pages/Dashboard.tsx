@@ -5,6 +5,7 @@ import { fetchDashboardStats } from "../redux/dataStore/dashboardSlice";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { AnalyticsChart } from "@/components/dashboard/AnalyticsChart";
+import { RentDueSection } from "@/components/dashboard/RentDueSection";
 
 const Dashboard = () => {
   const dispatch = useAppDispatch();
@@ -47,6 +48,10 @@ const Dashboard = () => {
         </div>
 
         <DashboardStats />
+
+        <div className="surface p-6">
+          <RentDueSection />
+        </div>
 
         <div className="surface p-6">
           <h2 className="text-sm font-medium text-muted-foreground mb-4">Analytics overview</h2>
