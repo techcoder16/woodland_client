@@ -131,7 +131,8 @@ const RoomsTable: React.FC<RoomsTableProps> = ({ rooms, onChange }) => {
                   </Button>
                 </td>
               </tr>
-            ))}
+              );
+            })}
             {rooms.length === 0 && (
               <tr>
                 <td colSpan={5} className="p-4 text-center text-sm text-muted-foreground">
