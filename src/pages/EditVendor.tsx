@@ -111,7 +111,12 @@ const EditVendor = () => {
     try {
       const payload: Record<string, any> = {};
       for (const [key, value] of Object.entries(data)) {
-        if (key === "id") continue;
+        // Email is the landlord's login. It must never be sent on update —
+        // even though the backend independently strips it, the field is
+        // excluded here too so there is no path, frontend or backend,
+        // where a tampered form (e.g. via DevTools re-enabling the input)
+        // could change it.
+        if (key === "id" || key === "email") continue;
         if (Array.isArray(value)) {
           payload[key] = value[0] ?? null;
         } else if (

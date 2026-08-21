@@ -68,6 +68,9 @@ const EditTenant = ({ isOpen, onClose, propertyId, tenant }: EditTenantModalProp
       };
       const formData = new FormData();
       Object.entries(data).forEach(([key, value]) => {
+        // Email is the tenant's login — never sent on update, even though
+        // the backend independently strips it too.
+        if (key === "Email") return;
         if (value !== null && value !== undefined) formData.append(key, String(value));
       });
 

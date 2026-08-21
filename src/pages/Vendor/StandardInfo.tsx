@@ -65,15 +65,21 @@ const StandardInfo = ({ register, watch, clearErrors, setValue, errors, isEdit }
         <div className="text-lg font-medium flex justify-start underline p-5">Contact Info</div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <InputField setValue={setValue} label="Phone" name="phone" register={register} error={errors.phone?.message?.toString()} />
-          <InputField
-            setValue={setValue}
-            label="Email"
-            name="email"
-            register={register}
-            error={errors.email?.message?.toString()}
-            disabled={isEdit}
-            helperText={isEdit ? "Email is the landlord's login and can't be changed here." : undefined}
-          />
+          {isEdit ? (
+            <div className="space-y-1.5">
+              <label className="text-muted-foreground font-medium text-sm">Email</label>
+              <div className="text-sm py-2">{watch("email")}</div>
+              <p className="text-xs text-muted-foreground">Email is the landlord's login and can't be changed here.</p>
+            </div>
+          ) : (
+            <InputField
+              setValue={setValue}
+              label="Email"
+              name="email"
+              register={register}
+              error={errors.email?.message?.toString()}
+            />
+          )}
         </div>
       </div>
     </div>

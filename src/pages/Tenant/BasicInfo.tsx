@@ -99,15 +99,21 @@ const Tenant = ({ register, watch, clearErrors, setValue, errors, isEdit }: Tena
           register={register}
           error={errors?.WorkPhone?.message?.toString()}
         />
-        <InputField
-          setValue={setValue}
-          label="Email"
-          name="Email"
-          register={register}
-          error={errors?.Email?.message?.toString()}
-          disabled={isEdit}
-          helperText={isEdit ? "Email is the tenant's login and can't be changed here." : undefined}
-        />
+        {isEdit ? (
+          <div className="space-y-1.5">
+            <label className="text-muted-foreground font-medium text-sm">Email</label>
+            <div className="text-sm py-2">{watch("Email")}</div>
+            <p className="text-xs text-muted-foreground">Email is the tenant's login and can't be changed here.</p>
+          </div>
+        ) : (
+          <InputField
+            setValue={setValue}
+            label="Email"
+            name="Email"
+            register={register}
+            error={errors?.Email?.message?.toString()}
+          />
+        )}
         <InputField
           setValue={setValue}
           label="Employee Name"

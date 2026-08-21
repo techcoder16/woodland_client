@@ -70,7 +70,9 @@ const EditContractor = () => {
     setIsSubmitting(true);
 
     try {
-      const { id, ...payload } = data;
+      // Email is the contractor's login — never sent on update, even though
+      // the backend independently strips it too.
+      const { id, email, ...payload } = data;
       const { data: apiData, error }: any = await patch(`contractor/update/${id}`, payload);
       setProgress(60);
 
@@ -124,15 +126,11 @@ const EditContractor = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <InputField label="Phone" name="phone" register={register} setValue={setValue} error={errors.phone?.message} />
-                <InputField
-                  label="Email"
-                  name="email"
-                  register={register}
-                  setValue={setValue}
-                  error={errors.email?.message}
-                  disabled
-                  helperText="Email is the contractor's login and can't be changed here."
-                />
+                <div className="space-y-1.5">
+                  <label className="text-muted-foreground font-medium text-sm">Email</label>
+                  <div className="text-sm py-2">{watch("email")}</div>
+                  <p className="text-xs text-muted-foreground">Email is the contractor's login and can't be changed here.</p>
+                </div>
               </div>
               <div className="space-y-4">
                 <AddressSearchField
