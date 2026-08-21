@@ -129,7 +129,11 @@ const VendorList = () => {
                 <tbody>
                   {vendors && vendors.length > 0 ? (
                     vendors.map((vendor: any) => (
-                      <tr key={vendor.id} className="border-b border-border/50 hover:bg-muted/40 transition-colors">
+                      <tr
+                        key={vendor.id}
+                        className="border-b border-border/50 hover:bg-muted/40 transition-colors cursor-pointer"
+                        onClick={() => setViewVendor(vendor)}
+                      >
                         <td className="px-4 py-3">
                           <div className="font-medium">
                             {vendor.firstName} {vendor.lastName}
@@ -152,7 +156,10 @@ const VendorList = () => {
                                   key={property.id}
                                   type="button"
                                   className="flex items-start gap-1 text-left hover:underline"
-                                  onClick={() => setViewProperty({ ...property, vendor })}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setViewProperty({ ...property, vendor });
+                                  }}
                                 >
                                   <MapPin className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
                                   <span>{property.addressLine1}</span>
@@ -169,7 +176,7 @@ const VendorList = () => {
                             <span className="text-sm">{vendor.phone}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon">

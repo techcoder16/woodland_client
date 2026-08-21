@@ -143,7 +143,11 @@ const TenantList = ({ property }: any) => {
                       </tr>
                     ) : tenants && tenants.length > 0 ? (
                       tenants.map((tenant: any) => (
-                        <tr key={tenant.id} className="border-b border-border/50 hover:bg-muted/40 transition-colors">
+                        <tr
+                          key={tenant.id}
+                          className="border-b border-border/50 hover:bg-muted/40 transition-colors cursor-pointer"
+                          onClick={() => setViewTenant(tenant)}
+                        >
                           <td className="px-4 py-3 text-sm">{tenant.title}</td>
                           <td className="px-4 py-3 text-sm">{tenant.FirstName}</td>
                           <td className="px-4 py-3 text-sm">{tenant.Email}</td>
@@ -153,7 +157,7 @@ const TenantList = ({ property }: any) => {
                               {tenant.MobileNo}
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-sm">
+                          <td className="px-4 py-3 text-sm" onClick={(e) => e.stopPropagation()}>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon">

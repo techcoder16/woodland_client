@@ -98,7 +98,11 @@ const ContractorList = () => {
                 <tbody>
                   {contractors && contractors.length > 0 ? (
                     contractors.map((contractor: any) => (
-                      <tr key={contractor.id} className="border-b border-border/50 hover:bg-muted/40 transition-colors">
+                      <tr
+                        key={contractor.id}
+                        className="border-b border-border/50 hover:bg-muted/40 transition-colors cursor-pointer"
+                        onClick={() => setViewContractor(contractor)}
+                      >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             {contractor.logo ? (
@@ -119,7 +123,7 @@ const ContractorList = () => {
                           </div>
                         </td>
                         <td className="px-4 py-3 text-sm">{contractor.address || "-"}</td>
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon">
