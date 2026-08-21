@@ -70,13 +70,16 @@ interface JobType {
   property?: { addressLine1?: string; addressLine2?: string; town?: string; postCode?: string };
 }
 
+// media is intentionally NOT in this schema: photos are tracked via the
+// separate reportPictures state (a raw <input type="file">, not a
+// react-hook-form field), so zod has nothing real to validate there — the
+// at-least-one-photo check happens explicitly in onSubmit instead.
 const reportSchema = z.object({
   jobType: z.string().min(1, "Type is required"),
   location: z.string().min(1, "Location is required"),
   description: z.string().min(1, "Description is required"),
   dueDate: z.string().min(1, "Due date is required"),
   priority: z.string().optional(),
-  media: z.array(z.string()).min(1, "At least one photo is required"),
 });
 type ReportFormData = z.infer<typeof reportSchema>;
 
@@ -260,6 +263,7 @@ const PartyMaintenance = ({ kind }: { kind: PartyKind }) => {
   } = useForm<ReportFormData>({ resolver: zodResolver(reportSchema) });
 
   const [reportPictures, setReportPictures] = useState<File[]>([]);
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
   const loadJobs = async () => {
     setLoading(true);
@@ -283,6 +287,7 @@ const PartyMaintenance = ({ kind }: { kind: PartyKind }) => {
   }, [kind]);
 
   const onSubmit = async (data: ReportFormData) => {
+    if (isSubmittingReport) return;
     if (!propertyId) {
       toast.error("No property found on your account to report an issue for.");
       return;
@@ -291,6 +296,7 @@ const PartyMaintenance = ({ kind }: { kind: PartyKind }) => {
       toast.error("At least one photo is required to report an issue");
       return;
     }
+    setIsSubmittingReport(true);
     try {
       const media = await Promise.all(reportPictures.map(readAsDataUrl));
       await partyPost(kind, "property-management/job-type", { ...data, media, propertyId });
@@ -300,7 +306,15 @@ const PartyMaintenance = ({ kind }: { kind: PartyKind }) => {
       setIsDialogOpen(false);
       loadJobs();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to submit request");
+      const message =
+        typeof error?.response?.data?.message === "string"
+          ? error.response.data.message
+          : Array.isArray(error?.response?.data?.message)
+            ? error.response.data.message.map((e: any) => e?.constraints ? Object.values(e.constraints).join(", ") : String(e)).join("; ")
+            : "Failed to submit request";
+      toast.error(message);
+    } finally {
+      setIsSubmittingReport(false);
     }
   };
 
@@ -374,10 +388,12 @@ const PartyMaintenance = ({ kind }: { kind: PartyKind }) => {
                       <p className="text-xs text-muted-foreground">At least one photo is required.</p>
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
-                      <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                      <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSubmittingReport}>
                         Cancel
                       </Button>
-                      <Button type="submit">Submit</Button>
+                      <Button type="submit" disabled={isSubmittingReport}>
+                        {isSubmittingReport ? "Submitting…" : "Submit"}
+                      </Button>
                     </div>
                   </form>
                 </DialogContent>

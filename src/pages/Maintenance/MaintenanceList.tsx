@@ -126,6 +126,7 @@ const MaintenanceList = () => {
   const [statusFilter, setStatusFilter] = useState<ReportingStatus | "">("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isCreatingJob, setIsCreatingJob] = useState(false);
 
   // Changing the status filter always resets to page 1 — combined into one
   // effect (rather than a separate "reset page" effect + "fetch" effect) so
@@ -183,6 +184,12 @@ const MaintenanceList = () => {
   };
 
   const onSubmit = async (data: MaintenanceFormData) => {
+    // Guards against duplicate jobs from a double-click/slow-network resubmit:
+    // each dispatch generates its own fresh Idempotency-Key (idempotency only
+    // catches identical retries of the SAME request, not two distinct clicks),
+    // so the button itself must ignore repeat submissions while one is in flight.
+    if (isCreatingJob) return;
+    setIsCreatingJob(true);
     try {
       // Backend always forces status: QUOTING on create and ignores
       // contractorId/dates/cost fields here — they're set later via the
@@ -201,14 +208,20 @@ const MaintenanceList = () => {
         status: "QUOTING",
       };
 
-      await dispatch(createJobType(payload));
+      // .unwrap() is required — createAsyncThunk never throws on its own, so
+      // without it a rejected (rejectWithValue) result was silently treated
+      // as success: no error toast shown, and the dialog closed as if the
+      // job had actually been created.
+      await dispatch(createJobType(payload)).unwrap();
       toast.success("Maintenance job created successfully");
 
       setCurrentPage(1);
       dispatch(fetchJobTypes({ page: 1, limit: 20, status: statusFilter || undefined }));
       closeDialog();
-    } catch (error) {
-      toast.error("Error saving maintenance job");
+    } catch (error: any) {
+      toast.error(typeof error === "string" ? error : error?.message || "Error saving maintenance job");
+    } finally {
+      setIsCreatingJob(false);
     }
   };
 
@@ -371,10 +384,12 @@ const MaintenanceList = () => {
                 </p>
 
                 <div className="flex justify-end space-x-2">
-                  <Button type="button" variant="outline" onClick={closeDialog}>
+                  <Button type="button" variant="outline" onClick={closeDialog} disabled={isCreatingJob}>
                     Cancel
                   </Button>
-                  <Button type="submit">Create</Button>
+                  <Button type="submit" disabled={isCreatingJob}>
+                    {isCreatingJob ? "Creating…" : "Create"}
+                  </Button>
                 </div>
               </form>
             </DialogContent>
