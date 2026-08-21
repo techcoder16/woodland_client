@@ -39,6 +39,8 @@ const BankDetails = ({register,watch, clearErrors, setValue, errors }: any) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
         <InputField setValue={setValue} label="Bank Name" name="bankName" register={register} error={errors.bankName?.message?.toString()} />
+        <InputField setValue={setValue} label="Account Number" name="bankAccountNo" register={register} error={errors.bankAccountNo?.message?.toString()} />
+        <InputField setValue={setValue} label="Sort Code" name="bankSortCode" register={register} error={errors.bankSortCode?.message?.toString()} />
       </div>
         <div className="text-lg font-medium flex justify-start underline p-5">Bank branch address</div>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -31,6 +31,8 @@ const formSchema = z.object({
   email: z.string().nullable().optional(),
 
   bankName: z.string().nullable().optional(),
+  bankAccountNo: z.string().nullable().optional(),
+  bankSortCode: z.string().nullable().optional(),
   bankAddressLine1: z.string().nullable().optional(),
   bankAddressLine2: z.string().nullable().optional(),
   bankTown: z.string().nullable().optional(),

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Trash, Search, Plus, Phone, MoreHorizontal, Edit } from "lucide-react";
+import { Trash, Search, Plus, Phone, MoreHorizontal, Edit, Eye } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,12 +22,14 @@ import { Input } from "@/components/ui/input";
 import { fetchContractors, deleteContractor } from "@/redux/dataStore/contractorSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import ContractorPdf from "./Contractor/ContractorPdf";
 
 const ContractorList = () => {
   const dispatch = useAppDispatch();
   const { contractors, totalPages } = useAppSelector((state) => state.contractors);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [viewContractor, setViewContractor] = useState<any>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -125,6 +127,10 @@ const ContractorList = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => setViewContractor(contractor)}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleEditContractor(contractor)}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit
@@ -176,6 +182,15 @@ const ContractorList = () => {
           </Pagination>
         </div>
       </div>
+
+      {viewContractor && (
+        <ContractorPdf
+          contractor={viewContractor}
+          open={!!viewContractor}
+          onOpenChange={(next: boolean) => !next && setViewContractor(null)}
+          hideTrigger
+        />
+      )}
     </DashboardLayout>
   );
 };

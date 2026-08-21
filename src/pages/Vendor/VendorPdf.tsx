@@ -41,6 +41,8 @@ const VendorPdf = ({ vendor, open: openProp, onOpenChange, hideTrigger }: any) =
       title: "Bank Details",
       fields: [
         { label: "Bank Name", value: vendor.bankName },
+        { label: "Account Number", value: vendor.bankAccountNo },
+        { label: "Sort Code", value: vendor.bankSortCode },
         { label: "Bank Address Line 1", value: vendor.bankAddressLine1 },
         { label: "Bank Address Line 2", value: vendor.bankAddressLine2 },
         { label: "Bank Town", value: vendor.bankTown },

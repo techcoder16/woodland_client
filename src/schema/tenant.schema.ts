@@ -14,6 +14,10 @@ export const tenantSchema = z.object({
   SortCode: z.string().nullable(),
   BankName: z.string().nullable(),
   IDCheck: z.string().nullable(),
-  Address:z.string().nullable(),
-
+  Address: z.string().nullable(),
+  addressLine1: z.string().nullable(),
+  addressLine2: z.string().nullable(),
+  town: z.string().nullable(),
+  postCode: z.string().nullable(),
+  country: z.string().nullable(),
 });

@@ -12,6 +12,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { post } from "@/helper/api";
 import InputField from "@/utils/InputField";
 import FileUploadField from "@/utils/FileUploadField";
+import AddressSearchField from "@/components/AddressSearchField";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -19,6 +20,11 @@ const formSchema = z.object({
   phone: z.string().optional(),
   email: z.string().optional(),
   address: z.string().optional(),
+  addressLine1: z.string().optional(),
+  addressLine2: z.string().optional(),
+  town: z.string().optional(),
+  postCode: z.string().optional(),
+  country: z.string().optional(),
   logo: z.string().optional(),
 });
 
@@ -96,7 +102,24 @@ const AddContractor = () => {
                 <InputField label="Phone" name="phone" register={register} setValue={setValue} error={errors.phone?.message} />
                 <InputField label="Email" name="email" register={register} setValue={setValue} error={errors.email?.message} />
               </div>
-              <InputField label="Address" name="address" register={register} setValue={setValue} error={errors.address?.message} />
+              <div className="space-y-4">
+                <AddressSearchField
+                  onSelect={(address) => {
+                    if (address.addressLine1) setValue("addressLine1", address.addressLine1);
+                    if (address.addressLine2) setValue("addressLine2", address.addressLine2);
+                    if (address.town) setValue("town", address.town);
+                    if (address.postCode) setValue("postCode", address.postCode);
+                    setValue("country", "GB");
+                  }}
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <InputField label="Post Code" name="postCode" register={register} setValue={setValue} error={errors.postCode?.message} />
+                  <InputField label="Address Line 1" name="addressLine1" register={register} setValue={setValue} error={errors.addressLine1?.message} />
+                  <InputField label="Address Line 2" name="addressLine2" register={register} setValue={setValue} error={errors.addressLine2?.message} />
+                  <InputField label="Town" name="town" register={register} setValue={setValue} error={errors.town?.message} />
+                  <InputField label="Country" name="country" register={register} setValue={setValue} error={errors.country?.message} />
+                </div>
+              </div>
               <FileUploadField
                 label="Logo"
                 name="logo"

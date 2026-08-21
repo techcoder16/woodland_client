@@ -33,6 +33,7 @@ interface Property {
   rentalTerms?: string;
   rooms?: unknown;
   photographs?: string | null;
+  tenantNames?: string[];
 }
 
 interface RentTransaction {
@@ -94,6 +95,7 @@ const PropertyDetail = ({ kind, property }: { kind: PartyKind; property: Propert
       rentPayableInAdvance: property.rentPayableInAdvance,
       rentalTerms: property.rentalTerms,
       vendorName,
+      tenantName: property.tenantNames?.join(", "),
     });
   };
 

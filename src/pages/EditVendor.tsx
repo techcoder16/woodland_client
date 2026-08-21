@@ -31,6 +31,8 @@ const formSchema = z.object({
   email: z.string().nullable().optional(),
 
   bankName: z.string().nullable().optional(),
+  bankAccountNo: z.string().nullable().optional(),
+  bankSortCode: z.string().nullable().optional(),
   bankAddressLine1: z.string().nullable().optional(),
   bankAddressLine2: z.string().nullable().optional(),
   bankTown: z.string().nullable().optional(),
@@ -59,6 +61,8 @@ const buildVendorDefaults = (vendor: any) => {
     phone: vendor.phone || "",
     email: vendor.email || "",
     bankName: vendor.bankName || "",
+    bankAccountNo: vendor.bankAccountNo || "",
+    bankSortCode: vendor.bankSortCode || "",
     bankAddressLine1: vendor.bankAddressLine1 || "",
     bankAddressLine2: vendor.bankAddressLine2 || "",
     bankTown: vendor.bankTown || "",

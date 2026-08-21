@@ -10,6 +10,7 @@ interface ManagementAgreementData {
   rentPayableInAdvance?: string;
   rentalTerms?: string;
   vendorName?: string;
+  tenantName?: string;
 }
 
 const ADVANCE_LABELS: Record<string, string> = {
@@ -64,6 +65,7 @@ export function generateManagementAgreementPdf(data: ManagementAgreementData) {
             Managing Agent:<br/>
             Woodland Properties Management Ltd<br/>
             ${data.vendorName ? `<br/>Landlord: ${data.vendorName}` : ""}
+            ${data.tenantName ? `<br/>Tenant (Lessee): ${data.tenantName}` : ""}
           </td></tr>
           <tr><td class="label">Rent Per Month</td><td>${data.rentPerMonth ? "£" + data.rentPerMonth : ""} per calendar month</td></tr>
           <tr><td class="label">Rent Payable In Advance</td><td>${data.rentPayableInAdvance ? (ADVANCE_LABELS[data.rentPayableInAdvance] || data.rentPayableInAdvance) : ""}</td></tr>

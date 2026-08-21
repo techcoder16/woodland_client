@@ -17,6 +17,8 @@ interface Vendor {
   town?: string;
   country?: string;
   bankName?: string;
+  bankAccountNo?: string;
+  bankSortCode?: string;
   bankAddressLine1?: string;
   bankAddressLine2?: string;
   bankTown?: string;

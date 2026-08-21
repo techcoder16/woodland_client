@@ -2,6 +2,20 @@ import React from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+
+const ROOM_NAME_OPTIONS = [
+  "Living Room 1",
+  "Living Room 2",
+  "Dining Room",
+  "Bathroom",
+  "Kitchen",
+  "Bedroom 1",
+  "Bedroom 2",
+  "Bedroom 3",
+  "Bedroom 4",
+  "Other",
+] as const;
 
 interface RoomRow {
   name: string;
@@ -50,14 +64,32 @@ const RoomsTable: React.FC<RoomsTableProps> = ({ rooms, onChange }) => {
             </tr>
           </thead>
           <tbody>
-            {rooms.map((room, index) => (
+            {rooms.map((room, index) => {
+              const isKnownOption = (ROOM_NAME_OPTIONS as readonly string[]).includes(room.name);
+              const isOther = room.name !== "" && !isKnownOption;
+              return (
               <tr key={index} className="border-b">
-                <td className="p-2">
-                  <Input
-                    value={room.name}
-                    onChange={(e) => updateRoom(index, { name: e.target.value })}
-                    placeholder="e.g. Living Room"
-                  />
+                <td className="p-2 space-y-2">
+                  <Select
+                    value={isOther ? "Other" : room.name || undefined}
+                    onValueChange={(value) => updateRoom(index, { name: value === "Other" ? "" : value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a room" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ROOM_NAME_OPTIONS.map((option) => (
+                        <SelectItem key={option} value={option}>{option}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {isOther && (
+                    <Input
+                      value={room.name}
+                      onChange={(e) => updateRoom(index, { name: e.target.value })}
+                      placeholder="Enter room name"
+                    />
+                  )}
                 </td>
                 <td className="p-2">
                   <Input
