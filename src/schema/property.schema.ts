@@ -42,10 +42,12 @@ z.object({
   insuranceCertificate: z.any().nullable().optional(),
   emergencyLightingCertificate: z.any().nullable().optional(),
   propertyLicense: z.any().nullable().optional(),
+  managementDate: z.string().nullable().optional(),
   rentEffectiveDate: z.string().nullable().optional(),
   rentPerMonth: z.string().nullable().optional(),
   rentPayableInAdvance: z.string().nullable().optional(),
   rentalTerms: z.string().nullable().optional(),
+  termMonths: z.string().nullable().optional(),
 
   status: z.string().nullable().default(null).describe("Status is required."),
   vendor: z.string().nullable().default(null).refine((val) => !!val, { message: "Landlord is required." }),

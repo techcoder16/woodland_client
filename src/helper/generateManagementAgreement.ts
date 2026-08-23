@@ -5,10 +5,12 @@ interface ManagementAgreementData {
   addressLine2?: string;
   town?: string;
   postCode?: string;
+  managementDate?: string;
   rentEffectiveDate?: string;
   rentPerMonth?: string;
   rentPayableInAdvance?: string;
   rentalTerms?: string;
+  termMonths?: string;
   vendorName?: string;
   tenantName?: string;
 }
@@ -19,6 +21,9 @@ const ADVANCE_LABELS: Record<string, string> = {
   "6_months": "6 Months",
   "1_year": "1 Year",
 };
+
+// Woodland's registered management address — the Lessee on every agreement.
+const WOODLAND_LESSEE_ADDRESS = ["Woodland Properties Management Ltd", "Park House", "168 Stainforth Road", "Ilford", "IG2 7EL"];
 
 function formatDate(value?: string): string {
   if (!value) return "";
@@ -56,18 +61,19 @@ export function generateManagementAgreementPdf(data: ManagementAgreementData) {
       </head>
       <body>
         <div class="logo"><img src="${LOGO_BASE64}" alt="Woodland" /></div>
-        <h1>MANAGEMENT AGREEMENT</h1>
+        <h1>LEASE</h1>
         <table>
           <tr><td class="label">Property</td><td>${propertyAddress || ""}</td></tr>
+          <tr><td class="label">Management Date</td><td>${formatDate(data.managementDate)}</td></tr>
           <tr><td class="label">Rent Effective Date</td><td>${formatDate(data.rentEffectiveDate)}</td></tr>
-          <tr><td class="label">Parties to the Agreement</td><td>
-            Owner:<br/><br/>
-            Managing Agent:<br/>
-            Woodland Properties Management Ltd<br/>
-            ${data.vendorName ? `<br/>Landlord: ${data.vendorName}` : ""}
-            ${data.tenantName ? `<br/>Tenant (Lessee): ${data.tenantName}` : ""}
+          <tr><td class="label">Parties to the Lease</td><td>
+            Lessor:${data.vendorName ? " " + data.vendorName : ""}<br/><br/>
+            Lessee:<br/>
+            ${WOODLAND_LESSEE_ADDRESS.join("<br/>")}
+            ${data.tenantName ? `<br/><br/>Tenant: ${data.tenantName}` : ""}
           </td></tr>
-          <tr><td class="label">Rent Per Month</td><td>${data.rentPerMonth ? "£" + data.rentPerMonth : ""} per calendar month</td></tr>
+          <tr><td class="label">Term</td><td>${data.termMonths ? data.termMonths + " Months" : "Months"}</td></tr>
+          <tr><td class="label">Rent per month</td><td>${data.rentPerMonth ? "£" + data.rentPerMonth : "£"} per calendar month</td></tr>
           <tr><td class="label">Rent Payable In Advance</td><td>${data.rentPayableInAdvance ? (ADVANCE_LABELS[data.rentPayableInAdvance] || data.rentPayableInAdvance) : ""}</td></tr>
         </table>
 
@@ -77,8 +83,8 @@ export function generateManagementAgreementPdf(data: ManagementAgreementData) {
         </div>
 
         <div class="sign">
-          <div><p>Signed (Owner)</p></div>
-          <div><p>Signed (Managing Agent) — Woodland Properties Management Ltd</p></div>
+          <div><p>Signed (Lessor)</p></div>
+          <div><p>Signed (Lessee) — Woodland Properties Management Ltd</p></div>
         </div>
       </body>
     </html>

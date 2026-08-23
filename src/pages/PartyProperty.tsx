@@ -27,10 +27,12 @@ interface Property {
   addressLine2?: string;
   town?: string;
   country?: string;
+  managementDate?: string;
   rentPerMonth?: string;
   rentEffectiveDate?: string;
   rentPayableInAdvance?: string;
   rentalTerms?: string;
+  termMonths?: string;
   rooms?: unknown;
   photographs?: string | null;
   tenantNames?: string[];
@@ -90,10 +92,12 @@ const PropertyDetail = ({ kind, property }: { kind: PartyKind; property: Propert
       addressLine2: property.addressLine2,
       town: property.town,
       postCode: property.postCode,
+      managementDate: property.managementDate,
       rentEffectiveDate: property.rentEffectiveDate,
       rentPerMonth: property.rentPerMonth,
       rentPayableInAdvance: property.rentPayableInAdvance,
       rentalTerms: property.rentalTerms,
+      termMonths: property.termMonths,
       vendorName,
       tenantName: property.tenantNames?.join(", "),
     });

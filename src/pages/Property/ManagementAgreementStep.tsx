@@ -28,15 +28,27 @@ const ManagementAgreementStep = ({ register, watch, setValue, clearErrors, error
       <div className="p-4 w-full">
         <div className="text-lg font-medium flex justify-start underline p-5">Management Agreement</div>
 
-        <DateField
-          label="Rent Effective Date"
-          value={watch("rentEffectiveDate") || ""}
-          onChange={(date) => {
-            setValue("rentEffectiveDate", date.toISOString());
-            clearErrors("rentEffectiveDate");
-          }}
-          error={errors?.rentEffectiveDate?.message?.toString()}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <DateField
+            label="Management Date"
+            value={watch("managementDate") || ""}
+            onChange={(date) => {
+              setValue("managementDate", date.toISOString());
+              clearErrors("managementDate");
+            }}
+            error={errors?.managementDate?.message?.toString()}
+          />
+
+          <DateField
+            label="Rent Effective Date"
+            value={watch("rentEffectiveDate") || ""}
+            onChange={(date) => {
+              setValue("rentEffectiveDate", date.toISOString());
+              clearErrors("rentEffectiveDate");
+            }}
+            error={errors?.rentEffectiveDate?.message?.toString()}
+          />
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <InputField
@@ -62,6 +74,16 @@ const ManagementAgreementStep = ({ register, watch, setValue, clearErrors, error
           />
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <InputField
+            label="Term (Months)"
+            name="termMonths"
+            register={register}
+            setValue={setValue}
+            error={errors?.termMonths?.message?.toString()}
+          />
+        </div>
+
         <TextAreaField
           label="Terms"
           name="rentalTerms"
@@ -79,10 +101,12 @@ const ManagementAgreementStep = ({ register, watch, setValue, clearErrors, error
                 addressLine2: watch("addressLine2"),
                 town: watch("town"),
                 postCode: watch("postCode"),
+                managementDate: watch("managementDate"),
                 rentEffectiveDate: watch("rentEffectiveDate"),
                 rentPerMonth: watch("rentPerMonth"),
                 rentPayableInAdvance: watch("rentPayableInAdvance"),
                 rentalTerms: watch("rentalTerms"),
+                termMonths: watch("termMonths"),
                 vendorName,
               })
             }

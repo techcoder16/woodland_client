@@ -47,10 +47,12 @@ const ManagementAgreement: React.FC<ManagementAgreementProps> = ({ propertyId, p
       addressLine2: property?.addressLine2,
       town: property?.town,
       postCode: property?.postCode,
+      managementDate: property?.managementDate,
       rentEffectiveDate: property?.rentEffectiveDate,
       rentPerMonth: property?.rentPerMonth,
       rentPayableInAdvance: property?.rentPayableInAdvance,
       rentalTerms: property?.rentalTerms,
+      termMonths: property?.termMonths,
       vendorName,
       tenantName: linkedTenantNames || undefined,
     });
