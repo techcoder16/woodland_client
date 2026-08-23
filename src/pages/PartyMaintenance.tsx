@@ -354,11 +354,12 @@ const PartyMaintenance = ({ kind }: { kind: PartyKind }) => {
                     <Plus className="h-4 w-4 mr-2" /> Report an issue
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-h-[85vh] flex flex-col overflow-hidden">
                   <DialogHeader>
                     <DialogTitle>Report a maintenance issue</DialogTitle>
                   </DialogHeader>
-                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                  <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+                  <div className="space-y-4 overflow-y-auto pr-1 flex-1 min-h-0">
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-2">
                         <Label htmlFor="jobType">{renderLabel("Type *")}</Label>
@@ -410,14 +411,15 @@ const PartyMaintenance = ({ kind }: { kind: PartyKind }) => {
                       />
                       <p className="text-xs text-muted-foreground">At least one photo is required.</p>
                     </div>
-                    <div className="flex justify-end gap-2 pt-2">
-                      <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSubmittingReport}>
-                        Cancel
-                      </Button>
-                      <Button type="submit" disabled={isSubmittingReport}>
-                        {isSubmittingReport ? "Submitting…" : "Submit"}
-                      </Button>
-                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 pt-4 border-t mt-2">
+                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSubmittingReport}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={isSubmittingReport}>
+                      {isSubmittingReport ? "Submitting…" : "Submit"}
+                    </Button>
+                  </div>
                   </form>
                 </DialogContent>
               </Dialog>

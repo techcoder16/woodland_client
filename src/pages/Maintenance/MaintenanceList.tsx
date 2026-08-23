@@ -275,11 +275,12 @@ const MaintenanceList = () => {
                 Maintenance
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
               <DialogHeader>
                 <DialogTitle>Add New Maintenance</DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+              <div className="space-y-4 overflow-y-auto pr-1 flex-1 min-h-0">
                 <SelectField
                   label="Property"
                   name="propertyId"
@@ -383,7 +384,8 @@ const MaintenanceList = () => {
                   once a Maintenance Department Admin reviews this request.
                 </p>
 
-                <div className="flex justify-end space-x-2">
+              </div>
+                <div className="flex justify-end space-x-2 pt-4 border-t mt-2">
                   <Button type="button" variant="outline" onClick={closeDialog} disabled={isCreatingJob}>
                     Cancel
                   </Button>
