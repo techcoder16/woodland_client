@@ -148,6 +148,9 @@ const MaintenanceDetail = () => {
   const isJobOverdue = !!job && job.status !== "COMPLETED" && job.status !== "CANCELLED" && job.dueDate < formatLocalDate(new Date());
   const isAwaitingReviewOrDone = job?.status === "CONTRACTOR_DONE" || job?.status === "COMPLETED";
   const canReassignContractor = !job?.contractorId || isAwaitingReviewOrDone || isJobOverdue;
+  // COMPLETED/CANCELLED are terminal — mirrors the backend's hard lock in
+  // updateJobType, which now rejects any edit to a closed job outright.
+  const isJobClosed = job?.status === "COMPLETED" || job?.status === "CANCELLED";
 
   const handleAssignContractor = async () => {
     if (!job?.id || !pendingContractorId) return;
@@ -332,7 +335,11 @@ const MaintenanceDetail = () => {
             {canManageMaintenance && (
               <Card className="p-4">
                 <div className="font-semibold mb-3">Set landlord markup</div>
-                {job.totalCost == null ? (
+                {isJobClosed ? (
+                  <p className="text-sm text-muted-foreground">
+                    This job is {job.status === "COMPLETED" ? "completed" : "cancelled"} and can no longer be edited.
+                  </p>
+                ) : job.totalCost == null ? (
                   <p className="text-sm text-muted-foreground">
                     Waiting on the contractor to enter their cost before a markup can be applied.
                   </p>
@@ -570,7 +577,11 @@ const MaintenanceDetail = () => {
             {canManageMaintenance && (
               <Card className="p-4">
                 <div className="font-semibold mb-3">Assign contractor</div>
-                {!canReassignContractor ? (
+                {isJobClosed ? (
+                  <p className="text-sm text-muted-foreground">
+                    This job is {job.status === "COMPLETED" ? "completed" : "cancelled"} and can no longer be edited.
+                  </p>
+                ) : !canReassignContractor ? (
                   <p className="text-sm text-muted-foreground">
                     A contractor is already assigned. Reassignment is disabled until the job is submitted as done or its due date passes.
                   </p>

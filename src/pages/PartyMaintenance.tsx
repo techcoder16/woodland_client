@@ -91,7 +91,15 @@ const formatAddress = (property?: JobType["property"]) => {
 const contractorUpdateSchema = z
   .object({
     description: z.string().min(1, "Description is required"),
-    totalCost: z.coerce.number().min(0).optional(),
+    // An empty/untouched cost input arrives as "" from plain register()
+    // (no valueAsNumber), and z.coerce.number() turns "" into NaN, which
+    // then silently fails .min(0) with no visible error tied to the Cost
+    // field — blocking the whole form submit for something that should be
+    // treated as "not provided". Coerce empty/whitespace to undefined first.
+    totalCost: z.preprocess(
+      (val) => (typeof val === "string" && val.trim() === "" ? undefined : val),
+      z.coerce.number().min(0).optional(),
+    ),
     startDate: z.string().optional(),
     endDate: z.string().optional(),
     media: z.array(z.string()).optional(),
@@ -158,11 +166,11 @@ const ContractorUpdateDialog = ({ job, onUpdated }: { job: JobType; onUpdated: (
           <Wrench className="h-4 w-4 mr-2" /> Update
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Update job</DialogTitle>
         </DialogHeader>
-        <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-1">
+        <div className="space-y-6 overflow-y-auto pr-1 flex-1 min-h-0">
           <div className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Work details</p>
             <div className="space-y-2">
@@ -225,10 +233,25 @@ const ContractorUpdateDialog = ({ job, onUpdated }: { job: JobType; onUpdated: (
           <Button type="button" variant="outline" disabled={isSaving} onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button type="button" variant="secondary" disabled={isSaving} onClick={handleSubmit((d) => submit(d, false))}>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={isSaving}
+            onClick={handleSubmit(
+              (d) => submit(d, false),
+              () => toast.error("Please fix the highlighted fields before saving")
+            )}
+          >
             Save progress
           </Button>
-          <Button type="button" disabled={isSaving} onClick={handleSubmit((d) => submit(d, true))}>
+          <Button
+            type="button"
+            disabled={isSaving}
+            onClick={handleSubmit(
+              (d) => submit(d, true),
+              () => toast.error("Please fix the highlighted fields before saving")
+            )}
+          >
             Mark Job Done
           </Button>
         </div>
