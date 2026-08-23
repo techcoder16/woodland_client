@@ -78,7 +78,10 @@ const reportSchema = z.object({
   jobType: z.string().min(1, "Type is required"),
   location: z.string().min(1, "Location is required"),
   description: z.string().min(1, "Description is required"),
-  dueDate: z.string().min(1, "Due date is required"),
+  dueDate: z
+    .string()
+    .min(1, "Due date is required")
+    .refine((value) => value > formatLocalDate(new Date()), { message: "Due date must be after today" }),
   priority: z.string().optional(),
 });
 type ReportFormData = z.infer<typeof reportSchema>;
@@ -397,7 +400,7 @@ const PartyMaintenance = ({ kind }: { kind: PartyKind }) => {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="dueDate">{renderLabel("Preferred date *")}</Label>
-                      <Input id="dueDate" type="date" {...register("dueDate")} />
+                      <Input id="dueDate" type="date" min={formatLocalDate(new Date())} {...register("dueDate")} />
                       {errors.dueDate && <p className="text-sm text-destructive">{errors.dueDate.message}</p>}
                     </div>
                     <div className="space-y-2">

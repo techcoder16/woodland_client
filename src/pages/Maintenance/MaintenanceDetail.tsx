@@ -37,7 +37,10 @@ const editSchema = z.object({
   jobType: z.string().min(1, "Type is required"),
   location: z.string().min(1, "Location is required"),
   description: z.string().min(1, "Description is required"),
-  dueDate: z.string().min(1, "Due date is required"),
+  dueDate: z
+    .string()
+    .min(1, "Due date is required")
+    .refine((value) => value > formatLocalDate(new Date()), { message: "Due date must be after today" }),
   schedule: z.string().optional(),
   time: z.string().optional(),
   thingsToDo: z.string().optional(),
@@ -156,11 +159,11 @@ const MaintenanceDetail = () => {
     if (!job?.id || !pendingContractorId) return;
     setIsAssigning(true);
     try {
-      await dispatch(updateJobType({ id: job.id, jobTypeData: { propertyId: job.propertyId, contractorId: pendingContractorId } }));
+      await dispatch(updateJobType({ id: job.id, jobTypeData: { propertyId: job.propertyId, contractorId: pendingContractorId } })).unwrap();
       await dispatch(fetchJobTypeById(job.id));
       toast.success("Contractor assigned");
     } catch (error: any) {
-      toast.error(error?.message || "Failed to assign contractor");
+      toast.error(typeof error === "string" ? error : error?.message || "Failed to assign contractor");
     } finally {
       setIsAssigning(false);
     }
@@ -169,6 +172,9 @@ const MaintenanceDetail = () => {
   const onSubmit = async (data: EditFormData) => {
     if (!job?.id) return;
     try {
+      // .unwrap() is required — createAsyncThunk never throws on its own,
+      // so without it a rejected update (e.g. the backend's closed-job
+      // lock) was silently treated as success here.
       await dispatch(
         updateJobType({
           id: job.id,
@@ -185,12 +191,12 @@ const MaintenanceDetail = () => {
             media: data.media,
           },
         })
-      );
+      ).unwrap();
       await dispatch(fetchJobTypeById(job.id));
       toast.success("Maintenance job updated successfully");
       setIsEditing(false);
-    } catch (error) {
-      toast.error("Error updating maintenance job");
+    } catch (error: any) {
+      toast.error(typeof error === "string" ? error : error?.message || "Error updating maintenance job");
     }
   };
 
@@ -202,11 +208,11 @@ const MaintenanceDetail = () => {
           id: job.id,
           jobTypeData: { propertyId: job.propertyId, dateDone: formatLocalDate(new Date()), status: "COMPLETED" },
         })
-      );
+      ).unwrap();
       await dispatch(fetchJobTypeById(job.id));
       toast.success("Maintenance job marked as done");
-    } catch (error) {
-      toast.error("Error completing maintenance job");
+    } catch (error: any) {
+      toast.error(typeof error === "string" ? error : error?.message || "Error completing maintenance job");
     }
   };
 
@@ -227,12 +233,12 @@ const MaintenanceDetail = () => {
             ...(marginType === "percent" ? { marginPercent: value } : { marginAmount: value }),
           },
         })
-      );
+      ).unwrap();
       await dispatch(fetchJobTypeById(job.id));
       toast.success("Landlord cost updated");
       setMarginValue("");
     } catch (error: any) {
-      toast.error(error?.message || "Failed to apply margin");
+      toast.error(typeof error === "string" ? error : error?.message || "Failed to apply margin");
     } finally {
       setIsSavingMargin(false);
     }
@@ -243,11 +249,11 @@ const MaintenanceDetail = () => {
     try {
       await dispatch(
         updateJobType({ id: job.id, jobTypeData: { propertyId: job.propertyId, status: "CANCELLED" } })
-      );
+      ).unwrap();
       await dispatch(fetchJobTypeById(job.id));
       toast.success("Maintenance job cancelled");
-    } catch (error) {
-      toast.error("Error cancelling maintenance job");
+    } catch (error: any) {
+      toast.error(typeof error === "string" ? error : error?.message || "Error cancelling maintenance job");
     }
   };
 
@@ -543,7 +549,9 @@ const MaintenanceDetail = () => {
             <Card className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="font-semibold">Job details</div>
-                <Button size="sm" variant="outline" onClick={() => setIsEditing(true)}>Edit</Button>
+                {!isJobClosed && (
+                  <Button size="sm" variant="outline" onClick={() => setIsEditing(true)}>Edit</Button>
+                )}
               </div>
               <div className="flex gap-2 mb-3">
                 {job.priority && <Badge variant="outline">Priority: {job.priority}</Badge>}

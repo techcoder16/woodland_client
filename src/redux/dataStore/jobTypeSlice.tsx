@@ -143,7 +143,11 @@ export const updateJobType = createAsyncThunk(
       };
 
       const res = await post(`property-management/job-type/${id}`, jobTypeData, headers);
-      
+
+      if (res.error) {
+        return rejectWithValue(res.error.message || "Failed to update job type");
+      }
+
       // Refresh the job types list
       if (jobTypeData.propertyId) {
         await (dispatch as AppDispatch)(fetchJobTypes({
@@ -152,7 +156,7 @@ export const updateJobType = createAsyncThunk(
         }));
       }
 
-      return res;
+      return res.data;
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to update job type");
     }

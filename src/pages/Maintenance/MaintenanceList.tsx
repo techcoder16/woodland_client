@@ -47,7 +47,10 @@ const maintenanceSchema = z.object({
   jobType: z.string().min(1, "Type is required"),
   location: z.string().min(1, "Location is required"),
   description: z.string().min(1, "Description is required"),
-  dueDate: z.string().min(1, "Due date is required"),
+  dueDate: z
+    .string()
+    .min(1, "Due date is required")
+    .refine((value) => value > formatLocalDate(new Date()), { message: "Due date must be after today" }),
   schedule: z.string().optional(),
   time: z.string().optional(),
   thingsToDo: z.string().optional(),
