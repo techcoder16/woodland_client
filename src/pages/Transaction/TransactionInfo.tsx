@@ -4,6 +4,7 @@ import SelectField from "@/utils/SelectedField";
 import { DateField } from "@/utils/DateField";
 import TextAreaField from "@/utils/TextAreaField";
 import { BANKOPTIONS } from "@/lib/constant";
+import MaintenancePicker from "@/utils/MaintenancePicker";
 
 interface TenantProps {
   register: any;
@@ -12,6 +13,7 @@ interface TenantProps {
   setValue: any;
   errors: any;
   type?: string;
+  propertyId?: string;
 }
 
 const TranscationInfo = ({
@@ -19,6 +21,7 @@ const TranscationInfo = ({
   watch,
   setValue,
   errors,
+  propertyId,
 }: TenantProps) => {
   const handleDateChange = (name: any, date: Date) => {
     setValue(name, date.toISOString());
@@ -44,10 +47,10 @@ const TranscationInfo = ({
     const lessVat = Number(watch("toLandlordLessVAT")|| 0);
      const toLandlordLessManagementFees = Number(watch("toLandlordLessManagementFees")|| 0);
       console.log(netRecieved, lessBuildingExpenditure, lessVat, toLandlordLessManagementFees)
-    
+
     setValue("toLandlordNetPaid", netRecieved - (lessBuildingExpenditure + lessVat + toLandlordLessManagementFees));
 
-  
+
   }, [
     watch("toLandlordNetPaid"),
     watch("toLandlordLessBuildingExpenditure"),
@@ -56,6 +59,22 @@ const TranscationInfo = ({
     watch ("toLandlordLessVAT"),
 
     setValue
+  ]);
+
+  // When the fee mode is a percentage, keep the stored amount in sync with
+  // rent × percent so the form (and its Net Paid calc above) always reflects
+  // what the backend will compute and save.
+  useEffect(() => {
+    const mode = watch("toLandlordManagementFeeMode") || "FLAT";
+    if (mode !== "PERCENT") return;
+    const rent = Number(watch("toLandlordRentReceived")) || 0;
+    const percent = Number(watch("toLandlordManagementFeePercent")) || 0;
+    setValue("toLandlordLessManagementFees", (rent * percent) / 100);
+  }, [
+    watch("toLandlordManagementFeeMode"),
+    watch("toLandlordManagementFeePercent"),
+    watch("toLandlordRentReceived"),
+    setValue,
   ]);
 
 
@@ -133,10 +152,44 @@ const TranscationInfo = ({
             />
             <InputField label="Rent Received" name="toLandlordRentReceived" type="number" {...{ register, setValue, errors }} />
 
-            <InputField label="Less Management Fees" name="toLandlordLessManagementFees" type="number" {...{ register, setValue, errors }} />
-            <InputField label="Less Building Expenditure" name="toLandlordLessBuildingExpenditure" type="number" {...{ register, setValue, errors }} />
-            <InputField label="Actual" name="toLandlordLessBuildingExpenditureActual" type="number" {...{ register, setValue, errors }} />
-            <InputField label="Difference" name="toLandlordLessBuildingExpenditureDifference" type="number" {...{ register, setValue, errors }} />
+            <SelectField
+              setValue={setValue}
+              label="Management Fee Type"
+              name="toLandlordManagementFeeMode"
+              register={register}
+              watch={watch}
+              options={[
+                { label: "Fixed Amount (£)", value: "FLAT" },
+                { label: "Percentage (%)", value: "PERCENT" },
+              ]}
+            />
+            {watch("toLandlordManagementFeeMode") === "PERCENT" ? (
+              <>
+                <InputField label="Management Fee (%)" name="toLandlordManagementFeePercent" type="number" {...{ register, setValue, errors }} />
+                <InputField label="= Less Management Fees (£)" name="toLandlordLessManagementFees" type="number" disabled {...{ register, setValue, errors }} />
+              </>
+            ) : (
+              <InputField label="Less Management Fees (£)" name="toLandlordLessManagementFees" type="number" {...{ register, setValue, errors }} />
+            )}
+            <div className="space-y-1.5 sm:col-span-2">
+              <label className="text-muted-foreground font-medium text-sm">Maintenance (completed jobs)</label>
+              <MaintenancePicker
+                propertyId={propertyId || ""}
+                value={watch("jobTypeIds")}
+                selectedLabels={watch("toLandlordExpenditureDescription") ? [watch("toLandlordExpenditureDescription")] : undefined}
+                disabled={!propertyId}
+                onChange={(jobIds, totalCharged, jobs) => {
+                  setValue("jobTypeIds", jobIds);
+                  setValue("toLandlordLessBuildingExpenditure", totalCharged);
+                  setValue("toLandlordExpenditureDescription", jobs.map((j) => j.label).join("; "));
+                }}
+              />
+            </div>
+            <div className="sm:col-span-2 grid grid-cols-3 gap-3">
+              <InputField label="Building Expenditure" name="toLandlordLessBuildingExpenditure" type="number" {...{ register, setValue, errors }} />
+              <InputField label="Actual" name="toLandlordLessBuildingExpenditureActual" type="number" {...{ register, setValue, errors }} />
+              <InputField label="Difference" name="toLandlordLessBuildingExpenditureDifference" type="number" disabled {...{ register, setValue, errors }} />
+            </div>
             {/* <InputField label="Net Received" name="toLandlordNetReceived" type="number" {...{ register, setValue, errors }} /> */}
             <InputField label="Less VAT" name="toLandlordLessVAT" type="number" {...{ register, setValue, errors }} />
             <InputField  min={-1000000} label="Net Paid" name="toLandlordNetPaid" type="number" {...{ register, setValue, errors }} />

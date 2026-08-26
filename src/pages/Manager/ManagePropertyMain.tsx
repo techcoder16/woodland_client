@@ -76,6 +76,10 @@ const ManageProperty = () => {
   // Get property.id from URL parameters
   const location = useLocation();
   const property: any = location.state?.property;
+  const searchParams = new URLSearchParams(location.search);
+  const initialTab = searchParams.get("tab") || "features";
+  const prefillRent = searchParams.get("prefillRent") || undefined;
+  const prefillDue = searchParams.get("prefillDue") || undefined;
 
   console.log(property, "property asdadka");
 
@@ -151,7 +155,7 @@ console.log("Property data in ManageProperty component:", property);
 
         {/* Tabs Section */}
         <div className=" rounded-lg shadow-sm ">
-          <Tabs defaultValue="features" className="w-full">
+          <Tabs defaultValue={initialTab} className="w-full">
             {/* Horizontal Scrollable Tab List */}
             <div className="px-6 pt-4">
               <div className="overflow-x-auto scrollbar-hide">
@@ -236,7 +240,12 @@ console.log("Property data in ManageProperty component:", property);
               </TabsContent>
 
               <TabsContent value="transactions" className="mt-0">
-                <TransactionPage propertyId={property.id} property={property} />
+                <TransactionPage
+                  propertyId={property.id}
+                  property={property}
+                  prefillRent={prefillRent}
+                  prefillDue={prefillDue}
+                />
               </TabsContent>
 
             

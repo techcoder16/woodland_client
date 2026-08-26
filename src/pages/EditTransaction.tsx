@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Check, ArrowLeft, ArrowRight, UserPlus } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import LoadingBar from "react-top-loading-bar";
+import { Progress } from "@/components/ui/progress";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import BasicInfo from "./Transaction/TransactionInfo";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -32,9 +32,12 @@ toLandLordMode :z.string().optional(),
     toLandlordDate: z.string().optional(),
   toLandlordRentReceived: z.coerce.number().optional(),
   toLandlordLessManagementFees: z.coerce.number().optional(),
+  toLandlordManagementFeeMode: z.string().optional(),
+  toLandlordManagementFeePercent: z.coerce.number().optional(),
   toLandlordLessBuildingExpenditure: z.coerce.number().optional(),
   toLandlordLessBuildingExpenditureActual : z.coerce.number().optional(),
   toLandlordLessBuildingExpenditureDifference: z.coerce.number().optional(),
+  jobTypeIds: z.array(z.string()).optional(),
   toLandlordNetReceived: z.coerce.number().optional(),
   toLandlordLessVAT: z.coerce.number().optional(),
   toLandlordNetPaid: z.coerce.number().optional(),
@@ -71,7 +74,7 @@ const EditTransaction = ({ isOpen, onClose, propertyId ,transaction}: EditTransa
   useEffect(() => {
     if (transaction) {
       const normalizedTransaction = Object.keys(formSchema.shape).reduce((acc, key) => {
-        acc[key] = transaction[key] ?? null; // Ensure undefined values become null
+        acc[key] = key === "jobTypeIds" ? (transaction[key] ?? []) : (transaction[key] ?? null); // Ensure undefined values become null (jobTypeIds defaults to [])
         return acc;
       }, {} as FormData);
       
@@ -99,7 +102,7 @@ const EditTransaction = ({ isOpen, onClose, propertyId ,transaction}: EditTransa
         if (value !== null && value !== undefined) formData.append(key, String(value));
       });
 
-            const newData = {...data,propertyId}
+            const newData = {...data,propertyId, version: transaction.version}
       newData.propertyId  = propertyId
       console.log(newData.toLandLordMode,"asddddddddddddddd")
       
@@ -126,27 +129,34 @@ const EditTransaction = ({ isOpen, onClose, propertyId ,transaction}: EditTransa
     }
   };
 
-  const steps = [{ label: "Basic Info", component: <BasicInfo  watch={watch} register={register} errors={formState.errors} setValue={setValue} clearErrors={clearErrors} /> }];
+  const steps = [{ label: "Basic Info", component: <BasicInfo  watch={watch} register={register} errors={formState.errors} setValue={setValue} clearErrors={clearErrors} propertyId={propertyId || transaction?.propertyId} /> }];
   const isLastStep = currentStep === steps.length - 1;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-    <DialogContent className="sm:max-w-7xl">
-      <DialogHeader>
+    <DialogContent className="sm:max-w-7xl max-h-[90vh] flex flex-col p-0 gap-0">
+      <DialogHeader className="px-6 pt-6 shrink-0">
         <DialogTitle className="flex items-center gap-2">
           <UserPlus className="h-5 w-5 text-primary" /> Edit Transaction
         </DialogTitle>
       </DialogHeader>
 
-      <LoadingBar color="hsl(0, 81%, 43%)" progress={progress} onLoaderFinished={() => setProgress(0)} />
+      {progress > 0 && (
+        <div className="px-6 shrink-0">
+          <Progress value={progress} className="h-1" />
+        </div>
+      )}
 
-            <form onSubmit={handleSubmit(onSubmit)}>{steps[currentStep].component}
-              <div className="flex justify-between pt-6">
-                {isLastStep ? <Button key="submit" type="submit">Submit <Check className="ml-2 h-4 w-4" /></Button> : <Button key="next" type="button" onClick={() => setCurrentStep(currentStep + 1)}>Next <ArrowRight className="ml-2 h-4 w-4" /></Button>}
-              </div>
-            </form>
-         
-            </DialogContent>
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+        <div className="flex-1 min-h-0 overflow-y-auto px-6">
+          {steps[currentStep].component}
+        </div>
+        <div className="flex justify-between items-center px-6 py-4 border-t border-border/60 shrink-0 bg-card">
+          {isLastStep ? <Button key="submit" type="submit">Submit <Check className="ml-2 h-4 w-4" /></Button> : <Button key="next" type="button" onClick={() => setCurrentStep(currentStep + 1)}>Next <ArrowRight className="ml-2 h-4 w-4" /></Button>}
+        </div>
+      </form>
+
+    </DialogContent>
             </Dialog>
   );
 };

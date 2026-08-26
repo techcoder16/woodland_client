@@ -11,8 +11,12 @@ import LoadingBar from "react-top-loading-bar";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { post } from "@/helper/api";
 import InputField from "@/utils/InputField";
+import SelectField from "@/utils/SelectedField";
 import FileUploadField from "@/utils/FileUploadField";
 import AddressSearchField from "@/components/AddressSearchField";
+import { JOB_TYPE_OPTIONS } from "@/helper/jobTypeOptions";
+
+const SPECIALTY_OPTIONS = JOB_TYPE_OPTIONS.map((s) => ({ label: s, value: s }));
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -96,7 +100,7 @@ const AddContractor = () => {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <InputField label="Name" name="name" register={register} setValue={setValue} error={errors.name?.message} placeholder="e.g., John Smith" />
-                <InputField label="Specialty" name="specialty" register={register} setValue={setValue} error={errors.specialty?.message} placeholder="e.g., Plumbing, Electrical" />
+                <SelectField label="Specialty" name="specialty" register={register} setValue={setValue} watch={watch} error={errors.specialty?.message} options={SPECIALTY_OPTIONS} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <InputField label="Phone" name="phone" register={register} setValue={setValue} error={errors.phone?.message} />

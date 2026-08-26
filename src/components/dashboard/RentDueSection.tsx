@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { get } from "@/helper/api";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, CalendarClock, Calendar } from "lucide-react";
+import { AlertTriangle, CalendarDays, CalendarClock, Calendar } from "lucide-react";
 
 interface RentDueEntry {
   propertyId: string;
@@ -14,11 +15,12 @@ interface RentDueEntry {
 
 interface RentDueData {
   overdue: RentDueEntry[];
+  dueToday: RentDueEntry[];
   dueThisWeek: RentDueEntry[];
   dueThisMonth: RentDueEntry[];
 }
 
-const EMPTY: RentDueData = { overdue: [], dueThisWeek: [], dueThisMonth: [] };
+const EMPTY: RentDueData = { overdue: [], dueToday: [], dueThisWeek: [], dueThisMonth: [] };
 
 function formatDate(value: string) {
   const d = new Date(value);
@@ -27,15 +29,32 @@ function formatDate(value: string) {
 }
 
 function RentDueList({ entries, emptyLabel }: { entries: RentDueEntry[]; emptyLabel: string }) {
+  const navigate = useNavigate();
+
   if (entries.length === 0) {
     return <div className="text-sm text-muted-foreground py-6 text-center">{emptyLabel}</div>;
   }
+
+  const goToTransaction = (entry: RentDueEntry) => {
+    const params = new URLSearchParams({
+      tab: "transactions",
+      prefillRent: entry.rentPerMonth,
+      prefillDue: entry.dueDate,
+    });
+    navigate(`/property/manager?${params.toString()}`, {
+      state: { property: { id: entry.propertyId, addressLine1: entry.address } },
+    });
+  };
+
   return (
     <div className="space-y-2 max-h-64 overflow-y-auto">
       {entries.map((entry) => (
-        <div
+        <button
           key={entry.propertyId}
-          className="flex items-center justify-between gap-3 rounded-md border border-border/60 px-3 py-2 text-sm"
+          type="button"
+          onClick={() => goToTransaction(entry)}
+          className="w-full flex items-center justify-between gap-3 rounded-md border border-border/60 px-3 py-2 text-sm text-left hover:bg-muted/60 hover:border-border transition-colors"
+          title="Create a transaction for this rent"
         >
           <div className="min-w-0">
             <div className="font-medium truncate">{entry.address || "Unknown property"}</div>
@@ -44,7 +63,7 @@ function RentDueList({ entries, emptyLabel }: { entries: RentDueEntry[]; emptyLa
             </div>
           </div>
           <div className="font-mono text-sm whitespace-nowrap">£{entry.rentPerMonth}</div>
-        </div>
+        </button>
       ))}
     </div>
   );
@@ -85,7 +104,7 @@ export function RentDueSection() {
           Estimated from rent amount and effective date — not a payment record
         </p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="p-4">
           <div className="flex items-center gap-2 mb-3">
             <AlertTriangle className="h-4 w-4 text-destructive" />
@@ -96,11 +115,19 @@ export function RentDueSection() {
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-2 mb-3">
+            <CalendarDays className="h-4 w-4 text-warning" />
+            <h3 className="text-sm font-medium">Due today</h3>
+            <Badge variant="secondary" className="ml-auto">{data.dueToday.length}</Badge>
+          </div>
+          <RentDueList entries={data.dueToday} emptyLabel="Nothing due today" />
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-3">
             <CalendarClock className="h-4 w-4 text-warning" />
             <h3 className="text-sm font-medium">Due this week</h3>
             <Badge variant="secondary" className="ml-auto">{data.dueThisWeek.length}</Badge>
           </div>
-          <RentDueList entries={data.dueThisWeek} emptyLabel="Nothing due this week" />
+          <RentDueList entries={data.dueThisWeek} emptyLabel="Nothing else due this week" />
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-2 mb-3">

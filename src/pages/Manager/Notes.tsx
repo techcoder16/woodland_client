@@ -237,7 +237,7 @@ const Notes = ({ propertyId, property }: NotesProps) => {
       
       if (editingNote && editingNote.id) {
         // Update existing note
-        await dispatch(updateNote({ id: editingNote.id, noteData: payload }));
+        await dispatch(updateNote({ id: editingNote.id, noteData: { ...payload, version: editingNote.version } }));
         toast.success("Note updated successfully");
       } else {
         // Create new note

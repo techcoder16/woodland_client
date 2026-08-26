@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Eye, AlertCircle, RefreshCw, Edit, MoreHorizontal, Trash, Building, FileText, Bell, BookOpen } from "lucide-react";
+import { Plus, Search, Eye, AlertCircle, RefreshCw, Edit, MoreHorizontal, Trash, Building, FileText, Bell, BookOpen, CheckCircle2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
 import {
   deleteTransaction,
@@ -9,6 +9,7 @@ import {
   getDraftTransactions,
   getActiveTransactions,
   publishDraftTransaction,
+  markTransactionPaid,
   StatusTransaction,
 } from "@/redux/dataStore/transactionSlice";
 import { fetchRents } from "@/redux/dataStore/rentSlice";
@@ -37,6 +38,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import EditTransaction from "../EditTransaction";
 import { Badge } from "@/components/ui/badge";
+import { patch } from "@/helper/api";
+import MaintenancePicker from "@/utils/MaintenancePicker";
 import { PDFViewer } from "@react-pdf/renderer";
 import TenantStatementPDF from "@/components/pdf/TenantStatementPDF";
 import RentReminderPDF from "@/components/pdf/RentReminderPDF";
@@ -45,43 +48,48 @@ import { Dialog, DialogContent, DialogTitle, DialogFooter } from "@/components/u
 import { useAuth } from "@/context/AuthContext";
 
 // ── Column widths (must be static strings for Tailwind JIT to detect them) ─────
+// Every column is a fixed width AND shrink-0/grow-0 — without that, a flex
+// child with no explicit flex-grow/shrink can still be stretched by the
+// browser to absorb leftover row width (this is what made the last column,
+// "actions", balloon to fill most of the table when its width was w-[0px]).
+const FIXED = "shrink-0 grow-0";
 const COL = {
   // From Tenant (blue) — 13 cols
-  fromDate:        "w-[100px] min-w-[100px]",
-  fromMode:        "w-[85px] min-w-[85px]",
-  otherDebit:      "w-[90px] min-w-[90px]",
-  benefit1:        "w-[85px] min-w-[85px]",
-  benefit2:        "w-[85px] min-w-[85px]",
-  rentRecv:        "w-[90px] min-w-[90px]",
-  desc:            "w-[140px] min-w-[140px]",
-  receivedBy:      "w-[100px] min-w-[100px]",
-  privateNote:     "w-[110px] min-w-[110px]",
-  totalCredit:     "w-[90px] min-w-[90px]",
-  upToDate:        "w-[100px] min-w-[100px]",
-  outstanding:     "w-[105px] min-w-[105px]",
-  dueDate:         "w-[90px] min-w-[90px]",
+  fromDate:        `w-[100px] min-w-[100px] ${FIXED}`,
+  fromMode:        `w-[85px] min-w-[85px] ${FIXED}`,
+  otherDebit:      `w-[90px] min-w-[90px] ${FIXED}`,
+  benefit1:        `w-[85px] min-w-[85px] ${FIXED}`,
+  benefit2:        `w-[85px] min-w-[85px] ${FIXED}`,
+  rentRecv:        `w-[90px] min-w-[90px] ${FIXED}`,
+  desc:            `w-[140px] min-w-[140px] ${FIXED}`,
+  receivedBy:      `w-[100px] min-w-[100px] ${FIXED}`,
+  privateNote:     `w-[110px] min-w-[110px] ${FIXED}`,
+  totalCredit:     `w-[90px] min-w-[90px] ${FIXED}`,
+  upToDate:        `w-[100px] min-w-[100px] ${FIXED}`,
+  outstanding:     `w-[105px] min-w-[105px] ${FIXED}`,
+  dueDate:         `w-[90px] min-w-[90px] ${FIXED}`,
   // Gross Profit (purple) — 1 col
-  grossProfit:     "w-[90px] min-w-[90px]",
+  grossProfit:     `w-[90px] min-w-[90px] ${FIXED}`,
   // To Landlord (amber) — 17 cols
-  toDate:          "w-[100px] min-w-[100px]",
-  toRentRecv:      "w-[90px] min-w-[90px]",
-  leaseMgmtFees:   "w-[110px] min-w-[110px]",
-  buildingExp:     "w-[105px] min-w-[105px]",
-  netReceived:     "w-[95px] min-w-[95px]",
-  lessVAT:         "w-[80px] min-w-[80px]",
-  netPaid:         "w-[85px] min-w-[85px]",
-  chequeNo:        "w-[90px] min-w-[90px]",
-  defaultExp:      "w-[105px] min-w-[105px]",
-  expDesc:         "w-[140px] min-w-[140px]",
-  
+  toDate:          `w-[100px] min-w-[100px] ${FIXED}`,
+  toRentRecv:      `w-[90px] min-w-[90px] ${FIXED}`,
+  leaseMgmtFees:   `w-[150px] min-w-[150px] ${FIXED}`,
+  buildingExp:     `w-[280px] min-w-[280px] ${FIXED}`,
+  netReceived:     `w-[95px] min-w-[95px] ${FIXED}`,
+  lessVAT:         `w-[80px] min-w-[80px] ${FIXED}`,
+  netPaid:         `w-[85px] min-w-[85px] ${FIXED}`,
+  chequeNo:        `w-[90px] min-w-[90px] ${FIXED}`,
+  defaultExp:      `w-[105px] min-w-[105px] ${FIXED}`,
+  expDesc:         `w-[140px] min-w-[140px] ${FIXED}`,
+
   // Meta (gray) — 3 cols
-  branch:          "w-[80px] min-w-[80px]",
-  status:          "w-[80px] min-w-[80px]",
-  actions:         "w-[60px] min-w-[60px]",
+  branch:          `w-[80px] min-w-[80px] ${FIXED}`,
+  status:          `w-[90px] min-w-[90px] ${FIXED}`,
+  actions:         `w-[60px] min-w-[60px] ${FIXED}`,
 };
 
 // w-full makes rows fill visible space; min-w kicks in when viewport is narrower
-const TABLE_MIN_W = "min-w-[3235px] w-full";
+const TABLE_MIN_W = "min-w-[3450px] w-full";
 
 // ── Cell helpers ───────────────────────────────────────────────────────────────
 const fmt = (v: any) => {
@@ -92,6 +100,61 @@ const fmt = (v: any) => {
 };
 const money = (v: any) => (v != null && v !== "" ? `£${Number(v).toFixed(2)}` : "-");
 const val   = (v: any) => (v != null && v !== "" ? v : "-");
+
+// ── Inline-edit cell ───────────────────────────────────────────────────────────
+// Click a cell to edit it in place; Enter/blur saves, Escape cancels.
+const EditableCell: React.FC<{
+  value: any;
+  type?: "text" | "number";
+  format?: (v: any) => string;
+  onSave: (value: any) => void | Promise<void>;
+  className?: string;
+  disabled?: boolean;
+}> = ({ value, type = "text", format = val, onSave, className, disabled }) => {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value ?? "");
+
+  useEffect(() => { setDraft(value ?? ""); }, [value]);
+
+  if (disabled) {
+    return (
+      <div
+        className={`w-full h-full truncate rounded px-0.5 ${className ?? ""}`}
+        title="This transaction is paid and can no longer be edited"
+      >
+        {format(value)}
+      </div>
+    );
+  }
+
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        type={type}
+        step={type === "number" ? "0.01" : undefined}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => { setEditing(false); onSave(draft === "" ? null : type === "number" ? Number(draft) : draft); }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") { e.currentTarget.blur(); }
+          if (e.key === "Escape") { setDraft(value ?? ""); setEditing(false); }
+        }}
+        className={`w-full h-full px-1 py-0.5 text-xs border border-primary rounded outline-none bg-background ${className ?? ""}`}
+      />
+    );
+  }
+
+  return (
+    <div
+      onClick={() => setEditing(true)}
+      className={`w-full h-full truncate cursor-text hover:bg-primary/10 rounded px-0.5 ${className ?? ""}`}
+      title="Click to edit"
+    >
+      {format(value)}
+    </div>
+  );
+};
 
 // ── Summary box ────────────────────────────────────────────────────────────────
 const SummaryField = ({ label, value }: { label: string; value: string }) => (
@@ -128,7 +191,12 @@ const calcBill = (rent: number, startsOn: string, closedOn: string | undefined, 
   return rent * periods;
 };
 
-const TransactionPage: React.FC<{ propertyId: string; property?: any }> = ({ propertyId, property }) => {
+const TransactionPage: React.FC<{ propertyId: string; property?: any; prefillRent?: string; prefillDue?: string }> = ({
+  propertyId,
+  property,
+  prefillRent,
+  prefillDue,
+}) => {
   const dispatch = useAppDispatch();
   const { transaction, summary: backendSummary, totalPages, total, skip, take, loading, error } = useAppSelector((state) => state.transaction);
   const { rents } = useAppSelector((state) => state.rent);
@@ -148,6 +216,20 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any }> = ({ pro
   const [showStatement, setShowStatement]       = useState(false);
   const [showRentReminder, setShowRentReminder] = useState(false);
   const [showRefLetter, setShowRefLetter]       = useState(false);
+
+  // Auto-open Add Transaction, pre-filled, when arriving from the dashboard's
+  // "rent due" click-through (?prefillRent=&prefillDue= on the manage-property route).
+  useEffect(() => {
+    if (prefillRent) setIsAddOpen(true);
+  }, [prefillRent]);
+  const addDefaultValues = prefillRent
+    ? {
+        fromTenantRentReceived: Number(prefillRent),
+        toLandlordRentReceived: Number(prefillRent),
+        fromTenantDate: prefillDue,
+        toLandlordDate: prefillDue,
+      }
+    : undefined;
   const [statementTxs, setStatementTxs]         = useState<any[]>([]);
 
   // Synced scrollbars
@@ -199,6 +281,27 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any }> = ({ pro
   useEffect(() => { loadTransactions(); }, [loadTransactions]);
   useEffect(() => { loadSummary(); }, [loadSummary]);
 
+  // Only the very first load should show the full-page spinner (which
+  // unmounts the table, including the scroll container — resetting scroll
+  // position). Background refreshes triggered by inline edits (e.g. picking
+  // a maintenance job) keep the table mounted so scroll position survives.
+  const hasLoadedOnceRef = useRef(false);
+  useEffect(() => {
+    if (!loading) hasLoadedOnceRef.current = true;
+  }, [loading]);
+  const showFullPageLoader = loading && !hasLoadedOnceRef.current;
+
+  // Keep the version tracker in sync with freshly-loaded rows, but never
+  // regress a version we already know is newer (an in-flight save's PATCH
+  // response can resolve before this refetch lands).
+  useEffect(() => {
+    (transaction ?? []).forEach((tx: any) => {
+      if (tx.id == null || tx.version == null) return;
+      const known = versionRef.current[tx.id];
+      if (known == null || tx.version > known) versionRef.current[tx.id] = tx.version;
+    });
+  }, [transaction]);
+
   // Load rent data for summary boxes
   useEffect(() => {
     if (!rents || Object.keys(rents).length === 0) {
@@ -237,6 +340,54 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any }> = ({ pro
 
   const displayRows = transaction ?? [];
 
+  // Latest known version per transaction id, updated the instant a PATCH
+  // response comes back (not on the next Redux refetch). Two edits fired in
+  // quick succession on the same row would otherwise both read the same
+  // stale `tx.version` from render scope, so the second PATCH loses the
+  // optimistic-lock race, 409s, and the refetch-on-conflict wipes out the
+  // first edit too — this is what looked like edits "reverting."
+  const versionRef = useRef<Record<string, number>>({});
+  // Per-row promise chain so concurrent cell saves on the same transaction
+  // serialize instead of firing concurrent PATCHes against the same version.
+  const saveChainRef = useRef<Record<string, Promise<void>>>({});
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const scheduleRefresh = useCallback(() => {
+    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+    refreshTimerRef.current = setTimeout(() => {
+      loadTransactions();
+      loadSummary();
+    }, 400);
+  }, [loadTransactions, loadSummary]);
+
+  const saveField = useCallback(async (tx: any, fields: Record<string, any>) => {
+    const version = versionRef.current[tx.id] ?? tx.version;
+    try {
+      const accessToken = await DEFAULT_COOKIE_GETTER("access_token");
+      const headers = { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" };
+      const { data, error } = await patch<any>(`transaction/${tx.id}`, { ...fields, propertyId: tx.propertyId, version }, headers);
+      if (error?.message) {
+        toast.error(error.message.includes("modified by someone else") ? error.message : "Failed to save change");
+        loadTransactions();
+        return;
+      }
+      if (data?.version != null) versionRef.current[tx.id] = data.version;
+      scheduleRefresh();
+    } catch {
+      toast.error("Failed to save change");
+    }
+  }, [loadTransactions, scheduleRefresh]);
+
+  // Inline-edit save: PATCH the single field (plus any related auto-calc fields).
+  // Chains onto any in-flight save for the same row so edits apply in order
+  // against the freshest version instead of racing each other.
+  const handleCellSave = useCallback((tx: any, fields: Record<string, any>) => {
+    const prior = saveChainRef.current[tx.id] ?? Promise.resolve();
+    const next = prior.then(() => saveField(tx, fields));
+    saveChainRef.current[tx.id] = next.catch(() => {});
+    return next;
+  }, [saveField]);
+
   const handlePageChange = useCallback((page: number) => {
     if (page > 0 && page <= (totalPages ?? 1)) setCurrentPage(page);
   }, [totalPages]);
@@ -261,6 +412,15 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any }> = ({ pro
       toast.success("Draft published!");
     } catch {
       toast.error("Failed to publish draft");
+    }
+  }, [dispatch]);
+
+  const handleMarkPaid = useCallback(async (id: string, propertyId: string) => {
+    try {
+      await dispatch(markTransactionPaid({ id, propertyId })).unwrap();
+      toast.success("Transaction marked as paid");
+    } catch (error: any) {
+      toast.error(typeof error === "string" ? error : error?.message || "Failed to mark transaction as paid");
     }
   }, [dispatch]);
 
@@ -348,7 +508,7 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any }> = ({ pro
       </div>
 
       {/* ── Content ── */}
-      {loading ? (
+      {showFullPageLoader ? (
         <div className="text-center p-8">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
           <p className="mt-2 text-muted-foreground">Loading transactions...</p>
@@ -443,7 +603,7 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any }> = ({ pro
                 <div className={`${COL.toDate}          px-2 py-2 bg-amber-50 border-r border-amber-200`}>Date</div>
                 <div className={`${COL.toRentRecv}      px-2 py-2 bg-amber-50 border-r border-amber-200`}>Rent Recv.</div>
                 <div className={`${COL.leaseMgmtFees}   px-2 py-2 bg-amber-50 border-r border-amber-200`}>Less Mgmt Fees</div>
-                <div className={`${COL.buildingExp}     px-2 py-2 bg-amber-50 border-r border-amber-200`}>Less Bldg Exp.</div>
+                <div className={`${COL.buildingExp}     px-2 py-2 bg-amber-50 border-r border-amber-200`}>Bldg Exp. (Planned / Actual / Diff)</div>
                 <div className={`${COL.netReceived}     px-2 py-2 bg-amber-50 border-r border-amber-200`}>Net Received</div>
                 <div className={`${COL.lessVAT}         px-2 py-2 bg-amber-50 border-r border-amber-200`}>Less VAT</div>
                 <div className={`${COL.netPaid}         px-2 py-2 bg-amber-50 border-r border-amber-200`}>Net Paid</div>
@@ -471,7 +631,15 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any }> = ({ pro
                     <div className={`${COL.otherDebit}  px-2 py-2 truncate bg-blue-50/30 border-r border-blue-100`}>{money(tx.fromTenantOtherDebit)}</div>
                     <div className={`${COL.benefit1}    px-2 py-2 truncate bg-blue-50/30 border-r border-blue-100`}>{money(tx.fromTenantHBenefit1)}</div>
                     <div className={`${COL.benefit2}    px-2 py-2 truncate bg-blue-50/30 border-r border-blue-100`}>{money(tx.fromTenantHBenefit2)}</div>
-                    <div className={`${COL.rentRecv}    px-2 py-2 truncate bg-blue-50/30 border-r border-blue-100`}>{money(tx.fromTenantRentReceived)}</div>
+                    <div className={`${COL.rentRecv}    px-2 py-2 bg-blue-50/30 border-r border-blue-100`}>
+                      <EditableCell
+                        value={tx.fromTenantRentReceived}
+                        type="number"
+                        format={money}
+                        onSave={(v) => handleCellSave(tx, { fromTenantRentReceived: v })}
+                        disabled={tx.status === StatusTransaction.PAID}
+                      />
+                    </div>
                     <div className={`${COL.desc}        px-2 py-2 truncate bg-blue-50/30 border-r border-blue-100`} title={tx.fromTenantDescription}>{val(tx.fromTenantDescription)}</div>
                     <div className={`${COL.receivedBy}  px-2 py-2 truncate bg-blue-50/30 border-r border-blue-100`}>{val(tx.fromTenantReceivedBy)}</div>
                     <div className={`${COL.privateNote} px-2 py-2 truncate bg-blue-50/30 border-r border-blue-100`} title={tx.fromTenantPrivateNote}>{val(tx.fromTenantPrivateNote)}</div>
@@ -483,23 +651,131 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any }> = ({ pro
                     <div className={`${COL.grossProfit} px-2 py-2 truncate bg-purple-50/30 border-r border-purple-300`}>{money(tx.grossProfit)}</div>
                     {/* Landlord */}
                     <div className={`${COL.toDate}          px-2 py-2 truncate bg-amber-50/30 border-r border-amber-100`}>{fmt(tx.toLandlordDate)}</div>
-                    <div className={`${COL.toRentRecv}      px-2 py-2 truncate bg-amber-50/30 border-r border-amber-100`}>{money(tx.toLandlordRentReceived)}</div>
-                    <div className={`${COL.leaseMgmtFees}   px-2 py-2 truncate bg-amber-50/30 border-r border-amber-100`}>{money(tx.toLandlordLessManagementFees)}</div>
-                    <div className={`${COL.buildingExp}     px-2 py-2 truncate bg-amber-50/30 border-r border-amber-100`}>{money(tx.toLandlordLessBuildingExpenditure)}</div>
+                    <div className={`${COL.toRentRecv}      px-2 py-2 bg-amber-50/30 border-r border-amber-100`}>
+                      <EditableCell
+                        value={tx.toLandlordRentReceived}
+                        type="number"
+                        format={money}
+                        onSave={(v) => handleCellSave(tx, { toLandlordRentReceived: v })}
+                        disabled={tx.status === StatusTransaction.PAID}
+                      />
+                    </div>
+                    <div className={`${COL.leaseMgmtFees}   px-2 py-2 bg-amber-50/30 border-r border-amber-100`}>
+                      <div className="flex items-center gap-1">
+                        <select
+                          value={tx.toLandlordManagementFeeMode || "FLAT"}
+                          onChange={(e) => handleCellSave(tx, { toLandlordManagementFeeMode: e.target.value })}
+                          disabled={tx.status === StatusTransaction.PAID}
+                          className="text-[10px] border rounded bg-background px-0.5 py-0.5 shrink-0 disabled:opacity-60"
+                          title="Management fee mode"
+                        >
+                          <option value="FLAT">£</option>
+                          <option value="PERCENT">%</option>
+                        </select>
+                        {tx.toLandlordManagementFeeMode === "PERCENT" ? (
+                          <EditableCell
+                            value={tx.toLandlordManagementFeePercent}
+                            type="number"
+                            format={(v) => (v != null ? `${v}%` : "-")}
+                            onSave={(v) => handleCellSave(tx, { toLandlordManagementFeePercent: v })}
+                            disabled={tx.status === StatusTransaction.PAID}
+                          />
+                        ) : (
+                          <EditableCell
+                            value={tx.toLandlordLessManagementFees}
+                            type="number"
+                            format={money}
+                            onSave={(v) => handleCellSave(tx, { toLandlordLessManagementFees: v, toLandlordManagementFeeMode: "FLAT" })}
+                            disabled={tx.status === StatusTransaction.PAID}
+                          />
+                        )}
+                      </div>
+                      {tx.toLandlordManagementFeeMode === "PERCENT" && (
+                        <div className="text-[10px] text-muted-foreground truncate">= {money(tx.toLandlordLessManagementFees)}</div>
+                      )}
+                    </div>
+                    <div className={`${COL.buildingExp}     px-2 py-2 bg-amber-50/30 border-r border-amber-100`}>
+                      <div className="mb-1">
+                        <MaintenancePicker
+                          propertyId={tx.propertyId}
+                          value={tx.jobTypeIds}
+                          selectedLabels={tx.toLandlordExpenditureDescription ? [tx.toLandlordExpenditureDescription] : undefined}
+                          onChange={(jobIds, totalCharged, jobs) =>
+                            handleCellSave(tx, {
+                              jobTypeIds: jobIds,
+                              toLandlordLessBuildingExpenditure: totalCharged,
+                              toLandlordExpenditureDescription: jobs.map((j) => j.label).join("; "),
+                            })
+                          }
+                          disabled={tx.status === StatusTransaction.PAID}
+                        />
+                      </div>
+                      <div className="flex items-center gap-1 text-[11px]">
+                        <span className="text-muted-foreground shrink-0">Plan</span>
+                        <EditableCell
+                          value={tx.toLandlordLessBuildingExpenditure}
+                          type="number"
+                          format={money}
+                          onSave={(v) => handleCellSave(tx, { toLandlordLessBuildingExpenditure: v })}
+                          disabled={tx.status === StatusTransaction.PAID}
+                        />
+                        <span className="text-muted-foreground shrink-0">Act</span>
+                        <EditableCell
+                          value={tx.toLandlordLessBuildingExpenditureActual}
+                          type="number"
+                          format={money}
+                          onSave={(v) => {
+                            const planned = Number(tx.toLandlordLessBuildingExpenditure) || 0;
+                            const actual = Number(v) || 0;
+                            handleCellSave(tx, {
+                              toLandlordLessBuildingExpenditureActual: v,
+                              toLandlordLessBuildingExpenditureDifference: actual - planned,
+                            });
+                          }}
+                          disabled={tx.status === StatusTransaction.PAID}
+                        />
+                        <span
+                          className={`shrink-0 font-medium ${Number(tx.toLandlordLessBuildingExpenditureDifference) > 0 ? "text-destructive" : "text-emerald-600"}`}
+                          title="Actual − Planned"
+                        >
+                          {money(tx.toLandlordLessBuildingExpenditureDifference)}
+                        </span>
+                      </div>
+                    </div>
                     <div className={`${COL.netReceived}     px-2 py-2 truncate bg-amber-50/30 border-r border-amber-100`}>{money(tx.toLandlordNetReceived)}</div>
-                    <div className={`${COL.lessVAT}         px-2 py-2 truncate bg-amber-50/30 border-r border-amber-100`}>{money(tx.toLandlordLessVAT)}</div>
+                    <div className={`${COL.lessVAT}         px-2 py-2 bg-amber-50/30 border-r border-amber-100`}>
+                      <EditableCell
+                        value={tx.toLandlordLessVAT}
+                        type="number"
+                        format={money}
+                        onSave={(v) => handleCellSave(tx, { toLandlordLessVAT: v })}
+                        disabled={tx.status === StatusTransaction.PAID}
+                      />
+                    </div>
                     <div className={`${COL.netPaid}         px-2 py-2 truncate bg-amber-50/30 border-r border-amber-100`}>{money(tx.toLandlordNetPaid)}</div>
-                    <div className={`${COL.chequeNo}        px-2 py-2 truncate bg-amber-50/30 border-r border-amber-100`}>{val(tx.toLandlordChequeNo)}</div>
+                    <div className={`${COL.chequeNo}        px-2 py-2 bg-amber-50/30 border-r border-amber-100`}>
+                      <EditableCell
+                        value={tx.toLandlordChequeNo}
+                        onSave={(v) => handleCellSave(tx, { toLandlordChequeNo: v })}
+                        disabled={tx.status === StatusTransaction.PAID}
+                      />
+                    </div>
                     <div className={`${COL.defaultExp}      px-2 py-2 truncate bg-amber-50/30 border-r border-amber-100`}>{val(tx.toLandlordDefaultExpenditure)}</div>
-                    <div className={`${COL.expDesc}         px-2 py-2 truncate bg-amber-50/30 border-r border-amber-100`} title={tx.toLandlordExpenditureDescription}>{val(tx.toLandlordExpenditureDescription)}</div>
+                    <div className={`${COL.expDesc}         px-2 py-2 bg-amber-50/30 border-r border-amber-100`}>
+                      <EditableCell
+                        value={tx.toLandlordExpenditureDescription}
+                        onSave={(v) => handleCellSave(tx, { toLandlordExpenditureDescription: v })}
+                        disabled={tx.status === StatusTransaction.PAID}
+                      />
+                    </div>
  {/* Meta */}
                     <div className={`${COL.branch}  px-2 py-2 truncate border-r border-border`}>{val(tx.Branch)}</div>
                     <div className={`${COL.status}  px-2 py-2 flex items-center border-r border-border`}>
                       <Badge
-                        variant={tx.status === StatusTransaction.DRAFT ? "destructive" : "default"}
-                        className="text-xs"
+                        variant={tx.status === StatusTransaction.DRAFT ? "destructive" : "secondary"}
+                        className={`text-xs ${tx.status === StatusTransaction.PAID ? "bg-emerald-600 text-white hover:bg-emerald-600/90" : ""}`}
                       >
-                        {tx.status === StatusTransaction.DRAFT ? "DRAFT" : "ACTIVE"}
+                        {tx.status === StatusTransaction.DRAFT ? "DRAFT" : tx.status === StatusTransaction.PAID ? "PAID" : "ACTIVE"}
                       </Badge>
                     </div>
                     <div className={`${COL.actions} px-1 py-1.5 flex items-center justify-center`}>
@@ -510,21 +786,30 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any }> = ({ pro
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEdit(tx)}>
-                            <Edit className="mr-2 h-4 w-4" /> Edit
-                          </DropdownMenuItem>
+                          {tx.status !== StatusTransaction.PAID && (
+                            <DropdownMenuItem onClick={() => handleEdit(tx)}>
+                              <Edit className="mr-2 h-4 w-4" /> Edit
+                            </DropdownMenuItem>
+                          )}
                           {tx.status === StatusTransaction.DRAFT && (
                             <DropdownMenuItem onClick={() => handlePublish(tx.id, tx.propertyId)}>
                               <Eye className="mr-2 h-4 w-4" /> Publish
                             </DropdownMenuItem>
                           )}
+                          {tx.status === StatusTransaction.ACTIVE && (
+                            <DropdownMenuItem onClick={() => handleMarkPaid(tx.id, tx.propertyId)}>
+                              <CheckCircle2 className="mr-2 h-4 w-4" /> Mark as Paid
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => handleDelete(tx.id, tx.propertyId)}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash className="mr-2 h-4 w-4" /> Delete
-                          </DropdownMenuItem>
+                          {tx.status !== StatusTransaction.PAID && (
+                            <DropdownMenuItem
+                              onClick={() => handleDelete(tx.id, tx.propertyId)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash className="mr-2 h-4 w-4" /> Delete
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -677,6 +962,7 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any }> = ({ pro
       <AddTransaction
         isOpen={isAddOpen}
         propertyId={propertyId}
+        defaultValues={addDefaultValues}
         onClose={() => { setIsAddOpen(false); loadTransactions(); loadSummary(); }}
       />
       {isEditOpen && (

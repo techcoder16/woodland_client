@@ -9,7 +9,9 @@ import { patch } from "@/helper/api";
 
 export enum StatusTransaction {
   ACTIVE = "ACTIVE",
-  DRAFT = "DRAFT"
+  DRAFT = "DRAFT",
+  PENDING = "PENDING",
+  PAID = "PAID"
 }
 
 export interface TransactionResponse {
@@ -60,6 +62,7 @@ export interface Transaction {
   landlordNetPaid?: number;
   landlordPaidBy:string;
   landlordNetDebit?: number;
+  version?: number;
 }
 
 interface TransactionState {
@@ -252,7 +255,10 @@ export const publishDraftTransaction = createAsyncThunk(
       };
 
       // Publish draft to active
-      await post(`transaction/${id}/publish`, {}, headers);
+      const res = await post(`transaction/${id}/publish`, {}, headers);
+      if (res.error) {
+        return rejectWithValue(res.error.message || "Failed to publish draft transaction");
+      }
 
       await (dispatch as AppDispatch)(
         fetchTransaction({ propertyId })
@@ -260,6 +266,32 @@ export const publishDraftTransaction = createAsyncThunk(
       return;
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to publish draft transaction");
+    }
+  }
+);
+
+export const markTransactionPaid = createAsyncThunk(
+  "transaction/markTransactionPaid",
+  async (
+    { id, propertyId }: { id: string; propertyId: string },
+    { dispatch, rejectWithValue }
+  ) => {
+    try {
+      const access_token = await DEFAULT_COOKIE_GETTER("access_token");
+      const headers = {
+        Authorization: `Bearer ${access_token}`,
+        "Content-Type": "application/json",
+      };
+
+      const res = await post(`transaction/${id}/mark-paid`, {}, headers);
+      if (res.error) {
+        return rejectWithValue(res.error.message || "Failed to mark transaction as paid");
+      }
+
+      await (dispatch as AppDispatch)(fetchTransaction({ propertyId }));
+      return;
+    } catch (error: any) {
+      return rejectWithValue(error.message || "Failed to mark transaction as paid");
     }
   }
 );
@@ -433,6 +465,17 @@ const transactionSlice = createSlice({
         state.loading = false;
       })
       .addCase(publishDraftTransaction.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Mark Transaction Paid
+      .addCase(markTransactionPaid.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(markTransactionPaid.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(markTransactionPaid.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       })

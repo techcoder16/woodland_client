@@ -11,6 +11,7 @@ export interface HistoryEntry {
   subject?: string;
   content?: string;
   createdAt?: string;
+  version?: number;
   updatedAt?: string;
 }
 

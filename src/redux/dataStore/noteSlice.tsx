@@ -14,6 +14,7 @@ export interface Note {
   employeeId: string; // Changed from employee to employeeId
   detail?: string;
   createdAt?: string;
+  version?: number;
   updatedAt?: string;
 }
 
