@@ -43,13 +43,19 @@ export default function ImportantCertificates({ drafts, onDraftsChange }: Import
 
   const draftFor = (docType: string) => drafts.find((d) => d.docType === docType);
 
+  /**
+   * Updates the draft for a certificate type. A draft is only ever created by
+   * attaching a file — a dates-only row would be saved with no document and
+   * rejected by the compliance endpoint.
+   */
   const upsert = (docType: string, patch: Partial<DraftComplianceDoc>) => {
     const existing = draftFor(docType);
     if (existing) {
       onDraftsChange(drafts.map((d) => (d.docType === docType ? { ...d, ...patch } : d)));
-    } else {
-      onDraftsChange([...drafts, { localId: crypto.randomUUID(), docType, ...patch }]);
+      return;
     }
+    if (!patch.file) return;
+    onDraftsChange([...drafts, { localId: crypto.randomUUID(), docType, ...patch }]);
   };
 
   const clear = (docType: string) => {
