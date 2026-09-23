@@ -10,13 +10,16 @@ interface ProtectedRouteProps {
   route: string;
   fallbackPath?: string;
   showAccessDenied?: boolean;
+  /** Require a signed-in user but skip the per-screen permission check. */
+  anyAuthenticated?: boolean;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   route,
   fallbackPath = '/dashboard',
-  showAccessDenied = true
+  showAccessDenied = true,
+  anyAuthenticated = false
 }) => {
   const { isAuthenticated, isLoading, canAccess, isAdmin, logout } = useAuth();
   const location = useLocation();
@@ -37,7 +40,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Check access - admin routes need admin role, others need screen access
   const isAdminRoute = route.startsWith('/admin');
-  const hasAccess = isAdminRoute ? isAdmin : canAccess(route);
+  const hasAccess = anyAuthenticated ? true : isAdminRoute ? isAdmin : canAccess(route);
   
   if (!hasAccess) {
     if (showAccessDenied) {

@@ -35,6 +35,7 @@ import MainTransaction from "./pages/MainTransaction";
 import NewLandlordPayment from "./pages/Finance/NewLandlordPayment";
 import LandlordPayments from "./pages/Finance/LandlordPayments";
 import WoodlandOcr from "./pages/Finance/WoodlandOcr";
+import Free from "./pages/Free";
 import AdminDashboard from "./pages/SimpleAdminDashboard";
 import CreateUser from "./pages/admin/CreateUser";
 import CreateScreen from "./pages/admin/CreateScreen";
@@ -144,6 +145,11 @@ function App() {
                   <Route path="/finance/woodland-ocr" element={
                     <ProtectedRoute route="/finance/woodland-ocr">
                       <WoodlandOcr />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/free" element={
+                    <ProtectedRoute route="/free" anyAuthenticated>
+                      <Free />
                     </ProtectedRoute>
                   } />
                   <Route path="/finance/landlord-payments/new" element={
