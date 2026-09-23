@@ -305,7 +305,7 @@ const AddProperty = () => {
                 <PropertyInfo watch={watch} register={form.register} errors={currentStep === 0 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
               </div>
               <div className={currentStep !== 1 ? "hidden" : ""}>
-                <DocumentsCertificates watch={watch} register={form.register} errors={currentStep === 1 ? activeErrors : noErrors} setValue={form.setValue} />
+                <DocumentsCertificates watch={watch} register={form.register} errors={currentStep === 1 ? activeErrors : noErrors} setValue={form.setValue} certificateDrafts={complianceDrafts} onCertificateDraftsChange={setComplianceDrafts} />
                 <div className="mt-6 border-t pt-6">
                   <ComplianceDraftStep drafts={complianceDrafts} onDraftsChange={setComplianceDrafts} />
                 </div>

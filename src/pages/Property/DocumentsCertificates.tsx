@@ -1,13 +1,25 @@
 import FileUploadField from "@/utils/FileUploadField";
+import ImportantCertificates from "./ImportantCertificates";
+import { DraftComplianceDoc } from "./ComplianceDraftStep";
 
 interface DocumentsCertificatesProps {
   register: any;
   watch: any;
   setValue: any;
   errors: any;
+  /** Certificate drafts, staged until the property row exists. */
+  certificateDrafts?: DraftComplianceDoc[];
+  onCertificateDraftsChange?: (docs: DraftComplianceDoc[]) => void;
 }
 
-const DocumentsCertificates = ({ register, watch, setValue, errors }: DocumentsCertificatesProps) => {
+const DocumentsCertificates = ({
+  register,
+  watch,
+  setValue,
+  errors,
+  certificateDrafts,
+  onCertificateDraftsChange,
+}: DocumentsCertificatesProps) => {
   return (
     <div className="w-full">
       <div className="p-4 w-full">
@@ -36,6 +48,9 @@ const DocumentsCertificates = ({ register, watch, setValue, errors }: DocumentsC
         </div>
       </div>
 
+      {certificateDrafts && onCertificateDraftsChange && (
+        <ImportantCertificates drafts={certificateDrafts} onDraftsChange={onCertificateDraftsChange} />
+      )}
     </div>
   );
 };
