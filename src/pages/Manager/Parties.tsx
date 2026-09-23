@@ -321,11 +321,20 @@ console.log("Selected Tenants:", selectedTenants);
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold">Tenants</h2>
-          <Button onClick={() => setIsAddTenantModalOpen(true)}>
+          <Button
+            onClick={() => setIsAddTenantModalOpen(true)}
+            disabled={!selectedLandlord}
+            title={!selectedLandlord ? "Select and save a landlord above before adding a tenant" : undefined}
+          >
             <Plus className="mr-2 h-4 w-4" />
             Add Tenant
           </Button>
         </div>
+        {!selectedLandlord && (
+          <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            Select a landlord and click "Save Parties" above before adding a tenant — a tenant can't be linked to this property until it has a landlord.
+          </p>
+        )}
         <table className="min-w-full border">
           <thead>
             <tr>
@@ -447,7 +456,11 @@ console.log("Selected Tenants:", selectedTenants);
         </DialogContent>
       </Dialog>
 
-      <AddTenant isOpen={isAddTenantModalOpen} onClose={() => setIsAddTenantModalOpen(false)} />
+      <AddTenant
+        isOpen={isAddTenantModalOpen}
+        onClose={() => setIsAddTenantModalOpen(false)}
+        propertyId={property?.id}
+      />
       {isEditTenantModalOpen && (
         <EditTenant
           isOpen={isEditTenantModalOpen}

@@ -29,6 +29,7 @@ import { Pencil, Trash, Filter, SquareChartGantt, Search, Plus, User, Edit, More
 import { cn } from "@/lib/utils";
 import { Link, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
+import { formatPropertyReference } from "@/utils/propertyReference";
 import { fetchProperties, deleteProperty } from "@/redux/dataStore/propertySlice";
 import { useToast } from "@/components/ui/use-toast";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -86,9 +87,10 @@ const PropertyList = () => {
     }
   };
 
+  // Real navigation to its own page (/properties/:id) — not a state swap —
+  // so it's a genuine, bookmarkable, separate page.
   const handleManageProperty = (property: any) => {
-    navigate(`/property/manager`, { state: { property } });
-
+    navigate(`/properties/${property.id}`, { state: { property } });
   };
 
   return (
@@ -162,9 +164,9 @@ const PropertyList = () => {
         <tr
           key={property.id}
           className="border-b border-border/50 hover:bg-muted/40 transition-colors cursor-pointer"
-          onClick={() => setViewProperty(property)}
+          onClick={() => handleManageProperty(property)}
         >
-          <td className="px-4 py-3">{property.propertyNumber}</td>
+          <td className="px-4 py-3">{formatPropertyReference(property.propertyNumber)}</td>
           <td className="px-4 py-3">
             {property.addressLine1}, {property.town}
           </td>
@@ -204,9 +206,13 @@ const PropertyList = () => {
            </Button>
          </DropdownMenuTrigger>
          <DropdownMenuContent align="end">
+           <DropdownMenuItem onClick={() => handleManageProperty(property)}>
+             <SquareChartGantt className="mr-2 h-4 w-4" />
+             Manage
+           </DropdownMenuItem>
            <DropdownMenuItem onClick={() => setTimeout(() => setViewProperty(property), 0)}>
              <Eye className="mr-2 h-4 w-4" />
-             View
+             View PDF
            </DropdownMenuItem>
            <DropdownMenuItem onClick={()=>handleEditProperty(property)}>
              <Edit className="mr-2 h-4 w-4" />

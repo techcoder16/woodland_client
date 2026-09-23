@@ -1,13 +1,11 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Check, ArrowLeft, ArrowRight, UserPlus } from "lucide-react";
-import LoadingBar from "react-top-loading-bar";
-import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Check, UserPlus, Loader2 } from "lucide-react";
 import BasicInfo from "./Tenant/BasicInfo";
 import { post } from "@/helper/api";
 import { tenantSchema } from "@/schema/tenant.schema";
@@ -21,6 +19,8 @@ type AddTenantModalProps = {
   propertyId?: string;
 };
 
+// Single-step form — there's only one section (Basic Info), so no
+// step/wizard chrome (Previous button, progress bar) belongs here.
 export function AddTenant({ isOpen, onClose, propertyId }: AddTenantModalProps) {
   const form = useForm<FormData>({
     resolver: zodResolver(tenantSchema),
@@ -29,72 +29,49 @@ export function AddTenant({ isOpen, onClose, propertyId }: AddTenantModalProps) 
   const { toast } = useToast();
   const { watch } = form;
 
-  const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [savedData, setSavedData] = useState<Record<number, any>>({});
-
-  const steps = [
-    {
-      label: "Basic Info",
-      component: (
-        <BasicInfo
-          watch={watch}
-          register={form.register}
-          errors={form.formState.errors}
-          setValue={form.setValue}
-          clearErrors={form.clearErrors}
-        />
-      ),
-    },
-  ];
-
-
-  const isLastStep = currentStep === steps.length - 1;
-
-  const handleNext = async () => {
-    const isValid = await form.trigger();
-    if (isValid) {
-      setSavedData((prev) => ({ ...prev, [currentStep]: form.getValues() }));
-      if (currentStep < steps.length - 1) setCurrentStep((prev) => prev + 1);
-    }
-  };
-
-  const handlePrevious = () => {
-    setSavedData((prev) => ({ ...prev, [currentStep]: form.getValues() }));
-    setCurrentStep((prev) => Math.max(prev - 1, 0));
-  };
 
   const onSubmit = async (data: FormData) => {
     const isValid = await form.trigger();
     if (!isValid) return;
 
-    setProgress(30);
     setIsSubmitting(true);
 
     try {
-      const accessToken = await DEFAULT_COOKIE_GETTER("access_token");
-      const headers = {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      };
-      const formData = new FormData();
+      // Drop null/undefined so optional fields aren't sent as literal nulls.
+      const payload: Record<string, unknown> = {};
       Object.entries(data).forEach(([key, value]) => {
-        if (value !== null && value !== undefined) formData.append(key, String(value));
+        if (value !== null && value !== undefined && value !== "") payload[key] = value;
       });
-console.log(formData)
-      const { data: apiData, error } = await post("tenants", formData, headers);
-      console.log(data);
-      setProgress(60);
+
+      const { data: createdTenant, error } = await post<any>("tenants", payload);
       if (error && error.message) throw new Error(error.message);
-      setProgress(100);
+
+      // If this modal was opened from a property page, link the new tenant
+      // to that property right away, without touching the landlord or any
+      // other tenant already linked to it.
+      if (propertyId && createdTenant?.id) {
+        const { error: linkErr } = await post(
+          `property-management/party/${propertyId}/tenants/${createdTenant.id}`,
+          {}
+        );
+        if (linkErr) {
+          toast({
+            title: "Tenant created",
+            description:
+              linkErr.message?.includes("no landlord")
+                ? "Tenant was created, but this property has no landlord assigned yet — link the tenant from the Parties tab once a landlord is set."
+                : "Tenant was created but could not be linked to the property automatically. Please link it from the Parties tab.",
+            variant: "destructive",
+          });
+        }
+      }
 
       toast({ title: "Success", description: "Tenant created successfully!" });
       onClose();
       form.reset();
     } catch (error: any) {
-      console.log(error)
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: error.message || "Failed to create tenant", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -109,25 +86,20 @@ console.log(formData)
           </DialogTitle>
         </DialogHeader>
 
-        <LoadingBar color="hsl(0, 81%, 43%)" progress={progress} onLoaderFinished={() => setProgress(0)} />
-
         <form onSubmit={form.handleSubmit(onSubmit)}>
-          {steps[currentStep].component}
+          <BasicInfo
+            watch={watch}
+            register={form.register}
+            errors={form.formState.errors}
+            setValue={form.setValue}
+            clearErrors={form.clearErrors}
+          />
 
-          <div className="flex justify-between pt-6">
-            <Button type="button" variant="outline" onClick={handlePrevious} disabled={currentStep === 0}>
-              <ArrowLeft className="mr-2 h-4 w-4" /> Previous
+          <div className="flex justify-end pt-6">
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Submit <Check className="ml-2 h-4 w-4" />
             </Button>
-
-            {isLastStep ? (
-              <Button key="submit" type="submit">
-                Submit <Check className="ml-2 h-4 w-4" />
-              </Button>
-            ) : (
-              <Button key="next" type="button" onClick={handleNext}>
-                Next <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            )}
           </div>
         </form>
       </DialogContent>

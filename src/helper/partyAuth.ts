@@ -59,6 +59,15 @@ export async function partyChangePassword(kind: PartyKind, newPassword: string):
   );
 }
 
+// Unauthenticated — no token exists yet when a password is being reset.
+export async function partyForgotPassword(kind: PartyKind, email: string): Promise<void> {
+  await axios.post(`${API_URL}auth/${kind}/forgot-password`, { email });
+}
+
+export async function partyResetPassword(kind: PartyKind, token: string, password: string): Promise<void> {
+  await axios.post(`${API_URL}auth/${kind}/reset-password`, { token, password });
+}
+
 export async function partyLogout(kind: PartyKind): Promise<void> {
   const token = await getPartyAccessToken(kind);
   try {

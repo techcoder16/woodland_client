@@ -12,6 +12,8 @@ import Dashboard from "./pages/Dashboard";
 import VendorList from "./pages/VendorList";
 import AddVendor from "./pages/AddVendor";
 import PropertyList from "./pages/PropertyList";
+import PropertyDetailPage from "./pages/PropertyDetailPage";
+import PropertyFinancePage from "./pages/PropertyFinancePage";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import EditVendor from "./pages/EditVendor";
@@ -22,7 +24,6 @@ import MaintenanceList from "./pages/Maintenance/MaintenanceList";
 import MaintenanceDetail from "./pages/Maintenance/MaintenanceDetail";
 import AddProperty from "./pages/AddProperty";
 import EditProperty from "./pages/EditProperty";
-import ManageProperty from "./pages/Manager/ManagePropertyMain";
 import { AuthProvider } from "./context/AuthContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -31,6 +32,9 @@ import  Settings  from "@/pages/Settings";
 import TenantList from "./pages/TenantList";
 import PropertyManager from "./pages/PropertyManager";
 import MainTransaction from "./pages/MainTransaction";
+import NewLandlordPayment from "./pages/Finance/NewLandlordPayment";
+import LandlordPayments from "./pages/Finance/LandlordPayments";
+import WoodlandOcr from "./pages/Finance/WoodlandOcr";
 import AdminDashboard from "./pages/SimpleAdminDashboard";
 import CreateUser from "./pages/admin/CreateUser";
 import CreateScreen from "./pages/admin/CreateScreen";
@@ -40,6 +44,8 @@ import PartySetPassword from "./pages/PartySetPassword";
 import PartyMaintenance from "./pages/PartyMaintenance";
 import PartyAccount from "./pages/PartyAccount";
 import PartyProperty from "./pages/PartyProperty";
+import PartyForgotPassword from "./pages/PartyForgotPassword";
+import PartyResetPassword from "./pages/PartyResetPassword";
 import PartyProtectedRoute from "@/components/PartyProtectedRoute";
 function App() {
   const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -105,6 +111,16 @@ function App() {
                       <PropertyList />
                     </ProtectedRoute>
                   } />
+                  <Route path="/properties/:id" element={
+                    <ProtectedRoute route="/properties">
+                      <PropertyDetailPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/properties/:id/finance" element={
+                    <ProtectedRoute route="/properties">
+                      <PropertyFinancePage />
+                    </ProtectedRoute>
+                  } />
                   <Route path="/property-management" element={
                     <ProtectedRoute route="/property-management">
                       <PropertyManager />
@@ -113,6 +129,31 @@ function App() {
                   <Route path="/transaction" element={
                     <ProtectedRoute route="/transaction">
                       <MainTransaction />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/finance/landlord-payments" element={
+                    <ProtectedRoute route="/finance/landlord-payments">
+                      <LandlordPayments />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/finance/landlord-transactions" element={
+                    <ProtectedRoute route="/finance/landlord-transactions">
+                      <LandlordPayments />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/finance/woodland-ocr" element={
+                    <ProtectedRoute route="/finance/woodland-ocr">
+                      <WoodlandOcr />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/finance/landlord-payments/new" element={
+                    <ProtectedRoute route="/finance/landlord-payments/new">
+                      <NewLandlordPayment />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/finance/landlord-transactions/new" element={
+                    <ProtectedRoute route="/finance/landlord-transactions/new">
+                      <NewLandlordPayment />
                     </ProtectedRoute>
                   } />
                   
@@ -156,11 +197,6 @@ function App() {
                   <Route path="/tenant/edit" element={<EditTenant />} />
                    */}
             
-                  <Route path="/property/manager" element={
-                    <ProtectedRoute route="/property/manager">
-                      <ManageProperty />
-                    </ProtectedRoute>
-                  } />
                   <Route path="/settings" element={
                     <ProtectedRoute route="/settings">
                       <Settings />
@@ -201,6 +237,8 @@ function App() {
 
                   {/* Tenant portal */}
                   <Route path="/tenant/login" element={<PartyLogin kind="tenant" />} />
+                  <Route path="/tenant/forgot-password" element={<PartyForgotPassword kind="tenant" />} />
+                  <Route path="/tenant/reset-password" element={<PartyResetPassword kind="tenant" />} />
                   <Route path="/tenant/set-password" element={
                     <PartyProtectedRoute kind="tenant"><PartySetPassword kind="tenant" /></PartyProtectedRoute>
                   } />

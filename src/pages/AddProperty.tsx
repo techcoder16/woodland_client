@@ -14,6 +14,8 @@ import { Check, ArrowLeft, ArrowRight, AlertCircle } from "lucide-react";
 import LoadingBar from "react-top-loading-bar";
 import PropertyInfo from "./Property/PropertyInfo";
 import DocumentsCertificates from "./Property/DocumentsCertificates";
+import ComplianceDraftStep, { DraftComplianceDoc } from "./Property/ComplianceDraftStep";
+import GeneralDocumentsDraftStep, { DraftPropertyDoc } from "./Property/GeneralDocumentsDraftStep";
 import ManagementAgreementStep from "./Property/ManagementAgreementStep";
 import NotesStep, { DraftNote } from "./Manager/NotesStep";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -64,6 +66,8 @@ const AddProperty = () => {
   const [progress, setProgress] = useState(0);
   const [savedProperty, setSavedProperty] = useState<any>(null);
   const [noteDrafts, setNoteDrafts] = useState<DraftNote[]>([]);
+  const [complianceDrafts, setComplianceDrafts] = useState<DraftComplianceDoc[]>([]);
+  const [documentDrafts, setDocumentDrafts] = useState<DraftPropertyDoc[]>([]);
   const isLastStep = currentStep === STEP_LABELS.length - 1;
 
   const saveDraft = async (): Promise<any | null> => {
@@ -139,6 +143,57 @@ const AddProperty = () => {
             toast({
               title: "Some notes failed to save",
               description: `${failedNotes} of ${noteDrafts.length} note(s) could not be saved. You can add them again from Manage Property.`,
+              variant: "destructive",
+            });
+          }
+        }
+
+        if (complianceDrafts.length > 0) {
+          let failedCompliance = 0;
+          for (const { localId, file, ...docData } of complianceDrafts) {
+            try {
+              const compliancePayload = new FormData();
+              compliancePayload.append("propertyId", propertyId);
+              compliancePayload.append("docType", docData.docType);
+              if (docData.label) compliancePayload.append("label", docData.label);
+              if (docData.startDate) compliancePayload.append("startDate", new Date(docData.startDate).toISOString());
+              if (docData.expiryDate) compliancePayload.append("expiryDate", new Date(docData.expiryDate).toISOString());
+              if (docData.notes) compliancePayload.append("notes", docData.notes);
+              if (file) compliancePayload.append("file", file);
+              const { error: complianceError } = await post("property-management/compliance", compliancePayload);
+              if (complianceError) throw new Error(complianceError.message);
+            } catch {
+              failedCompliance += 1;
+            }
+          }
+          if (failedCompliance > 0) {
+            toast({
+              title: "Some certificates failed to save",
+              description: `${failedCompliance} of ${complianceDrafts.length} certificate(s) could not be saved. You can add them again from the property's Compliance section.`,
+              variant: "destructive",
+            });
+          }
+        }
+
+        if (documentDrafts.length > 0) {
+          let failedDocuments = 0;
+          for (const { localId, file, ...docData } of documentDrafts) {
+            try {
+              const documentPayload = new FormData();
+              documentPayload.append("propertyId", propertyId);
+              documentPayload.append("title", docData.title);
+              if (docData.documentDate) documentPayload.append("documentDate", new Date(docData.documentDate).toISOString());
+              if (file) documentPayload.append("file", file);
+              const { error: documentError } = await post("property-management/documents", documentPayload);
+              if (documentError) throw new Error(documentError.message);
+            } catch {
+              failedDocuments += 1;
+            }
+          }
+          if (failedDocuments > 0) {
+            toast({
+              title: "Some documents failed to save",
+              description: `${failedDocuments} of ${documentDrafts.length} document(s) could not be saved. You can add them again from the property's Documents section.`,
               variant: "destructive",
             });
           }
@@ -251,6 +306,12 @@ const AddProperty = () => {
               </div>
               <div className={currentStep !== 1 ? "hidden" : ""}>
                 <DocumentsCertificates watch={watch} register={form.register} errors={currentStep === 1 ? activeErrors : noErrors} setValue={form.setValue} />
+                <div className="mt-6 border-t pt-6">
+                  <ComplianceDraftStep drafts={complianceDrafts} onDraftsChange={setComplianceDrafts} />
+                </div>
+                <div className="mt-6 border-t pt-6">
+                  <GeneralDocumentsDraftStep drafts={documentDrafts} onDraftsChange={setDocumentDrafts} />
+                </div>
               </div>
               <div className={currentStep !== 2 ? "hidden" : ""}>
                 <ManagementAgreementStep watch={watch} register={form.register} errors={currentStep === 2 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} vendorName={vendorName} />

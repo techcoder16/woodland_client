@@ -6,7 +6,6 @@ import { PageContext } from "../utils/contexts";
 import logo from "../assets/logo.png";
 import dashboardIcon from '../assets/dashboard.svg';
 import landlordIcon from '../assets/landlord_vendorActive.svg';
-import propertyIcon from '../assets/property-icon.svg';
 
 interface MenuItem {
   id: number;

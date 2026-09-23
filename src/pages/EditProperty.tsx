@@ -12,6 +12,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import LoadingBar from "react-top-loading-bar";
 import PropertyInfo from "./Property/PropertyInfo";
 import DocumentsCertificates from "./Property/DocumentsCertificates";
+import { CertificatesSection, GeneralDocumentsSection } from "./Manager/Documents";
 import ManagementAgreementStep from "./Property/ManagementAgreementStep";
 import NotesStep from "./Manager/NotesStep";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -272,6 +273,12 @@ const EditProperty = () => {
               </div>
               <div className={currentStep !== 1 ? "hidden" : ""}>
                 <DocumentsCertificates watch={watch} register={form.register} errors={currentStep === 1 ? activeErrors : noErrors} setValue={form.setValue} />
+                <div className="mt-6 border-t pt-6">
+                  <CertificatesSection propertyId={property.id} />
+                </div>
+                <div className="mt-6 border-t pt-6">
+                  <GeneralDocumentsSection propertyId={property.id} />
+                </div>
               </div>
               <div className={currentStep !== 2 ? "hidden" : ""}>
                 <ManagementAgreementStep watch={watch} register={form.register} errors={currentStep === 2 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} vendorName={property?.vendor ? [property.vendor.firstName, property.vendor.lastName].filter(Boolean).join(" ") : undefined} />

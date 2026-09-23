@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 
@@ -27,6 +27,7 @@ import {
   Shield,
   Wrench,
   HardHat,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import logo from "@/assets/logo.png";
@@ -39,10 +40,24 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { isAuthenticated, logout, isAdmin, canAccess } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const financeActive = location.pathname.startsWith("/finance/");
+  const [financeOpen, setFinanceOpen] = useState(financeActive);
 
   if (!isAuthenticated) {
     return <Navigate to="/" />;
   }
+
+  // Routes considered part of the Finance group (kept in sync with the
+  // sub-items rendered below). Used so the parent "Finance" row itself
+  // shows up whenever the user can access at least one child route.
+  const financeRoutes = [
+    "/finance/landlord-payments",
+    "/finance/landlord-payments/new",
+    "/finance/landlord-transactions",
+    "/finance/landlord-transactions/new",
+    "/finance/woodland-ocr",
+  ];
 
   // Define all possible menu items with their routes
   const allMenuItems = [
@@ -52,7 +67,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     { label: "Maintenance", path: "/maintenance", icon: Wrench },
     { label: "Contractors", path: "/contractors", icon: HardHat },
     { label: "Transactions", path: "/transaction", icon: TbTransactionDollar },
-    { label: "Finance", path: "/property-management", icon: Wallet },
+    { label: "Finance", path: "/finance/landlord-payments", icon: Wallet },
     { label: "Tenants", path: "/tenants", icon: CircleUser },
     { label: "Settings", path: "/settings", icon: Settings },
   ];
@@ -61,7 +76,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const menuItems = allMenuItems.filter(item => {
     // Admin can see everything
     if (isAdmin) return true;
-    
+
+    // The Finance parent row shows if the user has access to any child route
+    if (item.label === "Finance") {
+      return financeRoutes.some(route => canAccess(route));
+    }
+
     // Regular users can only see items they have permission for
     return canAccess(item.path);
   });
@@ -70,8 +90,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   if (isAdmin) {
     menuItems.push({ label: "Admin Panel", path: "/admin", icon: Shield });
   }
-
-  const location = useLocation();
 
   return (
     <SidebarProvider defaultOpen={true}>
@@ -90,6 +108,44 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <SidebarContent>
           <SidebarMenu className="px-2 mt-4 space-y-0.5">
             {menuItems.map(({ label, path, icon: Icon }) => {
+              if (label === "Finance") {
+                // "New Landlord Transaction" is deliberately not a sidebar
+                // link — creating a payment happens from inside the
+                // Landlord Transactions page itself, not its own nav entry.
+                const financeItems = [
+                  { label: "Landlord Transactions", path: "/finance/landlord-transactions" },
+                  { label: "Woodland OCR", path: "/finance/woodland-ocr" },
+                ].filter((item) => isAdmin || canAccess(item.path));
+                return (
+                  <React.Fragment key={path}>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        onClick={() => { setFinanceOpen((open) => !open); if (!financeActive) navigate(path); }}
+                        isActive={financeActive}
+                        className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-150 ${financeActive ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"}`}
+                      >
+                        <Icon className="w-[18px] h-[18px]" />
+                        <span>Finance</span>
+                        <ChevronDown className={`ml-auto h-4 w-4 transition-transform ${financeOpen ? "rotate-180" : ""}`} />
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    {financeOpen && financeItems.map((item) => {
+                      const childActive = location.pathname === item.path;
+                      return (
+                        <SidebarMenuItem key={item.path}>
+                          <SidebarMenuButton
+                            onClick={() => navigate(item.path)}
+                            isActive={childActive}
+                            className={`ml-5 flex items-center rounded-lg px-3 py-2 text-xs ${childActive ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"}`}
+                          >
+                            <span>{item.label}</span>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
+                  </React.Fragment>
+                );
+              }
               const active = location.pathname === path;
               return (
                 <SidebarMenuItem key={path}>

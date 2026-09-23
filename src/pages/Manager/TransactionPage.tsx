@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Plus, Search, Eye, AlertCircle, RefreshCw, Edit, MoreHorizontal, Trash, Building, FileText, Bell, BookOpen, CheckCircle2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
@@ -46,6 +47,7 @@ import RentReminderPDF from "@/components/pdf/RentReminderPDF";
 import ReferenceLetterPDF from "@/components/pdf/ReferenceLetterPDF";
 import { Dialog, DialogContent, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useAuth } from "@/context/AuthContext";
+import { formatPropertyReference } from "@/utils/propertyReference";
 
 // ── Column widths (must be static strings for Tailwind JIT to detect them) ─────
 // Every column is a fixed width AND shrink-0/grow-0 — without that, a flex
@@ -198,6 +200,7 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any; prefillRen
   prefillDue,
 }) => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { transaction, summary: backendSummary, totalPages, total, skip, take, loading, error } = useAppSelector((state) => state.transaction);
   const { rents } = useAppSelector((state) => state.rent);
   const { propertyParties }: any = useAppSelector((state: any) => state.parties);
@@ -464,7 +467,13 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any; prefillRen
       {/* ── Header ── */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold tracking-tight">Transactions</h1>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Transactions</h1>
+            <p className="text-sm text-muted-foreground">
+              Property ID: <span className="font-medium text-foreground">{formatPropertyReference(property?.propertyNumber)}</span>
+              {property?.addressLine1 ? ` - ${property.addressLine1}` : ""}
+            </p>
+          </div>
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={openStatement}>
               <FileText className="mr-1 h-4 w-4" /> Tenant Statement
@@ -474,6 +483,9 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any; prefillRen
             </Button>
             <Button size="sm" variant="outline" onClick={() => setShowRefLetter(true)}>
               <BookOpen className="mr-1 h-4 w-4" /> Reference Letter
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => navigate("/finance/landlord-payments/new")}>
+              <Building className="mr-1 h-4 w-4" /> Landlord Payment
             </Button>
             <Button size="sm" onClick={() => setIsAddOpen(true)}>
               <Plus className="mr-1 h-4 w-4" /> Add Transaction

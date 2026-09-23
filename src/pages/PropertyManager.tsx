@@ -60,7 +60,7 @@ const PropertyManager = () => {
   };
 
   const handleManageProperty = (property: any) => {
-    navigate(`/property/manager`, { state: { property } });
+    navigate(`/properties/${property.id}`, { state: { property } });
   };
 
   const handleEditProperty = (property: any) => {

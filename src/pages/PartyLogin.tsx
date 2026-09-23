@@ -41,6 +41,12 @@ const KIND_SET_PASSWORD: Record<PartyKind, string> = {
   contractor: "/contractor/set-password",
 };
 
+const KIND_FORGOT_PASSWORD: Record<PartyKind, string> = {
+  vendor: "/landlord/forgot-password",
+  tenant: "/tenant/forgot-password",
+  contractor: "/contractor/forgot-password",
+};
+
 const PartyLogin = ({ kind }: { kind: PartyKind }) => {
   const navigate = useNavigate();
   const [progress, setProgress] = useState(0);
@@ -131,6 +137,15 @@ const PartyLogin = ({ kind }: { kind: PartyKind }) => {
                 </Button>
               </div>
               {errors.password && <p className="text-sm text-destructive">{errors.password.message as string}</p>}
+              <div className="text-right">
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground hover:text-foreground underline"
+                  onClick={() => navigate(KIND_FORGOT_PASSWORD[kind])}
+                >
+                  Forgot password?
+                </button>
+              </div>
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Signing in..." : "Sign in"}

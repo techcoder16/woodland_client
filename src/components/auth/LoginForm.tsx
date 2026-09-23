@@ -41,7 +41,7 @@ export function LoginForm() {
             <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               id="email"
-              placeholder="you@example.com"
+              placeholder="admin@example.com"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}

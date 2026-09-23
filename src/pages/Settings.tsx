@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { useTheme } from "@/context/ThemeContext";
+import { useTheme, BrandColors, DEFAULT_BRAND_COLORS } from "@/context/ThemeContext";
 import { useFont } from "@/context/FontContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
@@ -8,14 +8,57 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check } from "lucide-react";
+import { Check, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import { patch } from "@/helper/api";
 
+// Converts between the "H S% L%" strings the CSS custom properties use and
+// the hex format a native <input type="color"> swatch needs.
+function hslStringToHex(hsl: string): string {
+  const [h, s, l] = hsl.split(" ").map((part) => parseFloat(part));
+  const sNorm = s / 100;
+  const lNorm = l / 100;
+  const c = (1 - Math.abs(2 * lNorm - 1)) * sNorm;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = lNorm - c / 2;
+  let [r, g, b] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+  const toHex = (v: number) => Math.round((v + m) * 255).toString(16).padStart(2, "0");
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+function hexToHslString(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  let h = 0;
+  let s = 0;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) * 60; break;
+      case g: h = ((b - r) / d + 2) * 60; break;
+      case b: h = ((r - g) / d + 4) * 60; break;
+    }
+  }
+  return `${Math.round(h)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+}
+
+const COLOR_FIELDS: { key: keyof BrandColors; label: string; description: string }[] = [
+  { key: "primary", label: "Primary", description: "Buttons, links, active nav, and chart accents" },
+  { key: "success", label: "Success", description: "Paid / positive amounts" },
+  { key: "warning", label: "Warning", description: "On hold / due soon" },
+  { key: "destructive", label: "Destructive", description: "Errors and overdue amounts" },
+];
+
 const Settings = () => {
   const { isAdmin } = usePermissions();
   const { fontId, setFontId, options: fontOptions } = useFont();
+  const { brandColors, setBrandColors, resetBrandColors } = useTheme();
   const [activeTab, setActiveTab] = useState("profile");
   const [profileValues, setProfileValues] = useState({
     id: "user-unique-id", // Provide user id from your auth context/state
@@ -272,6 +315,45 @@ const user = await DEFAULT_COOKIE_GETTER("user");
                               You're managing 12 properties
                             </div>
                           </button>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle>Brand Colors</CardTitle>
+                        <CardDescription>
+                          Set the colors used across the whole system — buttons, active nav, status badges, and chart accents. Saved to this browser.
+                        </CardDescription>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={resetBrandColors}>
+                        <RotateCcw className="mr-2 h-4 w-4" />Reset to default
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                      {COLOR_FIELDS.map((field) => {
+                        const hslValue = brandColors[field.key] || DEFAULT_BRAND_COLORS[field.key];
+                        return (
+                          <div key={field.key} className="flex items-center gap-3 rounded-lg border p-3">
+                            <input
+                              type="color"
+                              value={hslStringToHex(hslValue)}
+                              onChange={(e) =>
+                                setBrandColors({ ...brandColors, [field.key]: hexToHslString(e.target.value) })
+                              }
+                              className="h-10 w-10 shrink-0 cursor-pointer rounded border"
+                            />
+                            <div>
+                              <p className="text-sm font-medium">{field.label}</p>
+                              <p className="text-xs text-muted-foreground">{field.description}</p>
+                            </div>
+                          </div>
                         );
                       })}
                     </div>

@@ -26,6 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { fetchProperties } from "@/redux/dataStore/propertySlice";
+import { formatPropertyReference } from "@/utils/propertyReference";
 
 
 
@@ -229,7 +230,7 @@ const MainTransaction = () => {
               </h1>
               {property && (
                 <p className="text-sm text-muted-foreground">
-                  Property: {property.propertyNumber == 0 ? "0" : property.propertyNumber} - {property.addressLine1}
+                  Property: {formatPropertyReference(property.propertyNumber)} - {property.addressLine1}
                 </p>
               )}
             </div>
@@ -262,7 +263,7 @@ const MainTransaction = () => {
                     .filter((property) => property.propertyStatus !== 'DRAFT')
                     .map((property) => (
                       <SelectItem key={property.id} value={property.id}>
-                        {property.propertyNo || property.id} - {property.addressLine1}
+                        {formatPropertyReference(property.propertyNumber)} - {property.addressLine1}
                       </SelectItem>
                     ))}
                 </SelectContent>
