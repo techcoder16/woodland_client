@@ -72,11 +72,18 @@ const CreateUser: React.FC = () => {
         return;
       }
 
+      // Drop empty optional fields: the server's @IsOptional only skips undefined,
+      // so "" would fail @IsNumber (fax) / @IsDateString (date_of_birth).
+      const payload = Object.fromEntries(
+        Object.entries({
+          ...formData,
+          phone_number: formData.phone_number || undefined,
+          fax: formData.fax ? Number(formData.fax) : undefined,
+        }).filter(([, v]) => v !== '' && v !== undefined)
+      ) as Parameters<typeof userApi.createUser>[0];
+
       // Create the user
-      const newUser = await userApi.createUser({
-        ...formData,
-        phone_number: formData.phone_number || undefined
-      });
+      const newUser = await userApi.createUser(payload);
       toast.success('User created successfully!');
 
       // Screen permissions still apply for non-Super-User roles (the role itself

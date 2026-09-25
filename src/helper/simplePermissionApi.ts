@@ -45,7 +45,7 @@ export const userApi = {
     Town?: string;
     Country?: string;
     phone_number?: any;
-    fax?: string;
+    fax?: number;
     date_of_birth?: string;
     website?: string;
     pager?: string;
