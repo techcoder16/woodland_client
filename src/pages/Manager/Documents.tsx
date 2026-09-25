@@ -76,6 +76,55 @@ function fileHref(fileUrl: string) {
   return `${API_URL.replace(/\/api\/?$/, "")}${fileUrl}`;
 }
 
+type CertificateValidity = {
+  status: "VALID" | "EXPIRING_SOON" | "EXPIRED" | "NOT_YET_VALID" | "UNKNOWN";
+  isValid: boolean | null;
+  daysRemaining: number | null;
+  reason: string;
+};
+
+type ExtractedCertificate = {
+  docType?: string;
+  issueDate?: string;
+  expiryDate?: string;
+  certificateNumber?: string;
+  issuedBy?: string;
+  validity?: CertificateValidity;
+};
+
+/**
+ * Runs a certificate through OCR (via the API server — the OCR service is
+ * never called from the browser) and returns the dates it found.
+ *
+ * Shared by the fixed compliance rows and the "other certificates" modal so
+ * both report validity the same way.
+ */
+async function runCertificateOcr(file: File): Promise<ExtractedCertificate | null> {
+  const payload = new FormData();
+  payload.append("file", file);
+  const { data, error } = await post<any>("property-management/compliance/extract-dates", payload);
+  if (error) throw new Error(error.message);
+  return (data?.data as ExtractedCertificate) ?? null;
+}
+
+/** Reports the OCR verdict as a toast, colour-coded by how urgent it is. */
+function reportValidity(name: string, found: ExtractedCertificate | null) {
+  const validity = found?.validity;
+  if (!validity || validity.status === "UNKNOWN") {
+    toast.warning(`${name}: no expiry date could be read — please enter it manually.`);
+    return;
+  }
+  if (validity.status === "EXPIRED" || validity.status === "NOT_YET_VALID") {
+    toast.error(`${name}: ${validity.reason}`);
+    return;
+  }
+  if (validity.status === "EXPIRING_SOON") {
+    toast.warning(`${name}: ${validity.reason}`);
+    return;
+  }
+  toast.success(`${name}: ${validity.reason}`);
+}
+
 // One fixed compliance row (Gas Safety / EICR / EPC / Fire Risk). Uploading
 // a file both attaches it and creates the row if none exists yet for this
 // docType; issue/expiry dates save inline as soon as they're edited.
@@ -88,6 +137,7 @@ function MandatoryCertRow({ config, doc, propertyId, onSaved }: {
   const [startDate, setStartDate] = useState(doc?.startDate ? doc.startDate.slice(0, 10) : "");
   const [expiryDate, setExpiryDate] = useState(doc?.expiryDate ? doc.expiryDate.slice(0, 10) : "");
   const [busy, setBusy] = useState(false);
+  const [reading, setReading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const Icon = config.icon;
   const status = shortStatus(expiryDate);
@@ -108,10 +158,18 @@ function MandatoryCertRow({ config, doc, propertyId, onSaved }: {
         payload.append("propertyId", propertyId);
         payload.append("docType", config.value);
       }
-      // Only send dates that actually have a value — the server validates
-      // these with @IsDateString(), which rejects an empty string with a 422.
-      if (fields.startDate) payload.append("startDate", new Date(fields.startDate).toISOString());
-      if (fields.expiryDate) payload.append("expiryDate", new Date(fields.expiryDate).toISOString());
+      // Only send dates that actually parse — the server validates these with
+      // @IsDateString(), so a blank or half-typed date value would 422 the
+      // whole upload and lose the file with it.
+      const isoDate = (value?: string) => {
+        if (!value) return null;
+        const parsed = new Date(value);
+        return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+      };
+      const startIso = isoDate(fields.startDate);
+      const expiryIso = isoDate(fields.expiryDate);
+      if (startIso) payload.append("startDate", startIso);
+      if (expiryIso) payload.append("expiryDate", expiryIso);
       if (fields.file) payload.append("file", fields.file);
 
       const { error } = doc
@@ -126,6 +184,34 @@ function MandatoryCertRow({ config, doc, propertyId, onSaved }: {
     }
   };
 
+  /**
+   * Attaching a certificate reads its dates first, then saves the file and
+   * those dates together. Previously the upload saved the file only, so the
+   * row came back with no dates and no indication of whether it was valid.
+   *
+   * OCR failing must not lose the upload, so the file is still saved with
+   * whatever dates are on screen.
+   */
+  const onFilePicked = async (file: File) => {
+    setReading(true);
+    let found: ExtractedCertificate | null = null;
+    try {
+      found = await runCertificateOcr(file);
+    } catch (error: any) {
+      toast.error(error?.message || `Couldn't read ${config.label} — saving the file, please enter the dates manually.`);
+    } finally {
+      setReading(false);
+    }
+
+    const nextStart = found?.issueDate ? found.issueDate.slice(0, 10) : startDate;
+    const nextExpiry = found?.expiryDate ? found.expiryDate.slice(0, 10) : expiryDate;
+    setStartDate(nextStart);
+    setExpiryDate(nextExpiry);
+
+    await upsert({ startDate: nextStart, expiryDate: nextExpiry, file });
+    if (found) reportValidity(config.label, found);
+  };
+
   return (
     <div className="flex flex-wrap items-center gap-4 border-b py-4 last:border-0">
       <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${config.iconClass}`}>
@@ -138,12 +224,12 @@ function MandatoryCertRow({ config, doc, propertyId, onSaved }: {
       <div className="flex items-center gap-2">
         <input ref={fileInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.gif" className="hidden" onChange={(e) => {
           const f = e.target.files?.[0];
-          if (f) void upsert({ startDate, expiryDate, file: f });
+          if (f) void onFilePicked(f);
           e.target.value = "";
         }} />
-        <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => fileInputRef.current?.click()}>
-          {busy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Upload className="mr-1.5 h-3.5 w-3.5" />}
-          Upload Certificate
+        <Button type="button" size="sm" variant="outline" disabled={busy || reading} onClick={() => fileInputRef.current?.click()}>
+          {busy || reading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Upload className="mr-1.5 h-3.5 w-3.5" />}
+          {reading ? "Reading dates…" : busy ? "Saving…" : "Upload Certificate"}
         </Button>
         {doc?.fileUrl && <a href={fileHref(doc.fileUrl)} target="_blank" rel="noreferrer" className="text-xs text-primary underline">View</a>}
       </div>
@@ -190,26 +276,23 @@ export function CertificatesSection({ propertyId }: { propertyId: string }) {
   // Runs the uploaded certificate through Woodland OCR to suggest issue/
   // expiry dates and a document type — the user still reviews and can
   // correct anything before saving.
-  const extractDates = async () => {
-    if (!file) return;
+  const extractDates = async (target?: File) => {
+    const source = target ?? file;
+    if (!source) return;
     setExtracting(true);
     try {
-      const payload = new FormData();
-      payload.append("file", file);
-      const { data, error } = await post<any>("property-management/compliance/extract-dates", payload);
-      if (error) throw new Error(error.message);
-      const found = data?.data;
+      const found = await runCertificateOcr(source);
       if (!found) {
         toast.error("OCR couldn't read this document. Enter the dates manually.");
         return;
       }
       setForm((f) => ({
         ...f,
-        docType: DOC_TYPES.some((t) => t.value === found.docType) ? found.docType : f.docType,
+        docType: DOC_TYPES.some((t) => t.value === found.docType) ? found.docType! : f.docType,
         startDate: found.issueDate ? found.issueDate.slice(0, 10) : f.startDate,
         expiryDate: found.expiryDate ? found.expiryDate.slice(0, 10) : f.expiryDate,
       }));
-      toast.success(found.expiryDate ? `Found expiry date: ${new Date(found.expiryDate).toLocaleDateString("en-GB")}` : "Extraction complete — review the fields below.");
+      reportValidity("Certificate", found);
     } catch (error: any) {
       toast.error(error.message || "Failed to extract dates from this document.");
     } finally {
@@ -224,8 +307,16 @@ export function CertificatesSection({ propertyId }: { propertyId: string }) {
       payload.append("propertyId", propertyId);
       payload.append("docType", form.docType);
       if (form.label) payload.append("label", form.label);
-      if (form.startDate) payload.append("startDate", new Date(form.startDate).toISOString());
-      if (form.expiryDate) payload.append("expiryDate", new Date(form.expiryDate).toISOString());
+      // A half-typed or invalid date must not 422 the save (see MandatoryCertRow).
+      const isoDate = (value?: string) => {
+        if (!value) return null;
+        const parsed = new Date(value);
+        return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+      };
+      const startIso = isoDate(form.startDate);
+      const expiryIso = isoDate(form.expiryDate);
+      if (startIso) payload.append("startDate", startIso);
+      if (expiryIso) payload.append("expiryDate", expiryIso);
       if (form.notes) payload.append("notes", form.notes);
       if (file) payload.append("file", file);
 
@@ -373,18 +464,26 @@ export function CertificatesSection({ propertyId }: { propertyId: string }) {
             <div className="space-y-1"><Label>Notes</Label><Input value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Optional" /></div>
             <div className="space-y-1">
               <Label>Certificate file</Label>
-              <input ref={fileInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.gif" className="hidden" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+              {/* Choosing a file reads it straight away — the wand is only
+                  needed to run OCR again after a correction. */}
+              <input ref={fileInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.gif" className="hidden" onChange={(e) => {
+                const picked = e.target.files?.[0] || null;
+                setFile(picked);
+                if (picked) void extractDates(picked);
+              }} />
               <div className="flex flex-wrap items-center gap-2">
-                <Button type="button" size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                <Button type="button" size="sm" variant="outline" disabled={extracting} onClick={() => fileInputRef.current?.click()}>
                   <Upload className="mr-1.5 h-3.5 w-3.5" />Choose file
                 </Button>
                 {file && <span className="max-w-[10rem] truncate text-xs text-muted-foreground" title={file.name}>{file.name}</span>}
-                <Button type="button" size="sm" variant="outline" disabled={!file || extracting} onClick={extractDates}>
+                <Button type="button" size="sm" variant="outline" disabled={!file || extracting} onClick={() => void extractDates()}>
                   {extracting ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Wand2 className="mr-1.5 h-3.5 w-3.5" />}
-                  Extract via OCR
+                  Read again
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground">Upload the certificate, then use the wand to auto-fill the type and dates via OCR.</p>
+              <p className="text-xs text-muted-foreground">
+                {extracting ? "Reading the document — this can take up to a minute…" : "Choosing a file reads its type and dates automatically."}
+              </p>
             </div>
             <Button className="w-full" onClick={save} disabled={saving}>
               {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}

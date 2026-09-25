@@ -12,6 +12,7 @@ import { DateField } from "@/utils/DateField";
 import { Plus, Edit, Trash2, User } from "lucide-react";
 import Notes from "./Notes";
 import { useAuth } from "@/context/AuthContext";
+import { plainText } from "@/helper/plainText";
 
 const noteSchema = z.object({
   content: z.string().min(1, "Note content is required"),
@@ -53,14 +54,21 @@ const NotesStep: React.FC<NotesStepProps> = ({ propertyId, property, mode = "edi
     resolver: zodResolver(noteSchema),
   });
 
+  // toISOString() converts to UTC, so a note added late in the evening during
+  // BST would save as the previous day. Read the local calendar date instead.
+  const toLocalDate = (date: Date) =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
   const handleDateChange = (date: Date) => {
-    setValue("date", date.toISOString().split("T")[0]);
+    setValue("date", toLocalDate(date));
   };
 
   const closeDialog = () => {
     setIsDialogOpen(false);
     setEditingLocalId(null);
-    reset({ content: "", date: "", employeeId: "" });
+    // A new note defaults to today — the date is required, so a blank field
+    // just made every note an extra click.
+    reset({ content: "", date: toLocalDate(new Date()), employeeId: "" });
   };
 
   const onSubmit = (data: NoteFormData) => {
@@ -94,6 +102,8 @@ const NotesStep: React.FC<NotesStepProps> = ({ propertyId, property, mode = "edi
             if (open) {
               setIsDialogOpen(true);
               if (user?.id) setValue("employeeId", user.id);
+              // Prefill today when adding; an edit sets its own date after this.
+              if (!editingLocalId && !watch("date")) setValue("date", toLocalDate(new Date()));
             } else {
               closeDialog();
             }
@@ -162,8 +172,8 @@ const NotesStep: React.FC<NotesStepProps> = ({ propertyId, property, mode = "edi
               ) : (
                 drafts.map((note) => (
                   <TableRow key={note.localId}>
-                    <TableCell>{note.date}</TableCell>
-                    <TableCell className="max-w-xs truncate">{note.content}</TableCell>
+                    <TableCell>{note.date ? new Date(note.date).toLocaleDateString("en-GB") : "-"}</TableCell>
+                    <TableCell className="max-w-xs truncate">{plainText(note.content, { collapseWhitespace: true })}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
                         <Button size="sm" variant="outline" onClick={() => handleEdit(note)}>

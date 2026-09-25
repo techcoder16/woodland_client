@@ -522,8 +522,9 @@ export default function LandlordPayments() {
                 {selected.approvedAt && <p className="text-muted-foreground">Approved: {new Date(selected.approvedAt).toLocaleString("en-GB")} by {selected.approvedByName}</p>}
                 <p className="text-muted-foreground">Status: {STATUS_LABEL[selected.status] || selected.status}</p>
               </div>}
+              {/* No per-payment PDF: window.print() printed the whole page,
+                  not the payment. Bulk export lives in the toolbar menu. */}
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => window.print()}>Save / print PDF</Button>
                 <Button className="flex-1" onClick={() => navigate("/finance/landlord-payments/new")}>Create another payment</Button>
               </div>
             </div>

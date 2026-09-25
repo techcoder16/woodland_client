@@ -256,7 +256,9 @@ export function PropertyList() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => navigate(`/properties/edit/${property.id}`)}>
+                          {/* EditProperty reads the property from router state;
+                              the route is /property/edit with no :id param. */}
+                          <DropdownMenuItem onClick={() => navigate("/property/edit", { state: { property } })}>
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
                           </DropdownMenuItem>

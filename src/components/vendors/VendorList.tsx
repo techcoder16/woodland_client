@@ -256,7 +256,9 @@ export function VendorList() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => navigate(`/vendors/edit/${vendor.id}`)}>
+                          {/* EditVendor takes the landlord from router state;
+                              /vendors/edit/:id is not a route and would 404. */}
+                          <DropdownMenuItem onClick={() => navigate("/vendors/edit", { state: { vendor } })}>
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
                           </DropdownMenuItem>

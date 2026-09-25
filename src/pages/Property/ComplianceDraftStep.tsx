@@ -97,7 +97,16 @@ export default function ComplianceDraftStep({ drafts, onDraftsChange }: Complian
         startDate: found.issueDate ? found.issueDate.slice(0, 10) : f.startDate,
         expiryDate: found.expiryDate ? found.expiryDate.slice(0, 10) : f.expiryDate,
       }));
-      toast.success(found.expiryDate ? `Found expiry date: ${new Date(found.expiryDate).toLocaleDateString("en-GB")}` : "Extraction complete — review the fields below.");
+      const validity = found.validity;
+      if (validity?.status === "EXPIRED" || validity?.status === "NOT_YET_VALID") {
+        toast.error(validity.reason);
+      } else if (validity?.status === "EXPIRING_SOON") {
+        toast.warning(validity.reason);
+      } else if (validity?.status === "VALID") {
+        toast.success(validity.reason);
+      } else {
+        toast.info("Extraction complete — no expiry date found, please review the fields below.");
+      }
     } catch (error: any) {
       toast.error(error.message || "Failed to extract dates from this document.");
     } finally {

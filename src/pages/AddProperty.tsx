@@ -305,10 +305,11 @@ const AddProperty = () => {
                 <PropertyInfo watch={watch} register={form.register} errors={currentStep === 0 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} />
               </div>
               <div className={currentStep !== 1 ? "hidden" : ""}>
+                {/* ImportantCertificates (inside DocumentsCertificates) already
+                    covers every compliance type as fixed rows, matching the Edit
+                    page. ComplianceDraftStep listed the same certificates a
+                    second time over the same draft array, so it is not rendered. */}
                 <DocumentsCertificates watch={watch} register={form.register} errors={currentStep === 1 ? activeErrors : noErrors} setValue={form.setValue} certificateDrafts={complianceDrafts} onCertificateDraftsChange={setComplianceDrafts} />
-                <div className="mt-6 border-t pt-6">
-                  <ComplianceDraftStep drafts={complianceDrafts} onDraftsChange={setComplianceDrafts} />
-                </div>
                 <div className="mt-6 border-t pt-6">
                   <GeneralDocumentsDraftStep drafts={documentDrafts} onDraftsChange={setDocumentDrafts} />
                 </div>

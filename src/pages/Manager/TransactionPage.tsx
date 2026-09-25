@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Eye, AlertCircle, RefreshCw, Edit, MoreHorizontal, Trash, Building, FileText, Bell, BookOpen, CheckCircle2 } from "lucide-react";
+import { Plus, Search, Eye, AlertCircle, RefreshCw, Edit, MoreHorizontal, Trash, Building, FileText, Bell, BookOpen, CheckCircle2, Paperclip, SlidersHorizontal } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
 import {
   deleteTransaction,
@@ -84,14 +84,28 @@ const COL = {
   defaultExp:      `w-[105px] min-w-[105px] ${FIXED}`,
   expDesc:         `w-[140px] min-w-[140px] ${FIXED}`,
 
-  // Meta (gray) — 3 cols
+  // Meta (gray) — 4 cols
   branch:          `w-[80px] min-w-[80px] ${FIXED}`,
+  attachments:     `w-[95px] min-w-[95px] ${FIXED}`,
   status:          `w-[90px] min-w-[90px] ${FIXED}`,
   actions:         `w-[60px] min-w-[60px] ${FIXED}`,
 };
 
 // w-full makes rows fill visible space; min-w kicks in when viewport is narrower
-const TABLE_MIN_W = "min-w-[3450px] w-full";
+const TABLE_MIN_W = "min-w-[3545px] w-full";
+
+/**
+ * How each transaction status reads in the table. The lifecycle is
+ * DRAFT → ACTIVE (ready) → APPROVAL_REQUIRED → approved → ACTIVE → PAID,
+ * so "Ready" is approved-and-payable, and only PAID counts as money moved.
+ */
+const STATUS_BADGE: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; className?: string }> = {
+  DRAFT: { label: "DRAFT", variant: "destructive" },
+  ACTIVE: { label: "READY", variant: "secondary", className: "bg-blue-100 text-blue-700 hover:bg-blue-100" },
+  PENDING: { label: "ON HOLD", variant: "outline", className: "bg-slate-100 text-slate-600" },
+  APPROVAL_REQUIRED: { label: "APPROVAL", variant: "secondary", className: "bg-amber-100 text-amber-700 hover:bg-amber-100" },
+  PAID: { label: "PAID", variant: "secondary", className: "bg-emerald-600 text-white hover:bg-emerald-600/90" },
+};
 
 // ── Cell helpers ───────────────────────────────────────────────────────────────
 const fmt = (v: any) => {
@@ -504,6 +518,7 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any; prefillRen
             />
           </div>
           <div className="flex gap-2">
+            {/* "Ready" is the approved, payable state — it is not paid yet. */}
             {(["all", "draft", "active"] as const).map((f) => (
               <Button
                 key={f}
@@ -512,7 +527,7 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any; prefillRen
                 onClick={() => { setStatusFilter(f); setCurrentPage(1); }}
                 className="capitalize"
               >
-                {f === "all" ? "All" : f === "draft" ? "Drafts" : "Active"}
+                {f === "all" ? "All" : f === "draft" ? "Drafts" : "Ready to pay"}
               </Button>
             ))}
           </div>
@@ -588,6 +603,7 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any; prefillRen
                 {/* Meta */}
                 <div className="flex bg-muted-foreground text-white">
                   <div className={`${COL.branch}  px-2 py-1 flex items-center`}>Branch</div>
+                  <div className={`${COL.attachments} px-2 py-1 flex items-center`}>Attach.</div>
                   <div className={`${COL.status}  px-2 py-1 flex items-center`}>Status</div>
                   <div className={`${COL.actions} px-2 py-1`} />
                 </div>
@@ -624,6 +640,7 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any; prefillRen
                 <div className={`${COL.expDesc}         px-2 py-2 bg-amber-50 border-r border-amber-200`}>Exp. Desc.</div>
                 {/* Meta */}
                 <div className={`${COL.branch}  px-2 py-2 bg-muted border-r border-border`}>Branch</div>
+                <div className={`${COL.attachments} px-2 py-2 bg-muted border-r border-border`}>Adj. / Docs</div>
                 <div className={`${COL.status}  px-2 py-2 bg-muted border-r border-border`}>Status</div>
                 <div className={`${COL.actions} px-2 py-2 bg-muted`}></div>
               </div>
@@ -782,12 +799,39 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any; prefillRen
                     </div>
  {/* Meta */}
                     <div className={`${COL.branch}  px-2 py-2 truncate border-r border-border`}>{val(tx.Branch)}</div>
+                    {/* Adjustments and documents come back with every listing
+                        query; without this column they were invisible unless
+                        the row was opened. */}
+                    <div className={`${COL.attachments} px-2 py-2 flex items-center gap-2 text-[11px] border-r border-border`}>
+                      {(tx.adjustments?.length ?? 0) > 0 ? (
+                        <span
+                          className="flex items-center gap-0.5 text-amber-700"
+                          title={tx.adjustments.map((a: any) => `${a.type}${a.description ? ` — ${a.description}` : ""}: ${money(a.amount)}`).join("\n")}
+                        >
+                          <SlidersHorizontal className="h-3 w-3" />
+                          {tx.adjustments.length}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground/50">–</span>
+                      )}
+                      {(tx.documents?.length ?? 0) > 0 ? (
+                        <span
+                          className="flex items-center gap-0.5 text-blue-700"
+                          title={tx.documents.map((d: any) => d.fileName || d.fileUrl).join("\n")}
+                        >
+                          <Paperclip className="h-3 w-3" />
+                          {tx.documents.length}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground/50">–</span>
+                      )}
+                    </div>
                     <div className={`${COL.status}  px-2 py-2 flex items-center border-r border-border`}>
-                      <Badge
-                        variant={tx.status === StatusTransaction.DRAFT ? "destructive" : "secondary"}
-                        className={`text-xs ${tx.status === StatusTransaction.PAID ? "bg-emerald-600 text-white hover:bg-emerald-600/90" : ""}`}
-                      >
-                        {tx.status === StatusTransaction.DRAFT ? "DRAFT" : tx.status === StatusTransaction.PAID ? "PAID" : "ACTIVE"}
+                      {/* Every status reads distinctly: collapsing them to
+                          "ACTIVE" hid which rows were awaiting approval, and
+                          ACTIVE means approved-and-ready-to-pay, not paid. */}
+                      <Badge variant={STATUS_BADGE[tx.status]?.variant ?? "secondary"} className={`text-xs ${STATUS_BADGE[tx.status]?.className ?? ""}`}>
+                        {STATUS_BADGE[tx.status]?.label ?? tx.status ?? "-"}
                       </Badge>
                     </div>
                     <div className={`${COL.actions} px-1 py-1.5 flex items-center justify-center`}>
@@ -858,6 +902,7 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any; prefillRen
                   <div className={`${COL.expDesc}         px-2 py-2`} />
        
                   <div className={`${COL.branch}          px-2 py-2`} />
+                  <div className={`${COL.attachments}     px-2 py-2`} />
                   <div className={`${COL.status}          px-2 py-2`} />
                   <div className={`${COL.actions}         px-2 py-2`} />
                 </div>
@@ -925,7 +970,7 @@ const TransactionPage: React.FC<{ propertyId: string; property?: any; prefillRen
         <div className="text-center py-12">
           <Building className="mx-auto h-12 w-12 text-muted-foreground" />
           <h3 className="mt-4 text-lg font-medium">
-            {statusFilter === "all" ? "No transactions found" : `No ${statusFilter} transactions`}
+            {statusFilter === "all" ? "No transactions found" : statusFilter === "draft" ? "No draft transactions" : "No transactions ready to pay"}
           </h3>
           <p className="mt-2 text-muted-foreground text-sm">
             {statusFilter === "draft"

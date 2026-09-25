@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, CheckCircle2, Database, Loader2, Search, Send } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Database, Loader2, Search } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import AssistantChat from "@/components/AssistantChat";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getAccessToken } from "@/helper/tokenManager";
@@ -40,9 +40,6 @@ export default function Free() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [reports, setReports] = useState<Report[]>([]);
   const [scanning, setScanning] = useState(false);
-  const [question, setQuestion] = useState("");
-  const [answer, setAnswer] = useState("");
-  const [asking, setAsking] = useState(false);
   const [error, setError] = useState("");
 
   const runScan = useCallback(async () => {
@@ -69,29 +66,6 @@ export default function Free() {
   useEffect(() => {
     runScan();
   }, [runScan]);
-
-  const ask = async () => {
-    if (!question.trim()) return;
-    setAsking(true);
-    setAnswer("");
-    setError("");
-    try {
-      const token = await getAccessToken();
-      const response = await fetch(`${API_URL}data-audit/ask`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ question, entity }),
-      });
-      if (!response.ok) throw new Error("Ask failed");
-      const data = await response.json();
-      setAnswer(data.answer || "");
-      if (data.summary) setSummary(data.summary);
-    } catch {
-      setError("The assistant could not answer that. Check that the OCR service is running.");
-    } finally {
-      setAsking(false);
-    }
-  };
 
   const incomplete = reports.filter((report) => report.missing.length > 0);
 
@@ -149,25 +123,9 @@ export default function Free() {
           </div>
         )}
 
-        <div className="rounded-lg border bg-card p-4 space-y-3">
-          <Label htmlFor="audit-question">Ask about the data</Label>
-          <div className="flex gap-2">
-            <Input
-              id="audit-question"
-              value={question}
-              placeholder="e.g. which properties are missing a gas certificate?"
-              onChange={(event) => setQuestion(event.target.value)}
-              onKeyDown={(event) => event.key === "Enter" && ask()}
-            />
-            <Button onClick={ask} disabled={asking || !question.trim()}>
-              {asking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-              Ask
-            </Button>
-          </div>
-          {answer && (
-            <div className="whitespace-pre-wrap rounded-md bg-muted p-3 text-sm">{answer}</div>
-          )}
-        </div>
+        {/* Full assistant: reads live data through backend tools and streams
+            its answer, rather than the old single-shot completeness query. */}
+        <AssistantChat />
 
         {summary && summary.topGaps.length > 0 && (
           <div className="rounded-lg border bg-card p-4">

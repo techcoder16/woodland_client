@@ -8,9 +8,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 import { get, post } from "@/helper/api";
 import { formatPropertyReference } from "@/utils/propertyReference";
+import { plainText } from "@/helper/plainText";
 
 const API_URL = import.meta.env.VITE_API_URL;
 const money = (value: unknown) => `£${Number(value || 0).toLocaleString("en-GB", { minimumFractionDigits: 2 })}`;
+
+/** DD/MM/YYYY, or "" when there is no usable date — never a raw ISO string. */
+const ukDate = (value: unknown) => {
+  if (!value) return "";
+  const parsed = new Date(value as string);
+  return Number.isNaN(parsed.getTime()) ? "" : parsed.toLocaleDateString("en-GB");
+};
+
 
 const DOC_TYPE_LABEL: Record<string, string> = {
   GAS_SAFETY: "Gas Safety Certificate",
@@ -91,7 +100,10 @@ export default function PropertyOverview({ property }: PropertyOverviewProps) {
       const [partyRes, summaryRes, jobTypesRes, notesRes, complianceRes] = await Promise.all([
         get<{ data: any }>(`property-management/party/${property.id}/optional`),
         get<any>(`transaction/summary?propertyId=${property.id}`),
-        get<{ jobTypes: any[] }>(`property-management/job-type?propertyId=${property.id}&limit=5`),
+        // The status tiles below count across every job, so fetching only the
+        // first 5 made Urgent/Open/In Progress/Completed under-report. The
+        // list itself still shows just the first few.
+        get<{ jobTypes: any[] }>(`property-management/job-type?propertyId=${property.id}&limit=500`),
         get<{ notes: any[] }>(`property-management/note?propertyId=${property.id}&limit=3`),
         get<{ data: any[] }>(`property-management/compliance/${property.id}`),
       ]);
@@ -153,7 +165,9 @@ export default function PropertyOverview({ property }: PropertyOverviewProps) {
         <div className="surface p-5">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="font-semibold">Landlord</h3>
-            {landlord && <Button size="sm" variant="outline" onClick={() => navigate(`/vendors/${landlord.id}`)}>View Landlord</Button>}
+            {/* EditVendor reads the landlord from router state, and there is no
+                /vendors/:id route — navigating by id alone 404s. */}
+            {landlord && <Button size="sm" variant="outline" onClick={() => navigate("/vendors/edit", { state: { vendor: landlord } })}>View Landlord</Button>}
           </div>
           {landlord ? (
             <div className="space-y-2 text-sm">
@@ -232,6 +246,22 @@ export default function PropertyOverview({ property }: PropertyOverviewProps) {
             <div className="flex justify-between"><dt className="text-muted-foreground">Expenses</dt><dd className="font-medium text-red-600">-{money(summary?.llBuildingExp)}</dd></div>
             <div className="flex justify-between border-t pt-1.5 font-semibold"><dt>Net Income</dt><dd className={netIncome >= 0 ? "text-emerald-600" : "text-red-600"}>{money(netIncome)}</dd></div>
           </dl>
+
+          {/* Approved work is not paid work: it is excluded from the totals
+              above, but hiding it entirely made approved transactions look
+              lost. Shown separately so the two are never confused. */}
+          {summary?.awaiting?.count > 0 && (
+            <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-2.5">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium text-amber-800">Awaiting payment</span>
+                <span className="font-semibold text-amber-800">{money(summary.awaiting.landlordPayments)}</span>
+              </div>
+              <p className="mt-0.5 text-xs text-amber-700">
+                {summary.awaiting.count} transaction{summary.awaiting.count === 1 ? "" : "s"} not yet paid
+                {summary.awaiting.readyToPayCount > 0 ? ` · ${summary.awaiting.readyToPayCount} ready to pay` : ""}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Important Dates */}
@@ -301,8 +331,10 @@ export default function PropertyOverview({ property }: PropertyOverviewProps) {
             <div className="space-y-3 text-sm">
               {notes.map((n: any) => (
                 <div key={n.id} className="border-b pb-2 last:border-0">
-                  <p className="text-xs text-muted-foreground">{n.date ? new Date(n.date).toLocaleDateString("en-GB") : ""} by {n.employee ? `${n.employee.first_name} ${n.employee.last_name}` : "Staff"}</p>
-                  <p className="mt-0.5">{n.content}</p>
+                  {/* Show a real UK date, never a raw ISO timestamp — and fall
+                      back to createdAt when the note carries no date. */}
+                  <p className="text-xs text-muted-foreground">{ukDate(n.date || n.createdAt)} by {n.employee ? `${n.employee.first_name} ${n.employee.last_name}`.trim() : "Staff"}</p>
+                  <p className="mt-0.5 whitespace-pre-wrap">{plainText(n.content)}</p>
                 </div>
               ))}
             </div>

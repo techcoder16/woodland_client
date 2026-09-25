@@ -125,6 +125,11 @@ interface ApiResponse<T> {
   error: { message: string } | null;
 }
 
+// OCR and other document work runs far longer than the 10s instance default —
+// a file upload was being aborted client-side long before the server answered,
+// which surfaced as a generic network error rather than a timeout.
+const UPLOAD_TIMEOUT_MS = 300000;
+
 async function request<T>(
   method: "post" | "patch" | "put" | "delete",
   url: string,
@@ -170,6 +175,7 @@ async function request<T>(
       url,
       data: values,
       headers: mergedHeaders,
+      ...(values instanceof FormData ? { timeout: UPLOAD_TIMEOUT_MS } : {}),
     });
     
     // Success status check
@@ -210,6 +216,8 @@ async function request<T>(
           error = { message: e.response.data.message || e.response.data.error || "An error occurred" };
           break;
       }
+    } else if (e.code === "ECONNABORTED" || e.code === "ETIMEDOUT") {
+      error = { message: "The request timed out. Large documents can take a minute — please try again." };
     } else if (e.code === "ECONNREFUSED" || e.code === "ERR_NETWORK") {
       error = { message: "Server is currently unavailable. Please try again later." };
     } else {
