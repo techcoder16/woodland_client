@@ -14,6 +14,7 @@ interface AuthContextType {
   permissions: UserPermission[];
   isAdmin: boolean;
   canAccessFinance: boolean;
+  canApproveTransactions: boolean;
   isDepartmentAdmin: (department: Department) => boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
@@ -219,6 +220,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const canAccessFinance =
     userRole === StaffRole.SuperUser || userRole === StaffRole.FinanceUser;
 
+  // Mirrors the server's approve endpoints — Finance users raise payments,
+  // they don't sign them off.
+  const canApproveTransactions =
+    userRole === StaffRole.SuperUser || userRole === StaffRole.AdminUser;
+
   const isDepartmentAdmin = (department: Department): boolean => {
     if (userRole === StaffRole.SuperUser) return true;
     return userRole === StaffRole.DepartmentAdmin && user?.department === department;
@@ -232,6 +238,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       permissions,
       isAdmin,
       canAccessFinance,
+      canApproveTransactions,
       isDepartmentAdmin,
       login,
       logout,

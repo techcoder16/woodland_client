@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Check, FileText, Loader2, Plus, Trash2, Upload, Wand2, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, FileText, Loader2, Plus, Trash2, Upload, Wand2, Wrench, X } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { fetchProperties } from "@/redux/dataStore/propertySlice";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
-import { post } from "@/helper/api";
+import { get, post } from "@/helper/api";
 import { formatPropertyReference } from "@/utils/propertyReference";
 import { fetchVendors } from "@/redux/dataStore/vendorSlice";
 import { useToast } from "@/components/ui/use-toast";
@@ -26,7 +26,10 @@ const money = (value: unknown) =>
 
 const STEPS = ["Payment Details", "Review & Confirm", "Complete"] as const;
 
-type Adjustment = { id: string; type: string; description?: string; relatedTo?: string; amount: number };
+// jobTypeId is set when the line came from a completed maintenance job, so
+// the transaction records which jobs it billed and they aren't offered again.
+type Adjustment = { id: string; type: string; description?: string; relatedTo?: string; amount: number; jobTypeId?: string };
+type BillableJob = { id: string; jobType: string; description?: string; dateDone?: string; amount: number };
 
 const ADJUSTMENT_TYPES = ["Maintenance Recharge", "Management Fee", "VAT", "Other"];
 
@@ -69,14 +72,73 @@ export default function NewLandlordPayment() {
     dispatch(fetchVendors({ page: 1, search: "" }));
   }, [dispatch]);
 
+  // PropertyPicker searches the server, so the pick may not be in the
+  // redux list (page 1 only) — fetch it by id for rent and details.
+  const [fetchedProperty, setFetchedProperty] = useState<any>(null);
+  useEffect(() => {
+    if (!propertyId) { setFetchedProperty(null); return; }
+    let cancelled = false;
+    get<any>(`properties/${propertyId}`).then(({ data }) => { if (!cancelled) setFetchedProperty(data || null); });
+    return () => { cancelled = true; };
+  }, [propertyId]);
   const selectedProperty: any = useMemo(
-    () => properties.find((property) => property.id === propertyId),
-    [properties, propertyId],
+    () => (fetchedProperty?.id === propertyId ? fetchedProperty : properties.find((property) => property.id === propertyId)),
+    [fetchedProperty, properties, propertyId],
   );
   const selectedVendor: any = useMemo(
     () => vendors.find((vendor: any) => vendor.id === vendorId),
     [vendors, vendorId],
   );
+
+  // Contractual rent = the property's "Rent per month" (Management Agreement
+  // step). Stored as free text ("7,000", "£7000") — keep digits only.
+  const propertyRent = Number(String(selectedProperty?.rentPerMonth ?? "").replace(/[^0-9.]/g, "")) || 0;
+  // Filled in whenever the property changes; still editable for a part month.
+  useEffect(() => {
+    setPayment((current) => ({ ...current, contractualRent: propertyRent ? String(propertyRent) : "" }));
+  }, [selectedProperty?.id, propertyRent]);
+
+  // Completed maintenance jobs on this property not yet billed to the landlord.
+  const [billableJobs, setBillableJobs] = useState<BillableJob[]>([]);
+  useEffect(() => {
+    setBillableJobs([]);
+    if (!propertyId) return;
+    let cancelled = false;
+    get<BillableJob[]>(`transaction/billable-jobs?propertyId=${propertyId}`).then(({ data }) => {
+      if (!cancelled && Array.isArray(data)) setBillableJobs(data);
+    });
+    return () => { cancelled = true; };
+  }, [propertyId]);
+  const unaddedJobs = billableJobs.filter((job) => !adjustments.some((a) => a.jobTypeId === job.id));
+  const addJobAdjustment = (job: BillableJob) => {
+    setAdjustments((prev) => [...prev, {
+      id: crypto.randomUUID(),
+      type: "Maintenance Recharge",
+      description: job.description ? `${job.jobType} — ${job.description}` : job.jobType,
+      relatedTo: job.dateDone ? `Job completed ${job.dateDone}` : "Maintenance job",
+      amount: -Math.abs(job.amount),
+      jobTypeId: job.id,
+    }]);
+  };
+
+  // Auto-generated reference shown in the form (month/year follows the
+  // payment date). Only a reference the user types is sent — otherwise the
+  // server issues the real one on save, which matches this unless another
+  // payment was saved in the meantime.
+  const [referencePreview, setReferencePreview] = useState("");
+  useEffect(() => {
+    let cancelled = false;
+    get<{ reference: string }>(`transaction/next-reference?date=${payment.paymentDate}`).then(({ data }) => {
+      if (!cancelled && data?.reference) setReferencePreview(data.reference);
+    });
+    return () => { cancelled = true; };
+  }, [payment.paymentDate, step]);
+  const typedReference = payment.paymentReference.trim();
+
+  // What the bank account box shows by default; saved unless the user types their own.
+  const defaultBankLabel = selectedVendor?.bankName
+    ? `${selectedVendor.bankName} (${selectedVendor.bankSortCode || ""} | ${selectedVendor.bankAccountNo || ""})`
+    : "";
 
   const adjustmentTotal = adjustments.reduce((sum, a) => sum + Number(a.amount || 0), 0);
   const netPayable = Number(payment.contractualRent || 0) + adjustmentTotal;
@@ -195,22 +257,35 @@ export default function NewLandlordPayment() {
         toLandlordChequeNo: payment.paymentReference || undefined,
         toLandlordExpenditureDescription: payment.description,
         toLandlordPaidBy: selectedVendor ? `${selectedVendor.firstName} ${selectedVendor.lastName}`.trim() : undefined,
-        bankAccountLabel: payment.bankAccountLabel || undefined,
-        paymentReference: payment.paymentReference || undefined,
+        bankAccountLabel: payment.bankAccountLabel || defaultBankLabel || undefined,
+        paymentReference: typedReference || undefined,
         expectedPaymentDate: payment.expectedPaymentDate || undefined,
-        adjustments: adjustments.map(({ id, ...rest }) => rest),
+        adjustments: adjustments.map(({ id, jobTypeId, ...rest }) => rest),
+        jobTypeIds: adjustments.map((a) => a.jobTypeId).filter(Boolean),
       });
       if (error) throw new Error(error.message);
       const transaction = data?.transaction || data;
 
+      // The payment already exists at this point, so a failed upload is
+      // reported rather than blocking — it can be re-attached from the
+      // payment's Documents tab.
       if (documents.length && transaction?.id) {
-        await Promise.all(
+        const results = await Promise.all(
           documents.map(async ({ file }) => {
             const docForm = new FormData();
             docForm.append("file", file);
-            await post(`transaction/${transaction.id}/documents`, docForm).catch(() => undefined);
+            const { error: uploadError } = await post(`transaction/${transaction.id}/documents`, docForm);
+            return uploadError ? `${file.name}: ${uploadError.message}` : null;
           }),
         );
+        const failed = results.filter(Boolean);
+        if (failed.length) {
+          toast({
+            title: `${failed.length} of ${documents.length} document(s) failed to upload`,
+            description: `${failed.join("\n")}\nOpen the payment's Documents tab to try again.`,
+            variant: "destructive",
+          });
+        }
       }
 
       setCreatedTransaction(transaction);
@@ -299,13 +374,43 @@ export default function NewLandlordPayment() {
                     <div className="flex items-center justify-between">
                       <h2 className="font-semibold">Payment Calculation</h2>
                     </div>
-                    <div className="space-y-2 max-w-xs"><Label>Contractual rent (£) *</Label><Input type="number" min="0" value={payment.contractualRent} onChange={(event) => updatePayment("contractualRent", event.target.value)} /></div>
+                    <div className="space-y-2 max-w-xs">
+                      <Label>Contractual rent (£) *</Label>
+                      <Input type="number" min="0" value={payment.contractualRent} onChange={(event) => updatePayment("contractualRent", event.target.value)} />
+                      {propertyRent ? (
+                        <p className="text-xs text-muted-foreground">
+                          Property rent: <span className="font-medium text-foreground">{money(propertyRent)}</span> / month
+                          {Number(payment.contractualRent) !== propertyRent && (
+                            <> · <button type="button" className="text-primary underline" onClick={() => updatePayment("contractualRent", String(propertyRent))}>use property rent</button></>
+                          )}
+                        </p>
+                      ) : selectedProperty ? (
+                        <p className="text-xs text-amber-700">This property has no rent set. Add it in Edit Property → Management Agreement → Rent per month.</p>
+                      ) : null}
+                    </div>
 
                     <div className="rounded-lg border">
                       <div className="flex items-center justify-between border-b p-3">
                         <span className="text-sm font-medium">Adjustment Breakdown</span>
                         <Button size="sm" variant="outline" onClick={openAddAdjustment}><Plus className="mr-1.5 h-3.5 w-3.5" />Add Adjustment</Button>
                       </div>
+                      {unaddedJobs.length > 0 && (
+                        <div className="space-y-1.5 border-b bg-amber-50/60 p-3">
+                          <p className="text-xs font-medium text-amber-800">Completed maintenance not yet charged to the landlord</p>
+                          {unaddedJobs.map((job) => (
+                            <div key={job.id} className="flex items-center justify-between gap-2 text-sm">
+                              <span className="flex min-w-0 items-center gap-2">
+                                <Wrench className="h-3.5 w-3.5 shrink-0 text-amber-700" />
+                                <span className="truncate">{job.jobType}{job.description ? ` — ${job.description}` : ""}</span>
+                              </span>
+                              <span className="flex shrink-0 items-center gap-2">
+                                <span className="font-medium">{money(job.amount)}</span>
+                                <Button size="sm" variant="outline" className="h-7" onClick={() => addJobAdjustment(job)}><Plus className="mr-1 h-3 w-3" />Add</Button>
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       {!adjustments.length ? (
                         <p className="p-4 text-sm text-muted-foreground">No adjustments added.</p>
                       ) : (
@@ -342,12 +447,19 @@ export default function NewLandlordPayment() {
                         <Label>Bank account</Label>
                         <Input
                           placeholder="Landlord account"
-                          value={payment.bankAccountLabel || (selectedVendor?.bankName ? `${selectedVendor.bankName} (${selectedVendor.bankSortCode || ""} | ${selectedVendor.bankAccountNo || ""})` : "")}
+                          value={payment.bankAccountLabel || defaultBankLabel}
                           onChange={(event) => updatePayment("bankAccountLabel", event.target.value)}
                         />
                       </div>
                       <div className="space-y-2"><Label>Expected payment date</Label><Input type="date" value={payment.expectedPaymentDate} onChange={(event) => updatePayment("expectedPaymentDate", event.target.value)} /></div>
-                      <div className="space-y-2"><Label>Payment reference</Label><Input placeholder="Auto-generated" value={payment.paymentReference} onChange={(event) => updatePayment("paymentReference", event.target.value)} /></div>
+                      <div className="space-y-2">
+                        <Label>Payment reference</Label>
+                        <Input
+                          value={payment.paymentReference || referencePreview}
+                          onChange={(event) => updatePayment("paymentReference", event.target.value === referencePreview ? "" : event.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">{typedReference ? "Custom reference" : "Auto-generated — edit to use your own"}</p>
+                      </div>
                     </div>
                   </div>
 
@@ -389,7 +501,7 @@ export default function NewLandlordPayment() {
                   <div><p className="text-muted-foreground">Net payable</p><p className="font-semibold text-emerald-600">{money(netPayable)}</p></div>
                   <div><p className="text-muted-foreground">Payment method</p><p className="font-medium">{payment.paymentMethod}</p></div>
                   <div><p className="text-muted-foreground">Documents</p><p className="font-medium">{documents.length} attached</p></div>
-                  <div><p className="text-muted-foreground">Reference No.</p><p className="font-medium">Auto-generated on save</p></div>
+                  <div><p className="text-muted-foreground">Payment reference</p><p className="font-mono font-medium">{typedReference || referencePreview || "Auto-generated on save"}</p></div>
                 </div>
                 <div className="flex justify-between gap-2 border-t pt-5">
                   <Button variant="outline" onClick={() => setStep(0)} disabled={saving}><ArrowLeft className="mr-2 h-4 w-4" />Back</Button>
@@ -406,6 +518,7 @@ export default function NewLandlordPayment() {
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600"><Check className="h-6 w-6" /></div>
                 <h2 className="text-lg font-semibold">Payment {createdTransaction?.status === "DRAFT" ? "saved as draft" : "submitted"}</h2>
                 <p className="text-sm text-muted-foreground">Reference No. <span className="font-medium text-foreground">{createdTransaction?.reference || createdTransaction?.tranid || "-"}</span></p>
+                <p className="text-sm text-muted-foreground">Bank payment reference <span className="font-mono font-medium text-foreground">{createdTransaction?.paymentReference || createdTransaction?.reference || "-"}</span></p>
                 <p className="text-sm text-muted-foreground">Net payable {money(netPayable)} to {selectedVendor ? `${selectedVendor.firstName} ${selectedVendor.lastName}` : "the landlord"}</p>
                 <div className="flex justify-center gap-2 pt-3">
                   <Button variant="outline" onClick={resetForm}>Create another payment</Button>
@@ -460,7 +573,7 @@ export default function NewLandlordPayment() {
                   <div className="flex justify-between"><span className="text-muted-foreground">Account Name</span><span>{selectedVendor.firstName} {selectedVendor.lastName}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Sort Code</span><span>{selectedVendor.bankSortCode || "-"}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Account Number</span><span>{selectedVendor.bankAccountNo || "-"}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Reference</span><span>{payment.paymentReference || "Auto-generated"}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Reference</span><span className="font-mono">{typedReference || referencePreview || "Auto-generated"}</span></div>
                 </div>
               </div>
             )}

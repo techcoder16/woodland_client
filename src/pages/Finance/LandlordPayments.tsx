@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays, Check, ChevronRight, Clock3, Download, FileSpreadsheet, FileText, Filter, Loader2, Pencil, Plus, RefreshCw, Send, Trash2, WalletCards, X } from "lucide-react";
+import { CalendarDays, Check, CheckCircle2, ChevronRight, Clock3, Download, FileSpreadsheet, FileText, Filter, Loader2, Paperclip, Pencil, Plus, RefreshCw, Send, Trash2, Upload, WalletCards, X } from "lucide-react";
+import type { DayContentProps } from "react-day-picker";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -26,6 +27,7 @@ import { formatPropertyReference } from "@/utils/propertyReference";
 import { exportTransactionsToExcel, exportTransactionsToPdf } from "@/utils/transactionExport";
 import { useTheme } from "@/context/ThemeContext";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/context/AuthContext";
 
 const API_URL = import.meta.env.VITE_API_URL;
 type Payment = any;
@@ -40,12 +42,25 @@ const STATUS_BADGE: Record<string, string> = {
   APPROVAL_REQUIRED: "bg-red-100 text-red-700",
   DRAFT: "bg-slate-100 text-slate-700",
 };
+// Solid colour per status for the calendar bars — same hues as the badges.
+const STATUS_BAR: Record<string, string> = {
+  PAID: "bg-violet-500",
+  ACTIVE: "bg-emerald-500",
+  PENDING: "bg-orange-500",
+  APPROVAL_REQUIRED: "bg-red-500",
+  DRAFT: "bg-slate-400",
+};
+const STATUS_ORDER = ["APPROVAL_REQUIRED", "ACTIVE", "PENDING", "PAID", "DRAFT"];
 
 export default function LandlordPayments() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const queueRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const { canApproveTransactions } = useAuth();
+  const docUploadRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [actionBusy, setActionBusy] = useState(false);
   const { brandColors } = useTheme();
   const hsl = (value: string) => `hsl(${value})`;
   const { properties } = useAppSelector((state) => state.properties);
@@ -138,7 +153,23 @@ export default function LandlordPayments() {
     });
     return map;
   }, [payments]);
-  const paymentDates = useMemo(() => [...paymentsByDateKey.keys()].map((k) => new Date(k)), [paymentsByDateKey]);
+  // Day cell for the payment calendar: the date plus a segmented bar, one
+  // coloured segment per status, each as wide as its share of that day's
+  // payments.
+  const CalendarDay = ({ date }: DayContentProps) => {
+    const list = paymentsByDateKey.get(date.toDateString()) || [];
+    const counts = STATUS_ORDER.map((s) => [s, list.filter((p) => (p.status || "ACTIVE") === s).length] as const).filter(([, n]) => n > 0);
+    return (
+      <span className="flex h-full w-full flex-col items-center justify-center gap-1" title={counts.map(([s, n]) => `${n} ${STATUS_LABEL[s] || s}`).join(" · ")}>
+        <span className="leading-none">{date.getDate()}</span>
+        {counts.length > 0 && (
+          <span className="flex h-1.5 w-7 gap-px overflow-hidden rounded-full">
+            {counts.map(([s, n]) => <span key={s} className={STATUS_BAR[s]} style={{ flexGrow: n }} />)}
+          </span>
+        )}
+      </span>
+    );
+  };
   const paymentsOnSelectedDate = calendarSelectedDate ? paymentsByDateKey.get(calendarSelectedDate.toDateString()) || [] : [];
 
   const refreshOne = async (id: string) => {
@@ -211,6 +242,45 @@ export default function LandlordPayments() {
     }
     toast({ title: "Submitted for approval" });
     await load();
+    if (selected?.id === payment.id) await refreshOne(payment.id);
+  };
+
+  // One-record lifecycle actions from the details drawer. The server
+  // enforces the same rules (paid is final, approval is admin-only); the
+  // buttons are only shown when the action can succeed.
+  const runAction = async (path: string, successTitle: string) => {
+    if (!selected) return;
+    setActionBusy(true);
+    try {
+      const { data, error } = await post<any>(`transaction/${selected.id}/${path}`, {});
+      if (error) throw new Error(error.message);
+      if (data?.skipped?.length) throw new Error("This payment is no longer awaiting approval — refresh and try again.");
+      toast({ title: successTitle });
+      await load();
+      await refreshOne(selected.id);
+    } catch (error: any) {
+      toast({ title: "Action failed", description: error.message, variant: "destructive" });
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const uploadDocuments = async (files: FileList | null) => {
+    if (!files?.length || !selected) return;
+    setUploading(true);
+    const failed: string[] = [];
+    for (const file of Array.from(files)) {
+      const form = new FormData();
+      form.append("file", file);
+      const { error } = await post(`transaction/${selected.id}/documents`, form);
+      if (error) failed.push(`${file.name}: ${error.message}`);
+    }
+    setUploading(false);
+    if (docUploadRef.current) docUploadRef.current.value = "";
+    if (failed.length) toast({ title: `${failed.length} document(s) not uploaded`, description: failed.join("\n"), variant: "destructive" });
+    else toast({ title: "Documents uploaded" });
+    await load();
+    await refreshOne(selected.id);
   };
 
   const toggleSelect = (id: string) => {
@@ -385,7 +455,7 @@ export default function LandlordPayments() {
           {selectedIds.size > 0 && (
             <div className="flex items-center gap-3 border-b bg-primary/5 px-4 py-2.5 text-sm">
               <span className="font-medium">{selectedIds.size} selected</span>
-              <Button size="sm" onClick={bulkApprove} disabled={bulkBusy}>{bulkBusy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Check className="mr-1.5 h-3.5 w-3.5" />}Approve</Button>
+              {canApproveTransactions && <Button size="sm" onClick={bulkApprove} disabled={bulkBusy}>{bulkBusy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Check className="mr-1.5 h-3.5 w-3.5" />}Approve</Button>}
               <Select onValueChange={bulkChangeStatus}>
                 <SelectTrigger className="h-8 w-44"><SelectValue placeholder="Change status to..." /></SelectTrigger>
                 <SelectContent>
@@ -404,11 +474,11 @@ export default function LandlordPayments() {
               <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3 font-medium"><input type="checkbox" checked={visible.length > 0 && selectedIds.size === visible.length} onChange={toggleSelectAll} /></th>
-                  {["Reference", "Landlord", "Property", "Type", "Period", "Due date", "Contractual", "Adjustments", "Payable", "Status", ""].map((heading) => <th key={heading} className="px-4 py-3 font-medium">{heading}</th>)}
+                  {["Reference", "Landlord", "Property", "Type", "Period", "Due date", "Contractual", "Adjustments", "Payable", "Docs", "Status", ""].map((heading) => <th key={heading} className="px-4 py-3 font-medium">{heading}</th>)}
                 </tr>
               </thead>
               <tbody>
-                {loading && <tr><td colSpan={11} className="p-8 text-center text-muted-foreground">Loading payments…</td></tr>}
+                {loading && <tr><td colSpan={13} className="p-8 text-center text-muted-foreground">Loading payments…</td></tr>}
                 {!loading && visible.map((payment) => {
                   const property = propertyMap.get(payment.propertyId) as any;
                   const adjustment = Array.isArray(payment.adjustments) && payment.adjustments.length
@@ -426,6 +496,17 @@ export default function LandlordPayments() {
                     <td className="px-4 py-3">{money(payment.toLandlordRentReceived)}</td>
                     <td className="px-4 py-3 text-red-600">{adjustment ? money(adjustment) : money(0)}</td>
                     <td className="px-4 py-3 font-semibold text-emerald-600">{money(paymentAmount(payment))}</td>
+                    <td className="px-4 py-3">
+                      {payment.documents?.length ? (
+                        <button
+                          className="flex items-center gap-1 text-xs font-medium text-blue-700 hover:underline"
+                          title={payment.documents.map((d: any) => d.fileName || d.fileUrl).join("\n")}
+                          onClick={() => { openView(payment); setDetailsTab("Documents"); }}
+                        >
+                          <Paperclip className="h-3.5 w-3.5" />{payment.documents.length}
+                        </button>
+                      ) : <span className="text-xs text-muted-foreground/60">–</span>}
+                    </td>
                     <td className="px-4 py-3"><Badge className={STATUS_BADGE[status] || "bg-slate-100 text-slate-700"}>{STATUS_LABEL[status] || status}</Badge></td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
@@ -435,7 +516,7 @@ export default function LandlordPayments() {
                     </td>
                   </tr>;
                 })}
-                {!loading && !visible.length && <tr><td colSpan={11} className="p-8 text-center text-muted-foreground">No landlord payments found.</td></tr>}
+                {!loading && !visible.length && <tr><td colSpan={13} className="p-8 text-center text-muted-foreground">No landlord payments found.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -477,7 +558,10 @@ export default function LandlordPayments() {
                 <div><p className="text-muted-foreground">Net payable</p><p className="font-semibold text-emerald-600">{money(paymentAmount(selected))}</p></div>
                 <div><p className="text-muted-foreground">Payment method</p><p className="font-medium">{selected.toLandLordMode || "-"}</p></div>
                 <div><p className="text-muted-foreground">Bank account</p><p className="font-medium">{selected.bankAccountLabel || "-"}</p></div>
+                <div><p className="text-muted-foreground">Payment reference</p><p className="font-mono text-xs font-medium">{selected.paymentReference || selected.reference || "-"}</p></div>
+                <div><p className="text-muted-foreground">Created by</p><p className="font-medium">{selected.createdByName || "-"}</p></div>
                 {selected.approvedByName && <div className="col-span-2"><p className="text-muted-foreground">Approved by</p><p className="font-medium">{selected.approvedByName} · {selected.approvedAt ? new Date(selected.approvedAt).toLocaleString("en-GB") : ""}</p></div>}
+                {selected.status === "PAID" && <div className="col-span-2"><p className="text-muted-foreground">Paid</p><p className="font-medium">{selected.paidByName || "-"}{selected.paidAt ? ` · ${new Date(selected.paidAt).toLocaleString("en-GB")}` : ""}</p></div>}
               </div>}
               {detailsTab === "Adjustments" && <div className="rounded-lg border p-4 text-sm">
                 <p className="font-medium">Adjustment breakdown</p>
@@ -494,6 +578,10 @@ export default function LandlordPayments() {
                 )}
               </div>}
               {detailsTab === "Documents" && <div className="space-y-2">
+                <input ref={docUploadRef} type="file" multiple accept=".pdf,image/*" className="hidden" onChange={(e) => void uploadDocuments(e.target.files)} />
+                <Button size="sm" variant="outline" className="w-full" disabled={uploading} onClick={() => docUploadRef.current?.click()}>
+                  {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Upload documents
+                </Button>
                 {!selected.documents?.length ? (
                   <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">No supporting documents attached.</div>
                 ) : selected.documents.map((doc: any) => (
@@ -517,15 +605,34 @@ export default function LandlordPayments() {
               </div>}
               {detailsTab === "History" && <div className="rounded-lg border p-4 text-sm">
                 <p className="font-medium">Payment activity</p>
-                <p className="mt-3 text-muted-foreground">Created: {selected.createdAt ? new Date(selected.createdAt).toLocaleString("en-GB") : "Not available"}</p>
+                <p className="mt-3 text-muted-foreground">Created: {selected.createdAt ? new Date(selected.createdAt).toLocaleString("en-GB") : "Not available"}{selected.createdByName ? ` by ${selected.createdByName}` : ""}</p>
                 {selected.approvalRequestedAt && <p className="text-muted-foreground">Approval requested: {new Date(selected.approvalRequestedAt).toLocaleString("en-GB")}</p>}
                 {selected.approvedAt && <p className="text-muted-foreground">Approved: {new Date(selected.approvedAt).toLocaleString("en-GB")} by {selected.approvedByName}</p>}
+                {selected.paidAt && <p className="text-muted-foreground">Paid: {new Date(selected.paidAt).toLocaleString("en-GB")}{selected.paidByName ? ` by ${selected.paidByName}` : ""}</p>}
                 <p className="text-muted-foreground">Status: {STATUS_LABEL[selected.status] || selected.status}</p>
               </div>}
               {/* No per-payment PDF: window.print() printed the whole page,
                   not the payment. Bulk export lives in the toolbar menu. */}
+              {/* Next step for this payment. Paid is final — no actions. */}
+              {selected.status === "PAID" ? (
+                <p className="rounded-lg bg-violet-50 p-3 text-center text-sm text-violet-700">This payment is paid and locked. It can no longer be edited, approved or changed.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {(selected.status === "DRAFT" || selected.status === "PENDING") && (
+                    <Button className="flex-1" variant="outline" disabled={actionBusy} onClick={() => void submitForApproval(selected)}><Send className="mr-2 h-4 w-4" />Submit for approval</Button>
+                  )}
+                  {selected.status === "APPROVAL_REQUIRED" && (canApproveTransactions ? (
+                    <Button className="flex-1" disabled={actionBusy} onClick={() => void runAction("approve", "Payment approved")}>{actionBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}Approve</Button>
+                  ) : (
+                    <p className="w-full rounded-lg bg-red-50 p-3 text-center text-sm text-red-700">Waiting for an Admin or Super User to approve.</p>
+                  ))}
+                  {selected.status === "ACTIVE" && (
+                    <Button className="flex-1" disabled={actionBusy} onClick={() => void runAction("mark-paid", "Payment marked as paid")}>{actionBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}Mark as paid</Button>
+                  )}
+                </div>
+              )}
               <div className="flex gap-2">
-                <Button className="flex-1" onClick={() => navigate("/finance/landlord-payments/new")}>Create another payment</Button>
+                <Button className="flex-1" variant="outline" onClick={() => navigate("/finance/landlord-payments/new")}>Create another payment</Button>
               </div>
             </div>
           </>}
@@ -536,20 +643,25 @@ export default function LandlordPayments() {
         <DialogContent className="max-w-2xl">
           <DialogHeader><DialogTitle>Payment Calendar</DialogTitle></DialogHeader>
           <div className="grid gap-4 sm:grid-cols-[auto_1fr]">
-            <Calendar
-              mode="single"
-              selected={calendarSelectedDate}
-              onSelect={setCalendarSelectedDate}
-              modifiers={{ hasPayment: paymentDates }}
-              modifiersClassNames={{ hasPayment: "relative after:absolute after:bottom-1 after:left-1/2 after:h-1.5 after:w-1.5 after:-translate-x-1/2 after:rounded-full after:bg-primary" }}
-              className="rounded-md border"
-            />
+            <div>
+              <Calendar
+                mode="single"
+                selected={calendarSelectedDate}
+                onSelect={setCalendarSelectedDate}
+                components={{ DayContent: CalendarDay }}
+                classNames={{ head_cell: "text-muted-foreground rounded-md w-11 font-normal text-[0.8rem]", cell: "h-11 w-11 text-center text-sm p-0 relative", day: "h-11 w-11 rounded-md p-0 font-normal hover:bg-accent aria-selected:opacity-100" }}
+                className="rounded-md border"
+              />
+              <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                {STATUS_ORDER.map((s) => <span key={s} className="flex items-center gap-1.5"><span className={`h-1.5 w-3 rounded-full ${STATUS_BAR[s]}`} />{STATUS_LABEL[s]}</span>)}
+              </div>
+            </div>
             <div className="min-w-0">
               <h3 className="mb-2 text-sm font-semibold">
                 {calendarSelectedDate ? calendarSelectedDate.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : "Select a date"}
               </h3>
               {!calendarSelectedDate ? (
-                <p className="text-sm text-muted-foreground">Days with a scheduled or dated payment are marked with a dot.</p>
+                <p className="text-sm text-muted-foreground">Each bar shows that day's payments by status. Click a day to list them.</p>
               ) : !paymentsOnSelectedDate.length ? (
                 <p className="text-sm text-muted-foreground">No payments on this date.</p>
               ) : (
@@ -562,7 +674,10 @@ export default function LandlordPayments() {
                           <p className="font-mono text-xs text-primary">{payment.reference || payment.tranid}</p>
                           <p className="text-xs text-muted-foreground">{payment.toLandlordPaidBy || "Landlord"} · {formatPropertyReference(property?.propertyNumber)}</p>
                         </div>
-                        <span className="font-semibold">{money(paymentAmount(payment))}</span>
+                        <span className="text-right">
+                          <span className="block font-semibold">{money(paymentAmount(payment))}</span>
+                          <Badge className={`text-[10px] ${STATUS_BADGE[payment.status] || ""}`}>{STATUS_LABEL[payment.status] || payment.status}</Badge>
+                        </span>
                       </button>
                     );
                   })}
