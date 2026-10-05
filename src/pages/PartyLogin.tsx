@@ -25,13 +25,13 @@ const formSchema = z.object({
 
 const KIND_LABELS: Record<PartyKind, string> = {
   vendor: "Landlord",
-  tenant: "Tenant",
+  tenant: "Occupier",
   contractor: "Contractor",
 };
 
 const KIND_HOME: Record<PartyKind, string> = {
   vendor: "/landlord/maintenance",
-  tenant: "/tenant/maintenance",
+  tenant: "/tenant/dashboard",
   contractor: "/contractor/maintenance",
 };
 

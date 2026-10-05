@@ -24,12 +24,13 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import logo from "@/assets/logo.png";
-import { Bell, Building2, Clock, LogOut, Menu, User, Wrench } from "lucide-react";
+import { Bell, Building2, Clock, LayoutDashboard, LogOut, Menu, User, Wrench } from "lucide-react";
 import { getPartyInfo, partyLogout, partyGet, partyPost, PartyKind } from "@/helper/partyAuth";
+import { loadOccupancyMeta, OccupancyMeta, typeOf } from "@/pages/Occupancy/occupancyShared";
 
 const KIND_LABELS: Record<PartyKind, string> = {
   vendor: "Landlord",
-  tenant: "Tenant",
+  tenant: "Occupier",
   contractor: "Contractor",
 };
 
@@ -69,8 +70,13 @@ export default function PartyDashboardLayout({ kind, children }: PartyDashboardL
   // notification feed on the backend today.
   const hasNotifications = kind === "vendor" || kind === "tenant";
 
+  const [meta, setMeta] = useState<OccupancyMeta | null>(null);
+
   useEffect(() => {
     getPartyInfo(kind).then(setParty);
+    if (kind === "tenant") {
+      loadOccupancyMeta(() => partyGet<OccupancyMeta>(kind, "occupancy/meta").catch(() => null)).then(setMeta);
+    }
   }, [kind]);
 
   useEffect(() => {
@@ -96,6 +102,7 @@ export default function PartyDashboardLayout({ kind, children }: PartyDashboardL
   };
 
   const menuItems = [
+    ...(kind === "tenant" ? [{ label: "Dashboard", path: `${base}/dashboard`, icon: LayoutDashboard }] : []),
     { label: kind === "contractor" ? "Assigned Jobs" : "Maintenance", path: `${base}/maintenance`, icon: Wrench },
     ...(kind !== "contractor"
       ? [{ label: kind === "vendor" ? "My Properties" : "My Property", path: `${base}/property`, icon: Building2 }]
@@ -114,7 +121,7 @@ export default function PartyDashboardLayout({ kind, children }: PartyDashboardL
       <Sidebar variant="inset" className="border-r border-border/70">
         <SidebarHeader className="flex items-center justify-center py-5 border-b border-border/70">
           <div
-            onClick={() => navigate(`${base}/maintenance`)}
+            onClick={() => navigate(kind === "tenant" ? `${base}/dashboard` : `${base}/maintenance`)}
             className="flex items-center gap-2 cursor-pointer"
           >
             <img src={logo} alt="logo" className="h-8 w-auto" />
@@ -172,6 +179,11 @@ export default function PartyDashboardLayout({ kind, children }: PartyDashboardL
               </Button>
             </SidebarTrigger>
             <span className="text-sm font-medium text-muted-foreground">{KIND_LABELS[kind]} Portal</span>
+            {kind === "tenant" && party?.occupierType && (
+              <Badge variant="outline" className="border-primary/40 text-primary">
+                {typeOf(meta, party.occupierType)?.longLabel ?? party.occupierType}
+              </Badge>
+            )}
           </div>
           <div className="flex items-center gap-3">
             {hasNotifications && (

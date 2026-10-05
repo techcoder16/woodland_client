@@ -92,7 +92,7 @@ const EditTenant = ({ isOpen, onClose, propertyId, tenant }: EditTenantModalProp
         return;
       }
 
-      toast({ title: "Success", description: "Tenant updated successfully!" });
+      toast({ title: "Success", description: "Occupier updated successfully!" });
       setProgress(100);
       onClose();
       form.reset();
@@ -130,7 +130,7 @@ const EditTenant = ({ isOpen, onClose, propertyId, tenant }: EditTenantModalProp
       <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="h-5 w-5 text-primary" /> Edit Tenant
+            <UserPlus className="h-5 w-5 text-primary" /> Edit Occupier
           </DialogTitle>
         </DialogHeader>
 

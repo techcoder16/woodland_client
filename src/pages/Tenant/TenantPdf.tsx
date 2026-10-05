@@ -78,7 +78,7 @@ const TenantPdf = ({ tenant, open: openProp, onOpenChange, hideTrigger }: any) =
         <DialogContent className="max-w-4xl">
           <DialogHeader className="px-6 py-4">
             <DialogTitle className="text-2xl font-bold">
-              {tenant.FirstName} {tenant.SureName} - Tenant Details
+              {tenant.FirstName} {tenant.SureName} - Occupier Details
             </DialogTitle>
           </DialogHeader>
 

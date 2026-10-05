@@ -28,6 +28,8 @@ import {
   Wrench,
   HardHat,
   ChevronDown,
+  KeyRound,
+  Landmark,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import logo from "@/assets/logo.png";
@@ -63,12 +65,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const allMenuItems = [
     { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
     { label: "Properties", path: "/properties", icon: Building2 },
+    { label: "Occupancy", path: "/occupancy", icon: KeyRound },
     { label: "Landlords", path: "/vendors", icon: Users2 },
     { label: "Maintenance", path: "/maintenance", icon: Wrench },
     { label: "Contractors", path: "/contractors", icon: HardHat },
     { label: "Transactions", path: "/transaction", icon: TbTransactionDollar },
     { label: "Finance", path: "/finance/landlord-payments", icon: Wallet },
-    { label: "Tenants", path: "/tenants", icon: CircleUser },
+    { label: "Occupiers", path: "/tenants", icon: CircleUser },
+    { label: "Council Customers", path: "/council-customers", icon: Landmark },
     { label: "Settings", path: "/settings", icon: Settings },
   ];
 
@@ -146,7 +150,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   </React.Fragment>
                 );
               }
-              const active = location.pathname === path;
+              const active = location.pathname === path || (path !== "/dashboard" && location.pathname.startsWith(`${path}/`));
               return (
                 <SidebarMenuItem key={path}>
                   <SidebarMenuButton

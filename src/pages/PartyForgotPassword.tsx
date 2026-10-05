@@ -10,7 +10,7 @@ import logo from "@/assets/logo.png";
 
 const KIND_LABELS: Record<PartyKind, string> = {
   vendor: "Landlord",
-  tenant: "Tenant",
+  tenant: "Occupier",
   contractor: "Contractor",
 };
 

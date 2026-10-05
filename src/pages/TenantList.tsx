@@ -63,10 +63,10 @@ const TenantList = ({ property }: any) => {
     async (id: string) => {
       try {
         await dispatch(deleteTenant(id)).unwrap();
-        toast.success("Tenant deleted successfully!");
+        toast.success("Occupier deleted");
       } catch (error) {
         console.log(error)
-        toast.error(error || "Failed to delete tenant");
+        toast.error(error || "Failed to delete occupier");
       }
     },
     [dispatch]
@@ -83,7 +83,7 @@ const TenantList = ({ property }: any) => {
     <DashboardLayout>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h1 className="hero-stat text-[2rem]">Tenants</h1>
+          <h1 className="hero-stat text-[2rem]">Occupiers</h1>
         </div>
 
 
@@ -99,7 +99,7 @@ const TenantList = ({ property }: any) => {
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 px-4 py-3 text-left font-medium" />
                   <Input
                     type="search"
-                    placeholder="Search Tenants..."
+                    placeholder="Search Occupiers..."
                     className="pl-8"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -117,7 +117,7 @@ const TenantList = ({ property }: any) => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ">
               <Button className="ml-auto" onClick={() => setIsAddTenantModalOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
-                Add Tenant
+                Add Occupier
               </Button>
             </div>
   </div>
@@ -131,13 +131,15 @@ const TenantList = ({ property }: any) => {
                       <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Name</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Email</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Phone</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Type</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Status</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td aria-colspan={5} className="text-center p-4 text-muted-foreground">
+                        <td colSpan={7} className="text-center p-4 text-muted-foreground">
                           Loading...
                         </td>
                       </tr>
@@ -149,13 +151,25 @@ const TenantList = ({ property }: any) => {
                           onClick={() => setViewTenant(tenant)}
                         >
                           <td className="px-4 py-3 text-sm">{tenant.title}</td>
-                          <td className="px-4 py-3 text-sm">{tenant.FirstName}</td>
+                          <td className="px-4 py-3 text-sm">{[tenant.FirstName, tenant.SureName].filter(Boolean).join(" ")}</td>
                           <td className="px-4 py-3 text-sm">{tenant.Email}</td>
                           <td className="px-4 py-3 text-sm">
                             <div className="flex items-center gap-2">
                               <Phone className="h-4 w-4 text-muted-foreground" />
                               {tenant.MobileNo}
                             </div>
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            {tenant.occupierType ? (tenant.occupierType === "COUNCIL" ? "Council" : "Private") : "-"}
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            {/* Active only while linked to a property through a live occupancy */}
+                            <span className={tenant.isActive ? "rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300" : "rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"}>
+                              {tenant.isActive ? "Active" : "Inactive"}
+                            </span>
+                            {tenant.currentOccupancy?.property?.addressLine1 && (
+                              <p className="mt-0.5 text-xs text-muted-foreground">{tenant.currentOccupancy.property.addressLine1}</p>
+                            )}
                           </td>
                           <td className="px-4 py-3 text-sm" onClick={(e) => e.stopPropagation()}>
                             <DropdownMenu>
@@ -188,8 +202,8 @@ const TenantList = ({ property }: any) => {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                          No tenants found.
+                        <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                          No occupiers found.
                         </td>
                       </tr>
                     )}

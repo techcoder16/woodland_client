@@ -67,11 +67,11 @@ export function AddTenant({ isOpen, onClose, propertyId }: AddTenantModalProps) 
         }
       }
 
-      toast({ title: "Success", description: "Tenant created successfully!" });
+      toast({ title: "Success", description: "Occupier created successfully!" });
       onClose();
       form.reset();
     } catch (error: any) {
-      toast({ title: "Error", description: error.message || "Failed to create tenant", variant: "destructive" });
+      toast({ title: "Error", description: error.message || "Failed to create occupier", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -82,7 +82,7 @@ export function AddTenant({ isOpen, onClose, propertyId }: AddTenantModalProps) 
       <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="h-5 w-5 text-primary" /> Add New Tenant
+            <UserPlus className="h-5 w-5 text-primary" /> Add New Occupier
           </DialogTitle>
         </DialogHeader>
 

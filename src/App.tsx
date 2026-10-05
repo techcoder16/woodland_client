@@ -48,6 +48,11 @@ import PartyProperty from "./pages/PartyProperty";
 import PartyForgotPassword from "./pages/PartyForgotPassword";
 import PartyResetPassword from "./pages/PartyResetPassword";
 import PartyProtectedRoute from "@/components/PartyProtectedRoute";
+import OccupancyList from "./pages/Occupancy/OccupancyList";
+import CreateOccupancy from "./pages/Occupancy/CreateOccupancy";
+import OccupancyDetail from "./pages/Occupancy/OccupancyDetail";
+import CouncilCustomers from "./pages/Occupancy/CouncilCustomers";
+import OccupierDashboard from "./pages/OccupierDashboard";
 function App() {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -169,6 +174,27 @@ function App() {
                     </ProtectedRoute>
                   } />
                   
+                  <Route path="/occupancy" element={
+                    <ProtectedRoute route="/occupancy">
+                      <OccupancyList />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/occupancy/new" element={
+                    <ProtectedRoute route="/occupancy">
+                      <CreateOccupancy />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/occupancy/:id" element={
+                    <ProtectedRoute route="/occupancy">
+                      <OccupancyDetail />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/council-customers" element={
+                    <ProtectedRoute route="/council-customers">
+                      <CouncilCustomers />
+                    </ProtectedRoute>
+                  } />
+
                   <Route path="/vendors/edit" element={
                     <ProtectedRoute route="/vendors/edit">
                       <EditVendor />
@@ -241,7 +267,11 @@ function App() {
                     <PartyProtectedRoute kind="vendor"><PartyProperty kind="vendor" /></PartyProtectedRoute>
                   } />
 
-                  {/* Tenant portal */}
+                  {/* Occupier (tenant) portal */}
+                  <Route path="/tenant" element={<Navigate to="/tenant/dashboard" replace />} />
+                  <Route path="/tenant/dashboard" element={
+                    <PartyProtectedRoute kind="tenant"><OccupierDashboard /></PartyProtectedRoute>
+                  } />
                   <Route path="/tenant/login" element={<PartyLogin kind="tenant" />} />
                   <Route path="/tenant/forgot-password" element={<PartyForgotPassword kind="tenant" />} />
                   <Route path="/tenant/reset-password" element={<PartyResetPassword kind="tenant" />} />

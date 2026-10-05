@@ -52,7 +52,7 @@ const Tenant = ({ register, watch, clearErrors, setValue, errors, isEdit }: Tena
 
   return (
     <div className="w-full space-y-5">
-      <div className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Tenant details</div>
+      <div className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Occupier details</div>
       <div className="grid grid-cols-2 gap-x-4 gap-y-5">
         <SelectField
           label="Title"

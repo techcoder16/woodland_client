@@ -22,7 +22,7 @@ const formSchema = z
 
 const KIND_HOME: Record<PartyKind, string> = {
   vendor: "/landlord/maintenance",
-  tenant: "/tenant/maintenance",
+  tenant: "/tenant/dashboard",
   contractor: "/contractor/maintenance",
 };
 
