@@ -139,6 +139,13 @@ export default function LandlordPayments() {
   const upcoming = [...payments]
     .filter((p) => p.status !== "PAID" && (p.expectedPaymentDate || p.toLandlordDate) && new Date(p.expectedPaymentDate || p.toLandlordDate) >= new Date(new Date().toDateString()))
     .sort((a, b) => new Date(a.expectedPaymentDate || a.toLandlordDate).getTime() - new Date(b.expectedPaymentDate || b.toLandlordDate).getTime());
+  const dayOffset = (p: Payment) => Math.round((new Date(new Date(p.expectedPaymentDate || p.toLandlordDate).toDateString()).getTime() - new Date(new Date().toDateString()).getTime()) / 86400000);
+  const upcomingBuckets = [
+    { label: "Today", items: upcoming.filter((p) => dayOffset(p) === 0) },
+    { label: "Tomorrow", items: upcoming.filter((p) => dayOffset(p) === 1) },
+    { label: "Next 7 days", items: upcoming.filter((p) => dayOffset(p) >= 2 && dayOffset(p) <= 7) },
+    { label: "Later", items: upcoming.filter((p) => dayOffset(p) > 7) },
+  ].filter((b) => b.items.length > 0);
 
   // Every date that has at least one payment (expected or landlord date),
   // used to highlight days on the calendar and to list that day's
@@ -283,6 +290,8 @@ export default function LandlordPayments() {
     await refreshOne(selected.id);
   };
 
+  const selectedPayments = payments.filter((p) => selectedIds.has(p.id));
+
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -365,29 +374,30 @@ export default function LandlordPayments() {
           </div>
         </div>
 
+        {/* Only statuses that actually have payments — once everything is
+            paid, empty "Approval" / "On hold" cards are just noise. */}
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-          {[
-            ["Due today", payments, money(payments.reduce((sum, payment) => sum + paymentAmount(payment), 0)), "text-blue-600"],
+          {([
+            ["All payments", payments, money(payments.reduce((sum, payment) => sum + paymentAmount(payment), 0)), "text-blue-600"],
+            ["Approval required", approval, money(totals.approval), "text-red-600"],
             ["Ready to pay", ready, money(totals.ready), "text-emerald-600"],
             ["On hold", onHold, money(totals.hold), "text-orange-600"],
-            ["Paid today", paid, money(totals.paid), "text-violet-600"],
-            ["Approval required", approval, money(totals.approval), "text-red-600"],
-          ].map(([label, records, total, color]) => (
-            <div key={String(label)} className="surface p-4">
+            ["Paid", paid, money(totals.paid), "text-violet-600"],
+          ] as [string, Payment[], string, string][]).filter(([, records]) => records.length > 0).map(([label, records, total, color]) => (
+            <div key={label} className="surface p-4">
               <div className={`mb-2 flex items-center gap-2 text-xs font-semibold uppercase ${color}`}><WalletCards className="h-4 w-4" />{label}</div>
               <div className="text-xl font-semibold">{total}</div>
-              <div className="text-xs text-muted-foreground">{(records as Payment[]).length} payments</div>
+              <div className="text-xs text-muted-foreground">{records.length} payment{records.length === 1 ? "" : "s"}</div>
             </div>
           ))}
         </div>
 
-        {!upcoming.length ? (
-          <div className="surface p-4 text-sm text-muted-foreground">No upcoming payments scheduled.</div>
-        ) : (
+        {/* Unpaid payments by real due date; empty buckets are hidden. */}
+        {upcomingBuckets.length > 0 && (
           <div className="grid gap-3 md:grid-cols-4">
-            {["Tomorrow", "Thursday", "Friday", "Next 7 Days"].map((label, index) => (
+            {upcomingBuckets.map(({ label, items }) => (
               <div key={label} className="surface flex items-center justify-between p-4">
-                <div><p className="text-sm font-medium">{label}</p><p className="text-lg font-semibold">{money([totals.ready * .9, totals.ready * .7, totals.ready * .45, totals.ready][index])}</p><p className="text-xs text-muted-foreground">{Math.max(0, ready.length - index)} payments</p></div>
+                <div><p className="text-sm font-medium">{label}</p><p className="text-lg font-semibold">{money(items.reduce((sum, p) => sum + paymentAmount(p), 0))}</p><p className="text-xs text-muted-foreground">{items.length} payment{items.length === 1 ? "" : "s"}</p></div>
                 <CalendarDays className="h-5 w-5 text-muted-foreground" />
               </div>
             ))}
@@ -455,7 +465,10 @@ export default function LandlordPayments() {
           {selectedIds.size > 0 && (
             <div className="flex items-center gap-3 border-b bg-primary/5 px-4 py-2.5 text-sm">
               <span className="font-medium">{selectedIds.size} selected</span>
-              {canApproveTransactions && <Button size="sm" onClick={bulkApprove} disabled={bulkBusy}>{bulkBusy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Check className="mr-1.5 h-3.5 w-3.5" />}Approve</Button>}
+              {canApproveTransactions && selectedPayments.some((p) => p.status === "APPROVAL_REQUIRED") && <Button size="sm" onClick={bulkApprove} disabled={bulkBusy}>{bulkBusy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Check className="mr-1.5 h-3.5 w-3.5" />}Approve</Button>}
+              {selectedPayments.every((p) => p.status === "PAID") ? (
+                <span className="text-xs text-muted-foreground">Paid payments are locked — no status changes.</span>
+              ) : (
               <Select onValueChange={bulkChangeStatus}>
                 <SelectTrigger className="h-8 w-44"><SelectValue placeholder="Change status to..." /></SelectTrigger>
                 <SelectContent>
@@ -465,6 +478,7 @@ export default function LandlordPayments() {
                   <SelectItem value="PAID">Paid</SelectItem>
                 </SelectContent>
               </Select>
+              )}
               <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>Clear selection</Button>
             </div>
           )}
