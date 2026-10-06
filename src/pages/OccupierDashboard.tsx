@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, CalendarDays, CheckCircle2, Circle, Home, User, Users, Wrench } from "lucide-react";
+import { Building2, CalendarDays, Home, User, Users, Wrench } from "lucide-react";
 import PartyDashboardLayout from "@/components/layout/PartyDashboardLayout";
 import { Button } from "@/components/ui/button";
 import { partyGet } from "@/helper/partyAuth";
@@ -10,7 +10,6 @@ import {
   Occupancy,
   OccupancyMeta,
   Occupier,
-  SHOW_TASKS,
   addressSub,
   fmtDate,
   formatRate,
@@ -60,8 +59,6 @@ export default function OccupierDashboard() {
   const o = data?.current;
   const type = typeOf(meta, o?.type ?? data?.occupier?.occupierType);
   const status = statusOf(meta, o?.status);
-  const tasks = o?.tasks || [];
-  const done = tasks.filter((t) => t.isCompleted).length;
 
   return (
     <PartyDashboardLayout kind="tenant">
@@ -136,25 +133,6 @@ export default function OccupierDashboard() {
               />
             </div>
 
-            {SHOW_TASKS && tasks.length > 0 && (
-              <section className="surface p-5">
-                <div className="mb-3 flex items-center justify-between">
-                  <h2 className="font-semibold">Move-in checklist</h2>
-                  <span className="text-sm text-muted-foreground">{done} of {tasks.length} done</span>
-                </div>
-                <div className="mb-4 h-2 w-full overflow-hidden rounded-full bg-muted">
-                  <div className="h-full bg-primary transition-all" style={{ width: `${(done / tasks.length) * 100}%` }} />
-                </div>
-                <ul className="grid gap-2 sm:grid-cols-2">
-                  {tasks.map((t, i) => (
-                    <li key={i} className="flex items-center gap-2 text-sm">
-                      {t.isCompleted ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <Circle className="h-4 w-4 text-muted-foreground" />}
-                      <span className={cn(t.isCompleted && "text-muted-foreground")}>{t.title}</span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
           </>
         )}
 

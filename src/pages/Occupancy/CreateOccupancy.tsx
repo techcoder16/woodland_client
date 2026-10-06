@@ -22,7 +22,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { get, post } from "@/helper/api";
@@ -38,7 +37,6 @@ import {
   Occupier,
   PropertyOption,
   RateFrequency,
-  SHOW_TASKS,
   StaffUser,
   addressSub,
   estimatedIncome,
@@ -47,12 +45,14 @@ import {
   fullName,
   money,
   nightsBetween,
+  monthlyRentAs,
+  parseRent,
   staffName,
   toneBadge,
   typeOf,
 } from "./occupancyShared";
 
-const STEPS = ["Property", "Occupancy Type", "Customer & Occupier", "Dates & Rate", SHOW_TASKS ? "Handover & Tasks" : "Handover", "Review & Create"];
+const STEPS = ["Property", "Occupancy Type", "Customer & Occupier", "Dates & Rate", "Handover", "Review & Create"];
 
 interface FormState {
   propertyId: string;
@@ -93,7 +93,6 @@ interface FormState {
   bookingDate: string;
   bookingTime: string;
   bookingNotes: string;
-  tasks: { title: string; checked: boolean }[];
 }
 
 const EMPTY: FormState = {
@@ -130,7 +129,6 @@ const EMPTY: FormState = {
   bookingDate: "",
   bookingTime: "10:00",
   bookingNotes: "",
-  tasks: [],
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -229,7 +227,6 @@ export default function CreateOccupancy() {
   const [occupierOptions, setOccupierOptions] = useState<Occupier[]>([]);
   const [selectedOccupier, setSelectedOccupier] = useState<Occupier | null>(null);
   const [documents, setDocuments] = useState<File[]>([]);
-  const [newTask, setNewTask] = useState("");
   const [addingMember, setAddingMember] = useState<AdditionalOccupier | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -237,12 +234,6 @@ export default function CreateOccupancy() {
     setForm((f) => ({ ...f, [key]: value }));
     setErrors((e) => ({ ...e, [key]: "" }));
   };
-
-  // Default task list comes from the backend.
-  useEffect(() => {
-    if (meta && form.tasks.length === 0) setForm((f) => ({ ...f, tasks: meta.defaultTasks.map((title) => ({ title, checked: true })) }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [meta]);
 
   useEffect(() => {
     get<{ properties: PropertyOption[] }>(`occupancy/options/properties?search=${encodeURIComponent(debouncedPropertySearch)}`).then(({ data }) =>
@@ -297,6 +288,12 @@ export default function CreateOccupancy() {
     }));
   };
 
+  const propertyRent = parseRent(selectedProperty?.rentPerMonth);
+  // Only filled in when the user clicks "Use property rent" — never automatically —
+  // and converted from per-month to the selected frequency (per night / week).
+  const rentFreq: RateFrequency = form.rateFrequency || "MONTHLY";
+  const convertedRent = propertyRent ? monthlyRentAs(propertyRent, rentFreq) : null;
+  const usingPropertyRent = convertedRent != null && Number(form.rateAmount) === convertedRent;
   const nights = nightsBetween(form.moveInDate, form.expectedMoveOutDate);
   const income = form.rateFrequency ? estimatedIncome(Number(form.rateAmount), form.rateFrequency, form.moveInDate, form.expectedMoveOutDate) : null;
 
@@ -373,7 +370,6 @@ export default function CreateOccupancy() {
       bookingDate: form.bookingDate,
       bookingTime: form.bookingTime,
       bookingNotes: clean(form.bookingNotes),
-      tasks: form.tasks.filter((t) => t.checked).map((t) => ({ title: t.title })),
       additionalOccupiers: form.additionalOccupiers,
     };
     if (form.type === "COUNCIL") {
@@ -923,6 +919,30 @@ export default function CreateOccupancy() {
                     </Select>
                   </Field>
                 </div>
+                {propertyRent && (
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed px-3 py-2 text-sm">
+                    <span className="text-muted-foreground">
+                      Property rent: <span className="font-medium text-foreground">{money(propertyRent)} pcm</span>
+                      {rentFreq !== "MONTHLY" && (
+                        <> = <span className="font-medium text-foreground">{money(convertedRent)} {freqOf(meta, rentFreq)?.short}</span></>
+                      )}
+                      {usingPropertyRent && " · in use"}
+                    </span>
+                    {!usingPropertyRent && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          set("rateFrequency", rentFreq);
+                          set("rateAmount", String(convertedRent));
+                        }}
+                      >
+                        Use property rent
+                      </Button>
+                    )}
+                  </div>
+                )}
                 <div className="rounded-lg bg-muted/50 p-4 text-sm space-y-2">
                   <p className="font-medium">Estimated Income (based on dates)</p>
                   <div className="flex justify-between"><span className="text-muted-foreground">{freq?.rateLabel || "Rate"}</span><span>{form.rateAmount ? money(Number(form.rateAmount)) : "-"}</span></div>
@@ -933,9 +953,9 @@ export default function CreateOccupancy() {
             </div>
           )}
 
-          {/* Step 5 — Handover & tasks */}
+          {/* Step 5 — Handover */}
           {step === 4 && (
-            <div className={cn("grid gap-6", SHOW_TASKS && "lg:grid-cols-2")}>
+            <div className="grid gap-6">
               <Panel title="Booking-In Appointment" subtitle="Assign a booking-in appointment for key handover and initial checks.">
                 <div className="grid gap-4 sm:grid-cols-[1fr_150px_120px]">
                   <Field label="Assign To" required error={errors.bookingAssignedToId}>
@@ -957,35 +977,6 @@ export default function CreateOccupancy() {
                   <Textarea rows={4} placeholder="Add any notes for the booking-in appointment..." value={form.bookingNotes} onChange={(e) => set("bookingNotes", e.target.value)} />
                 </Field>
               </Panel>
-              {SHOW_TASKS && <Panel title="Tasks to Complete" subtitle="Tasks for the booking-in process — assigned to the staff member above.">
-                <ul className="space-y-2.5">
-                  {form.tasks.map((t, i) => (
-                    <li key={`${t.title}-${i}`} className="flex items-center gap-3 text-sm">
-                      <Checkbox
-                        id={`task-${i}`}
-                        checked={t.checked}
-                        onCheckedChange={(v) => set("tasks", form.tasks.map((x, j) => (j === i ? { ...x, checked: !!v } : x)))}
-                      />
-                      <label htmlFor={`task-${i}`} className="flex-1 cursor-pointer">{t.title}</label>
-                    </li>
-                  ))}
-                </ul>
-                <div className="flex gap-2">
-                  <Input placeholder="Add another task..." value={newTask} onChange={(e) => setNewTask(e.target.value)} onKeyDown={(e) => {
-                    if (e.key === "Enter" && newTask.trim()) {
-                      e.preventDefault();
-                      set("tasks", [...form.tasks, { title: newTask.trim(), checked: true }]);
-                      setNewTask("");
-                    }
-                  }} />
-                  <Button type="button" variant="outline" disabled={!newTask.trim()} onClick={() => {
-                    set("tasks", [...form.tasks, { title: newTask.trim(), checked: true }]);
-                    setNewTask("");
-                  }}>
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </Panel>}
             </div>
           )}
 
@@ -1041,7 +1032,6 @@ export default function CreateOccupancy() {
                     ["Assigned To", staffName(assignedStaff)],
                     ["Date", fmtDate(form.bookingDate)],
                     ["Time", form.bookingTime],
-                    ["Tasks", SHOW_TASKS ? `${form.tasks.filter((t) => t.checked).length} tasks will be created` : ""],
                   ]}
                 />
                 <div className="surface p-4 text-sm space-y-2">

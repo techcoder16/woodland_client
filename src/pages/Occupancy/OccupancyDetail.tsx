@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Building2, CalendarDays, ClipboardList, FileText, Home, Loader2, Plus, Trash2, User, Users } from "lucide-react";
+import { ArrowLeft, Building2, CalendarDays, FileText, Home, Loader2, Trash2, User, Users } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { del, get, patch, post } from "@/helper/api";
+import { del, get, patch } from "@/helper/api";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -15,8 +14,6 @@ import { useOccupancyMeta } from "./useOccupancyMeta";
 import {
   Occupancy,
   OccupancyStatus,
-  OccupancyTask,
-  SHOW_TASKS,
   addressSub,
   estimatedIncome,
   fileUrl,
@@ -68,7 +65,6 @@ export default function OccupancyDetail() {
   const [pendingStatus, setPendingStatus] = useState<OccupancyStatus | null>(null);
   const [statusDate, setStatusDate] = useState("");
   const [saving, setSaving] = useState(false);
-  const [newTask, setNewTask] = useState("");
 
   const load = useCallback(async () => {
     const { data, error } = await get<Occupancy>(`occupancy/${id}`);
@@ -92,8 +88,6 @@ export default function OccupancyDetail() {
   const o = occupancy;
   const status = statusOf(meta, o.status);
   const type = typeOf(meta, o.type);
-  const tasks = o.tasks || [];
-  const done = tasks.filter((t) => t.isCompleted).length;
   const income = estimatedIncome(o.rateAmount, o.rateFrequency, o.moveInDate, o.actualMoveOutDate || o.expectedMoveOutDate);
   // Which actions to offer comes from the backend's allowed transitions.
   const nextStatuses = (status?.next ?? []).map((s) => statusOf(meta, s)!).filter(Boolean);
@@ -114,29 +108,6 @@ export default function OccupancyDetail() {
     if (error) return toast.error(error.message);
     toast.success(`Status changed to ${statusOf(meta, pendingStatus)?.label}`);
     setPendingStatus(null);
-    load();
-  };
-
-  const toggleTask = async (task: OccupancyTask, isCompleted: boolean) => {
-    setOccupancy({ ...o, tasks: tasks.map((t) => (t.id === task.id ? { ...t, isCompleted } : t)) });
-    const { error } = await patch(`occupancy/tasks/${task.id}`, { isCompleted });
-    if (error) {
-      toast.error(error.message);
-      load();
-    }
-  };
-
-  const addTask = async () => {
-    if (!newTask.trim()) return;
-    const { error } = await post(`occupancy/${o.id}/tasks`, { title: newTask.trim() });
-    if (error) return toast.error(error.message);
-    setNewTask("");
-    load();
-  };
-
-  const removeTask = async (task: OccupancyTask) => {
-    const { error } = await del(`occupancy/tasks/${task.id}`);
-    if (error) return toast.error(error.message);
     load();
   };
 
@@ -263,29 +234,6 @@ export default function OccupancyDetail() {
             </dl>
           </Card>
 
-          {SHOW_TASKS && <Card icon={ClipboardList} title={`Tasks (${done}/${tasks.length})`}>
-            <div className="mb-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-              <div className="h-full bg-primary transition-all" style={{ width: `${tasks.length ? (done / tasks.length) * 100 : 0}%` }} />
-            </div>
-            <ul className="space-y-2">
-              {tasks.map((t) => (
-                <li key={t.id} className="group flex items-start gap-2.5 text-sm">
-                  <Checkbox id={t.id} className="mt-0.5" checked={t.isCompleted} onCheckedChange={(v) => toggleTask(t, !!v)} />
-                  <label htmlFor={t.id} className={cn("flex-1 cursor-pointer leading-snug", t.isCompleted && "text-muted-foreground line-through")}>
-                    {t.title}
-                    {t.isCompleted && t.completedByName && <span className="block text-xs no-underline">by {t.completedByName}</span>}
-                  </label>
-                  <button className="opacity-0 group-hover:opacity-100 focus:opacity-100" onClick={() => removeTask(t)} aria-label={`Remove ${t.title}`}>
-                    <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-3 flex gap-2">
-              <Input placeholder="Add a task..." value={newTask} onChange={(e) => setNewTask(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addTask()} />
-              <Button variant="outline" size="icon" onClick={addTask} disabled={!newTask.trim()} aria-label="Add task"><Plus className="h-4 w-4" /></Button>
-            </div>
-          </Card>}
         </div>
 
         {!!o.activity?.length && (

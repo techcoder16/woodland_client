@@ -1,7 +1,3 @@
-// Occupancy tasks are still created and stored by the backend, but hidden
-// from every screen for now. Flip to true to show them again.
-export const SHOW_TASKS = false;
-
 export type OccupancyType = "COUNCIL" | "PRIVATE";
 export type OccupancyStatus = "PENDING" | "ACTIVE" | "ENDING" | "ENDED" | "CANCELLED";
 export type RateFrequency = "NIGHTLY" | "WEEKLY" | "MONTHLY";
@@ -21,6 +17,7 @@ export interface PropertyOption {
   postCode?: string;
   propertyTypeCategory?: string;
   bedrooms?: number;
+  rentPerMonth?: string | null;
   photographs?: string | null;
   vendor?: { firstName?: string; lastName?: string } | null;
   currentStatus?: "Vacant" | "Reserved" | "Occupied" | "Ending";
@@ -186,6 +183,19 @@ export const formatRate = (meta: OccupancyMeta | null, amount?: number | null, f
 
 export const fmtDate = (value?: string | null) =>
   value ? new Date(value).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "-";
+
+// property.rentPerMonth is free text ("1300", "£1,300.00") — pull out the number.
+export const parseRent = (value?: string | null) => {
+  const n = Number(String(value ?? "").replace(/[^0-9.]/g, ""));
+  return n > 0 ? n : null;
+};
+
+// A monthly rent expressed per night / week / month (12 months over 365 days
+// or 52 weeks), rounded to pence.
+export const monthlyRentAs = (monthly: number, freq: RateFrequency) => {
+  const value = freq === "NIGHTLY" ? (monthly * 12) / 365 : freq === "WEEKLY" ? (monthly * 12) / 52 : monthly;
+  return Math.round(value * 100) / 100;
+};
 
 export const fullName = (p?: { FirstName?: string; SureName?: string; title?: string } | null, withTitle = false) =>
   [withTitle ? p?.title : null, p?.FirstName, p?.SureName].filter(Boolean).join(" ");

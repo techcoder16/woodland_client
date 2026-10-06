@@ -4,7 +4,6 @@ import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 import {
   ArrowRight,
   CalendarDays,
-  ClipboardList,
   Clock,
   DoorOpen,
   Eye,
@@ -18,10 +17,9 @@ import {
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { get, patch } from "@/helper/api";
+import { get } from "@/helper/api";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -29,7 +27,6 @@ import { useOccupancyMeta } from "./useOccupancyMeta";
 import {
   CouncilCustomer,
   Occupancy,
-  SHOW_TASKS,
   OccupancyStatus,
   OccupancyType,
   TONE_HEX,
@@ -55,15 +52,7 @@ interface Stats {
   recent: { id: string; title: string; description: string; createdAt: string }[];
 }
 
-interface MyTask {
-  id: string;
-  title: string;
-  dueDate?: string | null;
-  priority: string;
-  occupancy: { id: string; reference: string; property?: { addressLine1?: string } };
-}
-
-// A tab is "ALL", "MY_TASKS", a status value, or "type:<type value>" — all
+// A tab is "ALL", a status value, or "type:<type value>" — all
 // status/type values come from the backend meta.
 const TYPE_TAB = "type:";
 const PAGE_SIZE = 10;
@@ -76,13 +65,6 @@ const timeAgo = (iso: string) => {
     if (n >= 1) return `${n} ${name}${n > 1 ? "s" : ""} ago`;
   }
   return "Just now";
-};
-
-const dueLabel = (iso?: string | null) => {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (d.toDateString() === new Date().toDateString()) return "Today";
-  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 };
 
 function StatCard({ icon: Icon, value, label, tone, sub }: { icon: any; value: number; label: string; tone: string; sub?: string }) {
@@ -122,14 +104,12 @@ export default function OccupancyList() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<Stats | null>(null);
   const [councils, setCouncils] = useState<CouncilCustomer[]>([]);
-  const [myTasks, setMyTasks] = useState<MyTask[]>([]);
 
   const isStatusTab = statuses.some((s) => s.value === tab);
   const isTypeTab = tab.startsWith(TYPE_TAB);
   // Tabs and the filter dropdowns drive the same query params; a tab wins.
   const effectiveStatus = isStatusTab ? tab : statusFilter !== "all" ? statusFilter : "";
   const effectiveType = isTypeTab ? tab.slice(TYPE_TAB.length) : typeFilter !== "all" ? typeFilter : "";
-  const priorityClass = (p: string) => toneBadge(meta?.taskPriorities.find((x) => x.value === p)?.tone);
 
   const loadList = useCallback(async () => {
     setLoading(true);
@@ -149,19 +129,17 @@ export default function OccupancyList() {
   }, [page, debouncedSearch, effectiveStatus, effectiveType, councilFilter, from, to]);
 
   const loadSide = useCallback(async () => {
-    const [s, c, t] = await Promise.all([
+    const [s, c] = await Promise.all([
       get<Stats>("occupancy/stats"),
       get<{ councils: CouncilCustomer[] }>("occupancy/councils"),
-      SHOW_TASKS ? get<{ tasks: MyTask[] }>("occupancy/my-tasks") : Promise.resolve({ data: { tasks: [] as MyTask[] } }),
     ]);
     if (s.data) setStats(s.data);
     setCouncils(c.data?.councils || []);
-    setMyTasks(t.data?.tasks || []);
   }, []);
 
   useEffect(() => {
-    if (tab !== "MY_TASKS") loadList();
-  }, [loadList, tab]);
+    loadList();
+  }, [loadList]);
 
   useEffect(() => {
     loadSide();
@@ -170,15 +148,6 @@ export default function OccupancyList() {
   useEffect(() => {
     setPage(1);
   }, [tab, debouncedSearch, statusFilter, typeFilter, councilFilter, from, to]);
-
-  const completeTask = async (taskId: string) => {
-    setMyTasks((prev) => prev.filter((t) => t.id !== taskId));
-    const { error } = await patch(`occupancy/tasks/${taskId}`, { isCompleted: true });
-    if (error) {
-      toast.error(error.message);
-      loadSide();
-    } else toast.success("Task completed");
-  };
 
   // Every backend status with its count; the donut hides zero slices.
   const donutRows = useMemo(
@@ -231,14 +200,6 @@ export default function OccupancyList() {
               </Button>
             );
           })}
-          {SHOW_TASKS && (
-            <>
-              <span className="mx-1 hidden w-px self-stretch bg-border sm:block" />
-              <Button variant={tab === "MY_TASKS" ? "default" : "outline"} size="sm" onClick={() => setTab("MY_TASKS")}>
-                My Tasks {myTasks.length > 0 && <span className="ml-1.5 rounded-full bg-background/30 px-1.5 text-xs">{myTasks.length}</span>}
-              </Button>
-            </>
-          )}
         </div>
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
@@ -251,30 +212,6 @@ export default function OccupancyList() {
               <StatCard icon={Home} value={stats?.endedThisYear ?? 0} label={`${statusLabel("ENDED")} (this year)`} tone="bg-muted/40" />
             </div>
 
-            {tab === "MY_TASKS" ? (
-              <div className="surface p-4">
-                <h2 className="font-semibold mb-3">My Occupancy Tasks</h2>
-                {myTasks.length === 0 ? (
-                  <p className="py-8 text-center text-sm text-muted-foreground">No open tasks assigned to you.</p>
-                ) : (
-                  <div className="divide-y">
-                    {myTasks.map((t) => (
-                      <div key={t.id} className="flex items-center gap-3 py-3">
-                        <Checkbox onCheckedChange={() => completeTask(t.id)} aria-label={`Complete ${t.title}`} />
-                        <button className="flex-1 min-w-0 text-left" onClick={() => navigate(`/occupancy/${t.occupancy.id}`)}>
-                          <p className="text-sm font-medium truncate">{t.title}</p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {t.occupancy.property?.addressLine1} · {t.occupancy.reference}
-                          </p>
-                        </button>
-                        <span className="text-xs text-muted-foreground">{dueLabel(t.dueDate)}</span>
-                        <span className={cn("rounded px-2 py-0.5 text-xs font-medium", priorityClass(t.priority))}>{t.priority}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : (
               <div className="surface">
                 <div className="space-y-4 border-b border-border/70 p-4">
                   <div className="relative">
@@ -430,7 +367,6 @@ export default function OccupancyList() {
                   )}
                 </div>
               </div>
-            )}
           </div>
 
           <aside className="space-y-4">
@@ -489,32 +425,6 @@ export default function OccupancyList() {
                 </ul>
               )}
             </div>
-
-            {SHOW_TASKS && <div className="surface p-4">
-              <div className="mb-3 flex items-center gap-2">
-                <ClipboardList className="h-4 w-4 text-muted-foreground" />
-                <h2 className="font-semibold flex-1">My Occupancy Tasks</h2>
-                {myTasks.length > 0 && (
-                  <button className="text-xs text-primary hover:underline" onClick={() => setTab("MY_TASKS")}>View all</button>
-                )}
-              </div>
-              {myTasks.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No open tasks assigned to you.</p>
-              ) : (
-                <ul className="space-y-2.5">
-                  {myTasks.slice(0, 4).map((t) => (
-                    <li key={t.id} className="flex items-start gap-2 text-sm">
-                      <Checkbox className="mt-0.5" onCheckedChange={() => completeTask(t.id)} aria-label={`Complete ${t.title}`} />
-                      <span className="flex-1 leading-snug">
-                        {t.title} <span className="text-muted-foreground">- {t.occupancy.property?.addressLine1}</span>
-                      </span>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">{dueLabel(t.dueDate)}</span>
-                      <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-medium", priorityClass(t.priority))}>{t.priority}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>}
 
             <div className="surface p-4">
               <h2 className="font-semibold mb-3">Recent Updates</h2>

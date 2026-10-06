@@ -29,7 +29,9 @@ const CreateScreen: React.FC = () => {
     setLoading(true);
 
     try {
-      await screenApi.createScreen(formData);
+      // The input drops the leading "/" for display, but access checks compare
+      // against the app's real paths ("/occupancy"), so store it with the slash.
+      await screenApi.createScreen({ ...formData, route: `/${formData.route.replace(/^\/+/, "")}` });
       toast.success('Screen created successfully!');
       
       // Reset form

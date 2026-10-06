@@ -61,7 +61,10 @@ const TenantList = ({ property }: any) => {
   // Memoized handler for deleting a tenant
   const handleDeleteTenant = useCallback(
     async (id: string) => {
+      if (!window.confirm("Delete this occupier? This can't be undone from the app.")) return;
       try {
+        // The server refuses if the occupier still has a live occupancy or
+        // property link, and the toast below shows its reason.
         await dispatch(deleteTenant(id)).unwrap();
         toast.success("Occupier deleted");
       } catch (error) {
