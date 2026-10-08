@@ -59,7 +59,9 @@ export default function WoodlandOcr() {
           {/* The tool-calling assistant: it reads the live database through
               the API server's tools and streams its answer, replacing the old
               panel that sent the question with no context at all. */}
-          <aside className="min-h-[560px]">
+          {/* Fixed height (viewport-bound, sticky) so the message list scrolls
+              inside the panel instead of stretching the page forever. */}
+          <aside className="h-[calc(100vh-8rem)] min-h-[480px] lg:sticky lg:top-4">
             <AssistantChat />
           </aside>
         </div>

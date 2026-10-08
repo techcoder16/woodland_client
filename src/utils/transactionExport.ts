@@ -89,3 +89,59 @@ export function exportTransactionsToPdf(payments: ExportablePayment[], propertie
 
   doc.save(filename);
 }
+
+// One landlord payment's Review & Confirm summary as a PDF — the
+// New Landlord Payment page's "Download PDF" button, before it is saved.
+export type PaymentReview = {
+  details: [string, string][];
+  adjustments: { type: string; description?: string; relatedTo?: string; amount: number }[];
+  contractualRent: number;
+  adjustmentTotal: number;
+  netPayable: number;
+};
+
+export function exportPaymentReviewToPdf(review: PaymentReview, filename = "woodland-landlord-payment.pdf") {
+  const doc = new jsPDF();
+
+  doc.addImage(logo, "PNG", 14, 10, 40, 16);
+  doc.setFontSize(14);
+  doc.text("Landlord Payment — Review", 60, 18);
+  doc.setFontSize(9);
+  doc.setTextColor(120);
+  doc.text(`Generated ${new Date().toLocaleString("en-GB")}`, 60, 24);
+  doc.setTextColor(0);
+
+  autoTable(doc, {
+    startY: 32,
+    body: review.details,
+    theme: "plain",
+    styles: { fontSize: 9 },
+    columnStyles: { 0: { textColor: 110, cellWidth: 50 }, 1: { fontStyle: "bold" } },
+  });
+
+  autoTable(doc, {
+    startY: ((doc as any).lastAutoTable?.finalY || 32) + 6,
+    head: [["Adjustment", "Description", "Related To", "Amount (£)"]],
+    body: review.adjustments.length
+      ? review.adjustments.map((a) => [a.type, a.description || "-", a.relatedTo || "-", money(a.amount)])
+      : [["No adjustments", "", "", ""]],
+    styles: { fontSize: 8 },
+    headStyles: { fillColor: [17, 24, 39] },
+    columnStyles: { 3: { halign: "right" } },
+  });
+
+  autoTable(doc, {
+    startY: ((doc as any).lastAutoTable?.finalY || 32) + 6,
+    body: [
+      ["Contractual rent", `£${money(review.contractualRent)}`],
+      ["Total adjustments", `£${money(review.adjustmentTotal)}`],
+      ["Net payable", `£${money(review.netPayable)}`],
+    ],
+    theme: "plain",
+    margin: { left: 110 },
+    styles: { fontSize: 10 },
+    columnStyles: { 1: { halign: "right", fontStyle: "bold" } },
+  });
+
+  doc.save(filename);
+}

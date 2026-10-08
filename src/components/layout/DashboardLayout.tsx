@@ -59,6 +59,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     "/finance/landlord-transactions",
     "/finance/landlord-transactions/new",
     "/finance/woodland-ocr",
+    "/finance/incoming-payments",
+    "/finance/incoming-payments/new",
   ];
 
   // Define all possible menu items with their routes
@@ -117,6 +119,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 // link — creating a payment happens from inside the
                 // Landlord Transactions page itself, not its own nav entry.
                 const financeItems = [
+                  { label: "Incoming Payments", path: "/finance/incoming-payments" },
                   { label: "Landlord Transactions", path: "/finance/landlord-transactions" },
                   { label: "Woodland OCR", path: "/finance/woodland-ocr" },
                 ].filter((item) => isAdmin || canAccess(item.path));
@@ -134,7 +137,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                     {financeOpen && financeItems.map((item) => {
-                      const childActive = location.pathname === item.path;
+                      const childActive = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
                       return (
                         <SidebarMenuItem key={item.path}>
                           <SidebarMenuButton

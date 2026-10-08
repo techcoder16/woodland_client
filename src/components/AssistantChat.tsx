@@ -209,7 +209,7 @@ export default function AssistantChat() {
   };
 
   return (
-    <div className="flex h-full flex-col rounded-lg border bg-card">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border bg-card">
       <div className="flex items-center gap-2 border-b p-3">
         <Bot className="h-5 w-5 text-primary" />
         <div>
@@ -218,7 +218,9 @@ export default function AssistantChat() {
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-4" style={{ minHeight: "22rem" }}>
+      {/* min-h-0 lets this flex child shrink below its content so overflow-y-auto
+          actually scrolls; the old fixed minHeight forced it to grow instead. */}
+      <div ref={scrollRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4">
         {messages.length === 0 && (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">Ask about properties, tenants, landlords, certificates or payments.</p>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Check, FileText, Loader2, Plus, Trash2, Upload, Wand2, Wrench, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Download, FileText, Loader2, Plus, Trash2, Upload, Wand2, Wrench, X } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import { useToast } from "@/components/ui/use-toast";
 import PropertyPicker from "@/utils/PropertyPicker";
 import VendorSearchSelect from "@/utils/VendorSearchSelect";
 import MonthYearPicker from "@/utils/MonthYearPicker";
+import { exportPaymentReviewToPdf } from "@/utils/transactionExport";
 
 const API_URL = import.meta.env.VITE_API_URL;
 const money = (value: unknown) =>
@@ -27,9 +28,13 @@ const money = (value: unknown) =>
 const STEPS = ["Payment Details", "Review & Confirm", "Complete"] as const;
 
 // jobTypeId is set when the line came from a completed maintenance job, so
-// the transaction records which jobs it billed and they aren't offered again.
+// the server can track how much of that job has been recharged — a job can
+// be recharged in parts, and keeps being offered until nothing is left.
 type Adjustment = { id: string; type: string; description?: string; relatedTo?: string; amount: number; jobTypeId?: string };
-type BillableJob = { id: string; jobType: string; description?: string; dateDone?: string; amount: number };
+// total = landlord charge for the job, charged = recharged on earlier
+// payments, amount = what's left to recharge.
+type BillableJob = { id: string; jobType: string; description?: string; dateDone?: string; total: number; charged: number; amount: number };
+type RechargeMode = "FULL" | "PERCENT" | "FIXED";
 
 const ADJUSTMENT_TYPES = ["Maintenance Recharge", "Management Fee", "VAT", "Other"];
 
@@ -110,15 +115,46 @@ export default function NewLandlordPayment() {
     return () => { cancelled = true; };
   }, [propertyId]);
   const unaddedJobs = billableJobs.filter((job) => !adjustments.some((a) => a.jobTypeId === job.id));
-  const addJobAdjustment = (job: BillableJob) => {
-    setAdjustments((prev) => [...prev, {
-      id: crypto.randomUUID(),
+
+  // Recharge popup: charge all of what's left on a job, a % of the job's
+  // total, or a fixed amount — anything left over is offered again on the
+  // next landlord payment for this property.
+  const [rechargeJob, setRechargeJob] = useState<BillableJob | null>(null);
+  const [rechargeAdjId, setRechargeAdjId] = useState<string | null>(null);
+  const [rechargeMode, setRechargeMode] = useState<RechargeMode>("FULL");
+  const [rechargeValue, setRechargeValue] = useState("");
+  const rechargeAmount = !rechargeJob ? 0
+    : rechargeMode === "FULL" ? rechargeJob.amount
+    : rechargeMode === "PERCENT" ? Math.round(rechargeJob.total * Number(rechargeValue || 0)) / 100
+    : Number(rechargeValue || 0);
+  const rechargeError = rechargeAmount <= 0 ? "Enter an amount above £0"
+    : rechargeJob && rechargeAmount > rechargeJob.amount + 0.005 ? `Only ${money(rechargeJob.amount)} is left to recharge`
+    : "";
+
+  const openRecharge = (job: BillableJob, adj?: Adjustment) => {
+    setRechargeJob(job);
+    setRechargeAdjId(adj?.id ?? null);
+    const current = adj ? Math.abs(adj.amount) : job.amount;
+    setRechargeMode(current >= job.amount ? "FULL" : "FIXED");
+    setRechargeValue(current >= job.amount ? "" : String(current));
+  };
+  const saveRecharge = () => {
+    if (!rechargeJob || rechargeError) return;
+    const job = rechargeJob;
+    const leftAfter = Math.round((job.amount - rechargeAmount) * 100) / 100;
+    const entry: Adjustment = {
+      id: rechargeAdjId || crypto.randomUUID(),
       type: "Maintenance Recharge",
       description: job.description ? `${job.jobType} — ${job.description}` : job.jobType,
-      relatedTo: job.dateDone ? `Job completed ${job.dateDone}` : "Maintenance job",
-      amount: -Math.abs(job.amount),
+      relatedTo: [
+        job.dateDone ? `Job completed ${job.dateDone}` : "Maintenance job",
+        leftAfter > 0 ? `part ${money(rechargeAmount)} of ${money(job.total)}, ${money(leftAfter)} left` : null,
+      ].filter(Boolean).join(" · "),
+      amount: -Math.abs(rechargeAmount),
       jobTypeId: job.id,
-    }]);
+    };
+    setAdjustments((prev) => (rechargeAdjId ? prev.map((a) => (a.id === rechargeAdjId ? entry : a)) : [...prev, entry]));
+    setRechargeJob(null);
   };
 
   // Auto-generated reference shown in the form (month/year follows the
@@ -156,6 +192,8 @@ export default function NewLandlordPayment() {
   };
 
   const openEditAdjustment = (adj: Adjustment) => {
+    const job = adj.jobTypeId && billableJobs.find((j) => j.id === adj.jobTypeId);
+    if (job) { openRecharge(job, adj); return; }
     setEditingAdjId(adj.id);
     setAdjForm({ type: adj.type, description: adj.description || "", relatedTo: adj.relatedTo || "", amount: String(Math.abs(adj.amount)) });
     setAdjFile(null);
@@ -225,6 +263,26 @@ export default function NewLandlordPayment() {
   // Step 1 -> Step 2: both landlord and property must be selected before
   // anything else unlocks — there is no path to create a payment without
   // a landlord attached.
+  // Same fields as the Review & Confirm step, plus the adjustment lines.
+  const downloadReviewPdf = () => {
+    const reference = typedReference || referencePreview;
+    exportPaymentReviewToPdf({
+      details: [
+        ["Landlord", selectedVendor ? `${selectedVendor.firstName} ${selectedVendor.lastName}` : "-"],
+        ["Property", `${formatPropertyReference((selectedProperty as any)?.propertyNumber)} · ${selectedProperty?.addressLine1 || "-"}`],
+        ["Payment date", new Date(payment.paymentDate).toLocaleDateString("en-GB")],
+        ["Accounting period", payment.accountingPeriod],
+        ["Payment method", payment.paymentMethod],
+        ["Payment reference", reference || "Auto-generated on save"],
+        ["Documents", `${documents.length} attached`],
+      ],
+      adjustments,
+      contractualRent: Number(payment.contractualRent || 0),
+      adjustmentTotal,
+      netPayable,
+    }, `landlord-payment-${reference || "review"}.pdf`);
+  };
+
   const goToReview = () => {
     if (!vendorId) {
       toast({ title: "Select a landlord", description: "Choose a landlord before continuing.", variant: "destructive" });
@@ -260,7 +318,7 @@ export default function NewLandlordPayment() {
         bankAccountLabel: payment.bankAccountLabel || defaultBankLabel || undefined,
         paymentReference: typedReference || undefined,
         expectedPaymentDate: payment.expectedPaymentDate || undefined,
-        adjustments: adjustments.map(({ id, jobTypeId, ...rest }) => rest),
+        adjustments: adjustments.map(({ id, ...rest }) => rest),
         jobTypeIds: adjustments.map((a) => a.jobTypeId).filter(Boolean),
       });
       if (error) throw new Error(error.message);
@@ -404,8 +462,11 @@ export default function NewLandlordPayment() {
                                 <span className="truncate">{job.jobType}{job.description ? ` — ${job.description}` : ""}</span>
                               </span>
                               <span className="flex shrink-0 items-center gap-2">
-                                <span className="font-medium">{money(job.amount)}</span>
-                                <Button size="sm" variant="outline" className="h-7" onClick={() => addJobAdjustment(job)}><Plus className="mr-1 h-3 w-3" />Add</Button>
+                                <span className="text-right">
+                                  <span className="font-medium">{money(job.amount)}</span>
+                                  {job.charged > 0 && <span className="block text-xs text-muted-foreground">left of {money(job.total)}</span>}
+                                </span>
+                                <Button size="sm" variant="outline" className="h-7" onClick={() => openRecharge(job)}><Plus className="mr-1 h-3 w-3" />Add</Button>
                               </span>
                             </div>
                           ))}
@@ -505,7 +566,8 @@ export default function NewLandlordPayment() {
                 </div>
                 <div className="flex justify-between gap-2 border-t pt-5">
                   <Button variant="outline" onClick={() => setStep(0)} disabled={saving}><ArrowLeft className="mr-2 h-4 w-4" />Back</Button>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <Button variant="outline" onClick={downloadReviewPdf} disabled={saving}><Download className="mr-2 h-4 w-4" />Download PDF</Button>
                     <Button variant="outline" onClick={() => void confirmAndCreate("DRAFT")} disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save as draft</Button>
                     <Button onClick={() => void confirmAndCreate("APPROVAL_REQUIRED")} disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Submit for approval</Button>
                   </div>
@@ -613,6 +675,45 @@ export default function NewLandlordPayment() {
             <div className="space-y-1"><Label>Amount (£) *</Label><Input type="number" min="0" value={adjForm.amount} onChange={(e) => setAdjForm((f) => ({ ...f, amount: e.target.value }))} /></div>
             <Button className="w-full" onClick={saveAdjustment}>{editingAdjId ? "Save changes" : "Add adjustment"}</Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Maintenance recharge popup — full, % of the job, or a fixed part */}
+      <Dialog open={!!rechargeJob} onOpenChange={(open) => { if (!open) setRechargeJob(null); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Recharge Maintenance</DialogTitle></DialogHeader>
+          {rechargeJob && (
+            <div className="space-y-3">
+              <div className="rounded-lg border bg-muted/30 p-3 text-sm">
+                <p className="font-medium">{rechargeJob.jobType}{rechargeJob.description ? ` — ${rechargeJob.description}` : ""}</p>
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  <div><p className="text-xs text-muted-foreground">Job total</p><p className="font-medium">{money(rechargeJob.total)}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Already charged</p><p className="font-medium">{money(rechargeJob.charged)}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Remaining</p><p className="font-medium text-amber-700">{money(rechargeJob.amount)}</p></div>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label>Charge this payment</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {([["FULL", "Full remaining"], ["PERCENT", "% of job"], ["FIXED", "Fixed £"]] as const).map(([mode, label]) => (
+                    <Button key={mode} type="button" size="sm" variant={rechargeMode === mode ? "default" : "outline"} onClick={() => { setRechargeMode(mode); setRechargeValue(""); }}>{label}</Button>
+                  ))}
+                </div>
+              </div>
+              {rechargeMode !== "FULL" && (
+                <div className="space-y-1">
+                  <Label>{rechargeMode === "PERCENT" ? "Percentage of job total (%)" : "Amount (£)"}</Label>
+                  <Input type="number" min="0" max={rechargeMode === "PERCENT" ? "100" : undefined} value={rechargeValue} onChange={(e) => setRechargeValue(e.target.value)} autoFocus />
+                </div>
+              )}
+              <div className="flex justify-between rounded-md bg-emerald-50 p-3 text-sm">
+                <span>Charge now <span className="font-semibold">{money(rechargeAmount)}</span></span>
+                <span className="text-muted-foreground">Left for next payment {money(Math.max(rechargeJob.amount - rechargeAmount, 0))}</span>
+              </div>
+              {rechargeError && rechargeMode !== "FULL" && rechargeValue && <p className="text-sm text-destructive">{rechargeError}</p>}
+              <Button className="w-full" disabled={!!rechargeError} onClick={saveRecharge}>{rechargeAdjId ? "Save changes" : "Add recharge"}</Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </DashboardLayout>

@@ -35,6 +35,8 @@ import MainTransaction from "./pages/MainTransaction";
 import NewLandlordPayment from "./pages/Finance/NewLandlordPayment";
 import LandlordPayments from "./pages/Finance/LandlordPayments";
 import WoodlandOcr from "./pages/Finance/WoodlandOcr";
+import IncomingPayments from "./pages/Finance/IncomingPayments";
+import NewIncomingPayment from "./pages/Finance/NewIncomingPayment";
 import Free from "./pages/Free";
 import AdminDashboard from "./pages/SimpleAdminDashboard";
 import CreateUser from "./pages/admin/CreateUser";
@@ -167,7 +169,17 @@ function App() {
                       <NewLandlordPayment />
                     </ProtectedRoute>
                   } />
-                  
+                  <Route path="/finance/incoming-payments" element={
+                    <ProtectedRoute route="/finance/incoming-payments">
+                      <IncomingPayments />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/finance/incoming-payments/new" element={
+                    <ProtectedRoute route="/finance/incoming-payments/new">
+                      <NewIncomingPayment />
+                    </ProtectedRoute>
+                  } />
+
                   <Route path="/tenants" element={
                     <ProtectedRoute route="/tenants">
                       <TenantList />

@@ -125,7 +125,9 @@ export default function Free() {
 
         {/* Full assistant: reads live data through backend tools and streams
             its answer, rather than the old single-shot completeness query. */}
-        <AssistantChat />
+        <div className="h-[600px] max-h-[80vh]">
+          <AssistantChat />
+        </div>
 
         {summary && summary.topGaps.length > 0 && (
           <div className="rounded-lg border bg-card p-4">
