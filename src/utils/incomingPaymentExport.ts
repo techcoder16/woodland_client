@@ -10,7 +10,7 @@ import { formatPeriod, IncomingPayment } from "@/pages/Finance/incomingPaymentSh
 const amount = (value: unknown) =>
   `£${Number(value || 0).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-const PAYER_LABEL: Record<string, string> = { INDIVIDUAL: "Individual tenant", COMPANY: "Company (bulk)", COUNCIL: "Council (bulk)" };
+const PAYER_LABEL: Record<string, string> = { INDIVIDUAL: "Individual payment", BULK: "Bulk payment" };
 
 export function exportIncomingPaymentToPdf(payment: IncomingPayment) {
   const doc = new jsPDF();

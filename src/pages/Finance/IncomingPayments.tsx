@@ -133,7 +133,7 @@ export default function IncomingPayments() {
                       <td className="px-4 py-2.5">{new Date(payment.paymentDate).toLocaleDateString("en-GB")}</td>
                       <td className="px-4 py-2.5">
                         <span className="font-medium">{payment.payerName}</span>
-                        {payment.payerKind !== "INDIVIDUAL" && <span className="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase text-muted-foreground">{payment.payerKind === "COMPANY" ? "Company" : "Council"}</span>}
+                        {payment.payerKind !== "INDIVIDUAL" && <span className="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase text-muted-foreground">Bulk</span>}
                       </td>
                       <td className="px-4 py-2.5">{single ? single.property?.addressLine1 || "-" : `Multiple (${payment.allocations.length})`}</td>
                       <td className="px-4 py-2.5 font-mono text-xs">{single ? single.occupancy?.reference : "-"}</td>

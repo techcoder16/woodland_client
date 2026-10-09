@@ -1,6 +1,7 @@
 // Types and helpers shared by the Incoming Payments list and wizard.
 
-export type PayerKind = "INDIVIDUAL" | "COMPANY" | "COUNCIL";
+// INDIVIDUAL: one occupancy. BULK: one payment split across occupancies.
+export type PayerKind = "INDIVIDUAL" | "BULK";
 
 export type Allocation = {
   id: string;
@@ -32,10 +33,9 @@ export type OccupancyOption = {
   id: string;
   reference: string;
   status: string;
-  payerKind: PayerKind;
-  payerName: string;
+  payerName: string; // who pays this occupancy's rent: tenant, company or council
   tenantName: string;
-  tenancyType: string;
+  tenancyType: string; // "Private", "Company · ABC Ltd", "Council · Newham"
   moveInDate: string;
   rateAmount: number;
   rateFrequency: "NIGHTLY" | "WEEKLY" | "MONTHLY";
@@ -43,14 +43,14 @@ export type OccupancyOption = {
   period: string;
   rentDue: number;
   previouslyReceived: number;
-  outstanding: number;
+  outstanding: number; // this period: rentDue - previouslyReceived
+  arrears: number; // unpaid from earlier periods
 };
 
 export const PAYER_TABS: { value: "" | PayerKind; label: string }[] = [
   { value: "", label: "All Payments" },
   { value: "INDIVIDUAL", label: "Individual Payments" },
-  { value: "COMPANY", label: "Company Payments" },
-  { value: "COUNCIL", label: "Council Payments" },
+  { value: "BULK", label: "Bulk Payments" },
 ];
 
 export const RATE_SHORT: Record<string, string> = { NIGHTLY: "pn", WEEKLY: "pw", MONTHLY: "pcm" };
