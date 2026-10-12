@@ -24,7 +24,7 @@ import MaintenanceList from "./pages/Maintenance/MaintenanceList";
 import MaintenanceDetail from "./pages/Maintenance/MaintenanceDetail";
 import AddProperty from "./pages/AddProperty";
 import EditProperty from "./pages/EditProperty";
-import { AuthProvider } from "./context/AuthContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -37,6 +37,7 @@ import LandlordPayments from "./pages/Finance/LandlordPayments";
 import WoodlandOcr from "./pages/Finance/WoodlandOcr";
 import IncomingPayments from "./pages/Finance/IncomingPayments";
 import NewIncomingPayment from "./pages/Finance/NewIncomingPayment";
+import ComplianceOverview from "./pages/Compliance/ComplianceOverview";
 import Free from "./pages/Free";
 import AdminDashboard from "./pages/SimpleAdminDashboard";
 import CreateUser from "./pages/admin/CreateUser";
@@ -55,6 +56,19 @@ import CreateOccupancy from "./pages/Occupancy/CreateOccupancy";
 import OccupancyDetail from "./pages/Occupancy/OccupancyDetail";
 import CouncilCustomers from "./pages/Occupancy/CouncilCustomers";
 import OccupierDashboard from "./pages/OccupierDashboard";
+// Incoming payments are open to Super User, Admin and Finance by role,
+// rather than by per-screen permission (see canManageIncomingPayments).
+function IncomingPaymentsRoute({ route, children }: { route: string; children: React.ReactNode }) {
+  const { canManageIncomingPayments } = useAuth();
+  return <ProtectedRoute route={route} allowed={canManageIncomingPayments}>{children}</ProtectedRoute>;
+}
+
+// Compliance is Super User / Admin only, by role.
+function ComplianceRoute({ children }: { children: React.ReactNode }) {
+  const { canViewCompliance } = useAuth();
+  return <ProtectedRoute route="/compliance" allowed={canViewCompliance}>{children}</ProtectedRoute>;
+}
+
 function App() {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -169,15 +183,20 @@ function App() {
                       <NewLandlordPayment />
                     </ProtectedRoute>
                   } />
+                  <Route path="/compliance" element={
+                    <ComplianceRoute>
+                      <ComplianceOverview />
+                    </ComplianceRoute>
+                  } />
                   <Route path="/finance/incoming-payments" element={
-                    <ProtectedRoute route="/finance/incoming-payments">
+                    <IncomingPaymentsRoute route="/finance/incoming-payments">
                       <IncomingPayments />
-                    </ProtectedRoute>
+                    </IncomingPaymentsRoute>
                   } />
                   <Route path="/finance/incoming-payments/new" element={
-                    <ProtectedRoute route="/finance/incoming-payments/new">
+                    <IncomingPaymentsRoute route="/finance/incoming-payments/new">
                       <NewIncomingPayment />
-                    </ProtectedRoute>
+                    </IncomingPaymentsRoute>
                   } />
 
                   <Route path="/tenants" element={

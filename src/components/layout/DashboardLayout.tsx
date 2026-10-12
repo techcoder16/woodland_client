@@ -30,6 +30,7 @@ import {
   ChevronDown,
   KeyRound,
   Landmark,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import logo from "@/assets/logo.png";
@@ -40,7 +41,11 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
-  const { isAuthenticated, logout, isAdmin, canAccess } = useAuth();
+  const { isAuthenticated, logout, isAdmin, canAccess, canManageIncomingPayments, canViewCompliance } = useAuth();
+  // Incoming payments go by role (Super User / Admin / Finance), every other
+  // route by per-screen permission.
+  const canSee = (path: string) =>
+    path.startsWith("/finance/incoming-payments") ? canManageIncomingPayments : canAccess(path);
   const navigate = useNavigate();
   const location = useLocation();
   const financeActive = location.pathname.startsWith("/finance/");
@@ -73,6 +78,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     { label: "Contractors", path: "/contractors", icon: HardHat },
     { label: "Transactions", path: "/transaction", icon: TbTransactionDollar },
     { label: "Finance", path: "/finance/landlord-payments", icon: Wallet },
+    { label: "Compliance", path: "/compliance", icon: ShieldCheck },
     { label: "Occupiers", path: "/tenants", icon: CircleUser },
     { label: "Council Customers", path: "/council-customers", icon: Landmark },
     { label: "Settings", path: "/settings", icon: Settings },
@@ -83,9 +89,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     // Admin can see everything
     if (isAdmin) return true;
 
+    // Compliance goes by role (Super User / Admin), not screen permission.
+    if (item.label === "Compliance") return canViewCompliance;
+
     // The Finance parent row shows if the user has access to any child route
     if (item.label === "Finance") {
-      return financeRoutes.some(route => canAccess(route));
+      return financeRoutes.some(route => canSee(route));
     }
 
     // Regular users can only see items they have permission for
@@ -122,12 +131,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   { label: "Incoming Payments", path: "/finance/incoming-payments" },
                   { label: "Landlord Transactions", path: "/finance/landlord-transactions" },
                   { label: "Woodland OCR", path: "/finance/woodland-ocr" },
-                ].filter((item) => isAdmin || canAccess(item.path));
+                ].filter((item) => isAdmin || canSee(item.path));
+                // Clicking "Finance" opens the first page this user can actually see.
+                const financeHome = financeItems[0]?.path ?? path;
                 return (
                   <React.Fragment key={path}>
                     <SidebarMenuItem>
                       <SidebarMenuButton
-                        onClick={() => { setFinanceOpen((open) => !open); if (!financeActive) navigate(path); }}
+                        onClick={() => { setFinanceOpen((open) => !open); if (!financeActive) navigate(financeHome); }}
                         isActive={financeActive}
                         className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-150 ${financeActive ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"}`}
                       >

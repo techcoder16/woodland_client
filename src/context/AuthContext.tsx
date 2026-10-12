@@ -15,6 +15,8 @@ interface AuthContextType {
   isAdmin: boolean;
   canAccessFinance: boolean;
   canApproveTransactions: boolean;
+  canManageIncomingPayments: boolean;
+  canViewCompliance: boolean;
   isDepartmentAdmin: (department: Department) => boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
@@ -225,6 +227,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const canApproveTransactions =
     userRole === StaffRole.SuperUser || userRole === StaffRole.AdminUser;
 
+  // Mirrors the server's incoming-payments controller: Super User, Admin and
+  // Finance record incoming payments, by role — no screen permission needed.
+  const canManageIncomingPayments =
+    userRole === StaffRole.SuperUser || userRole === StaffRole.AdminUser || userRole === StaffRole.FinanceUser;
+
+  // Compliance page: Super User and Admin only (mirrors GET dashboard/compliance).
+  const canViewCompliance =
+    userRole === StaffRole.SuperUser || userRole === StaffRole.AdminUser;
+
   const isDepartmentAdmin = (department: Department): boolean => {
     if (userRole === StaffRole.SuperUser) return true;
     return userRole === StaffRole.DepartmentAdmin && user?.department === department;
@@ -239,6 +250,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAdmin,
       canAccessFinance,
       canApproveTransactions,
+      canManageIncomingPayments,
+      canViewCompliance,
       isDepartmentAdmin,
       login,
       logout,

@@ -48,7 +48,7 @@ function Detail({ label, value, strong }: { label: string; value: React.ReactNod
 
 // Occupancies for a period, optionally searched — the individual picker and
 // the bulk allocation table both read this.
-function useOccupancyOptions(enabled: boolean, period: string, search: string) {
+function useOccupancyOptions(enabled: boolean, period: string, search: string, councilId: string) {
   const [options, setOptions] = useState<OccupancyOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -58,6 +58,7 @@ function useOccupancyOptions(enabled: boolean, period: string, search: string) {
     setLoading(true);
     const timer = setTimeout(() => {
       const params = new URLSearchParams({ period, search: search.trim() });
+      if (councilId) params.set("councilCustomerId", councilId);
       get<OccupancyOption[]>(`incoming-payments/occupancies?${params}`).then(({ data, error: err }) => {
         if (cancelled) return;
         setLoading(false);
@@ -66,9 +67,12 @@ function useOccupancyOptions(enabled: boolean, period: string, search: string) {
       });
     }, 250);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [enabled, period, search]);
+  }, [enabled, period, search, councilId]);
   return { options, loading, error };
 }
+
+type CouncilOption = { id: string; name: string; email?: string | null; occupancyCount: number };
+const NO_COUNCIL = "none";
 
 export default function NewIncomingPayment() {
   const navigate = useNavigate();
@@ -86,15 +90,26 @@ export default function NewIncomingPayment() {
   const [payment, setPayment] = useState<PaymentForm>(emptyPayment());
   const updatePayment = (key: keyof PaymentForm, value: string) => setPayment((p) => ({ ...p, [key]: value }));
 
+  // Paying council (optional): limits the occupancies to that council's own,
+  // names the payment after it and emails it the receipt.
+  const [councils, setCouncils] = useState<CouncilOption[]>([]);
+  const [councilId, setCouncilId] = useState("");
+  const council = councils.find((c) => c.id === councilId) || null;
+  useEffect(() => {
+    get<CouncilOption[]>("incoming-payments/councils").then(({ data }) => {
+      if (Array.isArray(data)) setCouncils(data);
+    });
+  }, []);
+
   // Individual
   const [occSearch, setOccSearch] = useState("");
   const [occupancy, setOccupancy] = useState<OccupancyOption | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
-  const individual = useOccupancyOptions(!isBulk, period, occSearch);
+  const individual = useOccupancyOptions(!isBulk, period, occSearch, councilId);
 
   // Bulk
   const [bulkSearch, setBulkSearch] = useState("");
-  const bulk = useOccupancyOptions(isBulk && step === 1, period, bulkSearch);
+  const bulk = useOccupancyOptions(isBulk && step === 1, period, bulkSearch, councilId);
   const [allocations, setAllocations] = useState<Record<string, string>>({});
   // Ticked rows are kept even when the search hides them.
   const [ticked, setTicked] = useState<Record<string, OccupancyOption>>({});
@@ -111,6 +126,37 @@ export default function NewIncomingPayment() {
     setAllocations({});
     setTicked({});
   };
+
+  // A different council means a different set of occupancies.
+  const chooseCouncil = (value: string) => {
+    const id = value === NO_COUNCIL ? "" : value;
+    setCouncilId(id);
+    setOccupancy(null);
+    setAllocations({});
+    setTicked({});
+    const picked = councils.find((c) => c.id === id);
+    setPayment((p) => ({ ...p, payerName: picked ? picked.name : "" }));
+  };
+
+  const councilPicker = (
+    <div className="space-y-1">
+      <Label>Paying Council</Label>
+      <Select value={councilId || NO_COUNCIL} onValueChange={chooseCouncil}>
+        <SelectTrigger><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value={NO_COUNCIL}>Not a council payment — all occupancies</SelectItem>
+          {councils.map((c) => (
+            <SelectItem key={c.id} value={c.id}>{c.name} ({c.occupancyCount} occupanc{c.occupancyCount === 1 ? "y" : "ies"})</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <p className="text-xs text-muted-foreground">
+        {council
+          ? `Only ${council.name}'s occupancies are listed. ${council.email ? `The receipt is emailed to ${council.email}.` : "This council has no email address, so only Woodland's inbox gets the receipt."}`
+          : "Pick a council to list only the properties it pays for."}
+      </p>
+    </div>
+  );
 
   // Keep the selected occupancy's figures in step with the period.
   useEffect(() => {
@@ -225,6 +271,7 @@ export default function NewIncomingPayment() {
     const { data, error } = await post<IncomingPayment>("incoming-payments", {
       payerKind: kind,
       payerName: isBulk ? payment.payerName || undefined : undefined,
+      councilCustomerId: councilId || undefined,
       paymentDate: payment.paymentDate,
       amount: amountReceived,
       paymentMethod: payment.paymentMethod,
@@ -251,6 +298,7 @@ export default function NewIncomingPayment() {
     setAllocations({});
     setTicked({});
     setPeriod(currentPeriod());
+    setCouncilId("");
   };
 
   const photoBox = (className: string) => (
@@ -261,6 +309,7 @@ export default function NewIncomingPayment() {
 
   const paymentFields = (
     <div className="space-y-3">
+      {isBulk && councils.length > 0 && councilPicker}
       {isBulk && (
         <div className="space-y-1">
           <Label>Received From</Label>
@@ -347,6 +396,7 @@ export default function NewIncomingPayment() {
             {!isBulk ? (
               <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
                 <div className="space-y-2">
+                  {councils.length > 0 && <div className="pb-2">{councilPicker}</div>}
                   <Label>Search Occupancy *</Label>
                   <div className="relative">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />

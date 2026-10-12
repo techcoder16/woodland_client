@@ -20,7 +20,8 @@ const PAGE_SIZE = 10;
 export default function IncomingPayments() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isAdmin } = useAuth();
+  // Super User / Admin may delete; Finance records but doesn't delete (matches the server).
+  const { canApproveTransactions: canDelete } = useAuth();
 
   const [payerKind, setPayerKind] = useState("");
   const [search, setSearch] = useState("");
@@ -204,7 +205,7 @@ export default function IncomingPayments() {
                 </table>
               </div>
               <div className="flex justify-end gap-2 border-t pt-3">
-                {isAdmin && <Button variant="outline" className="text-destructive" onClick={() => void remove(viewing)}><Trash2 className="mr-2 h-4 w-4" />Delete payment</Button>}
+                {canDelete && <Button variant="outline" className="text-destructive" onClick={() => void remove(viewing)}><Trash2 className="mr-2 h-4 w-4" />Delete payment</Button>}
                 <Button onClick={() => exportIncomingPaymentToPdf(viewing)}><Download className="mr-2 h-4 w-4" />Download PDF</Button>
               </div>
             </div>
