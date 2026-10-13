@@ -130,7 +130,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 const financeItems = [
                   { label: "Incoming Payments", path: "/finance/incoming-payments" },
                   { label: "Landlord Transactions", path: "/finance/landlord-transactions" },
-                  { label: "Woodland OCR", path: "/finance/woodland-ocr" },
+                  // { label: "Woodland OCR", path: "/finance/woodland-ocr" },
                 ].filter((item) => isAdmin || canSee(item.path));
                 // Clicking "Finance" opens the first page this user can actually see.
                 const financeHome = financeItems[0]?.path ?? path;
