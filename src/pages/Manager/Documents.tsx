@@ -125,39 +125,46 @@ function reportValidity(name: string, found: ExtractedCertificate | null) {
   toast.success(`${name}: ${validity.reason}`);
 }
 
-// One fixed compliance row (Gas Safety / EICR / EPC / Fire Risk). Uploading
-// a file both attaches it and creates the row if none exists yet for this
-// docType; issue/expiry dates save inline as soon as they're edited.
+// One fixed compliance row (Gas Safety / EICR / EPC / Fire Risk). Picking a
+// file reads its dates with OCR and stages them; nothing is written until
+// Save, and Discard drops the staged file and dates. (Saving on pick meant a
+// file landed on the server before the user had checked it — and, on a
+// screen still showing the previous property, on the wrong property.)
 function MandatoryCertRow({ config, doc, propertyId, onSaved }: {
   config: (typeof MANDATORY_TYPES)[number];
   doc?: ComplianceDoc;
   propertyId: string;
   onSaved: () => void;
 }) {
-  const [startDate, setStartDate] = useState(doc?.startDate ? doc.startDate.slice(0, 10) : "");
-  const [expiryDate, setExpiryDate] = useState(doc?.expiryDate ? doc.expiryDate.slice(0, 10) : "");
+  const savedStart = doc?.startDate ? doc.startDate.slice(0, 10) : "";
+  const savedExpiry = doc?.expiryDate ? doc.expiryDate.slice(0, 10) : "";
+  const [startDate, setStartDate] = useState(savedStart);
+  const [expiryDate, setExpiryDate] = useState(savedExpiry);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [reading, setReading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const Icon = config.icon;
   const status = shortStatus(expiryDate);
+  const dirty = !!pendingFile || startDate !== savedStart || expiryDate !== savedExpiry;
 
-  useEffect(() => {
-    setStartDate(doc?.startDate ? doc.startDate.slice(0, 10) : "");
-    setExpiryDate(doc?.expiryDate ? doc.expiryDate.slice(0, 10) : "");
-  }, [doc?.id, doc?.startDate, doc?.expiryDate]);
+  const discard = () => {
+    setStartDate(savedStart);
+    setExpiryDate(savedExpiry);
+    setPendingFile(null);
+  };
+  useEffect(discard, [doc?.id, savedStart, savedExpiry]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const upsert = async (fields: { startDate?: string; expiryDate?: string; file?: File }) => {
-    // Nothing to record yet — don't create an empty certificate row just
-    // because a date input was focused and left blank.
+  const upsert = async (fields: { startDate?: string; expiryDate?: string; file?: File | null }) => {
+    // Nothing to record yet — don't create an empty certificate row.
     if (!doc && !fields.file && !fields.startDate && !fields.expiryDate) return;
     setBusy(true);
     try {
       const payload = new FormData();
-      if (!doc) {
-        payload.append("propertyId", propertyId);
-        payload.append("docType", config.value);
-      }
+      // Always sent: on update the server refuses a certificate that isn't
+      // this property's own.
+      payload.append("propertyId", propertyId);
+      if (!doc) payload.append("docType", config.value);
       // Only send dates that actually parse — the server validates these with
       // @IsDateString(), so a blank or half-typed date value would 422 the
       // whole upload and lose the file with it.
@@ -176,6 +183,8 @@ function MandatoryCertRow({ config, doc, propertyId, onSaved }: {
         ? await patch(`property-management/compliance/${doc.id}`, payload)
         : await post("property-management/compliance", payload);
       if (error) throw new Error(error.message);
+      setPendingFile(null);
+      toast.success(`${config.label} saved.`);
       onSaved();
     } catch (error: any) {
       toast.error(error.message || `Failed to save ${config.label}.`);
@@ -184,32 +193,34 @@ function MandatoryCertRow({ config, doc, propertyId, onSaved }: {
     }
   };
 
+  const save = () => void upsert({ startDate, expiryDate, file: pendingFile });
+
   /**
-   * Attaching a certificate reads its dates first, then saves the file and
-   * those dates together. Previously the upload saved the file only, so the
-   * row came back with no dates and no indication of whether it was valid.
-   *
-   * OCR failing must not lose the upload, so the file is still saved with
-   * whatever dates are on screen.
+   * Picking a certificate reads its dates and stages file + dates for
+   * review — the user saves (or discards) them. If OCR fails the file is
+   * still staged so the dates can be typed in by hand.
    */
   const onFilePicked = async (file: File) => {
+    setPendingFile(file);
     setReading(true);
     let found: ExtractedCertificate | null = null;
     try {
       found = await runCertificateOcr(file);
     } catch (error: any) {
-      toast.error(error?.message || `Couldn't read ${config.label} — saving the file, please enter the dates manually.`);
+      toast.error(error?.message || `Couldn't read ${config.label} — please enter the dates manually.`);
     } finally {
       setReading(false);
     }
 
-    const nextStart = found?.issueDate ? found.issueDate.slice(0, 10) : startDate;
-    const nextExpiry = found?.expiryDate ? found.expiryDate.slice(0, 10) : expiryDate;
-    setStartDate(nextStart);
-    setExpiryDate(nextExpiry);
-
-    await upsert({ startDate: nextStart, expiryDate: nextExpiry, file });
-    if (found) reportValidity(config.label, found);
+    if (found?.issueDate) setStartDate(found.issueDate.slice(0, 10));
+    if (found?.expiryDate) setExpiryDate(found.expiryDate.slice(0, 10));
+    // A gas certificate dropped on the EPC row (say) is caught before it's saved.
+    if (found?.docType && found.docType !== config.value && found.docType !== "OTHER") {
+      const detected = DOC_TYPES.find((t) => t.value === found!.docType)?.label || found.docType;
+      toast.warning(`This looks like a ${detected}, not ${config.label}. Check the file before saving.`, { duration: 8000 });
+    } else if (found) {
+      reportValidity(config.label, found);
+    }
   };
 
   return (
@@ -228,20 +239,31 @@ function MandatoryCertRow({ config, doc, propertyId, onSaved }: {
           e.target.value = "";
         }} />
         <Button type="button" size="sm" variant="outline" disabled={busy || reading} onClick={() => fileInputRef.current?.click()}>
-          {busy || reading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Upload className="mr-1.5 h-3.5 w-3.5" />}
-          {reading ? "Reading dates…" : busy ? "Saving…" : "Upload Certificate"}
+          {reading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Upload className="mr-1.5 h-3.5 w-3.5" />}
+          {reading ? "Reading dates…" : doc?.fileUrl ? "Replace File" : "Upload Certificate"}
         </Button>
-        {doc?.fileUrl && <a href={fileHref(doc.fileUrl)} target="_blank" rel="noreferrer" className="text-xs text-primary underline">View</a>}
+        {pendingFile
+          ? <span className="max-w-[10rem] truncate text-xs text-amber-700" title={pendingFile.name}>{pendingFile.name}</span>
+          : doc?.fileUrl && <a href={fileHref(doc.fileUrl)} target="_blank" rel="noreferrer" className="text-xs text-primary underline">View</a>}
       </div>
       <div className="space-y-1">
         <Label className="text-xs text-muted-foreground">Issue Date</Label>
-        <Input type="date" className="h-8 w-36" value={startDate} onChange={(e) => setStartDate(e.target.value)} onBlur={() => void upsert({ startDate })} />
+        <Input type="date" className="h-8 w-36" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
       </div>
       <div className="space-y-1">
         <Label className="text-xs text-muted-foreground">Expiry Date</Label>
-        <Input type="date" className="h-8 w-36" value={expiryDate} onChange={(e) => { setExpiryDate(e.target.value); void upsert({ expiryDate: e.target.value }); }} />
+        <Input type="date" className="h-8 w-36" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
       </div>
       <Badge className={status.className}>{status.label}</Badge>
+      {dirty && (
+        <div className="flex w-full items-center justify-end gap-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">
+          <span className="mr-auto">Unsaved changes{pendingFile ? ` — new file ${pendingFile.name}` : ""}</span>
+          <Button type="button" size="sm" variant="ghost" className="h-7" disabled={busy || reading} onClick={discard}>Discard</Button>
+          <Button type="button" size="sm" className="h-7" disabled={busy || reading} onClick={save}>
+            {busy && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}Save
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -256,14 +278,23 @@ export function CertificatesSection({ propertyId }: { propertyId: string }) {
   const [extracting, setExtracting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // The property whose certificates are on screen. A response for any other
+  // property (the user switched while it loaded) is dropped, so a row can
+  // never hold another property's certificate and save over it.
+  const currentProperty = useRef(propertyId);
+  currentProperty.current = propertyId;
+
   const load = async () => {
+    const requestedFor = propertyId;
     setLoading(true);
-    const { data } = await get<{ data: ComplianceDoc[] }>(`property-management/compliance/${propertyId}`);
+    const { data } = await get<{ data: ComplianceDoc[] }>(`property-management/compliance/${requestedFor}`);
+    if (currentProperty.current !== requestedFor) return;
     setDocs(data?.data || []);
     setLoading(false);
   };
 
   useEffect(() => {
+    setDocs([]);
     if (propertyId) void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propertyId]);
@@ -348,7 +379,7 @@ export function CertificatesSection({ propertyId }: { propertyId: string }) {
   // Only the first row per mandatory docType is shown fixed; any extra rows
   // of that type (unlikely, but possible via re-upload flows) fall through
   // to the free-form "Other certificates" list below so nothing is hidden.
-  const mandatoryDocs = new Map(MANDATORY_TYPES.map((m) => [m.value, docs.find((d) => d.docType === m.value)]));
+  const mandatoryDocs = new Map<string, ComplianceDoc | undefined>(MANDATORY_TYPES.map((m) => [m.value, docs.find((d) => d.docType === m.value)]));
   const otherDocs = docs.filter((d) => {
     const claimedByMandatory = mandatoryDocs.get(d.docType);
     return !(claimedByMandatory && claimedByMandatory.id === d.id);
@@ -375,7 +406,7 @@ export function CertificatesSection({ propertyId }: { propertyId: string }) {
             <h4 className="mb-1 text-sm font-semibold uppercase text-muted-foreground">Safety Certificates</h4>
             <div>
               {MANDATORY_TYPES.map((config) => (
-                <MandatoryCertRow key={config.value} config={config} doc={mandatoryDocs.get(config.value)} propertyId={propertyId} onSaved={load} />
+                <MandatoryCertRow key={`${propertyId}-${config.value}`} config={config} doc={mandatoryDocs.get(config.value)} propertyId={propertyId} onSaved={load} />
               ))}
             </div>
           </div>

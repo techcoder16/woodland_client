@@ -27,7 +27,7 @@ type Row = {
 type Overview = {
   expiringSoonDays: number;
   totalProperties: number;
-  summary: { expired: number; expiring: number; missing: number; valid: number };
+  summary: { expired: number; expiring: number; missing: number; noExpiry: number; valid: number };
   byType: { docType: string; label: string; total: number; expired: number; expiring: number; missing: number }[];
   rows: Row[];
 };
@@ -35,9 +35,9 @@ type Overview = {
 const STATUS_META: Record<Status, { label: string; badge: string }> = {
   EXPIRED: { label: "Expired", badge: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300" },
   EXPIRING: { label: "Expiring Soon", badge: "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300" },
-  MISSING: { label: "Missing", badge: "bg-slate-200 text-slate-700 dark:bg-slate-500/20 dark:text-slate-300" },
+  MISSING: { label: "Not uploaded", badge: "bg-slate-200 text-slate-700 dark:bg-slate-500/20 dark:text-slate-300" },
   VALID: { label: "Valid", badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300" },
-  NO_EXPIRY: { label: "No expiry date", badge: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300" },
+  NO_EXPIRY: { label: "No expiry date", badge: "bg-orange-100 text-orange-800 dark:bg-orange-500/15 dark:text-orange-300" },
 };
 
 // "attention" = everything that needs action; the default view.
@@ -77,8 +77,7 @@ export default function ComplianceOverview() {
     return data.rows.filter((r) => {
       const statusOk =
         filter === "all" ? true
-          : filter === "attention" ? r.status === "EXPIRED" || r.status === "EXPIRING" || r.status === "MISSING"
-          : filter === "VALID" ? r.status === "VALID" || r.status === "NO_EXPIRY"
+          : filter === "attention" ? r.status !== "VALID"
           : r.status === filter;
       const typeOk = type === "all" || r.docType === type;
       const termOk = !term || [r.address, r.town, r.postCode, r.typeLabel, formatPropertyReference(r.propertyNumber ?? undefined)]
@@ -94,8 +93,8 @@ export default function ComplianceOverview() {
   const cards: { key: Filter; label: string; value: number; hint: string; icon: typeof AlertCircle; tone: string }[] = data ? [
     { key: "EXPIRED", label: "Expired", value: data.summary.expired, hint: "Requires immediate action", icon: AlertCircle, tone: "border-red-200 bg-red-50/70 text-red-600 dark:border-red-500/30 dark:bg-red-500/5" },
     { key: "EXPIRING", label: `Expiring within ${data.expiringSoonDays} days`, value: data.summary.expiring, hint: "Action required soon", icon: Clock, tone: "border-amber-200 bg-amber-50/70 text-amber-600 dark:border-amber-500/30 dark:bg-amber-500/5" },
-    { key: "MISSING", label: "Missing", value: data.summary.missing, hint: "No certificate on file", icon: FileQuestion, tone: "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-500/30 dark:bg-slate-500/5" },
-    { key: "VALID", label: "Compliant", value: data.summary.valid, hint: "No action required", icon: CheckCircle2, tone: "border-emerald-200 bg-emerald-50/70 text-emerald-600 dark:border-emerald-500/30 dark:bg-emerald-500/5" },
+    { key: "MISSING", label: "Not uploaded", value: data.summary.missing, hint: "Required certificate not on file yet", icon: FileQuestion, tone: "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-500/30 dark:bg-slate-500/5" },
+    { key: "VALID", label: "Compliant", value: data.summary.valid, hint: data.summary.noExpiry ? `${data.summary.noExpiry} uploaded without an expiry date — see "Needs attention"` : "No action required", icon: CheckCircle2, tone: "border-emerald-200 bg-emerald-50/70 text-emerald-600 dark:border-emerald-500/30 dark:bg-emerald-500/5" },
   ] : [];
 
   return (
@@ -165,7 +164,7 @@ export default function ComplianceOverview() {
             <SelectItem value="attention">Needs attention</SelectItem>
             <SelectItem value="EXPIRED">Expired</SelectItem>
             <SelectItem value="EXPIRING">Expiring soon</SelectItem>
-            <SelectItem value="MISSING">Missing</SelectItem>
+            <SelectItem value="MISSING">Not uploaded</SelectItem>
             <SelectItem value="VALID">Compliant</SelectItem>
             <SelectItem value="all">All certificates</SelectItem>
           </SelectContent>
@@ -204,7 +203,7 @@ export default function ComplianceOverview() {
                 <td className="px-4 py-2.5"><span className={`rounded-md px-2 py-1 text-xs font-medium ${STATUS_META[r.status].badge}`}>{STATUS_META[r.status].label}</span></td>
                 <td className="px-4 py-2.5 text-right">
                   <Button size="sm" variant="outline" className="h-7" onClick={() => navigate(`/properties/${r.propertyId}`)}>
-                    {r.status === "MISSING" ? "Upload" : "View"}
+                    {r.status === "MISSING" ? "Upload" : r.status === "NO_EXPIRY" ? "Add date" : "View"}
                   </Button>
                 </td>
               </tr>
