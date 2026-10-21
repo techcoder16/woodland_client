@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, CheckCircle2, Flame, FileText, Loader2, Plus, ShieldCheck, Trash2, Upload, Wand2, Zap } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Download, Flame, FileText, Loader2, Plus, ShieldCheck, Trash2, Upload, Wand2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -74,6 +74,42 @@ function expiryStatus(expiryDate?: string) {
 
 function fileHref(fileUrl: string) {
   return `${API_URL.replace(/\/api\/?$/, "")}${fileUrl}`;
+}
+
+// Saves an uploaded file under its original name. A plain <a download> is
+// ignored for files on another origin (the API server), which is why
+// "View" only ever opened the file — so fetch it and save the blob.
+async function downloadFile(fileUrl: string, fileName?: string) {
+  try {
+    const response = await fetch(fileHref(fileUrl));
+    if (!response.ok) {
+      toast.error(response.status === 404 ? "This file is missing on the server — please upload it again." : `Download failed (HTTP ${response.status}).`);
+      return;
+    }
+    const url = URL.createObjectURL(await response.blob());
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName || fileUrl.split("/").pop() || "document";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch {
+    toast.error("Couldn't download the file. Check the server is running and try again.");
+  }
+}
+
+function FileLinks({ fileUrl, fileName, showName }: { fileUrl: string; fileName?: string; showName?: boolean }) {
+  return (
+    <span className="inline-flex items-center gap-3 text-xs">
+      <a href={fileHref(fileUrl)} target="_blank" rel="noreferrer" className="text-primary underline">
+        View{showName ? ` ${fileName || "file"}` : ""}
+      </a>
+      <button type="button" className="inline-flex items-center gap-1 text-primary underline" onClick={() => void downloadFile(fileUrl, fileName)}>
+        <Download className="h-3 w-3" />Download
+      </button>
+    </span>
+  );
 }
 
 type CertificateValidity = {
@@ -196,16 +232,19 @@ function MandatoryCertRow({ config, doc, propertyId, onSaved }: {
   const save = () => void upsert({ startDate, expiryDate, file: pendingFile });
 
   /**
-   * Picking a certificate reads its dates and stages file + dates for
-   * review — the user saves (or discards) them. If OCR fails the file is
-   * still staged so the dates can be typed in by hand.
+   * Picking a certificate only stages the file. Reading its dates with OCR
+   * is the user's choice ("Get dates via OCR"); otherwise they type them in.
+   * Either way nothing is saved until Save.
    */
-  const onFilePicked = async (file: File) => {
-    setPendingFile(file);
+  const onFilePicked = (file: File) => setPendingFile(file);
+
+  const readDatesWithOcr = async () => {
+    if (!pendingFile) return;
     setReading(true);
     let found: ExtractedCertificate | null = null;
     try {
-      found = await runCertificateOcr(file);
+      found = await runCertificateOcr(pendingFile);
+      if (!found?.issueDate && !found?.expiryDate) toast.warning(`${config.label}: OCR found no dates — please enter them manually.`);
     } catch (error: any) {
       toast.error(error?.message || `Couldn't read ${config.label} — please enter the dates manually.`);
     } finally {
@@ -235,16 +274,22 @@ function MandatoryCertRow({ config, doc, propertyId, onSaved }: {
       <div className="flex items-center gap-2">
         <input ref={fileInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.gif" className="hidden" onChange={(e) => {
           const f = e.target.files?.[0];
-          if (f) void onFilePicked(f);
+          if (f) onFilePicked(f);
           e.target.value = "";
         }} />
         <Button type="button" size="sm" variant="outline" disabled={busy || reading} onClick={() => fileInputRef.current?.click()}>
-          {reading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Upload className="mr-1.5 h-3.5 w-3.5" />}
-          {reading ? "Reading dates…" : doc?.fileUrl ? "Replace File" : "Upload Certificate"}
+          <Upload className="mr-1.5 h-3.5 w-3.5" />
+          {doc?.fileUrl || pendingFile ? "Replace File" : "Upload Certificate"}
         </Button>
+        {pendingFile && (
+          <Button type="button" size="sm" variant="outline" disabled={busy || reading} onClick={() => void readDatesWithOcr()} title="Read the issue and expiry dates from this file">
+            {reading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Wand2 className="mr-1.5 h-3.5 w-3.5" />}
+            {reading ? "Reading dates…" : "Get dates via OCR"}
+          </Button>
+        )}
         {pendingFile
           ? <span className="max-w-[10rem] truncate text-xs text-amber-700" title={pendingFile.name}>{pendingFile.name}</span>
-          : doc?.fileUrl && <a href={fileHref(doc.fileUrl)} target="_blank" rel="noreferrer" className="text-xs text-primary underline">View</a>}
+          : doc?.fileUrl && <FileLinks fileUrl={doc.fileUrl} fileName={doc.fileName} />}
       </div>
       <div className="space-y-1">
         <Label className="text-xs text-muted-foreground">Issue Date</Label>
@@ -464,11 +509,7 @@ export function CertificatesSection({ propertyId }: { propertyId: string }) {
               </div>
               {doc.startDate && <p className="text-xs text-muted-foreground">Start: {new Date(doc.startDate).toLocaleDateString("en-GB")}</p>}
               {doc.notes && <p className="text-xs text-muted-foreground">{doc.notes}</p>}
-              {doc.fileUrl && (
-                <a href={fileHref(doc.fileUrl)} target="_blank" rel="noreferrer" className="text-xs text-primary underline">
-                  View {doc.fileName || "file"}
-                </a>
-              )}
+              {doc.fileUrl && <FileLinks fileUrl={doc.fileUrl} fileName={doc.fileName} showName />}
             </div>
           );
         })}
@@ -495,12 +536,11 @@ export function CertificatesSection({ propertyId }: { propertyId: string }) {
             <div className="space-y-1"><Label>Notes</Label><Input value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Optional" /></div>
             <div className="space-y-1">
               <Label>Certificate file</Label>
-              {/* Choosing a file reads it straight away — the wand is only
-                  needed to run OCR again after a correction. */}
+              {/* Choosing a file only attaches it; reading the type and dates
+                  with OCR is optional ("Get dates via OCR"). */}
               <input ref={fileInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.gif" className="hidden" onChange={(e) => {
-                const picked = e.target.files?.[0] || null;
-                setFile(picked);
-                if (picked) void extractDates(picked);
+                setFile(e.target.files?.[0] || null);
+                e.target.value = "";
               }} />
               <div className="flex flex-wrap items-center gap-2">
                 <Button type="button" size="sm" variant="outline" disabled={extracting} onClick={() => fileInputRef.current?.click()}>
@@ -509,11 +549,11 @@ export function CertificatesSection({ propertyId }: { propertyId: string }) {
                 {file && <span className="max-w-[10rem] truncate text-xs text-muted-foreground" title={file.name}>{file.name}</span>}
                 <Button type="button" size="sm" variant="outline" disabled={!file || extracting} onClick={() => void extractDates()}>
                   {extracting ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Wand2 className="mr-1.5 h-3.5 w-3.5" />}
-                  Read again
+                  {extracting ? "Reading dates…" : "Get dates via OCR"}
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                {extracting ? "Reading the document — this can take up to a minute…" : "Choosing a file reads its type and dates automatically."}
+                {extracting ? "Reading the document — this can take up to a minute…" : "Optional: let OCR fill in the type and dates, or enter them yourself."}
               </p>
             </div>
             <Button className="w-full" onClick={save} disabled={saving}>
@@ -645,11 +685,7 @@ export function GeneralDocumentsSection({ propertyId }: { propertyId: string }) 
             </div>
             {doc.extractedByOcr && <Badge variant="outline" className="text-[10px]">OCR summary available</Badge>}
             {doc.ocrSummary && <p className="text-xs text-muted-foreground line-clamp-3">{doc.ocrSummary}</p>}
-            {doc.fileUrl && (
-              <a href={fileHref(doc.fileUrl)} target="_blank" rel="noreferrer" className="text-xs text-primary underline">
-                View {doc.fileName || "file"}
-              </a>
-            )}
+            {doc.fileUrl && <FileLinks fileUrl={doc.fileUrl} fileName={doc.fileName} showName />}
           </div>
         ))}
       </div>

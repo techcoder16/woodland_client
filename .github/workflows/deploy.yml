@@ -1,69 +1,70 @@
-name: Deploy to S3 + CloudFront
+name: Deploy frontend
 
+# dev branch  -> https://dev.pms.woodlandltd.com (account 623553998786)
+# main branch -> https://pms.woodlandltd.com     (account 549803795489)
 on:
   push:
-    branches:
-      - main
+    branches: [dev, main]
   workflow_dispatch:
 
 permissions:
   id-token: write
   contents: read
 
+concurrency:
+  group: deploy-frontend-${{ github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    name: Build & Deploy Static Site
-
+    timeout-minutes: 20
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::962410672535:role/woodland-deploy-role
-          aws-region: eu-central-1
-          role-duration-seconds: 900
+      - name: Pick environment
+        run: |
+          if [ "$GITHUB_REF_NAME" = "main" ]; then
+            echo "ENV=prod" >> "$GITHUB_ENV"
+            echo "ACCOUNT=549803795489" >> "$GITHUB_ENV"
+            echo "DISTRIBUTION=E3TJ9E5CQ7OE2Q" >> "$GITHUB_ENV"
+            echo "VITE_API_URL=https://api.woodlandltd.com/api/" >> "$GITHUB_ENV"
+          else
+            echo "ENV=dev" >> "$GITHUB_ENV"
+            echo "ACCOUNT=623553998786" >> "$GITHUB_ENV"
+            echo "DISTRIBUTION=E6C7C0CP8B1M1" >> "$GITHUB_ENV"
+            echo "VITE_API_URL=https://dev.api.woodlandltd.com/api/" >> "$GITHUB_ENV"
+          fi
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
-      - name: Install dependencies
-        run: npm install
+      - run: npm ci
 
-      - name: Build static site
+      - name: Build
         run: npm run build
         env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL }}
           VITE_PUBLIC_OFFICE_ADDRESS: ${{ secrets.VITE_PUBLIC_OFFICE_ADDRESS }}
           VITE_PUBLIC_OFFICE_CITY: ${{ secrets.VITE_PUBLIC_OFFICE_CITY }}
           VITE_PUBLIC_OFFICE_POSTCODE: ${{ secrets.VITE_PUBLIC_OFFICE_POSTCODE }}
+          VITE_GETADDRESS_API_KEY: ${{ secrets.VITE_GETADDRESS_API_KEY }}
 
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ env.ACCOUNT }}:role/woodland-${{ env.ENV }}-github-deploy
+          aws-region: eu-west-2
 
-
-       
-      - name: Delete old S3 objects
-        run: aws s3 rm s3://woodland-frontend/ --recursive
-
-      - name: Upload new files to S3 + cache headers
+      - name: Upload to S3
         run: |
-          aws s3 cp dist/ s3://woodland-frontend/ \
-            --recursive \
-            --cache-control "public, max-age=31536000, immutable" \
-            --exclude "*.html"
+          BUCKET="woodland-$ENV-site-$ACCOUNT"
+          # Hashed assets are immutable; index.html must always be re-fetched.
+          aws s3 sync dist "s3://$BUCKET" --delete --exclude index.html --cache-control "public,max-age=31536000,immutable"
+          aws s3 cp dist/index.html "s3://$BUCKET/index.html" --cache-control "no-cache"
 
-
-          aws s3 cp dist/ s3://woodland-frontend/ \
-            --recursive \
-            --cache-control "no-cache, no-store, must-revalidate, max-age=0" \
-            --exclude "*" \
-            --include "*.html"
-
-      - name: Invalidate CloudFront cache
+      - name: Invalidate CloudFront
         run: |
-          aws cloudfront create-invalidation \
-            --distribution-id EPK8FOZBBQIZT \
-            --paths "/*"
+          ID=$(aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION" --paths "/index.html" "/" --query Invalidation.Id --output text)
+          aws cloudfront wait invalidation-completed --distribution-id "$DISTRIBUTION" --id "$ID"
+          echo "Deployed ${GITHUB_SHA::7} to $ENV" >> "$GITHUB_STEP_SUMMARY"

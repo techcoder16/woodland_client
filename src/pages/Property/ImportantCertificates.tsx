@@ -120,11 +120,11 @@ export default function ImportantCertificates({ drafts, onDraftsChange }: Import
     }
   };
 
-  // Attaching a file immediately runs OCR, so the common path is one click.
-  const onFilePicked = async (docType: string, file: File | undefined) => {
+  // Attaching a file only attaches it; reading its dates with OCR is the
+  // user's choice ("Get dates via OCR"), otherwise they type them in.
+  const onFilePicked = (docType: string, file: File | undefined) => {
     if (!file) return;
     upsert(docType, { file });
-    await extractDates(docType, file);
   };
 
   const uploadedCount = IMPORTANT_CERTIFICATES.filter((c) => draftFor(c.docType)?.file).length;
@@ -134,7 +134,7 @@ export default function ImportantCertificates({ drafts, onDraftsChange }: Import
       <div className="mb-1 px-1">
         <h3 className="text-lg font-semibold">Certificates &amp; Compliance</h3>
         <p className="text-sm text-muted-foreground">
-          Attach a certificate and its issue/expiry dates are read automatically. They are saved with the property.
+          Attach a certificate, then enter its issue/expiry dates or use "Get dates via OCR" to read them from the file. They are saved with the property.
         </p>
       </div>
 
@@ -166,15 +166,16 @@ export default function ImportantCertificates({ drafts, onDraftsChange }: Import
                       accept="image/*,.pdf"
                       className="hidden"
                       disabled={busy}
-                      onChange={(event) => onFilePicked(docType, event.target.files?.[0])}
+                      onChange={(event) => { onFilePicked(docType, event.target.files?.[0]); event.target.value = ""; }}
                     />
                     <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => fileInputs.current[docType]?.click()}>
-                      {busy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Upload className="mr-1.5 h-3.5 w-3.5" />}
-                      {busy ? "Reading dates…" : draft?.file ? "Replace" : "Upload Certificate"}
+                      <Upload className="mr-1.5 h-3.5 w-3.5" />
+                      {draft?.file ? "Replace" : "Upload Certificate"}
                     </Button>
                     {draft?.file && (
-                      <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => extractDates(docType, draft.file as File)} title="Read the dates again">
-                        <Wand2 className="h-4 w-4" />
+                      <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => extractDates(docType, draft.file as File)} title="Read the issue and expiry dates from this file">
+                        {busy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Wand2 className="mr-1.5 h-3.5 w-3.5" />}
+                        {busy ? "Reading dates…" : "Get dates via OCR"}
                       </Button>
                     )}
                     {draft && (
