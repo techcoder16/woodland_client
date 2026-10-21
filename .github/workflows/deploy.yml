@@ -6,10 +6,16 @@ on:
   push:
     branches: [dev, main]
   workflow_dispatch:
+    inputs:
+      bump:
+        description: "Release bump for main (prod)"
+        type: choice
+        options: [patch, minor, major]
+        default: patch
 
 permissions:
   id-token: write
-  contents: read
+  contents: write # push release tags
 
 concurrency:
   group: deploy-frontend-${{ github.ref_name }}
@@ -21,6 +27,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Pick environment
         run: |
@@ -35,6 +43,28 @@ jobs:
             echo "DISTRIBUTION=E6C7C0CP8B1M1" >> "$GITHUB_ENV"
             echo "VITE_API_URL=https://dev.api.woodlandltd.com/api/" >> "$GITHUB_ENV"
           fi
+
+      - name: Work out release version (main only)
+        if: env.ENV == 'prod'
+        env:
+          BUMP_INPUT: ${{ github.event.inputs.bump }}
+        run: |
+          git fetch --tags --force -q
+          LAST=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -1)
+          LAST=${LAST:-v1.0.0}
+          IFS=. read -r MAJOR MINOR PATCH <<<"${LAST#v}"
+          MSG=$(git log -1 --pretty=%B)
+          BUMP=${BUMP_INPUT:-patch}
+          if [ -z "$BUMP_INPUT" ]; then
+            if grep -qi '#major' <<<"$MSG"; then BUMP=major; elif grep -qi '#minor' <<<"$MSG"; then BUMP=minor; fi
+          fi
+          case "$BUMP" in
+            major) MAJOR=$((MAJOR+1)); MINOR=0; PATCH=0 ;;
+            minor) MINOR=$((MINOR+1)); PATCH=0 ;;
+            *)     PATCH=$((PATCH+1)) ;;
+          esac
+          echo "VERSION=v$MAJOR.$MINOR.$PATCH" >> "$GITHUB_ENV"
+          echo "Release v$MAJOR.$MINOR.$PATCH ($BUMP, previous $LAST)" >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/setup-node@v4
         with:
@@ -68,3 +98,9 @@ jobs:
           ID=$(aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION" --paths "/index.html" "/" --query Invalidation.Id --output text)
           aws cloudfront wait invalidation-completed --distribution-id "$DISTRIBUTION" --id "$ID"
           echo "Deployed ${GITHUB_SHA::7} to $ENV" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Tag release
+        if: env.ENV == 'prod' && success()
+        run: |
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" tag -a "$VERSION" -m "Release $VERSION (${GITHUB_SHA::7})"
+          git push origin "$VERSION"
