@@ -32,16 +32,10 @@ z.object({
   town: z.string().nullable().default(null).describe("Town is required."),
   country: z.string().nullable().default(null).transform(val => val ?? "").pipe(z.string().min(1, "Country is required.")),
 
-  photographs: z.any().nullable().optional(),
-  floorPlans: z.any().nullable().optional(),
-
-  epcCertificate: z.any().nullable().optional(),
-  gasCertificate: z.any().nullable().optional(),
-  electricityCertificate: z.any().nullable().optional(),
-  fireRiskAssessment: z.any().nullable().optional(),
-  insuranceCertificate: z.any().nullable().optional(),
-  emergencyLightingCertificate: z.any().nullable().optional(),
-  propertyLicense: z.any().nullable().optional(),
+  // StoredFile ids (FileUploadField uploads to S3). Certificates are
+  // ComplianceDocument rows, staged separately in the wizard.
+  photographFileId: z.string().nullable().optional(),
+  floorPlanFileId: z.string().nullable().optional(),
   managementDate: z.string().nullable().optional(),
   rentEffectiveDate: z.string().nullable().optional(),
   rentPerMonth: z.string().nullable().optional(),
@@ -52,13 +46,7 @@ z.object({
   status: z.string().nullable().default(null).describe("Status is required."),
   vendor: z.string().nullable().default(null).refine((val) => !!val, { message: "Landlord is required." }),
   rooms: z.array(roomSchema).optional(),
-  attachments: z.array(
-    z.string()
-      .regex(/^data:image\/[a-zA-Z+]+;base64,/, {
-        message: "Only valid image files in Base64 format are allowed.",
-      })
-      .or(z.literal(""))
-  ).optional().default([]),
+  attachmentFileIds: z.array(z.string()).optional().default([]),
   propertyStatus: z.enum(["DRAFT", "PUBLISHED"]).default("DRAFT").optional(),
 });
 

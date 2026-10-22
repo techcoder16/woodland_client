@@ -2,6 +2,7 @@
 // list lands here. Overview only: no tabs. Tenants are linked inline from
 // the Overview itself; compliance/documents live in the Add/Edit Property
 // wizard steps.
+import StoredImage from "@/components/StoredImage";
 import { useEffect, useState } from "react";
 import { useLocation, useParams, useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -46,13 +47,15 @@ export default function PropertyDetailPage() {
         <div className="surface p-6 mb-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex gap-4">
-              {property.photographs ? (
-                <img src={property.photographs} alt="" className="h-24 w-28 shrink-0 rounded-lg object-cover" />
-              ) : (
-                <div className="flex h-24 w-28 shrink-0 items-center justify-center rounded-lg bg-muted">
-                  <Building2 className="h-8 w-8 text-muted-foreground" />
-                </div>
-              )}
+              <StoredImage
+                fileId={property.photographFileId}
+                className="h-24 w-28 shrink-0 rounded-lg object-cover"
+                fallback={
+                  <div className="flex h-24 w-28 shrink-0 items-center justify-center rounded-lg bg-muted">
+                    <Building2 className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                }
+              />
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-2xl font-semibold tracking-tight">{property.addressLine1 || "Property"}</h1>

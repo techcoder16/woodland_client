@@ -18,7 +18,7 @@ import NotesStep from "./Manager/NotesStep";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { patch } from "@/helper/api";
 import { propertySchema } from "@/schema/property.schema";
-import { buildPropertyFormData } from "@/helper/buildPropertyFormData";
+import { buildPropertyPayload } from "@/helper/buildPropertyFormData";
 import { parseApiError } from "@/helper/parseApiError";
 
 const STEP_LABELS = [
@@ -30,7 +30,7 @@ const STEP_LABELS = [
 
 const STEP_FIELDS: string[][] = [
   ["vendor", "for", "postCode", "addressLine1", "addressLine2", "town", "country", "propertyTypeCategory", "bedrooms", "bathrooms", "receptions", "floorNumber", "wheelchairAccess", "hasGarden", "lift", "gas", "rooms"],
-  ["photographs", "floorPlans", "epcCertificate", "gasCertificate", "electricityCertificate", "fireRiskAssessment", "insuranceCertificate", "emergencyLightingCertificate", "propertyLicense"],
+  ["photographFileId", "floorPlanFileId"],
   ["managementDate", "rentEffectiveDate", "rentPerMonth", "rentPayableInAdvance", "rentalTerms", "termMonths"],
   [],
 ];
@@ -79,8 +79,9 @@ const EditProperty = () => {
       lift: toBoolean(property.lift),
       gas: toBoolean(property.gas),
       rooms: parseJsonArray(property.rooms),
-      photographs: typeof property.photographs === "string" ? property.photographs : "",
-      floorPlans: typeof property.floorPlans === "string" ? property.floorPlans : "",
+      photographFileId: property.photographFileId ?? "",
+      floorPlanFileId: property.floorPlanFileId ?? "",
+      attachmentFileIds: property.attachmentFileIds ?? [],
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [property]);
@@ -167,10 +168,9 @@ const EditProperty = () => {
     setIsSubmitting(true);
 
     try {
-      const formData = buildPropertyFormData(data as any, isDraft);
-      formData.append("id", property?.id ?? "");
+      const payload = buildPropertyPayload(data as any, isDraft);
 
-      const { data: apiData, error }: any = await patch(`properties/${property?.id}`, formData);
+      const { data: apiData, error }: any = await patch(`properties/${property?.id}`, payload);
       setProgress(60);
 
       if (error?.message) {
@@ -272,7 +272,7 @@ const EditProperty = () => {
                 <PropertyInfo watch={watch} register={form.register} errors={currentStep === 0 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} property={property} />
               </div>
               <div className={currentStep !== 1 ? "hidden" : ""}>
-                <DocumentsCertificates watch={watch} register={form.register} errors={currentStep === 1 ? activeErrors : noErrors} setValue={form.setValue} />
+                <DocumentsCertificates watch={watch} register={form.register} errors={currentStep === 1 ? activeErrors : noErrors} setValue={form.setValue} propertyId={property.id} />
                 <div className="mt-6 border-t pt-6">
                   <CertificatesSection propertyId={property.id} />
                 </div>

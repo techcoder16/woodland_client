@@ -7,12 +7,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { post } from "@/helper/api";
+import { uploadFileOnce } from "@/helper/fileUpload";
 
 export interface DraftPropertyDoc {
   localId: string;
   title: string;
   documentDate?: string;
   file?: File;
+  ocrSummary?: string;
 }
 
 interface GeneralDocumentsDraftStepProps {
@@ -49,6 +51,7 @@ export default function GeneralDocumentsDraftStep({ drafts, onDraftsChange }: Ge
     setEditingLocalId(doc.localId);
     setForm({ title: doc.title, documentDate: doc.documentDate || "" });
     setFile(doc.file);
+    setOcrSummary(doc.ocrSummary || null);
     setModalOpen(true);
   };
 
@@ -60,9 +63,8 @@ export default function GeneralDocumentsDraftStep({ drafts, onDraftsChange }: Ge
     if (!file) return;
     setExtracting(true);
     try {
-      const payload = new FormData();
-      payload.append("file", file);
-      const { data, error } = await post<any>("property-management/documents/extract-summary", payload);
+      const { id: fileId } = await uploadFileOnce(file, { category: "property-document", entityType: "property" });
+      const { data, error } = await post<any>("property-management/documents/extract-summary", { fileId });
       if (error) throw new Error(error.message);
       setOcrSummary(data?.data?.summary || null);
       if (!form.title) setForm((f) => ({ ...f, title: file.name.replace(/\.[^.]+$/, "") }));
@@ -84,6 +86,7 @@ export default function GeneralDocumentsDraftStep({ drafts, onDraftsChange }: Ge
       title: form.title,
       documentDate: form.documentDate || undefined,
       file,
+      ocrSummary: ocrSummary || undefined,
     };
     onDraftsChange(editingLocalId ? drafts.map((d) => (d.localId === editingLocalId ? entry : d)) : [...drafts, entry]);
     setModalOpen(false);

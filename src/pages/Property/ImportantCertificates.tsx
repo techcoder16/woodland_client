@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { post } from "@/helper/api";
+import { uploadFileOnce } from "@/helper/fileUpload";
 import { DraftComplianceDoc } from "./ComplianceDraftStep";
 
 /**
@@ -87,9 +88,8 @@ export default function ImportantCertificates({ drafts, onDraftsChange }: Import
   const extractDates = async (docType: string, file: File) => {
     setExtractingType(docType);
     try {
-      const payload = new FormData();
-      payload.append("file", file);
-      const { data, error } = await post<any>("property-management/compliance/extract-dates", payload);
+      const { id: fileId } = await uploadFileOnce(file, { category: "compliance", entityType: "property" });
+      const { data, error } = await post<any>("property-management/compliance/extract-dates", { fileId });
       if (error) throw new Error(error.message);
       const found = data?.data;
       if (!found) {

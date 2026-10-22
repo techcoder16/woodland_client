@@ -29,7 +29,7 @@ const formSchema = z.object({
   town: z.string().optional(),
   postCode: z.string().optional(),
   country: z.string().optional(),
-  logo: z.string().optional(),
+  logoFileId: z.string().nullable().optional(), // StoredFile id
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -126,13 +126,14 @@ const AddContractor = () => {
               </div>
               <FileUploadField
                 label="Logo"
-                name="logo"
+                name="logoFileId"
                 accept="image/*"
                 multiple={false}
                 register={register}
                 setValue={setValue}
                 watch={watch}
-                error={errors.logo?.message}
+                error={errors.logoFileId?.message}
+                upload={{ category: "contractor-logo", entityType: "contractor" }}
               />
 
               <div className="flex justify-end pt-6">

@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import { openStoredFile } from "@/helper/fileUpload";
+import { useFileUrls } from "@/hooks/useFileUrls";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Building2, CalendarDays, FileText, Home, Loader2, Trash2, User, Users } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -16,7 +18,6 @@ import {
   OccupancyStatus,
   addressSub,
   estimatedIncome,
-  fileUrl,
   fmtDate,
   formatRate,
   fullName,
@@ -65,6 +66,7 @@ export default function OccupancyDetail() {
   const [pendingStatus, setPendingStatus] = useState<OccupancyStatus | null>(null);
   const [statusDate, setStatusDate] = useState("");
   const [saving, setSaving] = useState(false);
+  const docFiles = useFileUrls(occupancy?.customerDocumentFileIds ?? []);
 
   const load = useCallback(async () => {
     const { data, error } = await get<Occupancy>(`occupancy/${id}`);
@@ -182,13 +184,17 @@ export default function OccupancyDetail() {
                 </>
               )}
             </dl>
-            {!!o.customerDocuments?.length && (
+            {!!o.customerDocumentFileIds?.length && (
               <ul className="mt-3 space-y-1 text-sm">
-                {o.customerDocuments.map((d) => (
-                  <li key={d.fileUrl}>
-                    <a href={fileUrl(d.fileUrl)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-primary hover:underline">
-                      <FileText className="h-3.5 w-3.5" /> {d.fileName || "Document"}
-                    </a>
+                {o.customerDocumentFileIds.map((id) => (
+                  <li key={id}>
+                    <button
+                      type="button"
+                      onClick={() => openStoredFile(id).catch(() => toast.error("This document is no longer available."))}
+                      className="inline-flex items-center gap-1.5 text-primary hover:underline"
+                    >
+                      <FileText className="h-3.5 w-3.5" /> {docFiles[id]?.name || "Document"}
+                    </button>
                   </li>
                 ))}
               </ul>

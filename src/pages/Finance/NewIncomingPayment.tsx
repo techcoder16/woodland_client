@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import StoredImage from "@/components/StoredImage";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Building2, Check, CheckCircle2, Download, Layers, Loader2, Plus, Search, User } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -179,8 +180,8 @@ export default function NewIncomingPayment() {
     if (!occupancy) return;
     let cancelled = false;
     get<any>(`occupancy/${occupancy.id}`).then(({ data }) => {
-      const src = data?.property?.photographs;
-      if (!cancelled && typeof src === "string" && src && !src.startsWith("data:application/pdf")) setPhoto(src);
+      const fileId = data?.property?.photographFileId;
+      if (!cancelled && typeof fileId === "string" && fileId) setPhoto(fileId);
     });
     return () => { cancelled = true; };
   }, [occupancy?.id]);
@@ -303,7 +304,7 @@ export default function NewIncomingPayment() {
 
   const photoBox = (className: string) => (
     <div className={`overflow-hidden rounded-md bg-muted ${className}`}>
-      {photo ? <img src={photo} alt="" className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center"><Building2 className="h-8 w-8 text-muted-foreground" /></div>}
+      <StoredImage fileId={photo} className="h-full w-full object-cover" fallback={<div className="flex h-full items-center justify-center"><Building2 className="h-8 w-8 text-muted-foreground" /></div>} />
     </div>
   );
 

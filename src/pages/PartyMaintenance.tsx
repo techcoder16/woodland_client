@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import StoredFilePreview from "@/components/StoredFilePreview";
+import { uploadFiles } from "@/helper/fileUpload";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -42,13 +44,6 @@ const getStatusBadgeVariant = (status: ReportingStatus) => {
   }
 };
 
-const readAsDataUrl = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = (err) => reject(err);
-  });
 
 interface JobType {
   id: string;
@@ -65,8 +60,8 @@ interface JobType {
   totalCharged?: number | null;
   totalCost?: number | null;
   contractorId?: string;
-  media?: string[];
-  invoice?: string | null;
+  mediaFileIds?: string[];
+  invoiceFileId?: string | null;
   property?: { addressLine1?: string; addressLine2?: string; town?: string; postCode?: string };
 }
 
@@ -105,8 +100,8 @@ const contractorUpdateSchema = z
     ),
     startDate: z.string().optional(),
     endDate: z.string().optional(),
-    media: z.array(z.string()).optional(),
-    invoice: z.string().optional(),
+    mediaFileIds: z.array(z.string()).optional(),
+    invoiceFileId: z.string().optional(),
   })
   .refine((data) => !data.endDate || data.startDate, {
     message: "Set a start date before an end date",
@@ -131,8 +126,8 @@ const ContractorUpdateDialog = ({ job, onUpdated }: { job: JobType; onUpdated: (
       totalCost: job.totalCost ?? undefined,
       startDate: job.startDate || "",
       endDate: job.endDate || "",
-      media: job.media || [],
-      invoice: job.invoice || "",
+      mediaFileIds: job.mediaFileIds || [],
+      invoiceFileId: job.invoiceFileId || "",
     },
   });
 
@@ -147,8 +142,8 @@ const ContractorUpdateDialog = ({ job, onUpdated }: { job: JobType; onUpdated: (
       if (data.totalCost !== undefined) payload.totalCost = data.totalCost;
       if (data.startDate && data.startDate !== job.startDate) payload.startDate = data.startDate;
       if (data.endDate && data.endDate !== job.endDate) payload.endDate = data.endDate;
-      if (data.media && data.media.length > 0) payload.media = data.media;
-      if (data.invoice) payload.invoice = data.invoice;
+      if (data.mediaFileIds && data.mediaFileIds.length > 0) payload.mediaFileIds = data.mediaFileIds;
+      if (data.invoiceFileId) payload.invoiceFileId = data.invoiceFileId;
       if (markDone) payload.status = "CONTRACTOR_DONE";
 
       await partyPost("contractor", `property-management/job-type/${job.id}`, payload);
@@ -212,23 +207,25 @@ const ContractorUpdateDialog = ({ job, onUpdated }: { job: JobType; onUpdated: (
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground pt-3">Attachments</p>
             <FileUploadField
               label="Photos"
-              name="media"
+              name="mediaFileIds"
               accept="image/jpeg,image/png,image/webp"
               multiple
               register={register}
               setValue={setValue}
               watch={watch}
-              error={errors.media?.message as string | undefined}
+              error={errors.mediaFileIds?.message as string | undefined}
+              upload={{ category: "job-media", entityType: "jobType", entityId: job.id, party: "contractor" }}
             />
             <FileUploadField
               label="Invoice"
-              name="invoice"
+              name="invoiceFileId"
               accept="image/*,.pdf"
               multiple={false}
               register={register}
               setValue={setValue}
               watch={watch}
-              error={errors.invoice?.message as string | undefined}
+              error={errors.invoiceFileId?.message as string | undefined}
+              upload={{ category: "job-invoice", entityType: "jobType", entityId: job.id, party: "contractor" }}
             />
           </div>
         </div>
@@ -324,8 +321,8 @@ const PartyMaintenance = ({ kind }: { kind: PartyKind }) => {
     }
     setIsSubmittingReport(true);
     try {
-      const media = await Promise.all(reportPictures.map(readAsDataUrl));
-      await partyPost(kind, "property-management/job-type", { ...data, media, propertyId });
+      const uploaded = await uploadFiles(reportPictures, { category: "job-media", entityType: "jobType", propertyId, party: kind });
+      await partyPost(kind, "property-management/job-type", { ...data, mediaFileIds: uploaded.map((f) => f.id), propertyId });
       toast.success("Maintenance request submitted");
       reset();
       setReportPictures([]);
@@ -500,23 +497,20 @@ const PartyMaintenance = ({ kind }: { kind: PartyKind }) => {
                     )}
                   </div>
                 </div>
-                {job.media && job.media.length > 0 && (
+                {job.mediaFileIds && job.mediaFileIds.length > 0 && (
                   <div>
                     <div className="text-xs text-muted-foreground mb-1">Photos from the job</div>
                     <div className="flex flex-wrap gap-2">
-                      {job.media.map((src, i) =>
-                        src.startsWith("data:application/pdf") ? (
-                          <embed key={i} src={src} type="application/pdf" className="w-20 h-20 rounded-md border" />
-                        ) : (
-                          <img
-                            key={i}
-                            src={src}
-                            alt={`Job photo ${i + 1}`}
-                            className="w-20 h-20 object-cover rounded-md border cursor-pointer"
-                            onClick={() => window.open(src, "_blank")}
-                          />
-                        )
-                      )}
+                      {job.mediaFileIds.map((fileId, i) => (
+                        <StoredFilePreview
+                          key={fileId}
+                          fileId={fileId}
+                          party={kind}
+                          alt={`Job photo ${i + 1}`}
+                          className="w-20 h-20 object-cover rounded-md border"
+                          clickToOpen
+                        />
+                      ))}
                     </div>
                   </div>
                 )}

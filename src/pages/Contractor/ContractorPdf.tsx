@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import StoredImage from "@/components/StoredImage";
 import {
   Dialog,
   DialogContent,
@@ -60,9 +61,7 @@ const ContractorPdf = ({ contractor, open: openProp, onOpenChange, hideTrigger }
         <DialogContent className="max-w-4xl">
           <DialogHeader className="px-6 py-4">
             <DialogTitle className="text-2xl font-bold flex items-center gap-3">
-              {contractor.logo && (
-                <img src={contractor.logo} alt="" className="h-10 w-10 rounded-full object-cover" />
-              )}
+              <StoredImage fileId={contractor.logoFileId} className="h-10 w-10 rounded-full object-cover" />
               {contractor.name} - Contractor Details
             </DialogTitle>
           </DialogHeader>

@@ -40,8 +40,8 @@ const featureSchema = z.object({
   towns: z.string().optional(),
   NoOfBaths: z.string().optional(),
 
-  // map is an array of Base64 image strings
-  map: z.any().optional(),
+  // StoredFile ids of the map images (uploaded to S3 on pick)
+  mapFileIds: z.array(z.string()).optional(),
 });
 
 type FeatureFormData = z.infer<typeof featureSchema>;
@@ -108,32 +108,11 @@ export const Feature = ({ property }: any) => {
   }, [property?.id, resetFeature]);
 
   const onSubmitFeature = async (data: FeatureFormData) => {
-    // Prepare a FormData object to support file uploads.
-    const formData = new FormData();
-    console.log("Submitting for propertyId:", property.id);
-
-    // Loop over the data fields and append them to FormData.
-    data &&
-      Object.entries(data).forEach(([key, value]) => {
-        if (key === "map" && value) {
-          // If value is a FileList or array, append each file.
-          console.log(key);
-          value.forEach((file: any, index) => {
-            if (file) {
-              formData.append(`map[${index}]`, file); // Append each file individually
-            }
-          });
-        } else if (value !== undefined) {
-          formData.append(key, value as string | Blob);
-        }
-      });
-
     const accessToken = await DEFAULT_COOKIE_GETTER("access_token");
     const headers = {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
     };
-    console.log(formData);
     const res = await post("property-management/feature/upsert", data, headers);
     if (res) {
       toast.success("Feature created successfully");
@@ -485,12 +464,13 @@ export const Feature = ({ property }: any) => {
           </div>
           <FileUploadField
             label="Upload Images"
-            name="map"
+            name="mapFileIds"
             accept="image/*"
             register={registerFeature}
             setValue={setFeatureValue}
             watch={watch}
-            error={errorsFeature.map?.message?.toString()}
+            error={errorsFeature.mapFileIds?.message?.toString()}
+            upload={{ category: "feature-map", entityType: "property", entityId: property?.id, propertyId: property?.id }}
             multiple={true}
           />
           <SelectField

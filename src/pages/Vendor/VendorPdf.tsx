@@ -9,6 +9,15 @@ import { Button } from "@/components/ui/button";
 import { FileText } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
+import { openStoredFile } from "@/helper/fileUpload";
+import { useFileUrls } from "@/hooks/useFileUrls";
+
+const DOCUMENTS = [
+  { key: "photoIdFileId", label: "Photo ID" },
+  { key: "proofOfRelationshipFileId", label: "Proof of Relationship" },
+  { key: "proofOfOwnershipFileId", label: "Proof of Ownership" },
+] as const;
 
 const VendorPdf = ({ vendor, open: openProp, onOpenChange, hideTrigger }: any) => {
   const [openState, setOpenState] = useState(false);
@@ -16,6 +25,9 @@ const VendorPdf = ({ vendor, open: openProp, onOpenChange, hideTrigger }: any) =
   const setOpen = onOpenChange || setOpenState;
 
   const properties = vendor?.property || [];
+  const files = useFileUrls(open ? DOCUMENTS.map((d) => vendor?.[d.key]) : []);
+  const openDoc = (id: string, download: boolean) =>
+    openStoredFile(id, { download }).catch(() => toast.error("This document is no longer available."));
 
   const sections = [
     {
@@ -100,6 +112,32 @@ const VendorPdf = ({ vendor, open: openProp, onOpenChange, hideTrigger }: any) =
                     <Separator className="my-4" />
                   </div>
                 ))}
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-primary py-2">
+                    Documents
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {DOCUMENTS.map((doc) => {
+                      const id: string | undefined = vendor?.[doc.key];
+                      return (
+                        <div key={doc.key} className="space-y-1 p-3 rounded-md border">
+                          <p className="text-sm font-medium text-muted-foreground">{doc.label}</p>
+                          {id ? (
+                            <div className="flex items-center gap-3 text-sm">
+                              <span className="truncate" title={files[id]?.name}>{files[id]?.name || "Uploaded"}</span>
+                              <button type="button" className="text-primary underline" onClick={() => void openDoc(id, false)}>View</button>
+                              <button type="button" className="text-primary underline" onClick={() => void openDoc(id, true)}>Download</button>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">Not uploaded</p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <Separator className="my-4" />
+                </div>
 
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-primary py-2">

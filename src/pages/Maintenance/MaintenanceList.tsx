@@ -55,7 +55,7 @@ const maintenanceSchema = z.object({
   time: z.string().optional(),
   thingsToDo: z.string().optional(),
   priority: z.string().optional(),
-  media: z.array(z.string()).min(1, "At least one photo is required"),
+  mediaFileIds: z.array(z.string()).min(1, "At least one photo is required"),
 });
 
 type MaintenanceFormData = z.infer<typeof maintenanceSchema>;
@@ -207,7 +207,7 @@ const MaintenanceList = () => {
         time: data.time,
         thingsToDo: data.thingsToDo,
         priority: data.priority,
-        media: data.media,
+        mediaFileIds: data.mediaFileIds,
         status: "QUOTING",
       };
 
@@ -339,13 +339,14 @@ const MaintenanceList = () => {
 
                 <FileUploadField
                   label="Photos *"
-                  name="media"
+                  name="mediaFileIds"
                   accept="image/jpeg,image/png,image/webp"
                   multiple
                   register={register}
                   setValue={setValue}
                   watch={watch}
-                  error={errors.media?.message as string | undefined}
+                  error={errors.mediaFileIds?.message as string | undefined}
+                  upload={{ category: "job-media", entityType: "jobType" }}
                 />
 
                 <div className="grid grid-cols-3 gap-4">

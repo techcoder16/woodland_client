@@ -66,19 +66,17 @@ const EditTenant = ({ isOpen, onClose, propertyId, tenant }: EditTenantModalProp
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       };
-      const formData = new FormData();
+      const payload: Record<string, string> = {};
       Object.entries(data).forEach(([key, value]) => {
         // Email is the tenant's login — never sent on update, even though
         // the backend independently strips it too.
         if (key === "Email") return;
-        if (value !== null && value !== undefined) formData.append(key, String(value));
+        if (value !== null && value !== undefined) payload[key] = String(value);
       });
 
-      console.log(Object.fromEntries(formData.entries()),"Asdads");
-
       const { data: apiData, error } = await patch(
-        `tenants/` + Object.fromEntries(formData.entries()).id,
-        formData,
+        `tenants/` + payload.id,
+        payload,
         headers
       );
       setProgress(60);

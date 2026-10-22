@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import StoredFilePreview from "@/components/StoredFilePreview";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -45,7 +46,7 @@ const editSchema = z.object({
   time: z.string().optional(),
   thingsToDo: z.string().optional(),
   priority: z.string().optional(),
-  media: z.array(z.string()).optional(),
+  mediaFileIds: z.array(z.string()).optional(),
 });
 
 type EditFormData = z.infer<typeof editSchema>;
@@ -139,7 +140,7 @@ const MaintenanceDetail = () => {
         time: job.time || "",
         thingsToDo: job.thingsToDo || "",
         priority: job.priority || "",
-        media: job.media || [],
+        mediaFileIds: job.mediaFileIds || [],
       });
       setPendingContractorId(job.contractorId || "");
     }
@@ -188,7 +189,7 @@ const MaintenanceDetail = () => {
             time: data.time,
             thingsToDo: data.thingsToDo,
             priority: data.priority,
-            media: data.media,
+            mediaFileIds: data.mediaFileIds,
           },
         })
       ).unwrap();
@@ -395,12 +396,8 @@ const MaintenanceDetail = () => {
           <TabsContent value="invoices" className="space-y-4">
             <Card className="p-4">
               <div className="font-semibold mb-3">Contractor invoice</div>
-              {job.invoice ? (
-                job.invoice.startsWith("data:application/pdf") ? (
-                  <embed src={job.invoice} type="application/pdf" className="w-full h-96 rounded-md border" />
-                ) : (
-                  <img src={job.invoice} alt="Contractor invoice" className="max-w-full rounded-md border" />
-                )
+              {job.invoiceFileId ? (
+                <StoredFilePreview fileId={job.invoiceFileId} alt="Contractor invoice" className="w-full h-96 rounded-md border object-contain" />
               ) : (
                 <p className="text-sm text-muted-foreground">No invoice has been uploaded by the contractor yet.</p>
               )}
@@ -491,7 +488,8 @@ const MaintenanceDetail = () => {
 
               <FileUploadField
                 label="Photos *"
-                name="media"
+                name="mediaFileIds"
+                upload={{ category: "job-media", entityType: "jobType", entityId: job.id, propertyId: job.propertyId }}
                 accept="image/jpeg,image/png,image/webp,application/pdf"
                 multiple
                 register={register}
@@ -626,15 +624,11 @@ const MaintenanceDetail = () => {
             <Card>
               <CardContent className="p-4">
                 <div className="font-semibold mb-3">Attached media</div>
-                {job.media && job.media.length > 0 ? (
+                {job.mediaFileIds && job.mediaFileIds.length > 0 ? (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {job.media.map((src, index) => (
-                      <div key={index} className="relative group">
-                        {src.startsWith("data:application/pdf") ? (
-                          <embed src={src} type="application/pdf" className="w-full h-32 rounded-md border" />
-                        ) : (
-                          <img src={src} alt={`Attachment ${index + 1}`} className="object-cover rounded-md shadow-sm w-full h-32" />
-                        )}
+                    {job.mediaFileIds.map((fileId, index) => (
+                      <div key={fileId} className="relative group">
+                        <StoredFilePreview fileId={fileId} alt={`Attachment ${index + 1}`} className="object-cover rounded-md shadow-sm w-full h-32" clickToOpen />
                       </div>
                     ))}
                   </div>

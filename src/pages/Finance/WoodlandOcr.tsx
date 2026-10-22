@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { uploadFile } from "@/helper/fileUpload";
 import { FileSearch, Loader2, Upload } from "lucide-react";
 import axios from "axios";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -21,9 +22,8 @@ export default function WoodlandOcr() {
     setSummary("");
     try {
       const token = await getAccessToken();
-      const formData = new FormData();
-      formData.append("file", file);
-      const response = await axios.post(`${API_URL}transaction/extract`, formData, {
+      const { id: fileId } = await uploadFile(file, { category: "ocr", entityType: "ocr" });
+      const response = await axios.post(`${API_URL}transaction/extract`, { fileId }, {
         timeout: 300000,
         headers: { Authorization: `Bearer ${token}` },
       });

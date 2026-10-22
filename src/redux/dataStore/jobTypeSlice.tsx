@@ -24,8 +24,8 @@ export interface JobType {
   contractorId?: string;
   priority?: string;
   dateDone?: string;
-  media?: string[];
-  invoice?: string | null;
+  mediaFileIds?: string[]; // StoredFile ids
+  invoiceFileId?: string | null;
   totalCost?: number | null;
   totalCharged?: number | null;
   marginPercent?: number | null;
