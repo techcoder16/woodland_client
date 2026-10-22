@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { uploadFiles } from "@/helper/fileUpload";
+import StoredImage from "@/components/StoredImage";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -165,11 +167,7 @@ function PropertyCard({ property, statusTone }: { property: PropertyOption; stat
   return (
     <div className="flex gap-4 rounded-xl border bg-muted/30 p-4">
       <div className="h-24 w-32 shrink-0 overflow-hidden rounded-lg bg-muted flex items-center justify-center">
-        {property.photographs && !property.photographs.startsWith("data:application/pdf") ? (
-          <img src={property.photographs} alt="" className="h-full w-full object-cover" />
-        ) : (
-          <Home className="h-8 w-8 text-muted-foreground" />
-        )}
+        <StoredImage fileId={property.photographFileId} className="h-full w-full object-cover" fallback={<Home className="h-8 w-8 text-muted-foreground" />} />
       </div>
       <div className="min-w-0 space-y-1 text-sm">
         <p className="font-semibold text-base">{property.addressLine1 || "Untitled property"}</p>
@@ -411,10 +409,13 @@ export default function CreateOccupancy() {
       return;
     }
     if (documents.length) {
-      const fd = new FormData();
-      documents.forEach((f) => fd.append("files", f));
-      const { error: docError } = await post(`occupancy/${data.id}/documents`, fd);
-      if (docError) toast.error(`Occupancy created, but documents failed to upload: ${docError.message}`);
+      try {
+        const uploaded = await uploadFiles(documents, { category: "occupancy-document", entityType: "occupancy", entityId: data.id });
+        const { error: docError } = await post(`occupancy/${data.id}/documents`, { fileIds: uploaded.map((f) => f.id) });
+        if (docError) throw new Error(docError.message);
+      } catch (err: any) {
+        toast.error(`Occupancy created, but documents failed to upload: ${err?.message || "upload failed"}`);
+      }
     }
     toast.success(`Occupancy ${data.reference} created`);
     navigate(`/occupancy/${data.id}`);

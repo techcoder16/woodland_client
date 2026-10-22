@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { openStoredFile, uploadFile } from "@/helper/fileUpload";
 import { CalendarDays, Check, CheckCircle2, ChevronRight, Clock3, Download, FileSpreadsheet, FileText, Filter, Loader2, Paperclip, Pencil, Plus, RefreshCw, Send, Trash2, Upload, WalletCards, X } from "lucide-react";
 import type { DayContentProps } from "react-day-picker";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
@@ -277,10 +278,13 @@ export default function LandlordPayments() {
     setUploading(true);
     const failed: string[] = [];
     for (const file of Array.from(files)) {
-      const form = new FormData();
-      form.append("file", file);
-      const { error } = await post(`transaction/${selected.id}/documents`, form);
-      if (error) failed.push(`${file.name}: ${error.message}`);
+      try {
+        const { id: fileId } = await uploadFile(file, { category: "transaction-document", entityType: "transaction", entityId: selected.id });
+        const { error } = await post(`transaction/${selected.id}/documents`, { fileId });
+        if (error) failed.push(`${file.name}: ${error.message}`);
+      } catch (err: any) {
+        failed.push(`${file.name}: ${err?.message || "upload failed"}`);
+      }
     }
     setUploading(false);
     if (docUploadRef.current) docUploadRef.current.value = "";
@@ -599,10 +603,15 @@ export default function LandlordPayments() {
                 {!selected.documents?.length ? (
                   <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">No supporting documents attached.</div>
                 ) : selected.documents.map((doc: any) => (
-                  <a key={doc.id} href={`${API_URL.replace(/\/api\/?$/, "")}${doc.fileUrl}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-lg border p-3 text-sm hover:bg-muted/40">
+                  <button
+                    key={doc.id}
+                    type="button"
+                    onClick={() => openStoredFile(doc.fileId).catch(() => toast({ title: "This document is no longer available", variant: "destructive" }))}
+                    className="flex w-full items-center gap-2 rounded-lg border p-3 text-left text-sm hover:bg-muted/40"
+                  >
                     <FileText className="h-4 w-4 text-primary" />{doc.fileName || "Document"}
                     {doc.extractedByOcr && <Badge variant="outline" className="ml-auto text-[10px]">OCR</Badge>}
-                  </a>
+                  </button>
                 ))}
               </div>}
               {detailsTab === "Notes" && <div className="space-y-3">

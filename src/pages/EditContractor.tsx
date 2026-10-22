@@ -30,7 +30,7 @@ const formSchema = z.object({
   town: z.string().optional(),
   postCode: z.string().optional(),
   country: z.string().optional(),
-  logo: z.string().optional(),
+  logoFileId: z.string().nullable().optional(), // StoredFile id
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -49,7 +49,7 @@ const buildContractorDefaults = (contractor: any) => {
     town: contractor.town || "",
     postCode: contractor.postCode || "",
     country: contractor.country || "",
-    logo: contractor.logo || "",
+    logoFileId: contractor.logoFileId || "",
   };
 };
 
@@ -76,7 +76,8 @@ const EditContractor = () => {
     try {
       // Email is the contractor's login — never sent on update, even though
       // the backend independently strips it too.
-      const { id, email, ...payload } = data;
+      const { id, email, ...rest } = data;
+      const payload = { ...rest, logoFileId: rest.logoFileId || null };
       const { data: apiData, error }: any = await patch(`contractor/update/${id}`, payload);
       setProgress(60);
 
@@ -156,13 +157,14 @@ const EditContractor = () => {
               </div>
               <FileUploadField
                 label="Logo"
-                name="logo"
+                name="logoFileId"
                 accept="image/*"
                 multiple={false}
                 register={register}
                 setValue={setValue}
                 watch={watch}
-                error={errors.logo?.message}
+                error={errors.logoFileId?.message}
+                upload={{ category: "contractor-logo", entityType: "contractor", entityId: contractor.id }}
               />
 
               <div className="flex justify-end pt-6">

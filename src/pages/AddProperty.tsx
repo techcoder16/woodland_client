@@ -21,7 +21,8 @@ import NotesStep, { DraftNote } from "./Manager/NotesStep";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { post, patch } from "@/helper/api";
 import { propertySchema } from "@/schema/property.schema";
-import { buildPropertyFormData } from "@/helper/buildPropertyFormData";
+import { buildPropertyPayload } from "@/helper/buildPropertyFormData";
+import { uploadFileOnce } from "@/helper/fileUpload";
 import { parseApiError } from "@/helper/parseApiError";
 import { createNote } from "@/redux/dataStore/noteSlice";
 
@@ -34,7 +35,7 @@ const STEP_LABELS = [
 
 const STEP_FIELDS: string[][] = [
   ["vendor", "for", "postCode", "addressLine1", "addressLine2", "town", "country", "propertyTypeCategory", "bedrooms", "bathrooms", "receptions", "floorNumber", "wheelchairAccess", "hasGarden", "lift", "gas", "rooms"],
-  ["photographs", "floorPlans", "epcCertificate", "gasCertificate", "electricityCertificate", "fireRiskAssessment", "insuranceCertificate", "emergencyLightingCertificate", "propertyLicense"],
+  ["photographFileId", "floorPlanFileId"],
   ["managementDate", "rentEffectiveDate", "rentPerMonth", "rentPayableInAdvance", "rentalTerms", "termMonths"],
   [],
 ];
@@ -47,9 +48,9 @@ const AddProperty = () => {
     mode: "onSubmit",
     defaultValues: {
       country: "",
-      photographs: "",
-      floorPlans: "",
-      attachments: [],
+      photographFileId: "",
+      floorPlanFileId: "",
+      attachmentFileIds: [],
       rooms: [],
     },
   });
@@ -72,8 +73,8 @@ const AddProperty = () => {
 
   const saveDraft = async (): Promise<any | null> => {
     try {
-      const formData = buildPropertyFormData(form.getValues() as any, true);
-      const { data: apiData, error }: any = await post("properties", formData);
+      const payload = buildPropertyPayload(form.getValues() as any, true);
+      const { data: apiData, error }: any = await post("properties", payload);
 
       if (error?.message) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -113,12 +114,11 @@ const AddProperty = () => {
     setIsSubmitting(true);
 
     try {
-      const formData = buildPropertyFormData(data as any, isDraft);
-      if (savedProperty?.id) formData.append("id", savedProperty.id);
+      const payload = buildPropertyPayload(data as any, isDraft);
 
       const { data: apiData, error }: any = savedProperty?.id
-        ? await patch(`properties/${savedProperty.id}`, formData)
-        : await post("properties", formData);
+        ? await patch(`properties/${savedProperty.id}`, payload)
+        : await post("properties", payload);
       setProgress(60);
 
       if (error?.message) {
@@ -152,14 +152,16 @@ const AddProperty = () => {
           let failedCompliance = 0;
           for (const { localId, file, ...docData } of complianceDrafts) {
             try {
-              const compliancePayload = new FormData();
-              compliancePayload.append("propertyId", propertyId);
-              compliancePayload.append("docType", docData.docType);
-              if (docData.label) compliancePayload.append("label", docData.label);
-              if (docData.startDate) compliancePayload.append("startDate", new Date(docData.startDate).toISOString());
-              if (docData.expiryDate) compliancePayload.append("expiryDate", new Date(docData.expiryDate).toISOString());
-              if (docData.notes) compliancePayload.append("notes", docData.notes);
-              if (file) compliancePayload.append("file", file);
+              const fileId = file ? (await uploadFileOnce(file, { category: "compliance", entityType: "property" })).id : undefined;
+              const compliancePayload = {
+                propertyId,
+                docType: docData.docType,
+                label: docData.label || undefined,
+                startDate: docData.startDate ? new Date(docData.startDate).toISOString() : undefined,
+                expiryDate: docData.expiryDate ? new Date(docData.expiryDate).toISOString() : undefined,
+                notes: docData.notes || undefined,
+                fileId,
+              };
               const { error: complianceError } = await post("property-management/compliance", compliancePayload);
               if (complianceError) throw new Error(complianceError.message);
             } catch {
@@ -179,11 +181,15 @@ const AddProperty = () => {
           let failedDocuments = 0;
           for (const { localId, file, ...docData } of documentDrafts) {
             try {
-              const documentPayload = new FormData();
-              documentPayload.append("propertyId", propertyId);
-              documentPayload.append("title", docData.title);
-              if (docData.documentDate) documentPayload.append("documentDate", new Date(docData.documentDate).toISOString());
-              if (file) documentPayload.append("file", file);
+              if (!file) throw new Error("No file");
+              const { id: fileId } = await uploadFileOnce(file, { category: "property-document", entityType: "property" });
+              const documentPayload = {
+                propertyId,
+                title: docData.title,
+                fileId,
+                ocrSummary: docData.ocrSummary || undefined,
+                documentDate: docData.documentDate ? new Date(docData.documentDate).toISOString() : undefined,
+              };
               const { error: documentError } = await post("property-management/documents", documentPayload);
               if (documentError) throw new Error(documentError.message);
             } catch {

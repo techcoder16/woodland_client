@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import StoredImage from "@/components/StoredImage";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -105,13 +106,15 @@ const ContractorList = () => {
                       >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            {contractor.logo ? (
-                              <img src={contractor.logo} alt="" className="h-8 w-8 rounded-full object-cover" />
-                            ) : (
-                              <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground">
-                                {contractor.name?.[0]}
-                              </div>
-                            )}
+                            <StoredImage
+                              fileId={contractor.logoFileId}
+                              className="h-8 w-8 rounded-full object-cover"
+                              fallback={
+                                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground">
+                                  {contractor.name?.[0]}
+                                </div>
+                              }
+                            />
                             <div className="font-medium">{contractor.name}</div>
                           </div>
                         </td>

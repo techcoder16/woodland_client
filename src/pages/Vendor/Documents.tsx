@@ -5,9 +5,11 @@ interface DocumentsProps {
   watch: any;
   setValue: any;
   errors: any;
+  /** Set when editing; new uploads are linked to this landlord on save. */
+  vendorId?: string;
 }
 
-const Documents = ({ register, watch, setValue, errors }: DocumentsProps) => {
+const Documents = ({ register, watch, setValue, errors, vendorId }: DocumentsProps) => {
   return (
     <div className="w-full">
       <div className="p-4 w-full">
@@ -15,33 +17,36 @@ const Documents = ({ register, watch, setValue, errors }: DocumentsProps) => {
         <div className="flex flex-col gap-6 px-3">
           <FileUploadField
             label="Photo ID"
-            name="photoId"
+            name="photoIdFileId"
             accept="image/*,.pdf"
             multiple={false}
+            upload={{ category: "vendor-document", entityType: "vendor", entityId: vendorId }}
             register={register}
             setValue={setValue}
             watch={watch}
-            error={errors?.photoId?.message?.toString()}
+            error={errors?.photoIdFileId?.message?.toString()}
           />
           <FileUploadField
             label="Proof of Relationship"
-            name="proofOfRelationship"
+            name="proofOfRelationshipFileId"
             accept="image/*,.pdf"
             multiple={false}
+            upload={{ category: "vendor-document", entityType: "vendor", entityId: vendorId }}
             register={register}
             setValue={setValue}
             watch={watch}
-            error={errors?.proofOfRelationship?.message?.toString()}
+            error={errors?.proofOfRelationshipFileId?.message?.toString()}
           />
           <FileUploadField
             label="Proof of Ownership"
-            name="proofOfOwnership"
+            name="proofOfOwnershipFileId"
             accept="image/*,.pdf"
             multiple={false}
+            upload={{ category: "vendor-document", entityType: "vendor", entityId: vendorId }}
             register={register}
             setValue={setValue}
             watch={watch}
-            error={errors?.proofOfOwnership?.message?.toString()}
+            error={errors?.proofOfOwnershipFileId?.message?.toString()}
           />
         </div>
       </div>

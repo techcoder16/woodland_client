@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import StoredImage from "@/components/StoredImage";
 import { useNavigate } from "react-router-dom";
 import { Building2, CalendarDays, Home, User, Users, Wrench } from "lucide-react";
 import PartyDashboardLayout from "@/components/layout/PartyDashboardLayout";
@@ -89,11 +90,13 @@ export default function OccupierDashboard() {
             <section className="surface overflow-hidden">
               <div className="grid md:grid-cols-[260px_1fr]">
                 <div className="flex h-48 items-center justify-center bg-muted md:h-full">
-                  {o.property?.photographs && !o.property.photographs.startsWith("data:application/pdf") ? (
-                    <img src={o.property.photographs} alt="Your property" className="h-full w-full object-cover" />
-                  ) : (
-                    <Home className="h-12 w-12 text-muted-foreground" />
-                  )}
+                  <StoredImage
+                    fileId={o.property?.photographFileId}
+                    party="tenant"
+                    alt="Your property"
+                    className="h-full w-full object-cover"
+                    fallback={<Home className="h-12 w-12 text-muted-foreground" />}
+                  />
                 </div>
                 <div className="space-y-3 p-5">
                   <div className="flex flex-wrap items-center gap-2">

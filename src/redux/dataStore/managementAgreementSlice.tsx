@@ -19,7 +19,7 @@ export interface ManagementAgreement {
   ManagementFees: number;
   TermsAndCondition: string;
   checkPayableTo:string;
-  signedDocument?: string;
+  signedDocumentFileId?: string; // StoredFile id
 }
 
 export type ManagementAgreementUpsertInput = Omit<ManagementAgreement, "id">;

@@ -15,9 +15,12 @@ export type FileCategory =
   | "occupancy-document"
   | "job-media"
   | "job-invoice"
+  | "vendor-document"
+  | "contractor-logo"
+  | "agreement"
   | "ocr";
 
-export type FileEntityType = "property" | "transaction" | "occupancy" | "jobType" | "ocr";
+export type FileEntityType = "property" | "transaction" | "occupancy" | "jobType" | "vendor" | "contractor" | "ocr";
 
 export interface StoredFileRef {
   id: string;
@@ -119,6 +122,20 @@ export async function uploadFile(file: File, opts: UploadOptions): Promise<Store
     callApi(`files/uploads/${start.fileId}/abort`, {}, opts.party).catch(() => undefined);
     throw err;
   }
+}
+
+// A picked File is uploaded at most once per page: OCR and the later save
+// share the same StoredFile instead of sending the bytes twice.
+const uploadedOnce = new WeakMap<File, Promise<StoredFileRef>>();
+
+export function uploadFileOnce(file: File, opts: UploadOptions): Promise<StoredFileRef> {
+  let pending = uploadedOnce.get(file);
+  if (!pending) {
+    pending = uploadFile(file, opts);
+    pending.catch(() => uploadedOnce.delete(file));
+    uploadedOnce.set(file, pending);
+  }
+  return pending;
 }
 
 export async function uploadFiles(files: File[], opts: UploadOptions): Promise<StoredFileRef[]> {

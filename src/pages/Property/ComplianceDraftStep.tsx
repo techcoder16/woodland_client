@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { post } from "@/helper/api";
+import { uploadFileOnce } from "@/helper/fileUpload";
 
 const DOC_TYPES = [
   { value: "GAS_SAFETY", label: "Gas Safety Certificate" },
@@ -82,9 +83,8 @@ export default function ComplianceDraftStep({ drafts, onDraftsChange }: Complian
     if (!file) return;
     setExtracting(true);
     try {
-      const payload = new FormData();
-      payload.append("file", file);
-      const { data, error } = await post<any>("property-management/compliance/extract-dates", payload);
+      const { id: fileId } = await uploadFileOnce(file, { category: "compliance", entityType: "property" });
+      const { data, error } = await post<any>("property-management/compliance/extract-dates", { fileId });
       if (error) throw new Error(error.message);
       const found = data?.data;
       if (!found) {

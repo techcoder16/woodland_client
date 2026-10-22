@@ -18,7 +18,7 @@ export interface PropertyOption {
   propertyTypeCategory?: string;
   bedrooms?: number;
   rentPerMonth?: string | null;
-  photographs?: string | null;
+  photographFileId?: string | null;
   vendor?: { firstName?: string; lastName?: string } | null;
   currentStatus?: "Vacant" | "Reserved" | "Occupied" | "Ending";
 }
@@ -88,7 +88,7 @@ export interface Occupancy {
   customerAddressLine2?: string;
   customerTown?: string;
   customerPostCode?: string;
-  customerDocuments?: { fileUrl: string; fileName?: string }[];
+  customerDocumentFileIds?: string[]; // StoredFile ids
   occupier: Occupier;
   additionalOccupiers?: AdditionalOccupier[];
   moveInDate: string;
@@ -231,12 +231,3 @@ export const estimatedIncome = (rate: number, freq: RateFrequency, from?: string
   return ((rate * 12) / 365) * nights;
 };
 
-// Server paths for uploads live outside /api; derive the origin from the API base.
-export const fileUrl = (path: string) => {
-  const api = (import.meta.env.VITE_API_URL as string) || "";
-  try {
-    return new URL(path, new URL(api).origin).toString();
-  } catch {
-    return path;
-  }
-};

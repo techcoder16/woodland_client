@@ -1,4 +1,5 @@
 // src/components/ManageProperty.tsx
+import { uploadFile } from '@/helper/fileUpload';
 import React, { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useDispatch } from "react-redux";
@@ -131,9 +132,7 @@ const MainTransaction = () => {
       // Check if it's a PDF file for transaction extraction
       if (currentState.file.type === 'application/pdf') {
         // Use PDF extraction API
-        const formData = new FormData();
-        formData.append('file', currentState.file);
-        formData.append('propertyId', selectedPropertyId);
+        const { id: fileId } = await uploadFile(currentState.file, { category: 'ocr', entityType: 'ocr' });
 
         // Get access token
         const token = await getAccessToken();
@@ -149,7 +148,7 @@ const MainTransaction = () => {
           }
         });
 
-        const response = await axiosInstance.post('transaction/extract', formData);
+        const response = await axiosInstance.post('transaction/extract', { fileId, propertyId: selectedPropertyId });
         
         console.log('OCR API Response:', response.data);
         

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { uploadFileOnce } from "@/helper/fileUpload";
 import { ArrowLeft, ArrowRight, Check, Download, FileText, Loader2, Plus, Trash2, Upload, Wand2, Wrench, X } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -228,9 +229,8 @@ export default function NewLandlordPayment() {
     if (!adjFile) return;
     setExtracting(true);
     try {
-      const formData = new FormData();
-      formData.append("file", adjFile);
-      const { data, error } = await post<any>("transaction/extract-adjustments", formData);
+      const { id: fileId } = await uploadFileOnce(adjFile, { category: "transaction-document", entityType: "transaction" });
+      const { data, error } = await post<any>("transaction/extract-adjustments", { fileId });
       if (error) throw new Error(error.message);
       const first = data?.adjustments?.[0];
       if (first) {
@@ -330,10 +330,13 @@ export default function NewLandlordPayment() {
       if (documents.length && transaction?.id) {
         const results = await Promise.all(
           documents.map(async ({ file }) => {
-            const docForm = new FormData();
-            docForm.append("file", file);
-            const { error: uploadError } = await post(`transaction/${transaction.id}/documents`, docForm);
-            return uploadError ? `${file.name}: ${uploadError.message}` : null;
+            try {
+              const { id: fileId } = await uploadFileOnce(file, { category: "transaction-document", entityType: "transaction", entityId: transaction.id });
+              const { error: uploadError } = await post(`transaction/${transaction.id}/documents`, { fileId });
+              return uploadError ? `${file.name}: ${uploadError.message}` : null;
+            } catch (err: any) {
+              return `${file.name}: ${err?.message || "upload failed"}`;
+            }
           }),
         );
         const failed = results.filter(Boolean);

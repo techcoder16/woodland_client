@@ -8,8 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { get, post, patch, del } from "@/helper/api";
+import { openStoredFile, uploadFileOnce } from "@/helper/fileUpload";
 
-const API_URL = import.meta.env.VITE_API_URL;
 
 const DOC_TYPES = [
   { value: "GAS_SAFETY", label: "Gas Safety Certificate" },
@@ -48,7 +48,7 @@ type ComplianceDoc = {
   label?: string;
   startDate?: string;
   expiryDate?: string;
-  fileUrl?: string;
+  fileId?: string;
   fileName?: string;
   notes?: string;
 };
@@ -57,7 +57,7 @@ type PropertyDoc = {
   id: string;
   title: string;
   documentDate?: string;
-  fileUrl?: string;
+  fileId?: string;
   fileName?: string;
   extractedByOcr?: boolean;
   ocrSummary?: string;
@@ -72,40 +72,16 @@ function expiryStatus(expiryDate?: string) {
   return { label: `Valid until ${new Date(expiryDate).toLocaleDateString("en-GB")}`, tone: "outline" as const };
 }
 
-function fileHref(fileUrl: string) {
-  return `${API_URL.replace(/\/api\/?$/, "")}${fileUrl}`;
-}
-
-// Saves an uploaded file under its original name. A plain <a download> is
-// ignored for files on another origin (the API server), which is why
-// "View" only ever opened the file — so fetch it and save the blob.
-async function downloadFile(fileUrl: string, fileName?: string) {
-  try {
-    const response = await fetch(fileHref(fileUrl));
-    if (!response.ok) {
-      toast.error(response.status === 404 ? "This file is missing on the server — please upload it again." : `Download failed (HTTP ${response.status}).`);
-      return;
-    }
-    const url = URL.createObjectURL(await response.blob());
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = fileName || fileUrl.split("/").pop() || "document";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  } catch {
-    toast.error("Couldn't download the file. Check the server is running and try again.");
-  }
-}
-
-function FileLinks({ fileUrl, fileName, showName }: { fileUrl: string; fileName?: string; showName?: boolean }) {
+// Files live in private S3; View/Download fetch a short-lived signed link.
+function FileLinks({ fileId, fileName, showName }: { fileId: string; fileName?: string; showName?: boolean }) {
+  const open = (download: boolean) =>
+    openStoredFile(fileId, { download }).catch(() => toast.error("This file is no longer available — please upload it again."));
   return (
     <span className="inline-flex items-center gap-3 text-xs">
-      <a href={fileHref(fileUrl)} target="_blank" rel="noreferrer" className="text-primary underline">
+      <button type="button" className="text-primary underline" onClick={() => void open(false)}>
         View{showName ? ` ${fileName || "file"}` : ""}
-      </a>
-      <button type="button" className="inline-flex items-center gap-1 text-primary underline" onClick={() => void downloadFile(fileUrl, fileName)}>
+      </button>
+      <button type="button" className="inline-flex items-center gap-1 text-primary underline" onClick={() => void open(true)}>
         <Download className="h-3 w-3" />Download
       </button>
     </span>
@@ -136,9 +112,8 @@ type ExtractedCertificate = {
  * both report validity the same way.
  */
 async function runCertificateOcr(file: File): Promise<ExtractedCertificate | null> {
-  const payload = new FormData();
-  payload.append("file", file);
-  const { data, error } = await post<any>("property-management/compliance/extract-dates", payload);
+  const { id: fileId } = await uploadFileOnce(file, { category: "compliance", entityType: "property" });
+  const { data, error } = await post<any>("property-management/compliance/extract-dates", { fileId });
   if (error) throw new Error(error.message);
   return (data?.data as ExtractedCertificate) ?? null;
 }
@@ -196,11 +171,10 @@ function MandatoryCertRow({ config, doc, propertyId, onSaved }: {
     if (!doc && !fields.file && !fields.startDate && !fields.expiryDate) return;
     setBusy(true);
     try {
-      const payload = new FormData();
-      // Always sent: on update the server refuses a certificate that isn't
-      // this property's own.
-      payload.append("propertyId", propertyId);
-      if (!doc) payload.append("docType", config.value);
+      // propertyId is always sent: on update the server refuses a
+      // certificate that isn't this property's own.
+      const payload: Record<string, string> = { propertyId };
+      if (!doc) payload.docType = config.value;
       // Only send dates that actually parse — the server validates these with
       // @IsDateString(), so a blank or half-typed date value would 422 the
       // whole upload and lose the file with it.
@@ -211,9 +185,9 @@ function MandatoryCertRow({ config, doc, propertyId, onSaved }: {
       };
       const startIso = isoDate(fields.startDate);
       const expiryIso = isoDate(fields.expiryDate);
-      if (startIso) payload.append("startDate", startIso);
-      if (expiryIso) payload.append("expiryDate", expiryIso);
-      if (fields.file) payload.append("file", fields.file);
+      if (startIso) payload.startDate = startIso;
+      if (expiryIso) payload.expiryDate = expiryIso;
+      if (fields.file) payload.fileId = (await uploadFileOnce(fields.file, { category: "compliance", entityType: "property", propertyId })).id;
 
       const { error } = doc
         ? await patch(`property-management/compliance/${doc.id}`, payload)
@@ -279,7 +253,7 @@ function MandatoryCertRow({ config, doc, propertyId, onSaved }: {
         }} />
         <Button type="button" size="sm" variant="outline" disabled={busy || reading} onClick={() => fileInputRef.current?.click()}>
           <Upload className="mr-1.5 h-3.5 w-3.5" />
-          {doc?.fileUrl || pendingFile ? "Replace File" : "Upload Certificate"}
+          {doc?.fileId || pendingFile ? "Replace File" : "Upload Certificate"}
         </Button>
         {pendingFile && (
           <Button type="button" size="sm" variant="outline" disabled={busy || reading} onClick={() => void readDatesWithOcr()} title="Read the issue and expiry dates from this file">
@@ -289,7 +263,7 @@ function MandatoryCertRow({ config, doc, propertyId, onSaved }: {
         )}
         {pendingFile
           ? <span className="max-w-[10rem] truncate text-xs text-amber-700" title={pendingFile.name}>{pendingFile.name}</span>
-          : doc?.fileUrl && <FileLinks fileUrl={doc.fileUrl} fileName={doc.fileName} />}
+          : doc?.fileId && <FileLinks fileId={doc.fileId} fileName={doc.fileName} />}
       </div>
       <div className="space-y-1">
         <Label className="text-xs text-muted-foreground">Issue Date</Label>
@@ -379,10 +353,8 @@ export function CertificatesSection({ propertyId }: { propertyId: string }) {
   const save = async () => {
     setSaving(true);
     try {
-      const payload = new FormData();
-      payload.append("propertyId", propertyId);
-      payload.append("docType", form.docType);
-      if (form.label) payload.append("label", form.label);
+      const payload: Record<string, string> = { propertyId, docType: form.docType };
+      if (form.label) payload.label = form.label;
       // A half-typed or invalid date must not 422 the save (see MandatoryCertRow).
       const isoDate = (value?: string) => {
         if (!value) return null;
@@ -391,10 +363,10 @@ export function CertificatesSection({ propertyId }: { propertyId: string }) {
       };
       const startIso = isoDate(form.startDate);
       const expiryIso = isoDate(form.expiryDate);
-      if (startIso) payload.append("startDate", startIso);
-      if (expiryIso) payload.append("expiryDate", expiryIso);
-      if (form.notes) payload.append("notes", form.notes);
-      if (file) payload.append("file", file);
+      if (startIso) payload.startDate = startIso;
+      if (expiryIso) payload.expiryDate = expiryIso;
+      if (form.notes) payload.notes = form.notes;
+      if (file) payload.fileId = (await uploadFileOnce(file, { category: "compliance", entityType: "property", propertyId })).id;
 
       const { error } = await post("property-management/compliance", payload);
       if (error) throw new Error(error.message);
@@ -509,7 +481,7 @@ export function CertificatesSection({ propertyId }: { propertyId: string }) {
               </div>
               {doc.startDate && <p className="text-xs text-muted-foreground">Start: {new Date(doc.startDate).toLocaleDateString("en-GB")}</p>}
               {doc.notes && <p className="text-xs text-muted-foreground">{doc.notes}</p>}
-              {doc.fileUrl && <FileLinks fileUrl={doc.fileUrl} fileName={doc.fileName} showName />}
+              {doc.fileId && <FileLinks fileId={doc.fileId} fileName={doc.fileName} showName />}
             </div>
           );
         })}
@@ -602,9 +574,8 @@ export function GeneralDocumentsSection({ propertyId }: { propertyId: string }) 
     if (!file) return;
     setExtracting(true);
     try {
-      const payload = new FormData();
-      payload.append("file", file);
-      const { data, error } = await post<any>("property-management/documents/extract-summary", payload);
+      const { id: fileId } = await uploadFileOnce(file, { category: "property-document", entityType: "property", propertyId });
+      const { data, error } = await post<any>("property-management/documents/extract-summary", { fileId });
       if (error) throw new Error(error.message);
       setOcrSummary(data?.data?.summary || null);
       if (!form.title) setForm((f) => ({ ...f, title: file.name.replace(/\.[^.]+$/, "") }));
@@ -623,12 +594,14 @@ export function GeneralDocumentsSection({ propertyId }: { propertyId: string }) 
     }
     setSaving(true);
     try {
-      const payload = new FormData();
-      payload.append("propertyId", propertyId);
-      payload.append("title", form.title);
-      if (form.documentDate) payload.append("documentDate", new Date(form.documentDate).toISOString());
-      if (file) payload.append("file", file);
-      if (ocrSummary) payload.append("ocrSummary", ocrSummary);
+      if (!file) throw new Error("Choose a file to upload.");
+      const payload: Record<string, string> = {
+        propertyId,
+        title: form.title,
+        fileId: (await uploadFileOnce(file, { category: "property-document", entityType: "property", propertyId })).id,
+      };
+      if (form.documentDate) payload.documentDate = new Date(form.documentDate).toISOString();
+      if (ocrSummary) payload.ocrSummary = ocrSummary;
 
       const { error } = await post("property-management/documents", payload);
       if (error) throw new Error(error.message);
@@ -685,7 +658,7 @@ export function GeneralDocumentsSection({ propertyId }: { propertyId: string }) 
             </div>
             {doc.extractedByOcr && <Badge variant="outline" className="text-[10px]">OCR summary available</Badge>}
             {doc.ocrSummary && <p className="text-xs text-muted-foreground line-clamp-3">{doc.ocrSummary}</p>}
-            {doc.fileUrl && <FileLinks fileUrl={doc.fileUrl} fileName={doc.fileName} showName />}
+            {doc.fileId && <FileLinks fileId={doc.fileId} fileName={doc.fileName} showName />}
           </div>
         ))}
       </div>

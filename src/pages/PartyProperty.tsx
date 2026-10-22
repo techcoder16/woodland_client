@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import StoredImage from "@/components/StoredImage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,7 +35,7 @@ interface Property {
   rentalTerms?: string;
   termMonths?: string;
   rooms?: unknown;
-  photographs?: string | null;
+  photographFileId?: string | null;
   tenantNames?: string[];
 }
 
@@ -112,17 +113,7 @@ const PropertyDetail = ({ kind, property }: { kind: PartyKind; property: Propert
         {property.propertyStatus && <Badge variant="outline">{property.propertyStatus}</Badge>}
       </CardHeader>
       <CardContent className="space-y-6">
-        {property.photographs && (
-          property.photographs.startsWith("data:application/pdf") ? (
-            <embed src={property.photographs} type="application/pdf" className="w-full h-64 rounded-md border" />
-          ) : (
-            <img
-              src={property.photographs}
-              alt="Property"
-              className="w-full max-h-64 object-cover rounded-md border"
-            />
-          )
-        )}
+        <StoredImage fileId={property.photographFileId} party={kind} alt="Property" className="w-full max-h-64 object-cover rounded-md border" />
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
           {property.propertyTypeCategory && (
