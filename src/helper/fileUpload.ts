@@ -3,6 +3,7 @@
 // PUT, large ones a parallel multipart upload with per-part retries.
 import { post } from "./api";
 import { partyPost, PartyKind } from "./partyAuth";
+import { getAccessToken } from "./tokenManager";
 
 export type FileCategory =
   | "photograph"
@@ -164,17 +165,51 @@ export interface SignedFile {
   expiresAt: string;
 }
 
-// Short-lived (5 min) download links. Missing ids = not found / not allowed.
+// Staff files are served on this site's own domain (/files/...) by CloudFront,
+// gated by signed cookies. The cookies come from /api/files/session on this
+// same origin (the site distribution routes it to the backend), last an hour,
+// and are renewed a few minutes before they run out.
+let filesSession: Promise<number> | null = null;
+
+const isSiteFile = (url: string) => url.startsWith(`${window.location.origin}/files/`);
+
+async function ensureFilesSession() {
+  const valid = filesSession && (await filesSession.catch(() => 0)) > Date.now() + 5 * 60 * 1000;
+  if (valid) return;
+  filesSession = (async () => {
+    const token = await getAccessToken();
+    const res = await fetch("/api/files/session", { headers: { Authorization: `Bearer ${token}` }, credentials: "same-origin" });
+    if (!res.ok) throw new Error(`Could not open files (HTTP ${res.status})`);
+    const body = await res.json();
+    return body?.expiresAt ? Date.parse(body.expiresAt) : 0;
+  })();
+  await filesSession;
+}
+
+// Links for StoredFile ids: /files/... on this site for staff, short-lived
+// (5 min) presigned S3 links for portal users. Missing ids = not found / not allowed.
 export async function fetchFileUrls(ids: string[], opts: { download?: boolean; party?: PartyKind } = {}) {
   const unique = [...new Set(ids.filter(Boolean))];
   if (!unique.length) return {} as Record<string, SignedFile>;
-  return callApi<Record<string, SignedFile>>("files/urls", { ids: unique, download: !!opts.download }, opts.party);
+  const urls = await callApi<Record<string, SignedFile>>("files/urls", { ids: unique, download: !!opts.download }, opts.party);
+  if (Object.values(urls).some((f) => isSiteFile(f.url))) await ensureFilesSession();
+  return urls;
 }
 
-// Opens or saves a file under its original name using a fresh signed link.
+// Opens a file in a new tab, or saves it under its original name.
 export async function openStoredFile(id: string, opts: { download?: boolean; party?: PartyKind } = {}) {
   const urls = await fetchFileUrls([id], opts);
   const f = urls[id];
   if (!f) throw new Error("File not available");
+  if (opts.download && isSiteFile(f.url)) {
+    // Same origin, so the download attribute is honoured.
+    const link = document.createElement("a");
+    link.href = f.url;
+    link.download = f.name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    return;
+  }
   window.open(f.url, "_blank", "noopener");
 }
