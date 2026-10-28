@@ -32,6 +32,8 @@ async function call(token, method, path, body) {
 }
 const ok = (r, what) => { assert.ok(r.status < 300, `${what}: ${r.status} ${JSON.stringify(r.data).slice(0, 300)}`); return r.data; };
 const refused = (r, what) => assert.ok(r.status === 401 || r.status === 403, `${what} should be forbidden, got ${r.status}`);
+// Someone else's record: forbidden or not found, never returned.
+const hidden = (r, what) => assert.ok([401, 403, 404].includes(r.status), `${what} should be hidden, got ${r.status}`);
 const password = () => `E2e-${randomBytes(9).toString("base64url")}9!`;
 
 // Reuses a saved login, or creates the person and saves the login to .env.test.
@@ -66,10 +68,10 @@ async function partyLogin(kind, key, role, id, email) {
   return r.accessToken ?? r.access_token;
 }
 
-async function uploadPhoto(token, propertyId) {
+async function uploadPhoto(token, propertyId, category = "job-media", entityType = "jobType") {
   const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=", "base64");
   const start = ok(await call(token, "POST", "files/uploads", {
-    fileName: "leak.png", contentType: "image/png", size: png.length, category: "job-media", entityType: "jobType", propertyId,
+    fileName: "leak.png", contentType: "image/png", size: png.length, category, entityType, propertyId,
   }), "start upload");
   const put = await fetch(start.url, { method: "PUT", headers: { "Content-Type": "image/png" }, body: png });
   assert.ok(put.ok, `S3 upload: ${put.status}`);
@@ -156,7 +158,7 @@ test("maintainer: contractor created and can log in", async () => {
 test("maintenance: reported by client, approved by maintenance admin, done by contractor", async () => {
   const job = ok(await call(tok.client, "POST", "property-management/job-type", {
     propertyId: s.property1, jobType: "Plumbing", location: "Kitchen", description: `TEST-E2E leaking sink ${tag}`,
-    dueDate: inDays(14), mediaFileIds: [await uploadPhoto(tok.client, s.property1)],
+    dueDate: inDays(14), mediaFileIds: [(s.photo = await uploadPhoto(tok.client, s.property1))],
   }), "client reports job").jobType;
   s.job = job.id;
   const path = `property-management/job-type/${job.id}`;
@@ -190,4 +192,105 @@ test("landlord protection: cannot be deleted or unlinked while it has properties
   assert.ok((await call(tok.super, "DELETE", `vendor/delete/${s.landlord1}`)).status >= 400, "landlord with properties not deletable");
   assert.ok((await call(tok.super, "PATCH", `properties/${s.property1}`, { vendor: "" })).status >= 400, "landlord not removable");
   refused(await call(tok.client, "DELETE", `properties/${s.property3}`), "client deleting a property");
+});
+
+test("second household: tenant in House 1, second contractor, landlord 2 portal", async () => {
+  const email = `e2e-tenant2-${tag.toLowerCase()}@example.com`;
+  const o = ok(await call(tok.super, "POST", "occupancy", {
+    propertyId: s.property3, type: "PRIVATE", privateCustomerKind: "INDIVIDUAL", customerFirstName: "TEST-E2E", customerSurname: `Tenant2 ${tag}`,
+    customerEmail: email, occupier: { FirstName: "TEST-E2E", SureName: `Tenant2 ${tag}`, Email: email },
+    moveInDate: today, rateAmount: 250, rateFrequency: "WEEKLY",
+  }), "create second occupancy");
+  s.occupancy2 = o.id;
+  s.tenant2 = o.occupierId;
+  ok(await call(tok.super, "PATCH", `occupancy/${o.id}/status`, { status: "ACTIVE" }), "move second tenant in");
+  tok.tenant2 = await partyLogin("tenant", "TENANT2", "Tenant 2 (portal)", s.tenant2, email);
+  tok.landlord2 = await partyLogin("vendor", "LANDLORD2", "Landlord 2 (portal)", s.landlord2, s.landlord2Email);
+  const c = ok(await call(tok.super, "POST", "contractor/create", { name: `TEST-E2E Electrics ${tag}`, specialty: "Electrical", email: `e2e-contractor2-${tag.toLowerCase()}@example.com` }), "create second contractor").contractor;
+  s.contractor2 = c.id;
+  tok.contractor2 = await partyLogin("contractor", "CONTRACTOR2", "Contractor 2 (portal)", c.id, c.email);
+});
+
+test("portal isolation: each party sees only its own property, job and files", async () => {
+  const job = `property-management/job-type/${s.job}`;
+  const see = async (token, who) => { const r = ok(await call(token, "GET", job), `${who} views the Flat 1 job`); return r.jobType ?? r; };
+
+  const t = await see(tok.tenant, "tenant 1");
+  assert.ok(!("totalCost" in t) && !("marginPercent" in t), "tenant does not see Woodland cost or margin");
+  const l = await see(tok.landlord, "landlord 1");
+  assert.ok(!("totalCost" in l) && !("marginPercent" in l), "landlord does not see Woodland cost or margin");
+  assert.equal(l.totalCharged, 180, "landlord sees what they are charged (150 + 20%)");
+  const c = await see(tok.contractor, "assigned contractor");
+  assert.ok(!("totalCharged" in c) && !("marginPercent" in c), "contractor does not see landlord charge or margin");
+
+  hidden(await call(tok.tenant2, "GET", job), "tenant 2 viewing the Flat 1 job");
+  hidden(await call(tok.landlord2, "GET", job), "landlord 2 viewing the Flat 1 job");
+  hidden(await call(tok.contractor2, "GET", job), "unassigned contractor viewing the job");
+  const list = JSON.stringify((await call(tok.contractor2, "GET", "property-management/job-type")).data);
+  assert.ok(!list.includes(s.job), "unassigned contractor job list leaves it out");
+
+  for (const [token, who] of [[tok.landlord2, "landlord 2"], [tok.tenant2, "tenant 2"]]) {
+    const mine = JSON.stringify(ok(await call(token, "GET", "property-management/my-property"), `${who} properties`));
+    assert.ok(mine.includes(s.property3) && !mine.includes(s.property1), `${who} sees House 1 only`);
+  }
+
+  const urls = (token) => call(token, "POST", "files/urls", { ids: [s.photo] });
+  const staff = ok(await urls(tok.super), "staff file link")[s.photo];
+  assert.ok(staff, "staff gets a link to the job photo");
+  if (!staff.url.includes("/files/")) assert.equal((await fetch(staff.url)).status, 200, "the photo link opens");
+  assert.ok(ok(await urls(tok.tenant), "tenant 1 file link")[s.photo], "tenant 1 can open their job photo");
+  assert.ok(!(await urls(tok.tenant2)).data?.[s.photo], "tenant 2 cannot open the Flat 1 photo");
+  assert.ok(!(await urls(tok.contractor2)).data?.[s.photo], "unassigned contractor cannot open the photo");
+});
+
+test("tenant reports from the portal, only for their own home", async () => {
+  const body = (propertyId) => ({ propertyId, jobType: "Plumbing", location: "Bathroom", description: `TEST-E2E dripping tap ${tag}`, dueDate: inDays(10) });
+  const own = ok(await call(tok.tenant, "POST", "property-management/job-type", { ...body(s.property1), mediaFileIds: [await uploadPhoto(tok.tenant, s.property1)] }), "tenant reports for Flat 1");
+  s.tenantJob = (own.jobType ?? own).id;
+  hidden(await call(tok.tenant, "POST", "property-management/job-type", { ...body(s.property3), mediaFileIds: [s.photo] }), "tenant reporting for another house");
+  refused(await call(tok.contractor, "POST", "property-management/job-type", { ...body(s.property1), mediaFileIds: [s.photo] }), "contractor raising a job");
+  refused(await call(tok.tenant, "POST", `property-management/job-type/${s.tenantJob}`, { status: "COMPLETED" }), "tenant closing their own job");
+});
+
+test("roles: other departments and ADMIN_USER", async () => {
+  tok.lettings = await staffLogin("LETTINGS", "Lettings dept admin", {
+    email: "e2e-lettings@woodlandltd.com", first_name: "E2E", last_name: "Lettings", role: "DEPARTMENT_ADMIN", department: "LETTINGS",
+  });
+  tok.adminUser = await staffLogin("ADMINUSER", "Admin user", {
+    email: "e2e-adminuser@woodlandltd.com", first_name: "E2E", last_name: "AdminUser", role: "ADMIN_USER", department: "OTHER",
+  });
+  const job = `property-management/job-type/${s.tenantJob}`;
+  refused(await call(tok.lettings, "POST", job, { contractorId: s.contractor }), "lettings admin assigning a contractor");
+  refused(await call(tok.lettings, "POST", job, { status: "ASSIGNED" }), "lettings admin approving a maintenance job");
+  ok(await call(tok.maint, "POST", job, { contractorId: s.contractor2, status: "ASSIGNED", totalCost: 60, marginAmount: 15 }), "maintenance admin assigns contractor 2");
+
+  const t = ok(await call(tok.finance, "POST", "transaction", { propertyId: s.property3, description: `TEST-E2E weekly rent ${tag}`, fromTenantDate: today, fromTenantRentReceived: 250 }), "finance raises House 1 rent").transaction;
+  s.transaction2 = t.id;
+  ok(await call(tok.finance, "POST", `transaction/${t.id}/request-approval`), "request approval");
+  refused(await call(tok.maint, "POST", `transaction/${t.id}/approve`), "maintenance admin approving money");
+  refused(await call(tok.client, "POST", `transaction/${t.id}/approve`), "client approving money");
+  ok(await call(tok.adminUser, "POST", `transaction/${t.id}/approve`), "ADMIN_USER approves");
+
+  refused(await call(tok.finance, "DELETE", `properties/${s.property3}`), "finance deleting a property");
+  refused(await call(tok.maint, "DELETE", `vendor/delete/${s.landlord2}`), "maintenance admin deleting a landlord");
+  refused(await call(tok.client, "POST", "user", { email: "e2e-nope@example.com", password: password(), first_name: "No", last_name: "Pe" }), "client creating a staff user");
+  refused(await call(tok.tenant, "POST", "transaction", { propertyId: s.property1 }), "tenant creating a transaction");
+  refused(await call(tok.landlord, "POST", "transaction", { propertyId: s.property1 }), "landlord creating a transaction");
+});
+
+test("compliance: gas certificate on Flat 1, staff only", async () => {
+  const fileId = await uploadPhoto(tok.super, s.property1, "compliance", "property");
+  const doc = ok(await call(tok.super, "POST", "property-management/compliance", {
+    propertyId: s.property1, docType: "GAS_SAFETY", label: `TEST-E2E gas ${tag}`, startDate: today, expiryDate: inDays(365), fileId,
+  }), "add gas certificate");
+  s.compliance = (doc.document ?? doc).id;
+  assert.ok(JSON.stringify(ok(await call(tok.super, "GET", `property-management/compliance/${s.property1}`), "list certificates")).includes(`TEST-E2E gas ${tag}`));
+  refused(await call(tok.tenant, "POST", "property-management/compliance", { propertyId: s.property1, docType: "EPC" }), "tenant adding a certificate");
+});
+
+test("occupancy ends: House 1 tenant gives notice and moves out", async () => {
+  ok(await call(tok.super, "PATCH", `occupancy/${s.occupancy2}/status`, { status: "ENDING", expectedMoveOutDate: inDays(7) }), "notice given");
+  ok(await call(tok.super, "PATCH", `occupancy/${s.occupancy2}/status`, { status: "ENDED", actualMoveOutDate: inDays(7) }), "moved out");
+  const r = ok(await call(tok.super, "GET", `occupancy/${s.occupancy2}`), "read occupancy");
+  assert.equal(r.status, "ENDED");
 });
