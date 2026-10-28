@@ -33,3 +33,4 @@ tests
 playwright.config.ts
 # TypeScript build cache
 *.tsbuildinfo
+.env.test.*

@@ -8,7 +8,7 @@ import { randomBytes } from "node:crypto";
 import { appendFileSync } from "node:fs";
 
 const API = process.env.E2E_API_URL;
-const ENV_FILE = new URL("../.env.test", import.meta.url);
+const ENV_FILE = new URL(`../${process.env.E2E_ENV_FILE ?? ".env.test"}`, import.meta.url);
 const today = new Date().toISOString().slice(0, 10);
 const inDays = (n) => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10);
 const s = {}; // ids shared between steps
@@ -95,7 +95,9 @@ after(() => {
 });
 
 test("staff users: client, finance and maintenance admin can log in", async () => {
-  tok.client = await staffLogin("CLIENT", "Client (basic user)", null);
+  tok.client = await staffLogin("CLIENT", "Client (basic user)", {
+    email: "e2e-client@woodlandltd.com", first_name: "E2E", last_name: "Client", role: "BASIC_USER", department: "PROPERTIES",
+  });
   tok.finance = await staffLogin("FINANCE", "Finance user", {
     email: "e2e-finance@woodlandltd.com", first_name: "E2E", last_name: "Finance", role: "FINANCE_USER", department: "OTHER",
   });
@@ -293,4 +295,21 @@ test("occupancy ends: House 1 tenant gives notice and moves out", async () => {
   ok(await call(tok.super, "PATCH", `occupancy/${s.occupancy2}/status`, { status: "ENDED", actualMoveOutDate: inDays(7) }), "moved out");
   const r = ok(await call(tok.super, "GET", `occupancy/${s.occupancy2}`), "read occupancy");
   assert.equal(r.status, "ENDED");
+});
+
+// Paying locks a transaction for good, so this only runs where E2E_ALLOW_PAID=1 (dev).
+test("payment: only approved transactions are paid, and paid ones are locked", { skip: process.env.E2E_ALLOW_PAID !== "1" && "set E2E_ALLOW_PAID=1 (dev only)" }, async () => {
+  const t = ok(await call(tok.finance, "POST", "transaction", {
+    propertyId: s.property1, description: `TEST-E2E landlord payout ${tag}`, fromTenantDate: today, fromTenantRentReceived: 1200,
+    toLandlordDate: today, toLandlordRentReceived: 1200, toLandlordLessManagementFees: 120, toLandlordNetPaid: 1080,
+  }), "finance raises payout").transaction;
+  s.paidTransaction = t.id;
+  ok(await call(tok.finance, "POST", `transaction/${t.id}/request-approval`), "request approval");
+  assert.ok((await call(tok.finance, "POST", `transaction/${t.id}/mark-paid`)).status >= 400, "cannot pay before approval");
+  ok(await call(tok.super, "POST", `transaction/${t.id}/approve`), "admin approves");
+  refused(await call(tok.client, "POST", `transaction/${t.id}/mark-paid`), "client marking paid");
+  ok(await call(tok.finance, "POST", `transaction/${t.id}/mark-paid`), "finance marks paid");
+  assert.ok((await call(tok.finance, "POST", `transaction/${t.id}/mark-paid`)).status >= 400, "cannot pay twice");
+  assert.ok((await call(tok.super, "PATCH", `transaction/${t.id}`, { toLandlordNetPaid: 1 })).status >= 400, "paid amount cannot be edited");
+  assert.ok((await call(tok.super, "DELETE", `transaction/${t.id}`)).status >= 400, "paid transaction cannot be deleted");
 });
