@@ -71,13 +71,18 @@ function RentDueList({ entries, emptyLabel }: { entries: RentDueEntry[]; emptyLa
 export function RentDueSection() {
   const [data, setData] = useState<RentDueData>(EMPTY);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const { data: apiData } = await get<RentDueData>("/dashboard/analytics/rent-due");
-        if (!cancelled && apiData && !("message" in apiData)) setData(apiData);
+        const { data: apiData, error } = await get<RentDueData>("/dashboard/analytics/rent-due");
+        if (cancelled) return;
+        if (error) setLoadError(error.message);
+        else if (apiData && !("message" in apiData)) setData(apiData);
+      } catch (e: any) {
+        if (!cancelled) setLoadError(e?.message || "Could not load rent due");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -103,6 +108,11 @@ export function RentDueSection() {
           Estimated from rent amount and effective date — not a payment record
         </p>
       </div>
+      {loadError && (
+        <div className="mb-4 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          Could not load rent due: {loadError}
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="p-4">
           <div className="flex items-center gap-2 mb-3">
