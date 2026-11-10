@@ -23,11 +23,11 @@ export const TestActivityButton: React.FC = () => {
       // Manually add a test activity to the store for immediate feedback
       const testActivity = {
         id: `test-${Date.now()}`,
-        type: 'system' as const,
-        action: 'Test Activity',
+        type: 'maintenance' as const,
+        title: 'Test Activity',
         description: 'WebSocket test activity triggered successfully!',
-        timestamp: new Date().toISOString(),
-        userName: 'System Test'
+        time: new Date().toISOString(),
+        isNew: true,
       };
 
       dispatch(addActivity(testActivity));
