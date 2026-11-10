@@ -48,7 +48,7 @@ function toRows(payments: ExportablePayment[], properties: PropertyLookup) {
 
 export function exportTransactionsToExcel(payments: ExportablePayment[], properties: PropertyLookup, filename = "woodland-landlord-payments.xlsx") {
   const rows = toRows(payments, properties);
-  const worksheet = XLSX.utils.json_to_sheet(rows, { origin: "A3" });
+  const worksheet = XLSX.utils.json_to_sheet(rows, { origin: "A3" } as XLSX.JSON2SheetOpts); // xlsx honours origin at runtime; its typings omit it
 
   // Branded header: company name in row 1 (logo itself isn't embeddable in a
   // plain XLSX sheet without a much heavier writer, so the header row is the

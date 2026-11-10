@@ -51,7 +51,7 @@ const jobTypeSchema = z.object({
   contractorId: z.string().optional(),
   priority: z.string().optional(),
   dateDone: z.string().optional(),
-  status: z.enum(["QUOTING", "ASSIGNED", "IN_PROGRESS", "COMPLETED", "CANCELLED"]).default("QUOTING"),
+  status: z.enum(["QUOTING", "ASSIGNED", "IN_PROGRESS", "CONTRACTOR_DONE", "COMPLETED", "CANCELLED"]).default("QUOTING"),
 });
 
 // Enhanced Note form schema
