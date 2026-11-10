@@ -1,6 +1,7 @@
 import axios from "axios";
 import { refreshTokenIfNeeded, getAccessToken } from "./tokenManager";
 import { DEFAULT_COOKIE_GETTER, DEFAULT_COOKIE_SETTER, DEFAULT_COOKIE_DELETE } from "./Cookie";
+import { extractApiMessage } from "./parseApiError";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -191,15 +192,17 @@ async function request<T>(
       
       // For validation errors (422), throw the full error so we can parse it properly in the calling code
       if (e.response.status === 422 && e.response.data) {
+        // Replace axios's "Request failed with status code 422" with the real reason.
+        e.message = extractApiMessage(e.response.data) ?? e.message;
         throw e;
       }
-      
+
       switch (e.response.status) {
         case 400:
-          error = { message: e.response.data.message || e.response.data.error || "Bad Request" };
+          error = { message: extractApiMessage(e.response.data) || "Bad Request" };
           break;
         case 422:
-          error = { message: e.response.data.message || e.response.data.error || "Validation Error" };
+          error = { message: extractApiMessage(e.response.data) || "Validation Error" };
           break;
         case 401:
           error = { message: e.response.data.error || "Unauthorized" };
@@ -214,7 +217,7 @@ async function request<T>(
           error = { message: "Server is currently unavailable. Please try again later." };
           break;
         default:
-          error = { message: e.response.data.message || e.response.data.error || "An error occurred" };
+          error = { message: extractApiMessage(e.response.data) || "An error occurred" };
           break;
       }
     } else if (e.code === "ECONNABORTED" || e.code === "ETIMEDOUT") {
@@ -270,10 +273,10 @@ async function getRequest<T>(
         console.log(e.response)
       switch (e.response.status) {
         case 400:
-          error = { message: e.response.data.error || "Bad Request" };
+          error = { message: extractApiMessage(e.response.data) || "Bad Request" };
           break;
         case 422:
-          error = { message: e.response.data.error || "Unauthorized" };
+          error = { message: extractApiMessage(e.response.data) || "Validation Error" };
           break;
         case 401:
           error = { message: e.response.data.error || "Unauthorized" };
