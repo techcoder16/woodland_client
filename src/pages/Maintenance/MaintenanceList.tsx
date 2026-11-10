@@ -44,18 +44,15 @@ import { JOB_TYPE_OPTIONS, JOB_LOCATION_OPTIONS, JOB_SCHEDULE_OPTIONS } from "@/
 // those only become settable afterward via the detail page (admin-gated).
 const maintenanceSchema = z.object({
   propertyId: z.string().min(1, "Property is required"),
-  jobType: z.string().min(1, "Type is required"),
-  location: z.string().min(1, "Location is required"),
-  description: z.string().min(1, "Description is required"),
-  dueDate: z
-    .string()
-    .min(1, "Due date is required")
-    .refine((value) => value > formatLocalDate(new Date()), { message: "Due date must be after today" }),
+  jobType: z.string().optional(),
+  location: z.string().optional(),
+  description: z.string().optional(),
+  dueDate: z.string().optional(),
   schedule: z.string().optional(),
   time: z.string().optional(),
   thingsToDo: z.string().optional(),
   priority: z.string().optional(),
-  mediaFileIds: z.array(z.string()).min(1, "At least one photo is required"),
+  mediaFileIds: z.array(z.string()).optional(),
 });
 
 type MaintenanceFormData = z.infer<typeof maintenanceSchema>;
@@ -197,19 +194,21 @@ const MaintenanceList = () => {
       // Backend always forces status: QUOTING on create and ignores
       // contractorId/dates/cost fields here — they're set later via the
       // detail page once a Maintenance Department Admin assigns a contractor.
-      const payload: Omit<JobType, "id"> = {
+      // Blank optional fields are sent as undefined (not ""), because the server's @IsIn checks reject "".
+      const blank = (v?: string) => (v ? v : undefined);
+      const payload = {
         propertyId: data.propertyId,
-        jobType: data.jobType,
-        location: data.location,
-        description: data.description,
-        dueDate: data.dueDate,
-        schedule: data.schedule,
-        time: data.time,
-        thingsToDo: data.thingsToDo,
-        priority: data.priority,
-        mediaFileIds: data.mediaFileIds,
+        jobType: blank(data.jobType),
+        location: blank(data.location),
+        description: blank(data.description),
+        dueDate: blank(data.dueDate),
+        schedule: blank(data.schedule),
+        time: blank(data.time),
+        thingsToDo: blank(data.thingsToDo),
+        priority: blank(data.priority),
+        mediaFileIds: data.mediaFileIds ?? [],
         status: "QUOTING",
-      };
+      } as Omit<JobType, "id">;
 
       // .unwrap() is required — createAsyncThunk never throws on its own, so
       // without it a rejected (rejectWithValue) result was silently treated

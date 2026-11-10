@@ -3,6 +3,13 @@ import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
+// True only when the server rejected our credentials. Timeouts, network drops and
+// 5xx must never log the user out — they are transient and the next call retries.
+function isAuthRejection(error: unknown): boolean {
+  const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+  return status === 400 || status === 401 || status === 403;
+}
+
 // Function to check if access token is expired or about to expire
 export async function isTokenExpired(): Promise<boolean> {
   try {
@@ -32,6 +39,8 @@ export async function refreshTokenIfNeeded(): Promise<boolean> {
     const refreshTokenValue = await DEFAULT_COOKIE_GETTER("refresh_token");
     if (!refreshTokenValue) {
       console.error('No refresh token available');
+      await clearTokens();
+      window.location.href = "/";
       return false;
     }
 
@@ -66,14 +75,12 @@ export async function refreshTokenIfNeeded(): Promise<boolean> {
     return true;
   } catch (error) {
     console.error('Token refresh failed:', error);
-    
-    // Clear tokens and redirect to login
-    await DEFAULT_COOKIE_DELETE("access_token");
-    await DEFAULT_COOKIE_DELETE("refresh_token");
-    await DEFAULT_COOKIE_DELETE("token_expiry");
-    await DEFAULT_COOKIE_DELETE("user");
-    
-    window.location.href = "/";
+
+    // Only a real rejection of the refresh token ends the session; a timeout just fails this call.
+    if (isAuthRejection(error)) {
+      await clearTokens();
+      window.location.href = "/";
+    }
     return false;
   }
 }
@@ -138,13 +145,9 @@ export async function checkTokenInfo(): Promise<boolean> {
     
     
     // First, try to refresh the access token if it's expired
+    // refreshTokenIfNeeded already logs out on a real auth failure; here a false just means "try later".
     const refreshSuccess = await refreshTokenIfNeeded();
-    if (!refreshSuccess) {
-      console.log('Token refresh failed, logging out...');
-      await clearTokens();
-      window.location.href = "/";
-      return false;
-    }
+    if (!refreshSuccess) return false;
 
     // Now check if the refresh token is still valid by calling token-info
     const response = await axios.get(`${API_URL}auth/token-info`, {
@@ -157,13 +160,13 @@ export async function checkTokenInfo(): Promise<boolean> {
     return true;
   } catch (error: any) {
     console.error('Token info check failed:', error);
-    
-    // If token-info fails, it means the refresh token is expired
-    // Clear all tokens and redirect to login
-    console.log('Refresh token expired, logging out...');
-    await clearTokens();
-    window.location.href = "/";
-    return false;
+
+    if (isAuthRejection(error)) {
+      await clearTokens();
+      window.location.href = "/";
+      return false;
+    }
+    return true; // timeout / network error: stay logged in
   }
 }
 
@@ -181,7 +184,7 @@ export async function checkRefreshTokenExpiration(): Promise<boolean> {
     return true;
   } catch (error: any) {
     console.error('Refresh token expired or invalid:', error);
-    return false;
+    return !isAuthRejection(error); // a timeout is not an expired token
   }
 }
 

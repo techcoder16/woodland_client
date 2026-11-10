@@ -7,7 +7,8 @@ const API_URL = import.meta.env.VITE_API_URL;
 // Create axios instance
 const axiosInstance = axios.create({
   baseURL: API_URL,
-  timeout: 10000,
+  // Set VITE_API_TIMEOUT_MS in the client .env to change this (default 30s).
+  timeout: Number(import.meta.env.VITE_API_TIMEOUT_MS) || 30000,
 });
 
 // Flag to prevent multiple refresh attempts
