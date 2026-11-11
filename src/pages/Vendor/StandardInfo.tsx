@@ -1,19 +1,39 @@
+import { useEffect, useState } from 'react';
+import { Plus, X } from 'lucide-react';
 import InputField from '../../utils/InputField';
 import SelectField from '../../utils/SelectedField';
 import countriesData from '../../data/ukCountry.json';
 import AddressSearchField from '@/components/AddressSearchField';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+
+// Multiple phone numbers are stored in the single `phone` column, joined by ", ".
+const PHONE_SEPARATOR = ', ';
+const splitPhones = (value?: string | null) =>
+  (value || '').split(',').map((p) => p.trim()).filter(Boolean);
 
 const StandardInfo = ({ register, watch, clearErrors, setValue, errors, isEdit }: any) => {
-  const handleSelectChange = (name: string, value: string) => {
-    setValue(name, value);
-    clearErrors(name);
+  const [phones, setPhones] = useState<string[]>(() => {
+    const initial = splitPhones(watch('phone'));
+    return initial.length ? initial : [''];
+  });
+
+  // Country is always United Kingdom for Woodland.
+  useEffect(() => {
+    if (watch('country') !== 'GB') setValue('country', 'GB');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const updatePhones = (next: string[]) => {
+    setPhones(next);
+    setValue('phone', next.map((p) => p.trim()).filter(Boolean).join(PHONE_SEPARATOR), { shouldDirty: true });
+    clearErrors('phone');
   };
 
   return (
     <div className="w-full">
       <div className="p-4 w-full">
         <div className="text-lg font-medium flex justify-start underline p-5">Personal Information</div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <InputField setValue={setValue} label="First Name" name="firstName" register={register} error={errors.firstName?.message?.toString()} />
           <InputField setValue={setValue} label="Last Name" name="lastName" register={register} error={errors.lastName?.message?.toString()} />
@@ -22,16 +42,17 @@ const StandardInfo = ({ register, watch, clearErrors, setValue, errors, isEdit }
 
       <hr />
 
-      <div className="mt-3">
+      <div className="p-4 w-full">
         <div className="text-lg font-medium flex justify-start underline p-5">Address</div>
 
-        <div className="px-5 pb-4">
+        <div className="pb-4">
           <AddressSearchField
             onSelect={(address) => {
               if (address.addressLine1) setValue('addressLine1', address.addressLine1, { shouldValidate: true });
               if (address.addressLine2) setValue('addressLine2', address.addressLine2);
               if (address.town) setValue('town', address.town);
               if (address.postCode) setValue('postCode', address.postCode);
+              setValue('country', 'GB');
               clearErrors(['addressLine1', 'postCode']);
             }}
           />
@@ -40,12 +61,8 @@ const StandardInfo = ({ register, watch, clearErrors, setValue, errors, isEdit }
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <InputField setValue={setValue} label="Post Code" name="postCode" register={register} error={errors.postCode?.message?.toString()} />
           <InputField setValue={setValue} label="Address Line 1" name="addressLine1" register={register} error={errors.addressLine1?.message?.toString()} />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <InputField setValue={setValue} label="Address Line 2" name="addressLine2" register={register} error={errors.addressLine2?.message?.toString()} />
           <InputField setValue={setValue} label="Town" name="town" register={register} error={errors.town?.message?.toString()} />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <SelectField
             label="Country"
             setValue={setValue}
@@ -54,17 +71,45 @@ const StandardInfo = ({ register, watch, clearErrors, setValue, errors, isEdit }
             options={countriesData}
             register={register}
             error={errors.country?.message?.toString()}
-            onChange={(value) => handleSelectChange('country', value)}
+            disabled
           />
         </div>
       </div>
 
       <hr />
 
-      <div>
+      <div className="p-4 w-full">
         <div className="text-lg font-medium flex justify-start underline p-5">Contact Info</div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <InputField setValue={setValue} label="Phone" name="phone" register={register} error={errors.phone?.message?.toString()} />
+          <div className="space-y-1.5">
+            <label className="text-muted-foreground font-medium text-sm">Phone Numbers</label>
+            {phones.map((phone, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <Input
+                  type="tel"
+                  value={phone}
+                  placeholder={i === 0 ? 'Primary phone' : 'Additional phone'}
+                  onChange={(e) => updatePhones(phones.map((p, j) => (j === i ? e.target.value : p)))}
+                />
+                {phones.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Remove phone number"
+                    onClick={() => updatePhones(phones.filter((_, j) => j !== i))}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            ))}
+            <Button type="button" variant="outline" size="sm" onClick={() => updatePhones([...phones, ''])}>
+              <Plus className="mr-1 h-4 w-4" /> Add phone number
+            </Button>
+            {errors.phone?.message && <p className="text-destructive text-xs mt-1">{errors.phone.message.toString()}</p>}
+          </div>
+
           {isEdit ? (
             <div className="space-y-1.5">
               <label className="text-muted-foreground font-medium text-sm">Email</label>

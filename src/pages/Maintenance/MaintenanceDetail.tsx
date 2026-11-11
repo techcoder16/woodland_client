@@ -22,8 +22,11 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/context/AuthContext";
 import { Department } from "@/types/permissions";
 import { formatLocalDate } from "@/helper/formatLocalDate";
-import { get } from "@/helper/api";
-import { JOB_TYPE_OPTIONS, JOB_LOCATION_OPTIONS, JOB_SCHEDULE_OPTIONS } from "@/helper/jobTypeOptions";
+import { get, post } from "@/helper/api";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { buildMaintenanceInvoice, downloadMaintenanceInvoice, invoiceToBase64, invoiceRef } from "@/utils/maintenanceInvoice";
+import { JOB_TYPE_OPTIONS, JOB_LOCATION_OPTIONS } from "@/helper/jobTypeOptions";
 
 interface HistoryEntry {
   id: string;
@@ -37,7 +40,7 @@ interface HistoryEntry {
 const editSchema = z.object({
   jobType: z.string().min(1, "Type is required"),
   location: z.string().min(1, "Location is required"),
-  description: z.string().min(1, "Description is required"),
+  description: z.string().optional(),
   dueDate: z
     .string()
     .min(1, "Due date is required")
@@ -98,6 +101,11 @@ const MaintenanceDetail = () => {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [pendingContractorId, setPendingContractorId] = useState("");
   const [isAssigning, setIsAssigning] = useState(false);
+  // Landlord email: nothing is sent automatically — staff tick the box and send.
+  const [emailLandlordTicked, setEmailLandlordTicked] = useState(false);
+  const [isEmailingLandlord, setIsEmailingLandlord] = useState(false);
+  const [invoicePrompt, setInvoicePrompt] = useState<{ base64: string } | null>(null);
+  const [isSavingDeductible, setIsSavingDeductible] = useState(false);
 
   useEffect(() => {
     if (id) dispatch(fetchJobTypeById(id));
@@ -156,6 +164,48 @@ const MaintenanceDetail = () => {
   // updateJobType, which now rejects any edit to a closed job outright.
   const isJobClosed = job?.status === "COMPLETED" || job?.status === "CANCELLED";
 
+  const landlord = job?.property?.vendor;
+  const landlordName = landlord ? [landlord.firstName, landlord.lastName].filter(Boolean).join(" ") || "Landlord" : "";
+
+  const sendLandlordEmail = async (invoicePdfBase64?: string) => {
+    if (!job?.id) return false;
+    setIsEmailingLandlord(true);
+    try {
+      const { data, error }: any = await post(`property-management/job-type/${job.id}/email-landlord`, invoicePdfBase64 ? { invoicePdfBase64 } : {});
+      if (error) throw new Error(error.message);
+      toast.success(data?.message || "Email sent to landlord");
+      setHistory(null); // refresh history next time it's opened
+      return true;
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to email landlord");
+      return false;
+    } finally {
+      setIsEmailingLandlord(false);
+    }
+  };
+
+  const handleGenerateInvoice = () => {
+    if (!job) return;
+    const doc = buildMaintenanceInvoice(job);
+    downloadMaintenanceInvoice(doc, job);
+    // After generating, ask whether to send it to the landlord.
+    if (landlord?.email && canManageMaintenance) setInvoicePrompt({ base64: invoiceToBase64(doc) });
+  };
+
+  const handleToggleDeductible = async (deductible: boolean) => {
+    if (!job?.id) return;
+    setIsSavingDeductible(true);
+    try {
+      await dispatch(updateJobType({ id: job.id, jobTypeData: { propertyId: job.propertyId, deductible } as any })).unwrap();
+      await dispatch(fetchJobTypeById(job.id));
+      toast.success(deductible ? "Marked as deductible from landlord" : "Marked as not deductible — hidden from landlord transactions");
+    } catch (error: any) {
+      toast.error(typeof error === "string" ? error : error?.message || "Failed to update");
+    } finally {
+      setIsSavingDeductible(false);
+    }
+  };
+
   const handleAssignContractor = async () => {
     if (!job?.id || !pendingContractorId) return;
     setIsAssigning(true);
@@ -185,8 +235,6 @@ const MaintenanceDetail = () => {
             location: data.location,
             description: data.description,
             dueDate: data.dueDate,
-            schedule: data.schedule,
-            time: data.time,
             thingsToDo: data.thingsToDo,
             priority: data.priority,
             mediaFileIds: data.mediaFileIds,
@@ -300,6 +348,24 @@ const MaintenanceDetail = () => {
 
           <TabsContent value="payments" className="space-y-4">
             <Card className="p-4">
+              <label className="flex items-start gap-3">
+                <Checkbox
+                  checked={job.deductible !== false}
+                  disabled={!canManageMaintenance || isSavingDeductible}
+                  onCheckedChange={(v) => handleToggleDeductible(v === true)}
+                />
+                <span>
+                  <span className="font-semibold block">Deductible from landlord</span>
+                  <span className="text-sm text-muted-foreground">
+                    {job.deductible !== false
+                      ? "This job's cost can be recharged on the landlord's transactions."
+                      : "Not deductible — this job won't appear in the landlord's transactions."}
+                  </span>
+                </span>
+              </label>
+            </Card>
+
+            <Card className="p-4">
               <div className="font-semibold mb-3">Cost breakdown</div>
               {job.totalCost == null ? (
                 <p className="text-sm text-muted-foreground">Waiting on the contractor to enter their cost.</p>
@@ -394,6 +460,89 @@ const MaintenanceDetail = () => {
           </TabsContent>
 
           <TabsContent value="invoices" className="space-y-4">
+            <Card className="p-4 space-y-4">
+              <div>
+                <div className="font-semibold">Landlord invoice</div>
+                <p className="text-sm text-muted-foreground">
+                  {job.totalCharged != null || job.totalCost != null
+                    ? `Amount: £${Number(job.totalCharged ?? job.totalCost).toFixed(2)}`
+                    : "No cost has been entered for this job yet."}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" disabled={job.totalCharged == null && job.totalCost == null} onClick={handleGenerateInvoice}>
+                  Generate invoice
+                </Button>
+              </div>
+
+              {canManageMaintenance && (
+                <div className="border-t pt-4 space-y-3">
+                  <div className="font-semibold">Email landlord</div>
+                  {landlord?.email ? (
+                    <>
+                      <label className="flex items-center gap-3 text-sm">
+                        <Checkbox checked={emailLandlordTicked} onCheckedChange={(v) => setEmailLandlordTicked(v === true)} />
+                        <span>
+                          Send to <span className="font-medium">{landlordName}</span>{" "}
+                          <span className="text-muted-foreground">({landlord.email})</span>
+                        </span>
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={!emailLandlordTicked || isEmailingLandlord}
+                          onClick={async () => { if (await sendLandlordEmail()) setEmailLandlordTicked(false); }}
+                        >
+                          <Mail className="h-4 w-4 mr-2" /> Send job update
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={!emailLandlordTicked || isEmailingLandlord || (job.totalCharged == null && job.totalCost == null)}
+                          onClick={async () => {
+                            if (await sendLandlordEmail(invoiceToBase64(buildMaintenanceInvoice(job)))) setEmailLandlordTicked(false);
+                          }}
+                        >
+                          <Mail className="h-4 w-4 mr-2" /> Email invoice
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">The landlord is never emailed automatically.</p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">This property's landlord has no email on file.</p>
+                  )}
+                </div>
+              )}
+            </Card>
+
+            <Dialog open={!!invoicePrompt} onOpenChange={(open) => !open && setInvoicePrompt(null)}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Send invoice to landlord?</DialogTitle>
+                </DialogHeader>
+                <p className="text-sm">
+                  Invoice {invoiceRef(job)} has been downloaded. Do you want to email it to{" "}
+                  <span className="font-medium">{landlordName}</span>{" "}
+                  <span className="text-muted-foreground">({landlord?.email})</span>?
+                </p>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setInvoicePrompt(null)} disabled={isEmailingLandlord}>
+                    No, don't send
+                  </Button>
+                  <Button
+                    type="button"
+                    disabled={isEmailingLandlord}
+                    onClick={async () => {
+                      if (invoicePrompt && (await sendLandlordEmail(invoicePrompt.base64))) setInvoicePrompt(null);
+                    }}
+                  >
+                    {isEmailingLandlord ? "Sending…" : "Yes, send to landlord"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
             <Card className="p-4">
               <div className="font-semibold mb-3">Contractor invoice</div>
               {job.invoiceFileId ? (
@@ -468,26 +617,16 @@ const MaintenanceDetail = () => {
                 />
               </div>
 
-              <TextAreaField label="Description *" name="description" register={register} error={errors.description?.message} />
+              <TextAreaField label="Description" name="description" register={register} error={errors.description?.message} />
 
               <div className="grid grid-cols-3 gap-4">
                 <DateField label="Due Date *" value={watch("dueDate") || ""} onChange={(date) => setValue("dueDate", formatLocalDate(date))} error={errors.dueDate?.message} />
-                <SelectField
-                  label="Schedule"
-                  name="schedule"
-                  register={register}
-                  setValue={setValue}
-                  watch={watch}
-                  error={errors.schedule?.message}
-                  options={JOB_SCHEDULE_OPTIONS.map((o) => ({ value: o, label: o }))}
-                />
-                <InputField label="Arrival Time" name="time" register={register} setValue={setValue} error={errors.time?.message} />
               </div>
 
               <TextAreaField label="Things To Do" name="thingsToDo" register={register} error={errors.thingsToDo?.message} />
 
               <FileUploadField
-                label="Photos *"
+                label="Photos"
                 name="mediaFileIds"
                 upload={{ category: "job-media", entityType: "jobType", entityId: job.id, propertyId: job.propertyId }}
                 accept="image/jpeg,image/png,image/webp,application/pdf"
@@ -561,8 +700,6 @@ const MaintenanceDetail = () => {
                 <div><span className="text-muted-foreground">Location:</span> {job.location || "-"}</div>
                 <div className="md:col-span-2"><span className="text-muted-foreground">Description:</span> {job.description}</div>
                 {job.thingsToDo && <div className="md:col-span-2"><span className="text-muted-foreground">Notes:</span> {job.thingsToDo}</div>}
-                {job.schedule && <div><span className="text-muted-foreground">Schedule:</span> {job.schedule}</div>}
-                {job.time && <div><span className="text-muted-foreground">Arrival time:</span> {job.time}</div>}
                 <div><span className="text-muted-foreground">Due date:</span> {job.dueDate}</div>
                 {job.startDate && <div><span className="text-muted-foreground">Start date (set by contractor):</span> {job.startDate}</div>}
                 {job.endDate && <div><span className="text-muted-foreground">End date (set by contractor):</span> {job.endDate}</div>}

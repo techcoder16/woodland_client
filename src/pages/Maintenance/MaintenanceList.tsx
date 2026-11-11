@@ -37,7 +37,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/context/AuthContext";
 import { Department } from "@/types/permissions";
 import FileUploadField from "@/utils/FileUploadField";
-import { JOB_TYPE_OPTIONS, JOB_LOCATION_OPTIONS, JOB_SCHEDULE_OPTIONS } from "@/helper/jobTypeOptions";
+import { JOB_TYPE_OPTIONS, JOB_LOCATION_OPTIONS } from "@/helper/jobTypeOptions";
 
 // Matches what CreateJobTypeDto actually persists on create — the backend
 // always forces status: QUOTING and ignores contractorId/dates/status here;
@@ -48,8 +48,6 @@ const maintenanceSchema = z.object({
   location: z.string().optional(),
   description: z.string().optional(),
   dueDate: z.string().optional(),
-  schedule: z.string().optional(),
-  time: z.string().optional(),
   thingsToDo: z.string().optional(),
   priority: z.string().optional(),
   mediaFileIds: z.array(z.string()).optional(),
@@ -123,7 +121,7 @@ const MaintenanceList = () => {
   const [properties, setProperties] = useState<Property[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<ReportingStatus | "">("");
+  const [statusFilter, setStatusFilter] = useState<ReportingStatus | "OPEN" | "">("OPEN"); // default hides completed/cancelled
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isCreatingJob, setIsCreatingJob] = useState(false);
@@ -202,8 +200,6 @@ const MaintenanceList = () => {
         location: blank(data.location),
         description: blank(data.description),
         dueDate: blank(data.dueDate),
-        schedule: blank(data.schedule),
-        time: blank(data.time),
         thingsToDo: blank(data.thingsToDo),
         priority: blank(data.priority),
         mediaFileIds: data.mediaFileIds ?? [],
@@ -329,7 +325,7 @@ const MaintenanceList = () => {
                 />
 
                 <TextAreaField
-                  label="Description *"
+                  label="Description"
                   name="description"
                   register={register}
                   error={errors.description?.message}
@@ -337,7 +333,7 @@ const MaintenanceList = () => {
                 />
 
                 <FileUploadField
-                  label="Photos *"
+                  label="Photos"
                   name="mediaFileIds"
                   accept="image/jpeg,image/png,image/webp"
                   multiple
@@ -348,29 +344,12 @@ const MaintenanceList = () => {
                   upload={{ category: "job-media", entityType: "jobType" }}
                 />
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <DateField
                     label="Due Date *"
                     value={watch("dueDate") || ""}
                     onChange={(date) => handleDateChange("dueDate", date)}
                     error={errors.dueDate?.message}
-                  />
-                  <SelectField
-                    label="Schedule"
-                    name="schedule"
-                    register={register}
-                    setValue={setValue}
-                    watch={watch}
-                    error={errors.schedule?.message}
-                    options={JOB_SCHEDULE_OPTIONS.map((o) => ({ value: o, label: o }))}
-                  />
-                  <InputField
-                    label="Arrival Time"
-                    name="time"
-                    register={register}
-                    setValue={setValue}
-                    error={errors.time?.message}
-                    placeholder="e.g., 09:00"
                   />
                 </div>
 
@@ -413,14 +392,14 @@ const MaintenanceList = () => {
             />
           </div>
           <div className="flex items-center gap-2">
-            {(["", "QUOTING", "ASSIGNED", "IN_PROGRESS", "CONTRACTOR_DONE", "COMPLETED", "CANCELLED"] as const).map((status) => (
+            {(["OPEN", "QUOTING", "ASSIGNED", "IN_PROGRESS", "CONTRACTOR_DONE", "COMPLETED", "CANCELLED", ""] as const).map((status) => (
               <Button
                 key={status || "all"}
                 variant={statusFilter === status ? "default" : "outline"}
                 size="sm"
                 onClick={() => setStatusFilter(status)}
               >
-                {status ? STATUS_LABELS[status] : "All"}
+                {status === "OPEN" ? "Open" : status ? STATUS_LABELS[status] : "All"}
               </Button>
             ))}
           </div>
@@ -432,12 +411,11 @@ const MaintenanceList = () => {
               <table className="min-w-full border-collapse table-auto">
                 <thead className="bg-background">
                   <tr className="border-b border-border/70">
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Reported</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Date</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Address</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Landlord</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Contractor</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Type &amp; Description</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Description</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Priority</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Contractor</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Due Date</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Status</th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Actions</th>
@@ -446,19 +424,18 @@ const MaintenanceList = () => {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
+                      <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
                         Loading maintenance jobs...
                       </td>
                     </tr>
                   ) : filteredJobTypes.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
+                      <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
                         No maintenance jobs found
                       </td>
                     </tr>
                   ) : (
                     filteredJobTypes.map((job) => {
-                      const vendor = job.property?.vendor;
                       return (
                         <tr key={job.id} className="border-b border-border/50 hover:bg-muted/40 transition-colors align-top">
                           <td className="px-4 py-3 text-sm whitespace-nowrap">
@@ -467,37 +444,15 @@ const MaintenanceList = () => {
                           <td className="px-4 py-3 text-sm">
                             <AddressCell property={job.property} />
                           </td>
-                          <td className="px-4 py-3 text-sm">
-                            {vendor ? (
-                              <div className="space-y-0.5">
-                                <div className="flex items-center gap-1 font-medium">
-                                  <User2 className="h-3.5 w-3.5 text-muted-foreground" />
-                                  {vendor.firstName} {vendor.lastName}
-                                </div>
-                                {vendor.phone && (
-                                  <div className="flex items-center gap-1 text-muted-foreground">
-                                    <Phone className="h-3 w-3" /> {vendor.phone}
-                                  </div>
-                                )}
-                                {vendor.email && (
-                                  <div className="flex items-center gap-1 text-muted-foreground">
-                                    <Mail className="h-3 w-3" /> {vendor.email}
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-sm">
-                            {job.contractorRef ? job.contractorRef.name : job.employeeId ? getEmployeeName(job.employeeId) : "-"}
-                          </td>
                           <td className="px-4 py-3 text-sm max-w-xs">
                             <div className="font-medium">{job.jobType}</div>
-                            <div className="text-muted-foreground truncate">{job.description}</div>
+                            <div className="text-muted-foreground truncate">{job.description || "-"}</div>
                           </td>
                           <td className="px-4 py-3 text-sm">
                             {job.priority ? <Badge variant="outline">{job.priority}</Badge> : "-"}
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            {job.contractorRef ? job.contractorRef.name : job.employeeId ? getEmployeeName(job.employeeId) : "-"}
                           </td>
                           <td className="px-4 py-3 text-sm whitespace-nowrap">{job.dueDate}</td>
                           <td className="px-4 py-3 text-sm">

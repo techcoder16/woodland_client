@@ -33,11 +33,6 @@ const formSchema = z.object({
   bankName: z.string().nullable().optional(),
   bankAccountNo: z.string().nullable().optional(),
   bankSortCode: z.string().nullable().optional(),
-  bankAddressLine1: z.string().nullable().optional(),
-  bankAddressLine2: z.string().nullable().optional(),
-  bankTown: z.string().nullable().optional(),
-  bankPostCode: z.string().nullable().optional(),
-  bankCountry: z.string().nullable().optional(),
 
   // StoredFile ids — Documents uploads to S3 as soon as a file is picked.
   photoIdFileId: z.string().nullable().optional(),
@@ -51,6 +46,7 @@ const AddVendor = () => {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     mode: "onSubmit",
+    defaultValues: { country: "GB", phone: "" },
   });
   const { toast } = useToast();
   const navigate = useNavigate();

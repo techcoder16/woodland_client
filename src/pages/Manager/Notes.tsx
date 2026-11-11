@@ -54,10 +54,17 @@ const jobTypeSchema = z.object({
   status: z.enum(["QUOTING", "ASSIGNED", "IN_PROGRESS", "CONTRACTOR_DONE", "COMPLETED", "CANCELLED"]).default("QUOTING"),
 });
 
+// Notes are stamped automatically with the local date and time they were
+// added (e.g. "2026-11-12 14:05") — there is no date picker.
+const nowStamp = () => {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
 // Enhanced Note form schema
 const noteSchema = z.object({
   content: z.string().min(1, "Note content is required"),
-  date: z.string().min(1, "Date is required"),
   employeeId: z.string().min(1, "Employee is required"),
 });
 
@@ -198,8 +205,6 @@ const Notes = ({ propertyId, property }: NotesProps) => {
         jobType: data.jobType,
         description: data.description,
         dueDate: data.dueDate,
-        schedule: data.schedule,
-        time: data.time,
         thingsToDo: data.thingsToDo,
         employeeId: data.assignedType === "employee" ? data.employeeId : undefined,
         contractorId: data.assignedType === "contractor" ? data.contractorId : undefined,
@@ -231,7 +236,8 @@ const Notes = ({ propertyId, property }: NotesProps) => {
       const payload: Omit<Note, 'id'> = {
         propertyId,
         content: data.content,
-        date: data.date,
+        // Editing keeps the original timestamp; a new note gets "now".
+        date: editingNote?.date || nowStamp(),
         employeeId: data.employeeId, // Changed from employee to employeeId
       };
       
@@ -274,7 +280,6 @@ const Notes = ({ propertyId, property }: NotesProps) => {
   const handleEditNote = (note: Note) => {
     setEditingNote(note);
     setNoteValue("content", note.content);
-    setNoteValue("date", note.date);
     setNoteValue("employeeId", note.employeeId); // Changed from employee to employeeId
     setIsNoteDialogOpen(true);
   };
@@ -363,12 +368,10 @@ const Notes = ({ propertyId, property }: NotesProps) => {
                     placeholder="Enter your note content..."
                   />
                   <div className="grid grid-cols-2 gap-4">
-                    <DateField
-                      label="Date"
-                      value={watchNote("date") || ""}
-                      onChange={(date) => handleNoteDateChange("date", date)}
-                      error={errorsNote.date?.message}
-                    />
+                    <div className="space-y-1.5">
+                      <label className="text-muted-foreground font-medium text-sm">Date &amp; time</label>
+                      <p className="text-sm py-2">{editingNote?.date || "Now (set automatically)"}</p>
+                    </div>
                     <div className="space-y-1.5">
                       <label className="text-muted-foreground font-medium text-sm">Added by</label>
                       <p className="text-sm py-2">
@@ -534,22 +537,6 @@ const Notes = ({ propertyId, property }: NotesProps) => {
                       value={watchJobType("dueDate") || ""}
                       onChange={(date) => handleJobTypeDateChange("dueDate", date)}
                       error={errorsJobType.dueDate?.message}
-                    />
-                    <InputField
-                      label="Schedule"
-                      name="schedule"
-                      register={registerJobType}
-                      setValue={setJobTypeValue}
-                      error={errorsJobType.schedule?.message}
-                      placeholder="e.g., Monthly, Weekly"
-                    />
-                    <InputField
-                      label="Time"
-                      name="time"
-                      register={registerJobType}
-                      setValue={setJobTypeValue}
-                      error={errorsJobType.time?.message}
-                      placeholder="e.g., 09:00"
                     />
                   </div>
 

@@ -13,6 +13,7 @@ interface SelectFieldProps {
   defaultValue?: string;
   watch: UseFormWatch<any>;
   onChange?: (value: string) => void;
+  disabled?: boolean;
 }
 
 const SelectField: React.FC<SelectFieldProps> = ({
@@ -25,6 +26,7 @@ const SelectField: React.FC<SelectFieldProps> = ({
   watch,
   defaultValue = "",
   onChange,
+  disabled = false,
 }) => {
   const currentValue = watch(name); // Get the current value of the field
   
@@ -69,6 +71,7 @@ const SelectField: React.FC<SelectFieldProps> = ({
       <Select
         value={displayValue}
         onValueChange={handleChange}
+        disabled={disabled}
       >
         <SelectTrigger>
           <SelectValue placeholder="Select an option" />

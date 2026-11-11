@@ -16,7 +16,8 @@ const money = (value: unknown) => `£${Number(value || 0).toLocaleString("en-GB"
 /** DD/MM/YYYY, or "" when there is no usable date — never a raw ISO string. */
 const ukDate = (value: unknown) => {
   if (!value) return "";
-  const parsed = new Date(value as string);
+  // Note dates are "YYYY-MM-DD HH:mm"; Safari only parses that with a "T" separator.
+  const parsed = new Date(String(value).replace(/^(\d{4}-\d{2}-\d{2}) /, "$1T"));
   return Number.isNaN(parsed.getTime()) ? "" : parsed.toLocaleDateString("en-GB");
 };
 
