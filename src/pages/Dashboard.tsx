@@ -6,6 +6,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { AnalyticsChart } from "@/components/dashboard/AnalyticsChart";
 import { RentDueSection } from "@/components/dashboard/RentDueSection";
+import { PendingSection } from "@/components/dashboard/PendingSection";
 
 const Dashboard = () => {
   const dispatch = useAppDispatch();
@@ -48,6 +49,10 @@ const Dashboard = () => {
         </div>
 
         <DashboardStats />
+
+        <div className="surface p-6">
+          <PendingSection />
+        </div>
 
         <div className="surface p-6">
           <RentDueSection />
