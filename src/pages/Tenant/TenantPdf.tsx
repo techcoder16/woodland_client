@@ -19,7 +19,6 @@ const TenantPdf = ({ tenant, open: openProp, onOpenChange, hideTrigger }: any) =
     {
       title: "Personal Information",
       fields: [
-        { label: "Title", value: tenant.title },
         { label: "First Name", value: tenant.FirstName },
         { label: "Last Name", value: tenant.SureName },
       ]
@@ -27,11 +26,10 @@ const TenantPdf = ({ tenant, open: openProp, onOpenChange, hideTrigger }: any) =
     {
       title: "Contact Details",
       fields: [
-        { label: "Mobile Number", value: tenant.MobileNo },
-        { label: "Home Phone", value: tenant.HomePhone },
-        { label: "Work Phone", value: tenant.WorkPhone },
-        { label: "Email", value: tenant.Email },
-        { label: "Employee Name", value: tenant.EmployeeName },
+        { label: "Contact Number 1", value: tenant.MobileNo },
+        { label: "Contact Number 2", value: tenant.HomePhone },
+        { label: "Email 1", value: tenant.Email },
+        { label: "Email 2", value: tenant.Email2 },
       ]
     },
     {
@@ -41,16 +39,8 @@ const TenantPdf = ({ tenant, open: openProp, onOpenChange, hideTrigger }: any) =
         { label: "Address Line 1", value: tenant.addressLine1 },
         { label: "Address Line 2", value: tenant.addressLine2 },
         { label: "Town", value: tenant.town },
-        { label: "Country", value: tenant.country },
+        { label: "Country", value: "United Kingdom" },
         { label: "Address (legacy)", value: tenant.addressLine1 ? undefined : tenant.Address },
-      ]
-    },
-    {
-      title: "Bank Details",
-      fields: [
-        { label: "Bank Name", value: tenant.BankName },
-        { label: "Bank Account No", value: tenant.BankAccountNo },
-        { label: "Sort Code", value: tenant.SortCode },
       ]
     },
     {
