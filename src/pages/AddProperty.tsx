@@ -157,6 +157,8 @@ const AddProperty = () => {
                 propertyId,
                 docType: docData.docType,
                 label: docData.label || undefined,
+                licenceType: docData.licenceType || undefined,
+                borough: docData.borough || undefined,
                 startDate: docData.startDate ? new Date(docData.startDate).toISOString() : undefined,
                 expiryDate: docData.expiryDate ? new Date(docData.expiryDate).toISOString() : undefined,
                 notes: docData.notes || undefined,
