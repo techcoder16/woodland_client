@@ -21,10 +21,18 @@ const DOC_TYPES = [
   { value: "OTHER", label: "Other" },
 ];
 
+const LICENCE_TYPES = [
+  { value: "SELECTIVE", label: "Selective Licence" },
+  { value: "ADDITIONAL", label: "Additional Licence" },
+  { value: "HMO", label: "HMO Licence" },
+];
+
 export interface DraftComplianceDoc {
   localId: string;
   docType: string;
   label?: string;
+  licenceType?: string;
+  borough?: string;
   startDate?: string;
   expiryDate?: string;
   notes?: string;
@@ -52,13 +60,13 @@ interface ComplianceDraftStepProps {
 export default function ComplianceDraftStep({ drafts, onDraftsChange }: ComplianceDraftStepProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingLocalId, setEditingLocalId] = useState<string | null>(null);
-  const [form, setForm] = useState({ docType: "GAS_SAFETY", label: "", startDate: "", expiryDate: "", notes: "" });
+  const [form, setForm] = useState({ docType: "GAS_SAFETY", label: "", licenceType: "", borough: "", startDate: "", expiryDate: "", notes: "" });
   const [file, setFile] = useState<File | undefined>(undefined);
   const [extracting, setExtracting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const resetForm = () => {
-    setForm({ docType: "GAS_SAFETY", label: "", startDate: "", expiryDate: "", notes: "" });
+    setForm({ docType: "GAS_SAFETY", label: "", licenceType: "", borough: "", startDate: "", expiryDate: "", notes: "" });
     setFile(undefined);
     setEditingLocalId(null);
   };
@@ -70,7 +78,7 @@ export default function ComplianceDraftStep({ drafts, onDraftsChange }: Complian
 
   const openEdit = (doc: DraftComplianceDoc) => {
     setEditingLocalId(doc.localId);
-    setForm({ docType: doc.docType, label: doc.label || "", startDate: doc.startDate || "", expiryDate: doc.expiryDate || "", notes: doc.notes || "" });
+    setForm({ docType: doc.docType, label: doc.label || "", licenceType: doc.licenceType || "", borough: doc.borough || "", startDate: doc.startDate || "", expiryDate: doc.expiryDate || "", notes: doc.notes || "" });
     setFile(doc.file);
     setModalOpen(true);
   };
@@ -96,6 +104,8 @@ export default function ComplianceDraftStep({ drafts, onDraftsChange }: Complian
         docType: DOC_TYPES.some((t) => t.value === found.docType) ? found.docType : f.docType,
         startDate: found.issueDate ? found.issueDate.slice(0, 10) : f.startDate,
         expiryDate: found.expiryDate ? found.expiryDate.slice(0, 10) : f.expiryDate,
+        licenceType: LICENCE_TYPES.some((t) => t.value === found.licenceType) ? found.licenceType : f.licenceType,
+        borough: found.borough || f.borough,
       }));
       const validity = found.validity;
       if (validity?.status === "EXPIRED" || validity?.status === "NOT_YET_VALID") {
@@ -119,6 +129,8 @@ export default function ComplianceDraftStep({ drafts, onDraftsChange }: Complian
       localId: editingLocalId || crypto.randomUUID(),
       docType: form.docType,
       label: form.label || undefined,
+      licenceType: form.docType === "PROPERTY_LICENSE" ? form.licenceType || undefined : undefined,
+      borough: form.docType === "PROPERTY_LICENSE" ? form.borough.trim() || undefined : undefined,
       startDate: form.startDate || undefined,
       expiryDate: form.expiryDate || undefined,
       notes: form.notes || undefined,
@@ -159,7 +171,14 @@ export default function ComplianceDraftStep({ drafts, onDraftsChange }: Complian
               const typeLabel = DOC_TYPES.find((t) => t.value === doc.docType)?.label || doc.docType;
               return (
                 <TableRow key={doc.localId}>
-                  <TableCell>{doc.label || typeLabel}</TableCell>
+                  <TableCell>
+                    {doc.label || typeLabel}
+                    {(doc.licenceType || doc.borough) && (
+                      <span className="block text-xs text-muted-foreground">
+                        {[LICENCE_TYPES.find((t) => t.value === doc.licenceType)?.label, doc.borough].filter(Boolean).join(" · ")}
+                      </span>
+                    )}
+                  </TableCell>
                   <TableCell>{doc.startDate ? new Date(doc.startDate).toLocaleDateString("en-GB") : "-"}</TableCell>
                   <TableCell>{doc.expiryDate ? new Date(doc.expiryDate).toLocaleDateString("en-GB") : "-"}</TableCell>
                   <TableCell>
@@ -195,6 +214,21 @@ export default function ComplianceDraftStep({ drafts, onDraftsChange }: Complian
             </div>
             {form.docType === "OTHER" && (
               <div className="space-y-1"><Label>Label</Label><Input value={form.label} onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))} placeholder="e.g. HMO License" /></div>
+            )}
+            {form.docType === "PROPERTY_LICENSE" && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label>Licence type</Label>
+                  <Select value={form.licenceType || undefined} onValueChange={(value) => setForm((f) => ({ ...f, licenceType: value }))}>
+                    <SelectTrigger><SelectValue placeholder="Select licence type" /></SelectTrigger>
+                    <SelectContent>{LICENCE_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Borough</Label>
+                  <Input value={form.borough} onChange={(e) => setForm((f) => ({ ...f, borough: e.target.value }))} placeholder="Filled from the scan" />
+                </div>
+              </div>
             )}
             <div className="space-y-1">
               <Label>Certificate file</Label>

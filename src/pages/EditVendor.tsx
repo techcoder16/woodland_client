@@ -20,6 +20,10 @@ import { patch } from "@/helper/api";
 
 const formSchema = z.object({
   id: z.string(),
+  vendorType: z.string().nullable().optional(),
+  companyName: z.string().nullable().optional(),
+  otherEmails: z.string().nullable().optional(),
+  preferredContact: z.string().nullable().optional(),
   firstName: z.string().nullable().optional(),
   lastName: z.string().nullable().optional(),
   postCode: z.string().nullable().optional(),
@@ -47,13 +51,17 @@ const buildVendorDefaults = (vendor: any) => {
 
   return {
     id: vendor.id ?? "",
+    vendorType: vendor.vendorType || "INDIVIDUAL",
+    companyName: vendor.companyName || "",
+    otherEmails: vendor.otherEmails || "",
+    preferredContact: vendor.preferredContact || "",
     firstName: vendor.firstName || "",
     lastName: vendor.lastName || "",
     postCode: vendor.postCode || "",
     addressLine1: vendor.addressLine1 || "",
     addressLine2: vendor.addressLine2 || "",
     town: vendor.town || "",
-    country: "GB",
+    country: vendor.country || "GB",
     phone: vendor.phone || "",
     email: vendor.email || "",
     bankName: vendor.bankName || "",

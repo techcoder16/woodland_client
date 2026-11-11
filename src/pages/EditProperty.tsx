@@ -29,7 +29,7 @@ const STEP_LABELS = [
 ] as const;
 
 const STEP_FIELDS: string[][] = [
-  ["vendor", "for", "postCode", "addressLine1", "addressLine2", "town", "country", "propertyTypeCategory", "bedrooms", "bathrooms", "receptions", "floorNumber", "wheelchairAccess", "hasGarden", "lift", "gas", "rooms"],
+  ["vendor", "for", "postCode", "addressLine1", "addressLine2", "town", "country", "propertyTypeCategory", "bedrooms", "bathrooms", "receptions", "floorNumber", "steps", "bedroomsGround", "bedroomsFirst", "wheelchairAccess", "hasGarden", "hasParking", "communal", "fireRiskAssessmentFileId", "councilId", "lift", "gas", "rooms"],
   ["photographFileId", "floorPlanFileId"],
   ["managementDate", "rentEffectiveDate", "rentPerMonth", "rentPayableInAdvance", "rentalTerms", "termMonths"],
   [],
@@ -68,7 +68,7 @@ const EditProperty = () => {
 
     return {
       ...property,
-      country: "GB",
+      country: property.country || "GB",
       vendor: property.vendorId ?? "",
       bedrooms: property.bedrooms ?? "",
       bathrooms: property.bathrooms ?? "",
@@ -76,6 +76,13 @@ const EditProperty = () => {
       floorNumber: property.floorNumber ?? "",
       wheelchairAccess: toBoolean(property.wheelchairAccess),
       hasGarden: toBoolean(property.hasGarden),
+      hasParking: toBoolean(property.hasParking),
+      communal: toBoolean(property.communal),
+      steps: property.steps ?? "",
+      bedroomsGround: property.bedroomsGround ?? "",
+      bedroomsFirst: property.bedroomsFirst ?? "",
+      fireRiskAssessmentFileId: property.fireRiskAssessmentFileId ?? "",
+      councilId: property.councilId ?? "",
       lift: toBoolean(property.lift),
       gas: toBoolean(property.gas),
       rooms: parseJsonArray(property.rooms),

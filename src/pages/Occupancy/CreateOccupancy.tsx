@@ -597,36 +597,17 @@ export default function CreateOccupancy() {
               <div className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
                 <div className="space-y-5">
                   {form.type === "COUNCIL" ? (
-                    <Panel icon={Building2} title="Council Customer (Payer)" subtitle="The council paying for this occupancy.">
+                    <Panel icon={Building2} title="Council Customer (Payer)" subtitle="Select the council paying for this occupancy.">
                       <Field label="Council Customer" required error={errors.councilCustomerId}>
-                        <div className="flex gap-2">
-                          <Select value={form.councilCustomerId} onValueChange={chooseCouncil}>
-                            <SelectTrigger><SelectValue placeholder="Select a council" /></SelectTrigger>
-                            <SelectContent>
-                              {councils.map((c) => (
-                                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <Button type="button" variant="outline" onClick={() => window.open("/council-customers", "_blank")}>
-                            {councils.length ? "Manage" : "Add council"}
-                          </Button>
-                        </div>
-                        {councils.length === 0 && (
-                          <p className="text-xs text-muted-foreground">No councils yet — add one in Council Customers, then come back.</p>
-                        )}
+                        <Select value={form.councilCustomerId} onValueChange={chooseCouncil}>
+                          <SelectTrigger><SelectValue placeholder="Select a council" /></SelectTrigger>
+                          <SelectContent>
+                            {councils.map((c) => (
+                              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </Field>
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <Field label="Council Contact (Optional)">
-                          <Input value={form.councilContactName} onChange={(e) => set("councilContactName", e.target.value)} />
-                        </Field>
-                        <Field label="Council Reference (Optional)">
-                          <Input value={form.councilReference} onChange={(e) => set("councilReference", e.target.value)} />
-                        </Field>
-                        <Field label="Council Team (Optional)" className="sm:col-span-2">
-                          <Input value={form.councilTeam} placeholder="e.g. Temporary Accommodation" onChange={(e) => set("councilTeam", e.target.value)} />
-                        </Field>
-                      </div>
                     </Panel>
                   ) : (
                     <Panel icon={User} title="Private Customer (Payer)" subtitle="Enter the person or company paying for this occupancy.">

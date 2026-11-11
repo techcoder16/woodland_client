@@ -19,6 +19,10 @@ export const tenantSchema = z.object({
     .union([z.literal(""), z.string().email()])
     .optional()
     .nullable(),
+  Email2: z
+    .union([z.literal(""), z.string().email()])
+    .optional()
+    .nullable(),
   EmployeeName: optionalText,
   BankAccountNo: optionalText,
   SortCode: optionalText,
@@ -30,4 +34,7 @@ export const tenantSchema = z.object({
   town: optionalText,
   postCode: optionalText,
   country: optionalText,
-});
+}).refine(
+  (t) => [t.MobileNo, t.HomePhone, t.Email, t.Email2].some((v) => (v || "").trim() !== ""),
+  { message: "Enter at least one contact number or email", path: ["MobileNo"] },
+);

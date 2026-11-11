@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, Download, Flame, FileText, Loader2, Plus, ShieldCheck, Trash2, Upload, Wand2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import FileDropZone from "@/components/FileDropZone";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -42,10 +43,18 @@ function shortStatus(expiryDate?: string) {
   return { label: "Valid", className: "bg-emerald-100 text-emerald-700 border-transparent" };
 }
 
+const LICENCE_TYPES = [
+  { value: "SELECTIVE", label: "Selective Licence" },
+  { value: "ADDITIONAL", label: "Additional Licence" },
+  { value: "HMO", label: "HMO Licence" },
+];
+
 type ComplianceDoc = {
   id: string;
   docType: string;
   label?: string;
+  licenceType?: string;
+  borough?: string;
   startDate?: string;
   expiryDate?: string;
   fileId?: string;
@@ -101,6 +110,8 @@ type ExtractedCertificate = {
   expiryDate?: string;
   certificateNumber?: string;
   issuedBy?: string;
+  licenceType?: string;
+  borough?: string;
   validity?: CertificateValidity;
 };
 
@@ -292,7 +303,7 @@ export function CertificatesSection({ propertyId }: { propertyId: string }) {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ docType: "INSURANCE", label: "", startDate: "", expiryDate: "", notes: "" });
+  const [form, setForm] = useState({ docType: "INSURANCE", label: "", licenceType: "", borough: "", startDate: "", expiryDate: "", notes: "" });
   const [file, setFile] = useState<File | null>(null);
   const [extracting, setExtracting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -319,7 +330,7 @@ export function CertificatesSection({ propertyId }: { propertyId: string }) {
   }, [propertyId]);
 
   const resetForm = () => {
-    setForm({ docType: "INSURANCE", label: "", startDate: "", expiryDate: "", notes: "" });
+    setForm({ docType: "INSURANCE", label: "", licenceType: "", borough: "", startDate: "", expiryDate: "", notes: "" });
     setFile(null);
   };
 
@@ -341,6 +352,8 @@ export function CertificatesSection({ propertyId }: { propertyId: string }) {
         docType: DOC_TYPES.some((t) => t.value === found.docType) ? found.docType! : f.docType,
         startDate: found.issueDate ? found.issueDate.slice(0, 10) : f.startDate,
         expiryDate: found.expiryDate ? found.expiryDate.slice(0, 10) : f.expiryDate,
+        licenceType: LICENCE_TYPES.some((t) => t.value === found.licenceType) ? found.licenceType : f.licenceType,
+        borough: found.borough || f.borough,
       }));
       reportValidity("Certificate", found);
     } catch (error: any) {
@@ -355,6 +368,10 @@ export function CertificatesSection({ propertyId }: { propertyId: string }) {
     try {
       const payload: Record<string, string> = { propertyId, docType: form.docType };
       if (form.label) payload.label = form.label;
+      if (form.docType === "PROPERTY_LICENSE") {
+        if (form.licenceType) payload.licenceType = form.licenceType;
+        if (form.borough.trim()) payload.borough = form.borough.trim();
+      }
       // A half-typed or invalid date must not 422 the save (see MandatoryCertRow).
       const isoDate = (value?: string) => {
         if (!value) return null;
@@ -471,7 +488,11 @@ export function CertificatesSection({ propertyId }: { propertyId: string }) {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="font-medium flex items-center gap-2"><FileText className="h-4 w-4 text-primary" />{doc.label || typeLabel}</p>
-                  <p className="text-xs text-muted-foreground">{typeLabel}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {typeLabel}
+                    {doc.licenceType ? ` · ${LICENCE_TYPES.find((t) => t.value === doc.licenceType)?.label || doc.licenceType}` : ""}
+                    {doc.borough ? ` · ${doc.borough}` : ""}
+                  </p>
                 </div>
                 <Button size="icon" variant="ghost" onClick={() => void remove(doc.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
               </div>
@@ -501,6 +522,21 @@ export function CertificatesSection({ propertyId }: { propertyId: string }) {
             {form.docType === "OTHER" && (
               <div className="space-y-1"><Label>Label</Label><Input value={form.label} onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))} placeholder="e.g. HMO License" /></div>
             )}
+            {form.docType === "PROPERTY_LICENSE" && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label>Licence type</Label>
+                  <Select value={form.licenceType || undefined} onValueChange={(value) => setForm((f) => ({ ...f, licenceType: value }))}>
+                    <SelectTrigger><SelectValue placeholder="Select licence type" /></SelectTrigger>
+                    <SelectContent>{LICENCE_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Borough</Label>
+                  <Input value={form.borough} onChange={(e) => setForm((f) => ({ ...f, borough: e.target.value }))} placeholder="Filled from the scan" />
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1"><Label>Start date</Label><Input type="date" value={form.startDate} onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))} /></div>
               <div className="space-y-1"><Label>Expiry date</Label><Input type="date" value={form.expiryDate} onChange={(e) => setForm((f) => ({ ...f, expiryDate: e.target.value }))} /></div>
@@ -510,15 +546,8 @@ export function CertificatesSection({ propertyId }: { propertyId: string }) {
               <Label>Certificate file</Label>
               {/* Choosing a file only attaches it; reading the type and dates
                   with OCR is optional ("Get dates via OCR"). */}
-              <input ref={fileInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.gif" className="hidden" onChange={(e) => {
-                setFile(e.target.files?.[0] || null);
-                e.target.value = "";
-              }} />
+              <FileDropZone file={file} onFile={setFile} disabled={extracting} />
               <div className="flex flex-wrap items-center gap-2">
-                <Button type="button" size="sm" variant="outline" disabled={extracting} onClick={() => fileInputRef.current?.click()}>
-                  <Upload className="mr-1.5 h-3.5 w-3.5" />Choose file
-                </Button>
-                {file && <span className="max-w-[10rem] truncate text-xs text-muted-foreground" title={file.name}>{file.name}</span>}
                 <Button type="button" size="sm" variant="outline" disabled={!file || extracting} onClick={() => void extractDates()}>
                   {extracting ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Wand2 className="mr-1.5 h-3.5 w-3.5" />}
                   {extracting ? "Reading dates…" : "Get dates via OCR"}
@@ -669,12 +698,8 @@ export function GeneralDocumentsSection({ propertyId }: { propertyId: string }) 
           <div className="space-y-3">
             <div className="space-y-1">
               <Label>File</Label>
-              <input ref={fileInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.gif" className="hidden" onChange={(e) => { setFile(e.target.files?.[0] || null); setOcrSummary(null); }} />
+              <FileDropZone file={file} onFile={(f) => { setFile(f); setOcrSummary(null); }} />
               <div className="flex flex-wrap items-center gap-2">
-                <Button type="button" size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                  <Upload className="mr-1.5 h-3.5 w-3.5" />Choose file
-                </Button>
-                {file && <span className="max-w-[10rem] truncate text-xs text-muted-foreground" title={file.name}>{file.name}</span>}
                 <Button type="button" size="sm" variant="outline" disabled={!file || extracting} onClick={extractSummary}>
                   {extracting ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Wand2 className="mr-1.5 h-3.5 w-3.5" />}
                   Read via OCR

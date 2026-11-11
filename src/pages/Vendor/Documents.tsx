@@ -27,7 +27,7 @@ const Documents = ({ register, watch, setValue, errors, vendorId }: DocumentsPro
             error={errors?.photoIdFileId?.message?.toString()}
           />
           <FileUploadField
-            label="Proof of Relationship"
+            label="Proof of Residential Address"
             name="proofOfRelationshipFileId"
             accept="image/*,.pdf"
             multiple={false}
@@ -38,7 +38,7 @@ const Documents = ({ register, watch, setValue, errors, vendorId }: DocumentsPro
             error={errors?.proofOfRelationshipFileId?.message?.toString()}
           />
           <FileUploadField
-            label="Proof of Ownership"
+            label="Anti-Money Laundering Certificate"
             name="proofOfOwnershipFileId"
             accept="image/*,.pdf"
             multiple={false}

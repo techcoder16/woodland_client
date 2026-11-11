@@ -24,6 +24,7 @@ dist-ssr
 *.sw?
 .qodo
 .env
+.env.test
 
 
 tests/
@@ -32,3 +33,4 @@ tests
 playwright.config.ts
 # TypeScript build cache
 *.tsbuildinfo
+.env.test.*

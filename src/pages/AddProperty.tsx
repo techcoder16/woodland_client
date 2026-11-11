@@ -34,7 +34,7 @@ const STEP_LABELS = [
 ] as const;
 
 const STEP_FIELDS: string[][] = [
-  ["vendor", "for", "postCode", "addressLine1", "addressLine2", "town", "country", "propertyTypeCategory", "bedrooms", "bathrooms", "receptions", "floorNumber", "wheelchairAccess", "hasGarden", "lift", "gas", "rooms"],
+  ["vendor", "for", "postCode", "addressLine1", "addressLine2", "town", "country", "propertyTypeCategory", "bedrooms", "bathrooms", "receptions", "floorNumber", "steps", "bedroomsGround", "bedroomsFirst", "wheelchairAccess", "hasGarden", "hasParking", "communal", "fireRiskAssessmentFileId", "councilId", "lift", "gas", "rooms"],
   ["photographFileId", "floorPlanFileId"],
   ["managementDate", "rentEffectiveDate", "rentPerMonth", "rentPayableInAdvance", "rentalTerms", "termMonths"],
   [],
@@ -157,6 +157,8 @@ const AddProperty = () => {
                 propertyId,
                 docType: docData.docType,
                 label: docData.label || undefined,
+                licenceType: docData.licenceType || undefined,
+                borough: docData.borough || undefined,
                 startDate: docData.startDate ? new Date(docData.startDate).toISOString() : undefined,
                 expiryDate: docData.expiryDate ? new Date(docData.expiryDate).toISOString() : undefined,
                 notes: docData.notes || undefined,

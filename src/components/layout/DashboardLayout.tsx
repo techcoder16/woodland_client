@@ -80,7 +80,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     { label: "Finance", path: "/finance/landlord-payments", icon: Wallet },
     { label: "Compliance", path: "/compliance", icon: ShieldCheck },
     { label: "Occupiers", path: "/tenants", icon: CircleUser },
-    { label: "Council Customers", path: "/council-customers", icon: Landmark },
+    { label: "Councils", path: "/council-customers", icon: Landmark },
     { label: "Settings", path: "/settings", icon: Settings },
   ];
 

@@ -1,6 +1,6 @@
 // File fields hold StoredFile ids (uploaded to S3 by FileUploadField). An
 // empty value means "no file" and is sent as null so a removed photo clears.
-const FILE_ID_FIELDS = new Set(["photographFileId", "floorPlanFileId"]);
+const FILE_ID_FIELDS = new Set(["photographFileId", "floorPlanFileId", "fireRiskAssessmentFileId"]);
 
 /**
  * Serialises the flat property form into the JSON body the /properties POST

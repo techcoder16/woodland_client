@@ -12,6 +12,8 @@ import { Check, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import { patch } from "@/helper/api";
+import { Switch } from "@/components/ui/switch";
+import { isCountryUnlocked, setCountryUnlocked } from "@/lib/countrySetting";
 
 // Converts between the "H S% L%" strings the CSS custom properties use and
 // the hex format a native <input type="color"> swatch needs.
@@ -56,6 +58,7 @@ const COLOR_FIELDS: { key: keyof BrandColors; label: string; description: string
 ];
 
 const Settings = () => {
+  const [countryUnlocked, setCountryUnlockedState] = useState(isCountryUnlocked());
   const { isAdmin } = usePermissions();
   const { fontId, setFontId, options: fontOptions } = useFont();
   const { brandColors, setBrandColors, resetBrandColors } = useTheme();
@@ -157,6 +160,7 @@ const user = await DEFAULT_COOKIE_GETTER("user");
           <TabsList className="mb-8">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
+            {isAdmin && <TabsTrigger value="general">General</TabsTrigger>}
             {isAdmin && <TabsTrigger value="appearance">Appearance</TabsTrigger>}
           </TabsList>
 
@@ -273,6 +277,31 @@ const user = await DEFAULT_COOKIE_GETTER("user");
           </TabsContent>
 
           {/* Appearance Tab (admin only) */}
+          {isAdmin && (
+            <TabsContent value="general">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Country</CardTitle>
+                  <CardDescription>Landlord, property and occupier forms are locked to United Kingdom. Turn this on to let users pick another country. Stored in this browser.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between gap-4">
+                    <Label htmlFor="country-unlock">Allow changing the country</Label>
+                    <Switch
+                      id="country-unlock"
+                      checked={countryUnlocked}
+                      onCheckedChange={(v) => {
+                        setCountryUnlocked(v);
+                        setCountryUnlockedState(v);
+                        toast.success(v ? "Country can now be changed on forms." : "Country is locked to United Kingdom.");
+                      }}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+
           {isAdmin && (
             <TabsContent value="appearance">
               <div className="space-y-6">
