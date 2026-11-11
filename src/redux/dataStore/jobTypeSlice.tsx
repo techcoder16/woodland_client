@@ -30,6 +30,7 @@ export interface JobType {
   totalCharged?: number | null;
   marginPercent?: number | null;
   marginAmount?: number | null;
+  deductible?: boolean;
   status: ReportingStatus;
   createdAt?: string;
   updatedAt?: string;
@@ -66,7 +67,7 @@ const initialState: JobTypeState = {
 export const fetchJobTypes = createAsyncThunk(
   "jobType/fetchJobTypes",
   async (
-    { propertyId, page, limit, status, contractorId }: { propertyId?: string; page: number; limit?: number; status?: ReportingStatus; contractorId?: string },
+    { propertyId, page, limit, status, contractorId }: { propertyId?: string; page: number; limit?: number; status?: ReportingStatus | "OPEN"; contractorId?: string },
     { rejectWithValue }
   ) => {
     try {

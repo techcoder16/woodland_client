@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import countriesData from '../../data/counteries.json';
+import countriesData from '../../data/ukCountry.json';
 import { useAppSelector } from '@/redux/reduxHooks';
 import AddressSearchField from '@/components/AddressSearchField';
 
@@ -60,7 +60,7 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
         },
         { label: 'Phone', value: selectedVendor.phone },
         { label: 'Email', value: selectedVendor.email },
-        { label: 'Bank', value: selectedVendor.bankName },
+        { label: 'Account Name', value: selectedVendor.bankName },
       ].filter((row) => row.value)
     : [];
 
@@ -142,6 +142,7 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
           }}
         />
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
         <InputField setValue={setValue} label="Post Code" name="postCode" register={register} error={errors.postCode?.message?.toString()} />
         <InputField setValue={setValue} label="Address Line 1 *" name="addressLine1" register={register} error={errors.addressLine1?.message?.toString()} />
         <InputField setValue={setValue} label="Address Line 2" name="addressLine2" register={register} error={errors.addressLine2?.message?.toString()} />
@@ -201,8 +202,9 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
           options={countriesData}
           register={register}
           error={errors.country?.message?.toString()}
-          onChange={(value) => handleSelectChange('country', value)}
+          disabled
         />
+        </div>
       </div>
 
       <div className="p-4 w-full">

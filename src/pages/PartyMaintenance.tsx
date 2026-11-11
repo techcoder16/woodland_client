@@ -72,7 +72,7 @@ interface JobType {
 const reportSchema = z.object({
   jobType: z.string().min(1, "Type is required"),
   location: z.string().min(1, "Location is required"),
-  description: z.string().min(1, "Description is required"),
+  description: z.string().optional(),
   dueDate: z
     .string()
     .min(1, "Due date is required")
@@ -315,13 +315,11 @@ const PartyMaintenance = ({ kind }: { kind: PartyKind }) => {
       toast.error("No property found on your account to report an issue for.");
       return;
     }
-    if (reportPictures.length === 0) {
-      toast.error("At least one photo is required to report an issue");
-      return;
-    }
     setIsSubmittingReport(true);
     try {
-      const uploaded = await uploadFiles(reportPictures, { category: "job-media", entityType: "jobType", propertyId, party: kind });
+      const uploaded = reportPictures.length
+        ? await uploadFiles(reportPictures, { category: "job-media", entityType: "jobType", propertyId, party: kind })
+        : [];
       await partyPost(kind, "property-management/job-type", { ...data, mediaFileIds: uploaded.map((f) => f.id), propertyId });
       toast.success("Maintenance request submitted");
       reset();
@@ -391,7 +389,7 @@ const PartyMaintenance = ({ kind }: { kind: PartyKind }) => {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="description">{renderLabel("Description *")}</Label>
+                      <Label htmlFor="description">{renderLabel("Description")}</Label>
                       <Textarea id="description" {...register("description")} placeholder="Describe the issue..." />
                       {errors.description && <p className="text-sm text-destructive">{errors.description.message}</p>}
                     </div>
@@ -401,7 +399,7 @@ const PartyMaintenance = ({ kind }: { kind: PartyKind }) => {
                       {errors.dueDate && <p className="text-sm text-destructive">{errors.dueDate.message}</p>}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="reportPictures">{renderLabel("Photos *")}</Label>
+                      <Label htmlFor="reportPictures">{renderLabel("Photos")}</Label>
                       <Input
                         id="reportPictures"
                         type="file"
@@ -409,7 +407,6 @@ const PartyMaintenance = ({ kind }: { kind: PartyKind }) => {
                         multiple
                         onChange={(e) => setReportPictures(Array.from(e.target.files || []))}
                       />
-                      <p className="text-xs text-muted-foreground">At least one photo is required.</p>
                     </div>
                   </div>
                   <div className="flex justify-end gap-2 pt-4 border-t mt-2">

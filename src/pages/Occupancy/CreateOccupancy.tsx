@@ -661,7 +661,7 @@ export default function CreateOccupancy() {
                           <Field label="First Name" required error={errors.customerFirstName}>
                             <Input value={form.customerFirstName} onChange={(e) => set("customerFirstName", e.target.value)} />
                           </Field>
-                          <Field label="Surname" required error={errors.customerSurname}>
+                          <Field label="Last Name" required error={errors.customerSurname}>
                             <Input value={form.customerSurname} onChange={(e) => set("customerSurname", e.target.value)} />
                           </Field>
                         </div>
@@ -797,7 +797,7 @@ export default function CreateOccupancy() {
                           <Field label="First Name" required error={errors.occFirstName}>
                             <Input value={form.occFirstName} onChange={(e) => set("occFirstName", e.target.value)} />
                           </Field>
-                          <Field label="Surname">
+                          <Field label="Last Name">
                             <Input value={form.occSurname} onChange={(e) => set("occSurname", e.target.value)} />
                           </Field>
                         </div>

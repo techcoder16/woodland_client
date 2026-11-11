@@ -44,7 +44,7 @@ const VendorPdf = ({ vendor, open: openProp, onOpenChange, hideTrigger }: any) =
         { label: "Address Line 2", value: vendor.addressLine2 },
         { label: "Town", value: vendor.town },
         { label: "Post Code", value: vendor.postCode },
-        { label: "Country", value: vendor.country },
+        { label: "Country", value: vendor.country === "GB" || !vendor.country ? "United Kingdom" : vendor.country },
         { label: "Phone", value: vendor.phone },
         { label: "Email", value: vendor.email },
       ]
@@ -52,14 +52,9 @@ const VendorPdf = ({ vendor, open: openProp, onOpenChange, hideTrigger }: any) =
     {
       title: "Bank Details",
       fields: [
-        { label: "Bank Name", value: vendor.bankName },
+        { label: "Account Name", value: vendor.bankName },
         { label: "Account Number", value: vendor.bankAccountNo },
         { label: "Sort Code", value: vendor.bankSortCode },
-        { label: "Bank Address Line 1", value: vendor.bankAddressLine1 },
-        { label: "Bank Address Line 2", value: vendor.bankAddressLine2 },
-        { label: "Bank Town", value: vendor.bankTown },
-        { label: "Bank Post Code", value: vendor.bankPostCode },
-        { label: "Bank Country", value: vendor.bankCountry },
       ]
     },
   ];

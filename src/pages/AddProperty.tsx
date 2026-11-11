@@ -47,7 +47,7 @@ const AddProperty = () => {
     resolver: zodResolver(propertySchema),
     mode: "onSubmit",
     defaultValues: {
-      country: "",
+      country: "GB",
       photographFileId: "",
       floorPlanFileId: "",
       attachmentFileIds: [],

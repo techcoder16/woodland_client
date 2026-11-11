@@ -21,13 +21,13 @@ const TenantPdf = ({ tenant, open: openProp, onOpenChange, hideTrigger }: any) =
       fields: [
         { label: "Title", value: tenant.title },
         { label: "First Name", value: tenant.FirstName },
-        { label: "Sure Name", value: tenant.SureName },
+        { label: "Last Name", value: tenant.SureName },
       ]
     },
     {
       title: "Contact Details",
       fields: [
-        { label: "Mobile No", value: tenant.MobileNo },
+        { label: "Mobile Number", value: tenant.MobileNo },
         { label: "Home Phone", value: tenant.HomePhone },
         { label: "Work Phone", value: tenant.WorkPhone },
         { label: "Email", value: tenant.Email },

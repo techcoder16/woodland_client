@@ -73,14 +73,14 @@ const Tenant = ({ register, watch, clearErrors, setValue, errors, isEdit }: Tena
         />
         <InputField
           setValue={setValue}
-          label="Sure Name"
+          label="Last Name"
           name="SureName"
           register={register}
           error={errors?.SureName?.message?.toString()}
         />
         <InputField
           setValue={setValue}
-          label="Mobile No"
+          label="Mobile Number"
           name="MobileNo"
           register={register}
           error={errors?.MobileNo?.message?.toString()}
