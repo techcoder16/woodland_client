@@ -12,6 +12,16 @@ const PHONE_SEPARATOR = ', ';
 const splitPhones = (value?: string | null) =>
   (value || '').split(',').map((p) => p.trim()).filter(Boolean);
 
+const TYPE_OPTIONS = [
+  { value: 'INDIVIDUAL', label: 'Individual' },
+  { value: 'COMPANY', label: 'Company' },
+];
+const CONTACT_OPTIONS = [
+  { value: 'EMAIL', label: 'Email' },
+  { value: 'PHONE', label: 'Phone' },
+  { value: 'POST', label: 'Post' },
+];
+
 const StandardInfo = ({ register, watch, clearErrors, setValue, errors, isEdit }: any) => {
   const [phones, setPhones] = useState<string[]>(() => {
     const initial = splitPhones(watch('phone'));
@@ -35,8 +45,31 @@ const StandardInfo = ({ register, watch, clearErrors, setValue, errors, isEdit }
       <div className="p-4 w-full">
         <div className="text-lg font-medium flex justify-start underline p-5">Personal Information</div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <InputField setValue={setValue} label="First Name" name="firstName" register={register} error={errors.firstName?.message?.toString()} />
-          <InputField setValue={setValue} label="Last Name" name="lastName" register={register} error={errors.lastName?.message?.toString()} />
+          <SelectField
+            label="Landlord Type"
+            name="vendorType"
+            watch={watch}
+            setValue={setValue}
+            options={TYPE_OPTIONS}
+            register={register}
+            error={errors.vendorType?.message?.toString()}
+          />
+          <SelectField
+            label="Preferred Contact Method"
+            name="preferredContact"
+            watch={watch}
+            setValue={setValue}
+            options={CONTACT_OPTIONS}
+            register={register}
+            error={errors.preferredContact?.message?.toString()}
+          />
+          {watch('vendorType') === 'COMPANY' && (
+            <div className="md:col-span-2">
+              <InputField setValue={setValue} label="Company Name" name="companyName" register={register} error={errors.companyName?.message?.toString()} />
+            </div>
+          )}
+          <InputField setValue={setValue} label={watch('vendorType') === 'COMPANY' ? 'Contact First Name' : 'First Name'} name="firstName" register={register} error={errors.firstName?.message?.toString()} />
+          <InputField setValue={setValue} label={watch('vendorType') === 'COMPANY' ? 'Contact Last Name' : 'Last Name'} name="lastName" register={register} error={errors.lastName?.message?.toString()} />
         </div>
       </div>
 
