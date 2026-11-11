@@ -1,3 +1,4 @@
+import { isCountryUnlocked } from "@/lib/countrySetting";
 import { useEffect } from "react";
 
 import InputField from "../../utils/InputField";
@@ -19,7 +20,7 @@ interface TenantProps {
 // country is always stored as GB.
 const Tenant = ({ register, watch, clearErrors, setValue, errors, isEdit }: TenantProps) => {
   useEffect(() => {
-    if (watch("country") !== "GB") setValue("country", "GB");
+    if (!isCountryUnlocked() && watch("country") !== "GB") setValue("country", "GB");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

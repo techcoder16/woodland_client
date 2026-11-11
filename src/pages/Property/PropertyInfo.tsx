@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import countriesData from '../../data/ukCountry.json';
+import { countryOptions, isCountryUnlocked } from '@/lib/countrySetting';
 import { useAppSelector } from '@/redux/reduxHooks';
 import AddressSearchField from '@/components/AddressSearchField';
 
@@ -167,7 +167,7 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
             if (address.postCode) setValue('postCode', address.postCode);
             // Ideal Postcodes returns England/Wales/Scotland/Northern Ireland;
             // the country field only offers "GB" as an option, so normalize.
-            setValue('country', 'GB', { shouldValidate: true });
+            if (!isCountryUnlocked()) setValue('country', 'GB', { shouldValidate: true });
             clearErrors(['addressLine1', 'country']);
           }}
         />
@@ -229,10 +229,10 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
           setValue={setValue}
           watch={watch}
           name="country"
-          options={countriesData}
+          options={countryOptions(isCountryUnlocked())}
           register={register}
           error={errors.country?.message?.toString()}
-          disabled
+          disabled={!isCountryUnlocked()}
         />
         </div>
       </div>

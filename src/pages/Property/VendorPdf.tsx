@@ -15,8 +15,8 @@ import { useFileUrls } from "@/hooks/useFileUrls";
 
 const DOCUMENTS = [
   { key: "photoIdFileId", label: "Photo ID" },
-  { key: "proofOfRelationshipFileId", label: "Proof of Relationship" },
-  { key: "proofOfOwnershipFileId", label: "Proof of Ownership" },
+  { key: "proofOfRelationshipFileId", label: "Proof of Residential Address" },
+  { key: "proofOfOwnershipFileId", label: "Anti-Money Laundering Certificate" },
 ] as const;
 
 const VendorPdf = ({ vendor, open: openProp, onOpenChange, hideTrigger }: any) => {
@@ -48,8 +48,9 @@ const VendorPdf = ({ vendor, open: openProp, onOpenChange, hideTrigger }: any) =
         { label: "Post Code", value: vendor.postCode },
         { label: "Country", value: vendor.country === "GB" || !vendor.country ? "United Kingdom" : vendor.country },
         { label: "Phone", value: vendor.phone },
-        { label: "Preferred Contact", value: ({ EMAIL: "Email", PHONE: "Phone", POST: "Post" } as Record<string, string>)[vendor.preferredContact] || "" },
+        { label: "Preferred Contact", value: ({ EMAIL: "Email", PHONE: "Phone" } as Record<string, string>)[vendor.preferredContact] || "" },
         { label: "Email", value: vendor.email },
+        { label: "Other Emails", value: vendor.otherEmails },
       ]
     },
     {

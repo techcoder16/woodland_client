@@ -22,6 +22,7 @@ import { post } from "@/helper/api";
 const formSchema = z.object({
   vendorType: z.string().nullable().optional(),
   companyName: z.string().nullable().optional(),
+  otherEmails: z.string().nullable().optional(),
   preferredContact: z.string().nullable().optional(),
   firstName: z.string().nullable().optional(),
   lastName: z.string().nullable().optional(),

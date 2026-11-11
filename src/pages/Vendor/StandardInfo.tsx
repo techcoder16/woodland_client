@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { Plus, X } from 'lucide-react';
 import InputField from '../../utils/InputField';
 import SelectField from '../../utils/SelectedField';
-import countriesData from '../../data/ukCountry.json';
 import AddressSearchField from '@/components/AddressSearchField';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { countryOptions, isCountryUnlocked } from '@/lib/countrySetting';
 
 // Multiple phone numbers are stored in the single `phone` column, joined by ", ".
 const PHONE_SEPARATOR = ', ';
@@ -19,7 +19,6 @@ const TYPE_OPTIONS = [
 const CONTACT_OPTIONS = [
   { value: 'EMAIL', label: 'Email' },
   { value: 'PHONE', label: 'Phone' },
-  { value: 'POST', label: 'Post' },
 ];
 
 const StandardInfo = ({ register, watch, clearErrors, setValue, errors, isEdit }: any) => {
@@ -28,9 +27,17 @@ const StandardInfo = ({ register, watch, clearErrors, setValue, errors, isEdit }
     return initial.length ? initial : [''];
   });
 
-  // Country is always United Kingdom for Woodland.
+  const [emails, setEmails] = useState<string[]>(() => splitPhones(watch('otherEmails')));
+  const updateEmails = (next: string[]) => {
+    setEmails(next);
+    setValue('otherEmails', next.map((e) => e.trim()).filter(Boolean).join(PHONE_SEPARATOR), { shouldDirty: true });
+  };
+
+  // Country is United Kingdom unless an admin has unlocked it in Settings.
+  const countryUnlocked = isCountryUnlocked();
   useEffect(() => {
-    if (watch('country') !== 'GB') setValue('country', 'GB');
+    if (!countryUnlocked && watch('country') !== 'GB') setValue('country', 'GB');
+    if (!watch('country')) setValue('country', 'GB');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -85,7 +92,7 @@ const StandardInfo = ({ register, watch, clearErrors, setValue, errors, isEdit }
               if (address.addressLine2) setValue('addressLine2', address.addressLine2);
               if (address.town) setValue('town', address.town);
               if (address.postCode) setValue('postCode', address.postCode);
-              setValue('country', 'GB');
+              if (!countryUnlocked) setValue('country', 'GB');
               clearErrors(['addressLine1', 'postCode']);
             }}
           />
@@ -101,10 +108,10 @@ const StandardInfo = ({ register, watch, clearErrors, setValue, errors, isEdit }
             setValue={setValue}
             watch={watch}
             name="country"
-            options={countriesData}
+            options={countryOptions(countryUnlocked)}
             register={register}
             error={errors.country?.message?.toString()}
-            disabled
+            disabled={!countryUnlocked}
           />
         </div>
       </div>
@@ -137,27 +144,45 @@ const StandardInfo = ({ register, watch, clearErrors, setValue, errors, isEdit }
                 )}
               </div>
             ))}
-            <Button type="button" variant="outline" size="sm" onClick={() => updatePhones([...phones, ''])}>
-              <Plus className="mr-1 h-4 w-4" /> Add phone number
+            <Button type="button" variant="outline" size="sm" className="border-primary text-primary" onClick={() => updatePhones([...phones, ''])}>
+              <Plus className="mr-1 h-4 w-4" /> Add another phone
             </Button>
             {errors.phone?.message && <p className="text-destructive text-xs mt-1">{errors.phone.message.toString()}</p>}
           </div>
 
-          {isEdit ? (
-            <div className="space-y-1.5">
-              <label className="text-muted-foreground font-medium text-sm">Email</label>
-              <div className="text-sm py-2">{watch("email")}</div>
-              <p className="text-xs text-muted-foreground">Email is the landlord's login and can't be changed here.</p>
-            </div>
-          ) : (
-            <InputField
-              setValue={setValue}
-              label="Email"
-              name="email"
-              register={register}
-              error={errors.email?.message?.toString()}
-            />
-          )}
+          <div className="space-y-1.5">
+            {isEdit ? (
+              <>
+                <label className="text-muted-foreground font-medium text-sm">Primary Email</label>
+                <div className="text-sm py-2">{watch("email")}</div>
+                <p className="text-xs text-muted-foreground">The primary email is the landlord's login and can't be changed here.</p>
+              </>
+            ) : (
+              <InputField
+                setValue={setValue}
+                label="Primary Email"
+                name="email"
+                register={register}
+                error={errors.email?.message?.toString()}
+              />
+            )}
+            {emails.map((email, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <Input
+                  type="email"
+                  value={email}
+                  placeholder="Additional email"
+                  onChange={(e) => updateEmails(emails.map((x, j) => (j === i ? e.target.value : x)))}
+                />
+                <Button type="button" variant="ghost" size="icon" aria-label="Remove email" onClick={() => updateEmails(emails.filter((_, j) => j !== i))}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+            <Button type="button" variant="outline" size="sm" className="border-primary text-primary" onClick={() => updateEmails([...emails, ''])}>
+              <Plus className="mr-1 h-4 w-4" /> Add another email
+            </Button>
+          </div>
         </div>
       </div>
     </div>

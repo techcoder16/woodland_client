@@ -68,7 +68,7 @@ const EditProperty = () => {
 
     return {
       ...property,
-      country: "GB",
+      country: property.country || "GB",
       vendor: property.vendorId ?? "",
       bedrooms: property.bedrooms ?? "",
       bathrooms: property.bathrooms ?? "",
