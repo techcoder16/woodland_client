@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Edit, FileText, Loader2, Plus, Trash2, Upload, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import FileDropZone from "@/components/FileDropZone";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -139,12 +140,8 @@ export default function GeneralDocumentsDraftStep({ drafts, onDraftsChange }: Ge
           <div className="space-y-3">
             <div className="space-y-1">
               <Label>File</Label>
-              <input ref={fileInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.gif" className="hidden" onChange={(e) => { setFile(e.target.files?.[0] || undefined); setOcrSummary(null); }} />
+              <FileDropZone file={file} onFile={(f) => { setFile(f || undefined); setOcrSummary(null); }} />
               <div className="flex flex-wrap items-center gap-2">
-                <Button type="button" size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                  <Upload className="mr-1.5 h-3.5 w-3.5" />Choose file
-                </Button>
-                {file && <span className="max-w-[10rem] truncate text-xs text-muted-foreground" title={file.name}>{file.name}</span>}
                 <Button type="button" size="sm" variant="outline" disabled={!file || extracting} onClick={extractSummary}>
                   {extracting ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Wand2 className="mr-1.5 h-3.5 w-3.5" />}
                   Read via OCR

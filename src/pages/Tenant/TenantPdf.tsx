@@ -19,6 +19,7 @@ const TenantPdf = ({ tenant, open: openProp, onOpenChange, hideTrigger }: any) =
     {
       title: "Personal Information",
       fields: [
+        { label: "Title", value: tenant.title },
         { label: "First Name", value: tenant.FirstName },
         { label: "Last Name", value: tenant.SureName },
       ]
@@ -30,23 +31,6 @@ const TenantPdf = ({ tenant, open: openProp, onOpenChange, hideTrigger }: any) =
         { label: "Contact Number 2", value: tenant.HomePhone },
         { label: "Email 1", value: tenant.Email },
         { label: "Email 2", value: tenant.Email2 },
-      ]
-    },
-    {
-      title: "Address",
-      fields: [
-        { label: "Post Code", value: tenant.postCode },
-        { label: "Address Line 1", value: tenant.addressLine1 },
-        { label: "Address Line 2", value: tenant.addressLine2 },
-        { label: "Town", value: tenant.town },
-        { label: "Country", value: "United Kingdom" },
-        { label: "Address (legacy)", value: tenant.addressLine1 ? undefined : tenant.Address },
-      ]
-    },
-    {
-      title: "Other",
-      fields: [
-        { label: "ID Check", value: tenant.IDCheck },
       ]
     },
   ];

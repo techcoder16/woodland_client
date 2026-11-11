@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import InputField from '../../utils/InputField';
 import SelectField from '../../utils/SelectedField';
 import VendorPicker from '../../utils/VendorPicker';
@@ -17,6 +17,8 @@ import { useAppSelector } from '@/redux/reduxHooks';
 import AddressSearchField from '@/components/AddressSearchField';
 
 import { TOWN_AREA } from '@/lib/constant';
+import FileUploadField from '@/utils/FileUploadField';
+import { get } from '@/helper/api';
 
 const propertyTypeCategoryOptions = [
   { value: 'house', label: 'House' },
@@ -25,12 +27,20 @@ const propertyTypeCategoryOptions = [
   { value: 'flat', label: 'Flat' },
   { value: 'room', label: 'Room' },
   { value: 'maisonette', label: 'Maisonette' },
+  { value: 'hmo', label: 'HMO' },
 ];
 
 const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, property }: any) => {
 
   const [isAddingArea, setIsAddingArea] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [councilOptions, setCouncilOptions] = useState<{ value: string; label: string }[]>([]);
+
+  useEffect(() => {
+    get<{ councils: { id: string; name: string }[] }>('occupancy/councils').then(({ data }) =>
+      setCouncilOptions((data?.councils || []).map((c) => ({ value: c.id, label: c.name }))),
+    );
+  }, []);
 
   const handleSelectChange = useCallback(
     (name: string, value: string) => {
@@ -67,8 +77,12 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
   const rooms = watch('rooms') || [];
 
   const propertyTypeCategory = watch('propertyTypeCategory');
-  const isFlatOrMaisonette = ['flat', 'maisonette'].includes((propertyTypeCategory || '').toLowerCase());
+  const typeKey = (propertyTypeCategory || '').toLowerCase();
+  const isFlat = typeKey === 'flat';
+  const isMaisonetteOrStudio = ['maisonette', 'studio'].includes(typeKey);
   const bedrooms = watch('bedrooms');
+  const bedroomCount = Number(bedrooms) || 0;
+  const isCommunal = !!watch('communal');
   const bathrooms = watch('bathrooms');
   const receptions = watch('receptions');
   const detailChips = [
@@ -76,8 +90,13 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
     bedrooms ? `${bedrooms} bed` : null,
     bathrooms ? `${bathrooms} bath` : null,
     receptions ? `${receptions} reception` : null,
+    bedroomCount >= 2 && (watch('bedroomsGround') || watch('bedroomsFirst')) ? `${watch('bedroomsGround') || 0} ground / ${watch('bedroomsFirst') || 0} first floor bed` : null,
+    isMaisonetteOrStudio && watch('floorNumber') ? `${watch('floorNumber')} floor${Number(watch('floorNumber')) === 1 ? '' : 's'}` : null,
+    isMaisonetteOrStudio && watch('steps') ? `${watch('steps')} steps` : null,
     watch('wheelchairAccess') ? 'Wheelchair Access' : null,
     watch('hasGarden') ? 'Garden' : null,
+    watch('hasParking') ? 'Parking' : null,
+    isCommunal ? 'Communal' : null,
     watch('lift') ? 'Lift' : null,
     watch('gas') ? 'Gas' : null,
   ].filter(Boolean);
@@ -113,6 +132,17 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
 
       <div className="p-4 w-full">
         <hr />
+
+        <SelectField
+          label="Council"
+          name="councilId"
+          watch={watch}
+          setValue={setValue}
+          options={councilOptions}
+          register={register}
+          error={errors.councilId?.message?.toString()}
+          onChange={(value) => handleSelectChange('councilId', value)}
+        />
 
         <SelectField
           label="For"
@@ -277,17 +307,63 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
               register={register}
               error={errors.receptions?.message?.toString()}
             />
-            {isFlatOrMaisonette && (
+            {isFlat && (
               <InputField
                 setValue={setValue}
-                label="No. of Floor"
+                label="Floor Number"
                 name="floorNumber"
                 type="number"
                 register={register}
                 error={errors.floorNumber?.message?.toString()}
               />
             )}
+            {isMaisonetteOrStudio && (
+              <>
+                <InputField
+                  setValue={setValue}
+                  label="No. of Floors"
+                  name="floorNumber"
+                  type="number"
+                  register={register}
+                  error={errors.floorNumber?.message?.toString()}
+                />
+                <InputField
+                  setValue={setValue}
+                  label="No. of Steps"
+                  name="steps"
+                  type="number"
+                  register={register}
+                  error={errors.steps?.message?.toString()}
+                />
+              </>
+            )}
           </div>
+
+          {bedroomCount >= 2 && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-1">
+              <InputField
+                setValue={setValue}
+                label="Bedrooms on Ground Floor"
+                name="bedroomsGround"
+                type="number"
+                register={register}
+                error={errors.bedroomsGround?.message?.toString()}
+              />
+              <InputField
+                setValue={setValue}
+                label="Bedrooms on First Floor"
+                name="bedroomsFirst"
+                type="number"
+                register={register}
+                error={errors.bedroomsFirst?.message?.toString()}
+              />
+              {Number(watch('bedroomsGround') || 0) + Number(watch('bedroomsFirst') || 0) !== bedroomCount && (
+                <p className="text-xs text-muted-foreground self-end pb-2">
+                  Ground + first floor should add up to {bedroomCount} bedrooms.
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 px-1">
             <label className="flex items-center gap-2 text-sm">
@@ -306,6 +382,24 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
             </label>
             <label className="flex items-center gap-2 text-sm">
               <Checkbox
+                checked={!!watch('hasParking')}
+                onCheckedChange={(v) => setValue('hasParking', !!v)}
+              />
+              Parking
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox
+                checked={isCommunal}
+                onCheckedChange={(v) => {
+                  setValue('communal', !!v);
+                  // No longer communal → the fire risk assessment no longer applies.
+                  if (!v) setValue('fireRiskAssessmentFileId', '', { shouldDirty: true });
+                }}
+              />
+              Communal
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox
                 checked={!!watch('lift')}
                 onCheckedChange={(v) => setValue('lift', !!v)}
               />
@@ -319,6 +413,22 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
               Gas
             </label>
           </div>
+
+          {isCommunal && (
+            <div className="px-1">
+              <FileUploadField
+                label="Fire Risk Assessment"
+                name="fireRiskAssessmentFileId"
+                accept="image/*,.pdf"
+                multiple={false}
+                register={register}
+                setValue={setValue}
+                watch={watch}
+                error={errors.fireRiskAssessmentFileId?.message?.toString()}
+                upload={{ category: 'property-document', entityType: 'property', entityId: property?.id, propertyId: property?.id }}
+              />
+            </div>
+          )}
 
           <DialogFooter>
             <Button type="button" onClick={() => setIsDetailOpen(false)}>Done</Button>

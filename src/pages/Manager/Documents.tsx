@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, Download, Flame, FileText, Loader2, Plus, ShieldCheck, Trash2, Upload, Wand2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import FileDropZone from "@/components/FileDropZone";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -510,15 +511,8 @@ export function CertificatesSection({ propertyId }: { propertyId: string }) {
               <Label>Certificate file</Label>
               {/* Choosing a file only attaches it; reading the type and dates
                   with OCR is optional ("Get dates via OCR"). */}
-              <input ref={fileInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.gif" className="hidden" onChange={(e) => {
-                setFile(e.target.files?.[0] || null);
-                e.target.value = "";
-              }} />
+              <FileDropZone file={file} onFile={setFile} disabled={extracting} />
               <div className="flex flex-wrap items-center gap-2">
-                <Button type="button" size="sm" variant="outline" disabled={extracting} onClick={() => fileInputRef.current?.click()}>
-                  <Upload className="mr-1.5 h-3.5 w-3.5" />Choose file
-                </Button>
-                {file && <span className="max-w-[10rem] truncate text-xs text-muted-foreground" title={file.name}>{file.name}</span>}
                 <Button type="button" size="sm" variant="outline" disabled={!file || extracting} onClick={() => void extractDates()}>
                   {extracting ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Wand2 className="mr-1.5 h-3.5 w-3.5" />}
                   {extracting ? "Reading dates…" : "Get dates via OCR"}
@@ -669,12 +663,8 @@ export function GeneralDocumentsSection({ propertyId }: { propertyId: string }) 
           <div className="space-y-3">
             <div className="space-y-1">
               <Label>File</Label>
-              <input ref={fileInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.gif" className="hidden" onChange={(e) => { setFile(e.target.files?.[0] || null); setOcrSummary(null); }} />
+              <FileDropZone file={file} onFile={(f) => { setFile(f); setOcrSummary(null); }} />
               <div className="flex flex-wrap items-center gap-2">
-                <Button type="button" size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                  <Upload className="mr-1.5 h-3.5 w-3.5" />Choose file
-                </Button>
-                {file && <span className="max-w-[10rem] truncate text-xs text-muted-foreground" title={file.name}>{file.name}</span>}
                 <Button type="button" size="sm" variant="outline" disabled={!file || extracting} onClick={extractSummary}>
                   {extracting ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Wand2 className="mr-1.5 h-3.5 w-3.5" />}
                   Read via OCR
