@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { DEFAULT_COOKIE_DELETE, DEFAULT_COOKIE_GETTER, DEFAULT_COOKIE_SETTER } from "@/helper/Cookie";
+import { DEFAULT_COOKIE_DELETE, DEFAULT_COOKIE_GETTER, DEFAULT_COOKIE_SETTER, AUTH_COOKIE_DAYS } from "@/helper/Cookie";
 import { storeTokens, clearTokens, checkTokenInfo, startTokenValidation, stopTokenValidation } from "@/helper/tokenManager";
 import { userPermissionApi, userApi } from "@/helper/simplePermissionApi";
 import { User, UserPermission, StaffRole, Department } from "@/types/permissions";
@@ -55,10 +55,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } catch (apiError) {
             console.error('Error fetching user from API:', apiError);
             // Do not fall back to a cached cookie for role/permission data —
-            // treat this as logged out rather than risk granting a stale role.
-            await DEFAULT_COOKIE_DELETE("access_token");
-            await DEFAULT_COOKIE_DELETE("refresh_token");
-            await DEFAULT_COOKIE_DELETE("user");
+            // never grant a stale role. But only end the session when the server
+            // actually rejected the login: a network blip or 5xx must not log
+            // the user out (the cookies stay, so a reload retries).
+            const status = axios.isAxiosError(apiError) ? apiError.response?.status : undefined;
+            if (status === 400 || status === 401 || status === 403) {
+              await DEFAULT_COOKIE_DELETE("access_token");
+              await DEFAULT_COOKIE_DELETE("refresh_token");
+              await DEFAULT_COOKIE_DELETE("user");
+            }
             setUser(null);
           }
         } else {
@@ -131,12 +136,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(currentUser);
           
           // Store user in cookie as backup
-          await DEFAULT_COOKIE_SETTER("user", JSON.stringify(currentUser), false);
+          await DEFAULT_COOKIE_SETTER("user", JSON.stringify(currentUser), false, AUTH_COOKIE_DAYS);
         } catch (apiError) {
           console.error('Error fetching user from API after login:', apiError);
           // Fallback to login response user data
           setUser(response.data.user);
-          await DEFAULT_COOKIE_SETTER("user", JSON.stringify(response.data.user), false);
+          await DEFAULT_COOKIE_SETTER("user", JSON.stringify(response.data.user), false, AUTH_COOKIE_DAYS);
         }
         
         // Load user permissions after successful login
@@ -183,7 +188,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const currentUser = await userApi.getCurrentUser();
           console.log('Current user from API after token refresh:', currentUser);
           setUser(currentUser);
-          await DEFAULT_COOKIE_SETTER("user", JSON.stringify(currentUser), false);
+          await DEFAULT_COOKIE_SETTER("user", JSON.stringify(currentUser), false, AUTH_COOKIE_DAYS);
         } catch (apiError) {
           console.error('Error fetching user from API after token refresh:', apiError);
         }

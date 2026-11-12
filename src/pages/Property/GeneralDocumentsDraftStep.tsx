@@ -104,6 +104,15 @@ export default function GeneralDocumentsDraftStep({ drafts, onDraftsChange }: Ge
         <Button onClick={openAdd}><Plus className="mr-2 h-4 w-4" />Add document</Button>
       </div>
 
+      <FileDropZone
+        onFiles={(files) =>
+          onDraftsChange([
+            ...drafts,
+            ...files.map((f) => ({ localId: crypto.randomUUID(), title: f.name.replace(/\.[^.]+$/, ""), file: f })),
+          ])
+        }
+      />
+
       <Table>
         <TableHeader>
           <TableRow>

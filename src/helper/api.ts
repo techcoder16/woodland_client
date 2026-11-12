@@ -1,6 +1,6 @@
 import axios from "axios";
 import { refreshTokenIfNeeded, getAccessToken } from "./tokenManager";
-import { DEFAULT_COOKIE_GETTER, DEFAULT_COOKIE_SETTER, DEFAULT_COOKIE_DELETE } from "./Cookie";
+import { DEFAULT_COOKIE_GETTER, DEFAULT_COOKIE_SETTER, DEFAULT_COOKIE_DELETE, AUTH_COOKIE_DAYS } from "./Cookie";
 import { extractApiMessage } from "./parseApiError";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -90,9 +90,9 @@ axiosInstance.interceptors.response.use(
           throw new Error('No access token received from refresh endpoint');
         }
         
-        await DEFAULT_COOKIE_SETTER("access_token", accessToken, false);
+        await DEFAULT_COOKIE_SETTER("access_token", accessToken, false, AUTH_COOKIE_DAYS);
         if (newRefreshToken) {
-          await DEFAULT_COOKIE_SETTER("refresh_token", newRefreshToken, false);
+          await DEFAULT_COOKIE_SETTER("refresh_token", newRefreshToken, false, AUTH_COOKIE_DAYS);
         }
 
         processQueue(null, accessToken);

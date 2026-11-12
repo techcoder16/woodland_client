@@ -1,4 +1,4 @@
-import { DEFAULT_COOKIE_GETTER, DEFAULT_COOKIE_SETTER, DEFAULT_COOKIE_DELETE } from "./Cookie";
+import { DEFAULT_COOKIE_GETTER, DEFAULT_COOKIE_SETTER, DEFAULT_COOKIE_DELETE, AUTH_COOKIE_DAYS } from "./Cookie";
 import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -64,11 +64,11 @@ export async function refreshTokenIfNeeded(): Promise<boolean> {
     // Calculate expiry time
     const expiryTime = Math.floor(Date.now() / 1000) + (expiresIn || 3600);
     
-    await DEFAULT_COOKIE_SETTER("access_token", accessToken, false);
-    await DEFAULT_COOKIE_SETTER("token_expiry", expiryTime.toString(), false);
+    await DEFAULT_COOKIE_SETTER("access_token", accessToken, false, AUTH_COOKIE_DAYS);
+    await DEFAULT_COOKIE_SETTER("token_expiry", expiryTime.toString(), false, AUTH_COOKIE_DAYS);
     
     if (newRefreshToken) {
-      await DEFAULT_COOKIE_SETTER("refresh_token", newRefreshToken, false);
+      await DEFAULT_COOKIE_SETTER("refresh_token", newRefreshToken, false, AUTH_COOKIE_DAYS);
     }
 
     console.log('Token refreshed successfully, new expiry:', new Date(expiryTime * 1000).toLocaleTimeString());
@@ -122,11 +122,11 @@ export async function storeTokens(loginData: any): Promise<void> {
   // Calculate expiry time
   const expiryTime = Math.floor(Date.now() / 1000) + (expiresIn || 3600);
   
-  await DEFAULT_COOKIE_SETTER("access_token", accessToken, false);
-  await DEFAULT_COOKIE_SETTER("token_expiry", expiryTime.toString(), false);
+  await DEFAULT_COOKIE_SETTER("access_token", accessToken, false, AUTH_COOKIE_DAYS);
+  await DEFAULT_COOKIE_SETTER("token_expiry", expiryTime.toString(), false, AUTH_COOKIE_DAYS);
   
   if (refreshToken) {
-    await DEFAULT_COOKIE_SETTER("refresh_token", refreshToken, false);
+    await DEFAULT_COOKIE_SETTER("refresh_token", refreshToken, false, AUTH_COOKIE_DAYS);
   }
 }
 

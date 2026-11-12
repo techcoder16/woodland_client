@@ -1,5 +1,6 @@
 // src/App.tsx
-import React, { useEffect, useState } from "react";
+import React, { Suspense, lazy, useEffect, useState } from "react";
+import SplashScreen from "@/components/SplashScreen";
 import { Provider } from "react-redux";
 import store from "./redux/store";
 import { ThemeProvider } from "@/context/ThemeContext";
@@ -7,55 +8,57 @@ import { FontProvider } from "@/context/FontContext";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "./components/ui/toaster";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import VendorList from "./pages/VendorList";
-import AddVendor from "./pages/AddVendor";
-import PropertyList from "./pages/PropertyList";
-import PropertyDetailPage from "./pages/PropertyDetailPage";
-import PropertyFinancePage from "./pages/PropertyFinancePage";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
-import EditVendor from "./pages/EditVendor";
-import ContractorList from "./pages/ContractorList";
-import AddContractor from "./pages/AddContractor";
-import EditContractor from "./pages/EditContractor";
-import MaintenanceList from "./pages/Maintenance/MaintenanceList";
-import MaintenanceDetail from "./pages/Maintenance/MaintenanceDetail";
-import AddProperty from "./pages/AddProperty";
-import EditProperty from "./pages/EditProperty";
 import { AuthProvider, useAuth } from "./context/AuthContext";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import  Settings  from "@/pages/Settings";
-import TenantList from "./pages/TenantList";
-import PropertyManager from "./pages/PropertyManager";
-import MainTransaction from "./pages/MainTransaction";
-import NewLandlordPayment from "./pages/Finance/NewLandlordPayment";
-import LandlordPayments from "./pages/Finance/LandlordPayments";
-import WoodlandOcr from "./pages/Finance/WoodlandOcr";
-import IncomingPayments from "./pages/Finance/IncomingPayments";
-import NewIncomingPayment from "./pages/Finance/NewIncomingPayment";
-import ComplianceOverview from "./pages/Compliance/ComplianceOverview";
-import Free from "./pages/Free";
-import AdminDashboard from "./pages/SimpleAdminDashboard";
-import CreateUser from "./pages/admin/CreateUser";
-import CreateScreen from "./pages/admin/CreateScreen";
-import DesignPreview from "./pages/_DesignPreview";
-import PartyLogin from "./pages/PartyLogin";
-import PartySetPassword from "./pages/PartySetPassword";
-import PartyMaintenance from "./pages/PartyMaintenance";
-import PartyAccount from "./pages/PartyAccount";
-import PartyProperty from "./pages/PartyProperty";
-import PartyForgotPassword from "./pages/PartyForgotPassword";
-import PartyResetPassword from "./pages/PartyResetPassword";
 import PartyProtectedRoute from "@/components/PartyProtectedRoute";
-import OccupancyList from "./pages/Occupancy/OccupancyList";
-import CreateOccupancy from "./pages/Occupancy/CreateOccupancy";
-import OccupancyDetail from "./pages/Occupancy/OccupancyDetail";
-import CouncilCustomers from "./pages/Occupancy/CouncilCustomers";
-import OccupierDashboard from "./pages/OccupierDashboard";
+// Pages are code-split: each loads on first visit instead of in one huge bundle.
+const Login = lazy(() => import("./pages/Login"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const VendorList = lazy(() => import("./pages/VendorList"));
+const AddVendor = lazy(() => import("./pages/AddVendor"));
+const PropertyList = lazy(() => import("./pages/PropertyList"));
+const PropertyDetailPage = lazy(() => import("./pages/PropertyDetailPage"));
+const PropertyFinancePage = lazy(() => import("./pages/PropertyFinancePage"));
+const EditVendor = lazy(() => import("./pages/EditVendor"));
+const ContractorList = lazy(() => import("./pages/ContractorList"));
+const AddContractor = lazy(() => import("./pages/AddContractor"));
+const EditContractor = lazy(() => import("./pages/EditContractor"));
+const MaintenanceList = lazy(() => import("./pages/Maintenance/MaintenanceList"));
+const MaintenanceDetail = lazy(() => import("./pages/Maintenance/MaintenanceDetail"));
+const AddProperty = lazy(() => import("./pages/AddProperty"));
+const EditProperty = lazy(() => import("./pages/EditProperty"));
+const Index = lazy(() => import("./pages/Index"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Settings = lazy(() => import("@/pages/Settings"));
+const TenantList = lazy(() => import("./pages/TenantList"));
+const PropertyManager = lazy(() => import("./pages/PropertyManager"));
+const MainTransaction = lazy(() => import("./pages/MainTransaction"));
+const NewLandlordPayment = lazy(() => import("./pages/Finance/NewLandlordPayment"));
+const LandlordPayments = lazy(() => import("./pages/Finance/LandlordPayments"));
+const WoodlandOcr = lazy(() => import("./pages/Finance/WoodlandOcr"));
+const IncomingPayments = lazy(() => import("./pages/Finance/IncomingPayments"));
+const NewIncomingPayment = lazy(() => import("./pages/Finance/NewIncomingPayment"));
+const ComplianceOverview = lazy(() => import("./pages/Compliance/ComplianceOverview"));
+const Free = lazy(() => import("./pages/Free"));
+const AdminDashboard = lazy(() => import("./pages/SimpleAdminDashboard"));
+const CreateUser = lazy(() => import("./pages/admin/CreateUser"));
+const CreateScreen = lazy(() => import("./pages/admin/CreateScreen"));
+const DesignPreview = lazy(() => import("./pages/_DesignPreview"));
+const PartyLogin = lazy(() => import("./pages/PartyLogin"));
+const PartySetPassword = lazy(() => import("./pages/PartySetPassword"));
+const PartyMaintenance = lazy(() => import("./pages/PartyMaintenance"));
+const PartyAccount = lazy(() => import("./pages/PartyAccount"));
+const PartyProperty = lazy(() => import("./pages/PartyProperty"));
+const PartyForgotPassword = lazy(() => import("./pages/PartyForgotPassword"));
+const PartyResetPassword = lazy(() => import("./pages/PartyResetPassword"));
+const OccupancyList = lazy(() => import("./pages/Occupancy/OccupancyList"));
+const CreateOccupancy = lazy(() => import("./pages/Occupancy/CreateOccupancy"));
+const OccupancyDetail = lazy(() => import("./pages/Occupancy/OccupancyDetail"));
+const CouncilCustomers = lazy(() => import("./pages/Occupancy/CouncilCustomers"));
+const OccupierDashboard = lazy(() => import("./pages/OccupierDashboard"));
+
 // Incoming payments are open to Super User, Admin and Finance by role,
 // rather than by per-screen permission (see canManageIncomingPayments).
 function IncomingPaymentsRoute({ route, children }: { route: string; children: React.ReactNode }) {
@@ -84,8 +87,7 @@ function App() {
   }, []);
 
   if (loading) {
- 
-    return <div>Loading...</div>;
+    return <SplashScreen />;
   }
 
   return (
@@ -98,6 +100,7 @@ function App() {
           <BrowserRouter>
             <AuthProvider>
               <Sonner/>
+              <Suspense fallback={<SplashScreen />}>
               <Routes>
               <Route path="/" element={<Index />} />
                 <Route path="/_design-preview" element={<DesignPreview />} />
@@ -334,6 +337,7 @@ function App() {
                 {/* Redirect unknown routes to login */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              </Suspense>
        
             </AuthProvider>
           </BrowserRouter>
