@@ -47,6 +47,7 @@ z.object({
   rentEffectiveDate: z.string().nullable().optional(),
   rentPerMonth: z.string().nullable().optional(),
   rentPayableInAdvance: z.string().nullable().optional(),
+  rentPayableTiming: z.string().nullable().optional(),
   rentalTerms: z.string().nullable().optional(),
   termMonths: z.string().nullable().optional(),
 

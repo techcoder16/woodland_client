@@ -3,8 +3,13 @@ import SelectField from "@/utils/SelectedField";
 import TextAreaField from "@/utils/TextAreaField";
 import { DateField } from "@/utils/DateField";
 import { Button } from "@/components/ui/button";
-import { FileText } from "lucide-react";
-import { generateManagementAgreementPdf } from "@/helper/generateManagementAgreement";
+import { Badge } from "@/components/ui/badge";
+import { FileText, Loader2, Save, Send } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { generateManagementAgreementPdf, buildManagementAgreementPdfFile } from "@/helper/generateManagementAgreement";
+import { get, post } from "@/helper/api";
+import { uploadFileOnce } from "@/helper/fileUpload";
 
 interface ManagementAgreementStepProps {
   register: any;
@@ -13,7 +18,16 @@ interface ManagementAgreementStepProps {
   clearErrors: any;
   errors: any;
   vendorName?: string;
+  /** Known when editing an existing property. */
+  propertyId?: string;
+  /** Resolves the property id, saving the property as a draft first if it does not exist yet. */
+  ensurePropertyId?: () => Promise<string | null>;
 }
+
+const PAYABLE_TIMING_OPTIONS = [
+  { value: "advance", label: "In Advance" },
+  { value: "arrears", label: "In Arrears" },
+];
 
 const PAYABLE_IN_ADVANCE_OPTIONS = [
   { value: "1_week", label: "1 Week" },
@@ -22,7 +36,60 @@ const PAYABLE_IN_ADVANCE_OPTIONS = [
   { value: "1_year", label: "1 Year" },
 ];
 
-const ManagementAgreementStep = ({ register, watch, setValue, clearErrors, errors, vendorName }: ManagementAgreementStepProps) => {
+const ManagementAgreementStep = ({ register, watch, setValue, clearErrors, errors, vendorName, propertyId, ensurePropertyId }: ManagementAgreementStepProps) => {
+  const [saving, setSaving] = useState<"DRAFT" | "PUBLISHED" | null>(null);
+  const [agreementStatus, setAgreementStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!propertyId) return;
+    get<{ data: any[] }>(`property-management/documents/${propertyId}`).then(({ data }) => {
+      const doc = (data?.data || []).find((d: any) => d.kind === "MANAGEMENT_AGREEMENT");
+      setAgreementStatus(doc?.status ?? null);
+    });
+  }, [propertyId]);
+
+  const agreementData = () => ({
+    addressLine1: watch("addressLine1"),
+    addressLine2: watch("addressLine2"),
+    town: watch("town"),
+    postCode: watch("postCode"),
+    managementDate: watch("managementDate"),
+    rentEffectiveDate: watch("rentEffectiveDate"),
+    rentPerMonth: watch("rentPerMonth"),
+    rentPayableInAdvance: watch("rentPayableInAdvance"),
+    rentPayableTiming: watch("rentPayableTiming"),
+    rentalTerms: watch("rentalTerms"),
+    termMonths: watch("termMonths"),
+    vendorName,
+  });
+
+  // Renders the agreement to a PDF, stores it on the property's Documents tab
+  // and marks it DRAFT or PUBLISHED. Saving again replaces the same document.
+  const saveAgreement = async (status: "DRAFT" | "PUBLISHED") => {
+    setSaving(status);
+    try {
+      const id = propertyId || (ensurePropertyId ? await ensurePropertyId() : null);
+      if (!id) throw new Error("Save the property first (fill in the landlord and address).");
+      const file = await buildManagementAgreementPdfFile(agreementData());
+      const { id: fileId } = await uploadFileOnce(file, { category: "property-document", entityType: "property", propertyId: id });
+      const { error } = await post("property-management/documents", {
+        propertyId: id,
+        title: "Management Agreement",
+        fileId,
+        kind: "MANAGEMENT_AGREEMENT",
+        status,
+        documentDate: new Date().toISOString(),
+      });
+      if (error) throw new Error(error.message);
+      setAgreementStatus(status);
+      toast.success(status === "DRAFT" ? "Agreement saved as draft in Documents." : "Agreement published to Documents.");
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to save the agreement.");
+    } finally {
+      setSaving(null);
+    }
+  };
+
   return (
     <div className="w-full">
       <div className="p-4 w-full">
@@ -60,6 +127,20 @@ const ManagementAgreementStep = ({ register, watch, setValue, clearErrors, error
           />
 
           <SelectField
+            label="Rent Payable"
+            name="rentPayableTiming"
+            options={PAYABLE_TIMING_OPTIONS}
+            register={register}
+            setValue={setValue}
+            watch={watch}
+            error={errors?.rentPayableTiming?.message?.toString()}
+            onChange={(value) => {
+              setValue("rentPayableTiming", value);
+              clearErrors("rentPayableTiming");
+            }}
+          />
+
+          <SelectField
             label="Property Rent Due"
             name="rentPayableInAdvance"
             options={PAYABLE_IN_ADVANCE_OPTIONS}
@@ -91,28 +172,23 @@ const ManagementAgreementStep = ({ register, watch, setValue, clearErrors, error
           error={errors?.rentalTerms?.message?.toString()}
         />
 
-        <div className="flex justify-end pt-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() =>
-              generateManagementAgreementPdf({
-                addressLine1: watch("addressLine1"),
-                addressLine2: watch("addressLine2"),
-                town: watch("town"),
-                postCode: watch("postCode"),
-                managementDate: watch("managementDate"),
-                rentEffectiveDate: watch("rentEffectiveDate"),
-                rentPerMonth: watch("rentPerMonth"),
-                rentPayableInAdvance: watch("rentPayableInAdvance"),
-                rentalTerms: watch("rentalTerms"),
-                termMonths: watch("termMonths"),
-                vendorName,
-              })
-            }
-          >
+        <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
+          {agreementStatus && (
+            <Badge className={agreementStatus === "DRAFT" ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}>
+              {agreementStatus === "DRAFT" ? "Draft saved" : "Published"}
+            </Badge>
+          )}
+          <Button type="button" variant="outline" onClick={() => generateManagementAgreementPdf(agreementData())}>
             <FileText className="mr-2 h-4 w-4" />
             Generate PDF
+          </Button>
+          <Button type="button" variant="outline" disabled={!!saving} onClick={() => saveAgreement("DRAFT")}>
+            {saving === "DRAFT" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+            Save as Draft
+          </Button>
+          <Button type="button" disabled={!!saving} onClick={() => saveAgreement("PUBLISHED")}>
+            {saving === "PUBLISHED" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+            Publish Agreement
           </Button>
         </div>
       </div>

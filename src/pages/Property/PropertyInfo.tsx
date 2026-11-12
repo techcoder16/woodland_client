@@ -92,7 +92,7 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
     receptions ? `${receptions} reception` : null,
     bedroomCount >= 2 && (watch('bedroomsGround') || watch('bedroomsFirst')) ? `${watch('bedroomsGround') || 0} ground / ${watch('bedroomsFirst') || 0} first floor bed` : null,
     isMaisonetteOrStudio && watch('floorNumber') ? `${watch('floorNumber')} floor${Number(watch('floorNumber')) === 1 ? '' : 's'}` : null,
-    isMaisonetteOrStudio && watch('steps') ? `${watch('steps')} steps` : null,
+    watch('steps') ? `${watch('steps')} steps` : null,
     watch('wheelchairAccess') ? 'Wheelchair Access' : null,
     watch('hasGarden') ? 'Garden' : null,
     watch('hasParking') ? 'Parking' : null,
@@ -318,25 +318,23 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
               />
             )}
             {isMaisonetteOrStudio && (
-              <>
-                <InputField
-                  setValue={setValue}
-                  label="No. of Floors"
-                  name="floorNumber"
-                  type="number"
-                  register={register}
-                  error={errors.floorNumber?.message?.toString()}
-                />
-                <InputField
-                  setValue={setValue}
-                  label="No. of Steps"
-                  name="steps"
-                  type="number"
-                  register={register}
-                  error={errors.steps?.message?.toString()}
-                />
-              </>
+              <InputField
+                setValue={setValue}
+                label="No. of Floors"
+                name="floorNumber"
+                type="number"
+                register={register}
+                error={errors.floorNumber?.message?.toString()}
+              />
             )}
+            <InputField
+              setValue={setValue}
+              label="No. of Steps"
+              name="steps"
+              type="number"
+              register={register}
+              error={errors.steps?.message?.toString()}
+            />
           </div>
 
           {bedroomCount >= 2 && (

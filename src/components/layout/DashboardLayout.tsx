@@ -26,7 +26,6 @@ import {
   Wallet,
   Shield,
   Wrench,
-  HardHat,
   ChevronDown,
   KeyRound,
   Landmark,
@@ -50,6 +49,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const location = useLocation();
   const financeActive = location.pathname.startsWith("/finance/");
   const [financeOpen, setFinanceOpen] = useState(financeActive);
+  const maintenanceActive =
+    location.pathname.startsWith("/maintenance") || location.pathname.startsWith("/contractors");
+  const [maintenanceOpen, setMaintenanceOpen] = useState(maintenanceActive);
 
   if (!isAuthenticated) {
     return <Navigate to="/" />;
@@ -75,7 +77,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     { label: "Occupancy", path: "/occupancy", icon: KeyRound },
     { label: "Landlords", path: "/vendors", icon: Users2 },
     { label: "Maintenance", path: "/maintenance", icon: Wrench },
-    { label: "Contractors", path: "/contractors", icon: HardHat },
     { label: "Transactions", path: "/transaction", icon: TbTransactionDollar },
     { label: "Finance", path: "/finance/landlord-payments", icon: Wallet },
     { label: "Compliance", path: "/compliance", icon: ShieldCheck },
@@ -91,6 +92,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
     // Compliance goes by role (Super User / Admin), not screen permission.
     if (item.label === "Compliance") return canViewCompliance;
+
+    // Maintenance holds the Jobs and Contractors tabs.
+    if (item.label === "Maintenance") {
+      return canAccess("/maintenance") || canAccess("/contractors");
+    }
 
     // The Finance parent row shows if the user has access to any child route
     if (item.label === "Finance") {
@@ -123,6 +129,42 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <SidebarContent>
           <SidebarMenu className="px-2 mt-4 space-y-0.5">
             {menuItems.map(({ label, path, icon: Icon }) => {
+              if (label === "Maintenance") {
+                const maintenanceItems = [
+                  { label: "Jobs", path: "/maintenance" },
+                  { label: "Contractors", path: "/contractors" },
+                ].filter((item) => isAdmin || canAccess(item.path));
+                const maintenanceHome = maintenanceItems[0]?.path ?? path;
+                return (
+                  <React.Fragment key={path}>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        onClick={() => { setMaintenanceOpen((open) => !open); if (!maintenanceActive) navigate(maintenanceHome); }}
+                        isActive={maintenanceActive}
+                        className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-150 ${maintenanceActive ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"}`}
+                      >
+                        <Icon className="w-[18px] h-[18px]" />
+                        <span>Maintenance</span>
+                        <ChevronDown className={`ml-auto h-4 w-4 transition-transform ${maintenanceOpen ? "rotate-180" : ""}`} />
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    {maintenanceOpen && maintenanceItems.map((item) => {
+                      const childActive = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
+                      return (
+                        <SidebarMenuItem key={item.path}>
+                          <SidebarMenuButton
+                            onClick={() => navigate(item.path)}
+                            isActive={childActive}
+                            className={`ml-5 flex items-center rounded-lg px-3 py-2 text-xs ${childActive ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"}`}
+                          >
+                            <span>{item.label}</span>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
+                  </React.Fragment>
+                );
+              }
               if (label === "Finance") {
                 // "New Landlord Transaction" is deliberately not a sidebar
                 // link — creating a payment happens from inside the

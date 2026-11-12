@@ -40,7 +40,10 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
   const [uploading, setUploading] = useState(0);
   const [pendingRemoveIndex, setPendingRemoveIndex] = useState<number | null>(null);
 
-  const { onChange: formOnChange, ref, ...inputProps } = register(name);
+  // Registered only so the field exists in the form. The file input must NOT get
+  // register's ref/onBlur: RHF would read the input's FileList (an object) into
+  // the form value, failing the string schema ("Expected string, received object").
+  register(name);
   const urls = useFileUrls(upload ? values : []);
 
   // Helper: Convert files to base64 array.
@@ -202,9 +205,7 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
           accept={accept}
           multiple={multiple}
           className="hidden"
-          onChange={handleChange} // Only using your custom handler.
-          ref={ref}
-          {...inputProps}
+          onChange={handleChange}
         />
       </div>
       {values.length > 0 && (

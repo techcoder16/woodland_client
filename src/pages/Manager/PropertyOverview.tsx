@@ -3,12 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { AlertTriangle, Building2, ClipboardList, FileText, Loader2, Search, StickyNote, User, Wallet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { toast } from "sonner";
-import { get, post } from "@/helper/api";
+import { get } from "@/helper/api";
 import { formatPropertyReference } from "@/utils/propertyReference";
 import { plainText } from "@/helper/plainText";
+import { useOccupancyMeta } from "@/pages/Occupancy/useOccupancyMeta";
+import { statusOf, formatRate } from "@/pages/Occupancy/occupancyShared";
 
 const API_URL = import.meta.env.VITE_API_URL;
 const money = (value: unknown) => `£${Number(value || 0).toLocaleString("en-GB", { minimumFractionDigits: 2 })}`;
@@ -52,53 +51,15 @@ export default function PropertyOverview({ property }: PropertyOverviewProps) {
   const [jobTypes, setJobTypes] = useState<any[]>([]);
   const [notes, setNotes] = useState<any[]>([]);
   const [complianceDocs, setComplianceDocs] = useState<any[]>([]);
+  const [occupancies, setOccupancies] = useState<any[]>([]);
+  const occMeta = useOccupancyMeta();
   const [loading, setLoading] = useState(true);
-  const [tenantModalOpen, setTenantModalOpen] = useState(false);
-  const [tenantSearch, setTenantSearch] = useState("");
-  const [tenantResults, setTenantResults] = useState<any[]>([]);
-  const [searchingTenants, setSearchingTenants] = useState(false);
-  const [linkingId, setLinkingId] = useState<string | null>(null);
-
-  // Debounced tenant lookup for the link-tenant popup.
-  useEffect(() => {
-    if (!tenantModalOpen) return;
-    let cancelled = false;
-    setSearchingTenants(true);
-    const timer = setTimeout(async () => {
-      const { data } = await get<any>(`tenants?page=1&limit=10&search=${encodeURIComponent(tenantSearch)}`);
-      if (cancelled) return;
-      setTenantResults(data?.data || []);
-      setSearchingTenants(false);
-    }, 300);
-    return () => { cancelled = true; clearTimeout(timer); };
-  }, [tenantSearch, tenantModalOpen]);
-
-  const reloadParty = async () => {
-    const { data } = await get<{ data: any }>(`property-management/party/${property.id}/optional`);
-    setParty(data?.data || null);
-  };
-
-  const linkTenant = async (tenantId: string) => {
-    setLinkingId(tenantId);
-    try {
-      const { error } = await post(`property-management/party/${property.id}/tenants/${tenantId}`, {});
-      if (error) throw new Error(error.message);
-      toast.success("Tenant linked to this property.");
-      setTenantModalOpen(false);
-      await reloadParty();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to link tenant.");
-    } finally {
-      setLinkingId(null);
-    }
-  };
-
   useEffect(() => {
     if (!property?.id) return;
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const [partyRes, summaryRes, jobTypesRes, notesRes, complianceRes] = await Promise.all([
+      const [partyRes, summaryRes, jobTypesRes, notesRes, complianceRes, occRes] = await Promise.all([
         get<{ data: any }>(`property-management/party/${property.id}/optional`),
         get<any>(`transaction/summary?propertyId=${property.id}`),
         // The status tiles below count across every job, so fetching only the
@@ -107,6 +68,7 @@ export default function PropertyOverview({ property }: PropertyOverviewProps) {
         get<{ jobTypes: any[] }>(`property-management/job-type?propertyId=${property.id}&limit=500`),
         get<{ notes: any[] }>(`property-management/note?propertyId=${property.id}&limit=3`),
         get<{ data: any[] }>(`property-management/compliance/${property.id}`),
+        get<{ items: any[] }>(`occupancy?propertyId=${property.id}&limit=100`),
       ]);
       if (cancelled) return;
       setParty(partyRes.data?.data || null);
@@ -114,6 +76,7 @@ export default function PropertyOverview({ property }: PropertyOverviewProps) {
       setJobTypes(jobTypesRes.data?.jobTypes || []);
       setNotes(notesRes.data?.notes || []);
       setComplianceDocs(complianceRes.data?.data || []);
+      setOccupancies(occRes.data?.items || []);
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -124,7 +87,6 @@ export default function PropertyOverview({ property }: PropertyOverviewProps) {
   // from the Tenancies tab, so fall back to the property's own vendor or
   // the card reads empty for every wizard-created property.
   const landlord = party?.vendor || property?.vendor;
-  const tenants = party?.tenants || [];
   const urgent = jobTypes.filter((j) => j.priority === "Critical" && j.status !== "COMPLETED" && j.status !== "CANCELLED").length;
   const open = jobTypes.filter((j) => j.status === "QUOTING" || j.status === "ASSIGNED").length;
   const inProgress = jobTypes.filter((j) => j.status === "IN_PROGRESS" || j.status === "CONTRACTOR_DONE").length;
@@ -184,26 +146,34 @@ export default function PropertyOverview({ property }: PropertyOverviewProps) {
           )}
         </div>
 
-        {/* Tenancy Summary */}
+        {/* Occupancy Summary: occupancies linked to this property */}
         <div className="surface p-5">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="font-semibold">Tenancy Summary</h3>
-            {tenants.length > 0 && <Badge className="bg-emerald-100 text-emerald-700">Active</Badge>}
+            <h3 className="font-semibold">Occupancy Summary</h3>
+            {occupancies.some((o) => o.status === "ACTIVE") && <Badge className="bg-emerald-100 text-emerald-700">Active</Badge>}
           </div>
-          {tenants.length > 0 ? (
+          {occupancies.length > 0 ? (
             <div className="space-y-2 text-sm">
-              <p className="flex items-center gap-2 font-medium"><User className="h-4 w-4 text-primary" />{tenants.map((t: any) => `${t.title || ""} ${t.FirstName || ""} ${t.SureName || ""}`.trim()).join(", ")}</p>
-              {rentPcm ? <div className="flex justify-between"><span className="text-muted-foreground">Rent (PCM)</span><span className="font-medium">{money(rentPcm)}</span></div> : null}
-              {property.rentEffectiveDate ? <div className="flex justify-between"><span className="text-muted-foreground">Start Date</span><span className="font-medium">{property.rentEffectiveDate}</span></div> : null}
-              {property.termMonths ? <div className="flex justify-between"><span className="text-muted-foreground">Term</span><span className="font-medium">{property.termMonths} months</span></div> : null}
-              <Button size="sm" variant="outline" className="mt-2 w-full" onClick={() => { setTenantSearch(""); setTenantModalOpen(true); }}>Link another tenant</Button>
+              {occupancies.slice(0, 4).map((o: any) => {
+                const status = statusOf(occMeta, o.status);
+                const name = [o.occupier?.FirstName, o.occupier?.SureName].filter(Boolean).join(" ") || o.customerCompanyName || [o.customerFirstName, o.customerSurname].filter(Boolean).join(" ") || "-";
+                return (
+                  <div key={o.id} className="cursor-pointer rounded-md border p-2 hover:bg-muted/40" onClick={() => navigate(`/occupancy/${o.id}`)}>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="flex items-center gap-2 font-medium"><User className="h-4 w-4 text-primary" />{name}</span>
+                      <Badge variant="outline" className="text-[10px]">{status?.label ?? o.status}</Badge>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {ukDate(o.moveInDate) || "-"} to {ukDate(o.actualMoveOutDate || o.expectedMoveOutDate) || "open"}
+                      {o.rateAmount ? ` · ${formatRate(occMeta, o.rateAmount, o.rateFrequency)}` : ""}
+                    </p>
+                  </div>
+                );
+              })}
+              {occupancies.length > 4 && <p className="text-xs text-muted-foreground">+{occupancies.length - 4} more</p>}
             </div>
           ) : (
-            <div className="space-y-2 text-sm">
-              {rentPcm ? <div className="flex justify-between"><span className="text-muted-foreground">Rent (PCM)</span><span className="font-medium">{money(rentPcm)}</span></div> : null}
-              <p className="text-muted-foreground">No tenant linked yet.</p>
-              <Button size="sm" variant="outline" className="w-full" onClick={() => { setTenantSearch(""); setTenantModalOpen(true); }}>Link a tenant</Button>
-            </div>
+            <p className="text-sm text-muted-foreground">No occupancies linked to this property.</p>
           )}
         </div>
       </div>
@@ -342,38 +312,6 @@ export default function PropertyOverview({ property }: PropertyOverviewProps) {
           )}
         </div>
       </div>
-
-      <Dialog open={tenantModalOpen} onOpenChange={setTenantModalOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Link a tenant to this property</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input autoFocus className="pl-8" placeholder="Search tenants by name, email or phone" value={tenantSearch} onChange={(e) => setTenantSearch(e.target.value)} />
-            </div>
-            <div className="max-h-72 space-y-2 overflow-y-auto">
-              {searchingTenants && <p className="py-4 text-center text-sm text-muted-foreground">Searching…</p>}
-              {!searchingTenants && !tenantResults.length && (
-                <p className="py-4 text-center text-sm text-muted-foreground">No tenants found.</p>
-              )}
-              {!searchingTenants && tenantResults.map((t: any) => {
-                const alreadyLinked = tenants.some((x: any) => x.id === t.id);
-                return (
-                  <div key={t.id} className="flex items-center justify-between rounded-lg border p-3 text-sm">
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">{`${t.title || ""} ${t.FirstName || ""} ${t.SureName || ""}`.trim() || "Tenant"}</p>
-                      <p className="truncate text-xs text-muted-foreground">{[t.Email, t.MobileNo].filter(Boolean).join(" · ") || "No contact details"}</p>
-                    </div>
-                    <Button size="sm" variant={alreadyLinked ? "ghost" : "default"} disabled={alreadyLinked || linkingId === t.id} onClick={() => void linkTenant(t.id)}>
-                      {linkingId === t.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : alreadyLinked ? "Linked" : "Link"}
-                    </Button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

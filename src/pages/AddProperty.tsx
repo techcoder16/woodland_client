@@ -36,7 +36,7 @@ const STEP_LABELS = [
 const STEP_FIELDS: string[][] = [
   ["vendor", "for", "postCode", "addressLine1", "addressLine2", "town", "country", "propertyTypeCategory", "bedrooms", "bathrooms", "receptions", "floorNumber", "steps", "bedroomsGround", "bedroomsFirst", "wheelchairAccess", "hasGarden", "hasParking", "communal", "fireRiskAssessmentFileId", "councilId", "lift", "gas", "rooms"],
   ["photographFileId", "floorPlanFileId"],
-  ["managementDate", "rentEffectiveDate", "rentPerMonth", "rentPayableInAdvance", "rentalTerms", "termMonths"],
+  ["managementDate", "rentEffectiveDate", "rentPerMonth", "rentPayableInAdvance", "rentPayableTiming", "rentalTerms", "termMonths"],
   [],
 ];
 
@@ -323,7 +323,7 @@ const AddProperty = () => {
                 </div>
               </div>
               <div className={currentStep !== 2 ? "hidden" : ""}>
-                <ManagementAgreementStep watch={watch} register={form.register} errors={currentStep === 2 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} vendorName={vendorName} />
+                <ManagementAgreementStep watch={watch} register={form.register} errors={currentStep === 2 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} vendorName={vendorName} propertyId={savedProperty?.id} ensurePropertyId={async () => savedProperty?.id ?? (await saveDraft())?.id ?? null} />
               </div>
               {currentStep === 3 && (
                 savedProperty?.id ? (

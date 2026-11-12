@@ -70,6 +70,8 @@ type PropertyDoc = {
   fileName?: string;
   extractedByOcr?: boolean;
   ocrSummary?: string;
+  kind?: string | null;
+  status?: "DRAFT" | "PUBLISHED";
 };
 
 function expiryStatus(expiryDate?: string) {
@@ -685,6 +687,11 @@ export function GeneralDocumentsSection({ propertyId }: { propertyId: string }) 
               </div>
               <Button size="icon" variant="ghost" onClick={() => void remove(doc.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
             </div>
+            {doc.kind === "MANAGEMENT_AGREEMENT" && (
+              <Badge className={doc.status === "DRAFT" ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}>
+                {doc.status === "DRAFT" ? "Draft" : "Published"}
+              </Badge>
+            )}
             {doc.extractedByOcr && <Badge variant="outline" className="text-[10px]">OCR summary available</Badge>}
             {doc.ocrSummary && <p className="text-xs text-muted-foreground line-clamp-3">{doc.ocrSummary}</p>}
             {doc.fileId && <FileLinks fileId={doc.fileId} fileName={doc.fileName} showName />}

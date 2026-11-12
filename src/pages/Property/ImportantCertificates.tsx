@@ -52,10 +52,14 @@ function expiryStatus(expiryDate?: string) {
 interface ImportantCertificatesProps {
   drafts: DraftComplianceDoc[];
   onDraftsChange: (docs: DraftComplianceDoc[]) => void;
+  /** Fire Risk Assessment only applies to communal properties. */
+  communal?: boolean;
 }
 
-export default function ImportantCertificates({ drafts, onDraftsChange }: ImportantCertificatesProps) {
+export default function ImportantCertificates({ drafts, onDraftsChange, communal = false }: ImportantCertificatesProps) {
+  const CERTIFICATES = IMPORTANT_CERTIFICATES.filter((c) => communal || c.docType !== "FIRE_RISK_ASSESSMENT");
   const [extractingType, setExtractingType] = useState<string | null>(null);
+  const [dragType, setDragType] = useState<string | null>(null);
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const draftFor = (docType: string) => drafts.find((d) => d.docType === docType);
@@ -127,7 +131,7 @@ export default function ImportantCertificates({ drafts, onDraftsChange }: Import
     upsert(docType, { file });
   };
 
-  const uploadedCount = IMPORTANT_CERTIFICATES.filter((c) => draftFor(c.docType)?.file).length;
+  const uploadedCount = CERTIFICATES.filter((c) => draftFor(c.docType)?.file).length;
 
   return (
     <div className="w-full p-4">
@@ -142,20 +146,37 @@ export default function ImportantCertificates({ drafts, onDraftsChange }: Import
         <div className="surface p-5">
           <h4 className="mb-1 text-sm font-semibold uppercase text-muted-foreground">Safety Certificates</h4>
           <div>
-            {IMPORTANT_CERTIFICATES.map(({ docType, label, hint, icon: Icon, iconClass }) => {
+            {CERTIFICATES.map(({ docType, label, hint, icon: Icon, iconClass }) => {
               const draft = draftFor(docType);
               const status = shortStatus(draft?.expiryDate);
               const busy = extractingType === docType;
 
               return (
-                <div key={docType} className="flex flex-wrap items-center gap-4 border-b py-4 last:border-0">
+                <div
+                  key={docType}
+                  className={`flex flex-wrap items-center gap-4 border-b py-4 last:border-0 rounded-md transition-colors ${dragType === docType ? "bg-primary/5 outline-dashed outline-2 outline-primary" : ""}`}
+                  onDragOver={(e) => { e.preventDefault(); if (!busy) setDragType(docType); }}
+                  onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragType(null); }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setDragType(null);
+                    if (busy) return;
+                    const file = e.dataTransfer?.files?.[0];
+                    if (!file) return;
+                    if (!/^image\//.test(file.type) && !/\.pdf$/i.test(file.name)) {
+                      toast.error(`${file.name} isn't a supported file type (PDF or image).`);
+                      return;
+                    }
+                    onFilePicked(docType, file);
+                  }}
+                >
                   <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${iconClass}`}>
                     <Icon className="h-5 w-5" />
                   </div>
                   <div className="min-w-[220px] flex-1">
                     <p className="font-medium">{label}</p>
                     <p className="text-xs text-muted-foreground">
-                      {busy ? "Reading the document — this can take up to a minute…" : draft?.file?.name || hint}
+                      {busy ? "Reading the document — this can take up to a minute…" : dragType === docType ? "Drop the file here" : draft?.file?.name || `${hint} · drag a file here`}
                     </p>
                   </div>
 
@@ -215,7 +236,7 @@ export default function ImportantCertificates({ drafts, onDraftsChange }: Import
 
         <div className="surface h-fit space-y-3 p-5">
           <h4 className="font-semibold">Compliance Overview</h4>
-          {IMPORTANT_CERTIFICATES.map(({ docType, label }) => {
+          {CERTIFICATES.map(({ docType, label }) => {
             const status = shortStatus(draftFor(docType)?.expiryDate);
             return (
               <div key={docType} className="flex items-center justify-between text-sm">
@@ -224,9 +245,9 @@ export default function ImportantCertificates({ drafts, onDraftsChange }: Import
               </div>
             );
           })}
-          <div className={`flex items-center gap-2 rounded-md border p-2.5 text-xs ${uploadedCount === IMPORTANT_CERTIFICATES.length ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-amber-200 bg-amber-50 text-amber-700"}`}>
-            {uploadedCount === IMPORTANT_CERTIFICATES.length ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <FileText className="h-4 w-4 shrink-0" />}
-            {uploadedCount} of {IMPORTANT_CERTIFICATES.length} certificates attached.
+          <div className={`flex items-center gap-2 rounded-md border p-2.5 text-xs ${uploadedCount === CERTIFICATES.length ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-amber-200 bg-amber-50 text-amber-700"}`}>
+            {uploadedCount === CERTIFICATES.length ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <FileText className="h-4 w-4 shrink-0" />}
+            {uploadedCount} of {CERTIFICATES.length} certificates attached.
           </div>
         </div>
       </div>
