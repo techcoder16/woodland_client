@@ -192,6 +192,20 @@ const MaintenanceDetail = () => {
     if (landlord?.email && canManageMaintenance) setInvoicePrompt({ base64: invoiceToBase64(doc) });
   };
 
+  const handleTogglePortal = async (showOnLandlordPortal: boolean) => {
+    if (!job?.id) return;
+    setIsSavingDeductible(true);
+    try {
+      await dispatch(updateJobType({ id: job.id, jobTypeData: { propertyId: job.propertyId, showOnLandlordPortal } as any })).unwrap();
+      await dispatch(fetchJobTypeById(job.id));
+      toast.success(showOnLandlordPortal ? "Now shown on the landlord portal" : "Hidden from the landlord portal");
+    } catch (error: any) {
+      toast.error(typeof error === "string" ? error : error?.message || "Failed to update");
+    } finally {
+      setIsSavingDeductible(false);
+    }
+  };
+
   const handleToggleDeductible = async (deductible: boolean) => {
     if (!job?.id) return;
     setIsSavingDeductible(true);
@@ -477,6 +491,21 @@ const MaintenanceDetail = () => {
 
               {canManageMaintenance && (
                 <div className="border-t pt-4 space-y-3">
+                  <label className="flex items-start gap-3">
+                    <Checkbox
+                      checked={job.showOnLandlordPortal !== false}
+                      disabled={isSavingDeductible}
+                      onCheckedChange={(v) => handleTogglePortal(v === true)}
+                    />
+                    <span>
+                      <span className="font-semibold block">Show on landlord portal</span>
+                      <span className="text-sm text-muted-foreground">
+                        {job.showOnLandlordPortal !== false
+                          ? "The landlord can see this job in their portal."
+                          : "Hidden — the landlord can't see this job in their portal."}
+                      </span>
+                    </span>
+                  </label>
                   <div className="font-semibold">Email landlord</div>
                   {landlord?.email ? (
                     <>

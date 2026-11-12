@@ -54,7 +54,7 @@ const DocumentsCertificates = ({
       </div>
 
       {certificateDrafts && onCertificateDraftsChange && (
-        <ImportantCertificates drafts={certificateDrafts} onDraftsChange={onCertificateDraftsChange} />
+        <ImportantCertificates drafts={certificateDrafts} onDraftsChange={onCertificateDraftsChange} communal={!!watch("communal")} />
       )}
     </div>
   );

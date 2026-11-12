@@ -31,6 +31,7 @@ export interface JobType {
   marginPercent?: number | null;
   marginAmount?: number | null;
   deductible?: boolean;
+  showOnLandlordPortal?: boolean;
   status: ReportingStatus;
   createdAt?: string;
   updatedAt?: string;

@@ -31,7 +31,7 @@ const STEP_LABELS = [
 const STEP_FIELDS: string[][] = [
   ["vendor", "for", "postCode", "addressLine1", "addressLine2", "town", "country", "propertyTypeCategory", "bedrooms", "bathrooms", "receptions", "floorNumber", "steps", "bedroomsGround", "bedroomsFirst", "wheelchairAccess", "hasGarden", "hasParking", "communal", "fireRiskAssessmentFileId", "councilId", "lift", "gas", "rooms"],
   ["photographFileId", "floorPlanFileId"],
-  ["managementDate", "rentEffectiveDate", "rentPerMonth", "rentPayableInAdvance", "rentalTerms", "termMonths"],
+  ["managementDate", "rentEffectiveDate", "rentPerMonth", "rentPayableInAdvance", "rentPayableTiming", "rentalTerms", "termMonths"],
   [],
 ];
 
@@ -288,7 +288,7 @@ const EditProperty = () => {
                 </div>
               </div>
               <div className={currentStep !== 2 ? "hidden" : ""}>
-                <ManagementAgreementStep watch={watch} register={form.register} errors={currentStep === 2 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} vendorName={property?.vendor ? [property.vendor.firstName, property.vendor.lastName].filter(Boolean).join(" ") : undefined} />
+                <ManagementAgreementStep watch={watch} register={form.register} errors={currentStep === 2 ? activeErrors : noErrors} setValue={form.setValue} clearErrors={form.clearErrors} propertyId={property.id} vendorName={property?.vendor ? [property.vendor.firstName, property.vendor.lastName].filter(Boolean).join(" ") : undefined} />
               </div>
               {currentStep === 3 && (
                 <NotesStep propertyId={property.id} property={property} />

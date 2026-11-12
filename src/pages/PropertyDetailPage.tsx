@@ -1,12 +1,22 @@
-// The property OVERVIEW page — /properties/:id. Clicking a property in the
-// list lands here. Overview only: no tabs. Tenants are linked inline from
-// the Overview itself; compliance/documents live in the Add/Edit Property
-// wizard steps.
+// The property page — /properties/:id, with tabs (?tab=maintenance|compliance|finance).
 import StoredImage from "@/components/StoredImage";
 import { useEffect, useState } from "react";
-import { useLocation, useParams, useNavigate } from "react-router-dom";
+import { useLocation, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import PropertyOverview from "./Manager/PropertyOverview";
+import Notes from "./Manager/Notes";
+import { CertificatesSection, GeneralDocumentsSection } from "./Manager/Documents";
+import PaymentHistorySection from "./Manager/PaymentHistorySection";
+import TransactionPage from "./Manager/TransactionPage";
+import { useAuth } from "@/context/AuthContext";
+
+const TABS = [
+  { key: "overview", label: "Overview" },
+  { key: "maintenance", label: "Maintenance & Notes" },
+  { key: "compliance", label: "Compliance" },
+  { key: "documents", label: "Documents" },
+  { key: "finance", label: "Finance" },
+];
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Building2 } from "lucide-react";
@@ -19,6 +29,11 @@ export default function PropertyDetailPage() {
   const navigate = useNavigate();
   const [fetchedProperty, setFetchedProperty] = useState<any>(null);
   const property: any = location.state?.property || fetchedProperty;
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { canAccessFinance } = useAuth();
+  const [financeView, setFinanceView] = useState<"history" | "transactions">("history");
+  const requestedTab = searchParams.get("tab") || "overview";
+  const tab = TABS.some((t) => t.key === requestedTab) ? requestedTab : "overview";
 
   // Property normally arrives via router state (clicked from the list),
   // but that's empty on a direct link, bookmark, or refresh — fetch by
@@ -83,7 +98,41 @@ export default function PropertyDetailPage() {
           </div>
         </div>
 
-        <PropertyOverview property={property} />
+        <div className="mb-6 flex gap-6 overflow-x-auto border-b">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setSearchParams(t.key === "overview" ? {} : { tab: t.key }, { replace: true, state: { property } })}
+              className={`-mb-px whitespace-nowrap border-b-2 px-1 pb-3 text-sm font-medium transition-colors ${
+                tab === t.key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {tab === "overview" && <PropertyOverview property={property} />}
+        {tab === "maintenance" && <Notes propertyId={property.id} property={property} />}
+        {tab === "compliance" && <CertificatesSection propertyId={property.id} />}
+        {tab === "documents" && <GeneralDocumentsSection propertyId={property.id} />}
+        {tab === "finance" &&
+          (canAccessFinance ? (
+            <>
+              <div className="mb-4 flex gap-2 border-b pb-3">
+                <Button size="sm" variant={financeView === "history" ? "default" : "outline"} onClick={() => setFinanceView("history")}>Payment History</Button>
+                <Button size="sm" variant={financeView === "transactions" ? "default" : "outline"} onClick={() => setFinanceView("transactions")}>Transactions</Button>
+              </div>
+              {financeView === "history" ? (
+                <PaymentHistorySection propertyId={property.id} />
+              ) : (
+                <TransactionPage propertyId={property.id} property={property} />
+              )}
+            </>
+          ) : (
+            <div className="surface p-10 text-center text-sm text-muted-foreground">Only finance staff can view this property's payment records.</div>
+          ))}
       </div>
     </DashboardLayout>
   );
