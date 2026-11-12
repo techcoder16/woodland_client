@@ -5,6 +5,9 @@ import { useLocation, useParams, useNavigate, useSearchParams } from "react-rout
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import PropertyOverview from "./Manager/PropertyOverview";
 import Notes from "./Manager/Notes";
+import PropertyTenancies from "./Manager/PropertyTenancies";
+import PropertyActivityLog from "./Manager/PropertyActivityLog";
+import PropertyHmo from "./Manager/PropertyHmo";
 import { CertificatesSection, GeneralDocumentsSection } from "./Manager/Documents";
 import PaymentHistorySection from "./Manager/PaymentHistorySection";
 import TransactionPage from "./Manager/TransactionPage";
@@ -12,10 +15,13 @@ import { useAuth } from "@/context/AuthContext";
 
 const TABS = [
   { key: "overview", label: "Overview" },
+  { key: "tenancies", label: "Tenancies" },
   { key: "maintenance", label: "Maintenance & Notes" },
   { key: "compliance", label: "Compliance" },
   { key: "documents", label: "Documents" },
   { key: "finance", label: "Finance" },
+  { key: "hmo", label: "HMO" },
+  { key: "activity", label: "Activity Log" },
 ];
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -94,7 +100,7 @@ export default function PropertyDetailPage() {
                 </div>
               </div>
             </div>
-            <Button variant="outline" onClick={() => navigate("/property/edit", { state: { property } })}>Edit Property</Button>
+            <Button variant="outline" onClick={() => navigate(`/property/edit?id=${property.id}`, { state: { property } })}>Edit Property</Button>
           </div>
         </div>
 
@@ -114,6 +120,9 @@ export default function PropertyDetailPage() {
         </div>
 
         {tab === "overview" && <PropertyOverview property={property} />}
+        {tab === "tenancies" && <PropertyTenancies propertyId={property.id} />}
+        {tab === "hmo" && <PropertyHmo property={property} />}
+        {tab === "activity" && <PropertyActivityLog propertyId={property.id} />}
         {tab === "maintenance" && <Notes propertyId={property.id} property={property} />}
         {tab === "compliance" && <CertificatesSection propertyId={property.id} />}
         {tab === "documents" && <GeneralDocumentsSection propertyId={property.id} />}

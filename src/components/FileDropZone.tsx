@@ -3,8 +3,10 @@ import { FileText, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 
 interface FileDropZoneProps {
-  file: File | null | undefined;
-  onFile: (file: File | null) => void;
+  file?: File | null | undefined;
+  onFile?: (file: File | null) => void;
+  /** When set, the zone accepts several files at once and reports them all here. */
+  onFiles?: (files: File[]) => void;
   /** Comma separated extensions, e.g. ".pdf,.jpg,.png". */
   accept?: string;
   disabled?: boolean;
@@ -29,6 +31,7 @@ const matchesAccept = (file: File, accept?: string) => {
 export default function FileDropZone({
   file,
   onFile,
+  onFiles,
   accept = ".pdf,.jpg,.jpeg,.png,.gif",
   disabled,
   hint = "PDF or image",
@@ -38,13 +41,21 @@ export default function FileDropZone({
   const [dragging, setDragging] = useState(false);
 
   const take = (files: FileList | File[] | null | undefined) => {
+    if (onFiles) {
+      const all = files ? Array.from(files) : [];
+      const ok = all.filter((f) => matchesAccept(f, accept));
+      const bad = all.filter((f) => !matchesAccept(f, accept));
+      if (bad.length) toast.error(`${bad.map((f) => f.name).join(", ")} ${bad.length > 1 ? "aren't" : "isn't"} a supported file type (${hint}).`);
+      if (ok.length) onFiles(ok);
+      return;
+    }
     const first = files && Array.from(files)[0];
     if (!first) return;
     if (!matchesAccept(first, accept)) {
       toast.error(`${first.name} isn't a supported file type (${hint}).`);
       return;
     }
-    onFile(first);
+    onFile?.(first);
   };
 
   return (
@@ -88,6 +99,7 @@ export default function FileDropZone({
       <input
         ref={inputRef}
         type="file"
+        multiple={!!onFiles}
         accept={accept}
         className="hidden"
         onChange={(e) => {
@@ -95,7 +107,7 @@ export default function FileDropZone({
           e.target.value = "";
         }}
       />
-      {file ? (
+      {!onFiles && file ? (
         <div className="flex max-w-full items-center gap-2 text-sm">
           <FileText className="h-4 w-4 shrink-0 text-primary" />
           <span className="truncate" title={file.name}>{file.name}</span>
@@ -105,7 +117,7 @@ export default function FileDropZone({
             className="rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
             onClick={(e) => {
               e.stopPropagation();
-              onFile(null);
+              onFile?.(null);
             }}
           >
             <X className="h-4 w-4" />
@@ -114,10 +126,10 @@ export default function FileDropZone({
       ) : (
         <>
           <Upload className="h-6 w-6 text-muted-foreground" />
-          <p className="text-sm font-medium">{dragging ? "Drop the file here" : "Drag and drop a file here, or click to choose"}</p>
+          <p className="text-sm font-medium">{dragging ? (onFiles ? "Drop the files here" : "Drop the file here") : onFiles ? "Drag and drop files here (several at once), or click to choose" : "Drag and drop a file here, or click to choose"}</p>
         </>
       )}
-      <p className="text-xs text-muted-foreground">{file ? "Drop another file to replace it" : hint}</p>
+      <p className="text-xs text-muted-foreground">{onFiles ? hint : file ? "Drop another file to replace it" : hint}</p>
     </div>
   );
 }

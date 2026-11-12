@@ -8,7 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Check, ArrowLeft, ArrowRight, AlertCircle } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import LoadingBar from "react-top-loading-bar";
 import PropertyInfo from "./Property/PropertyInfo";
 import DocumentsCertificates from "./Property/DocumentsCertificates";
@@ -16,7 +16,7 @@ import { CertificatesSection, GeneralDocumentsSection } from "./Manager/Document
 import ManagementAgreementStep from "./Property/ManagementAgreementStep";
 import NotesStep from "./Manager/NotesStep";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { patch } from "@/helper/api";
+import { get, patch } from "@/helper/api";
 import { propertySchema } from "@/schema/property.schema";
 import { buildPropertyPayload } from "@/helper/buildPropertyFormData";
 import { parseApiError } from "@/helper/parseApiError";
@@ -57,10 +57,25 @@ const EditProperty = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // The property normally arrives via router state, but that can be missing or
+  // stale (direct link, refresh, coming from the property page). Always load the
+  // current record by id too so the form is never blank.
+  const [searchParams] = useSearchParams();
+  const propertyId: string | undefined = location.state?.property?.id || searchParams.get("id") || undefined;
+  const [fetchedProperty, setFetchedProperty] = useState<any>(null);
+  useEffect(() => {
+    if (!propertyId) return;
+    let cancelled = false;
+    get<any>(`properties/${propertyId}`).then(({ data }) => {
+      if (!cancelled && data?.id) setFetchedProperty(data);
+    });
+    return () => { cancelled = true; };
+  }, [propertyId]);
+
   const property = useMemo(
-    () => location.state?.property,
+    () => (fetchedProperty?.id === propertyId ? { ...location.state?.property, ...fetchedProperty } : location.state?.property),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [location.state?.property?.id]
+    [propertyId, fetchedProperty]
   );
 
   const transformedVendorData = useMemo((): FormData | Record<string, never> => {

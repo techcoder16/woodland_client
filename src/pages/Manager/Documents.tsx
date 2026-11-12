@@ -648,6 +648,25 @@ export function GeneralDocumentsSection({ propertyId }: { propertyId: string }) 
     }
   };
 
+  // Every dropped file becomes its own document, titled from its filename.
+  const saveMany = async (files: File[]) => {
+    setSaving(true);
+    let failed = 0;
+    for (const f of files) {
+      try {
+        const { id: fileId } = await uploadFileOnce(f, { category: "property-document", entityType: "property", propertyId });
+        const { error } = await post("property-management/documents", { propertyId, title: f.name.replace(/\.[^.]+$/, ""), fileId });
+        if (error) throw new Error(error.message);
+      } catch {
+        failed += 1;
+      }
+    }
+    setSaving(false);
+    if (failed) toast.error(`${failed} of ${files.length} file(s) failed to upload.`);
+    else toast.success(`${files.length} document${files.length > 1 ? "s" : ""} saved.`);
+    void load();
+  };
+
   const remove = async (id: string) => {
     if (!confirm("Delete this document? This can be restored by support if needed.")) return;
     const { error } = await del(`property-management/documents/${id}`);
@@ -668,6 +687,9 @@ export function GeneralDocumentsSection({ propertyId }: { propertyId: string }) 
         </div>
         <Button onClick={() => setModalOpen(true)}><Plus className="mr-2 h-4 w-4" />Add document</Button>
       </div>
+
+      <FileDropZone onFiles={saveMany} disabled={saving} />
+      {saving && <p className="text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Uploading…</p>}
 
       {loading && <p className="text-sm text-muted-foreground">Loading…</p>}
 

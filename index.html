@@ -5,14 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Woodland</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="preload" as="image" href="/logo-splash.png" />
     <meta name="description" content="Furqan Generated Project" />
     <meta name="author" content="Furqan" />
     <meta property="og:image" content="/og-image.png" />
+    <style>
+      html, body { margin: 0; background: #fff; }
+      @media (prefers-color-scheme: dark) { html, body { background: #0b0d12; } }
+      .splash { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+      .splash img { width: 220px; max-width: 60vw; height: auto; animation: splash-pulse 1.4s ease-in-out infinite; }
+      @keyframes splash-pulse { 0%, 100% { opacity: .55; transform: scale(.98); } 50% { opacity: 1; transform: scale(1); } }
+    </style>
   </head>
 
   <body>
-    <div id="root"></div>
-    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
+    <div id="root"><div class="splash"><img src="/logo-splash.png" alt="Woodland" /></div></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
