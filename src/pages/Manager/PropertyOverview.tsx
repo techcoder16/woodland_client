@@ -3,10 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AlertTriangle, Building2, ClipboardList, FileText, Loader2, Search, StickyNote, User, Wallet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { toast } from "sonner";
-import { get, post } from "@/helper/api";
+import { get } from "@/helper/api";
 import { formatPropertyReference } from "@/utils/propertyReference";
 import { plainText } from "@/helper/plainText";
 import { useOccupancyMeta } from "@/pages/Occupancy/useOccupancyMeta";
@@ -57,46 +54,6 @@ export default function PropertyOverview({ property }: PropertyOverviewProps) {
   const [occupancies, setOccupancies] = useState<any[]>([]);
   const occMeta = useOccupancyMeta();
   const [loading, setLoading] = useState(true);
-  const [tenantModalOpen, setTenantModalOpen] = useState(false);
-  const [tenantSearch, setTenantSearch] = useState("");
-  const [tenantResults, setTenantResults] = useState<any[]>([]);
-  const [searchingTenants, setSearchingTenants] = useState(false);
-  const [linkingId, setLinkingId] = useState<string | null>(null);
-
-  // Debounced tenant lookup for the link-tenant popup.
-  useEffect(() => {
-    if (!tenantModalOpen) return;
-    let cancelled = false;
-    setSearchingTenants(true);
-    const timer = setTimeout(async () => {
-      const { data } = await get<any>(`tenants?page=1&limit=10&search=${encodeURIComponent(tenantSearch)}`);
-      if (cancelled) return;
-      setTenantResults(data?.data || []);
-      setSearchingTenants(false);
-    }, 300);
-    return () => { cancelled = true; clearTimeout(timer); };
-  }, [tenantSearch, tenantModalOpen]);
-
-  const reloadParty = async () => {
-    const { data } = await get<{ data: any }>(`property-management/party/${property.id}/optional`);
-    setParty(data?.data || null);
-  };
-
-  const linkTenant = async (tenantId: string) => {
-    setLinkingId(tenantId);
-    try {
-      const { error } = await post(`property-management/party/${property.id}/tenants/${tenantId}`, {});
-      if (error) throw new Error(error.message);
-      toast.success("Tenant linked to this property.");
-      setTenantModalOpen(false);
-      await reloadParty();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to link tenant.");
-    } finally {
-      setLinkingId(null);
-    }
-  };
-
   useEffect(() => {
     if (!property?.id) return;
     let cancelled = false;
@@ -130,7 +87,6 @@ export default function PropertyOverview({ property }: PropertyOverviewProps) {
   // from the Tenancies tab, so fall back to the property's own vendor or
   // the card reads empty for every wizard-created property.
   const landlord = party?.vendor || property?.vendor;
-  const tenants = party?.tenants || [];
   const urgent = jobTypes.filter((j) => j.priority === "Critical" && j.status !== "COMPLETED" && j.status !== "CANCELLED").length;
   const open = jobTypes.filter((j) => j.status === "QUOTING" || j.status === "ASSIGNED").length;
   const inProgress = jobTypes.filter((j) => j.status === "IN_PROGRESS" || j.status === "CONTRACTOR_DONE").length;
@@ -356,38 +312,6 @@ export default function PropertyOverview({ property }: PropertyOverviewProps) {
           )}
         </div>
       </div>
-
-      <Dialog open={tenantModalOpen} onOpenChange={setTenantModalOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Link a tenant to this property</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input autoFocus className="pl-8" placeholder="Search tenants by name, email or phone" value={tenantSearch} onChange={(e) => setTenantSearch(e.target.value)} />
-            </div>
-            <div className="max-h-72 space-y-2 overflow-y-auto">
-              {searchingTenants && <p className="py-4 text-center text-sm text-muted-foreground">Searching…</p>}
-              {!searchingTenants && !tenantResults.length && (
-                <p className="py-4 text-center text-sm text-muted-foreground">No tenants found.</p>
-              )}
-              {!searchingTenants && tenantResults.map((t: any) => {
-                const alreadyLinked = tenants.some((x: any) => x.id === t.id);
-                return (
-                  <div key={t.id} className="flex items-center justify-between rounded-lg border p-3 text-sm">
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">{`${t.title || ""} ${t.FirstName || ""} ${t.SureName || ""}`.trim() || "Tenant"}</p>
-                      <p className="truncate text-xs text-muted-foreground">{[t.Email, t.MobileNo].filter(Boolean).join(" · ") || "No contact details"}</p>
-                    </div>
-                    <Button size="sm" variant={alreadyLinked ? "ghost" : "default"} disabled={alreadyLinked || linkingId === t.id} onClick={() => void linkTenant(t.id)}>
-                      {linkingId === t.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : alreadyLinked ? "Linked" : "Link"}
-                    </Button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
