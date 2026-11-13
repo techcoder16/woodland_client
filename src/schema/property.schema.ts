@@ -43,6 +43,8 @@ z.object({
   // ComplianceDocument rows, staged separately in the wizard.
   photographFileId: z.string().nullable().optional(),
   floorPlanFileId: z.string().nullable().optional(),
+  photographFileIds: z.array(z.string()).optional().default([]),
+  floorPlanFileIds: z.array(z.string()).optional().default([]),
   managementDate: z.string().nullable().optional(),
   rentEffectiveDate: z.string().nullable().optional(),
   rentPerMonth: z.string().nullable().optional(),

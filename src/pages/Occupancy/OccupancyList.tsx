@@ -6,11 +6,9 @@ import {
   CalendarDays,
   Clock,
   DoorOpen,
-  Eye,
   Home,
   LogIn,
   LogOut,
-  MoreVertical,
   Plus,
   Search,
 } from "lucide-react";
@@ -18,7 +16,6 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { get } from "@/helper/api";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { cn } from "@/lib/utils";
@@ -283,15 +280,14 @@ export default function OccupancyList() {
                         <th className="px-4 py-3 font-medium">End Date</th>
                         <th className="px-4 py-3 font-medium">Rate / Rent</th>
                         <th className="px-4 py-3 font-medium">Status</th>
-                        <th className="px-4 py-3 font-medium text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {loading ? (
-                        <tr><td colSpan={9} className="px-4 py-10 text-center text-muted-foreground">Loading...</td></tr>
+                        <tr><td colSpan={8} className="px-4 py-10 text-center text-muted-foreground">Loading...</td></tr>
                       ) : items.length === 0 ? (
                         <tr>
-                          <td colSpan={9} className="px-4 py-12 text-center">
+                          <td colSpan={8} className="px-4 py-12 text-center">
                             <p className="text-muted-foreground">No occupancies found.</p>
                             <Button variant="link" onClick={() => navigate("/occupancy/new")}>Create a new occupancy</Button>
                           </td>
@@ -327,18 +323,6 @@ export default function OccupancyList() {
                               <td className="px-4 py-3 whitespace-nowrap font-mono text-[13px]">{formatRate(meta, o.rateAmount, o.rateFrequency)}</td>
                               <td className="px-4 py-3">
                                 <span className={cn("rounded-md px-2.5 py-1 text-xs font-medium", toneBadge(status?.tone))}>{status?.label ?? o.status}</span>
-                              </td>
-                              <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" aria-label="Actions"><MoreVertical className="h-4 w-4" /></Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => navigate(`/occupancy/${o.id}`)}>
-                                      <Eye className="mr-2 h-4 w-4" /> View details
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
                               </td>
                             </tr>
                           );

@@ -134,17 +134,6 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
         <hr />
 
         <SelectField
-          label="Council"
-          name="councilId"
-          watch={watch}
-          setValue={setValue}
-          options={councilOptions}
-          register={register}
-          error={errors.councilId?.message?.toString()}
-          onChange={(value) => handleSelectChange('councilId', value)}
-        />
-
-        <SelectField
           label="For"
           name="for"
           watch={watch}
@@ -159,18 +148,21 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
       <div className="p-4 w-full">
         <div className="text-lg font-medium flex justify-start underline p-5">Address of property</div>
 
+        {/* The address lookup is for new properties only; editing keeps the saved address. */}
+        {!property && (
         <AddressSearchField
-          onSelect={(address) => {
-            if (address.addressLine1) setValue('addressLine1', address.addressLine1, { shouldValidate: true });
-            if (address.addressLine2) setValue('addressLine2', address.addressLine2);
-            if (address.town) setValue('town', address.town);
-            if (address.postCode) setValue('postCode', address.postCode);
-            // Ideal Postcodes returns England/Wales/Scotland/Northern Ireland;
-            // the country field only offers "GB" as an option, so normalize.
-            if (!isCountryUnlocked()) setValue('country', 'GB', { shouldValidate: true });
-            clearErrors(['addressLine1', 'country']);
-          }}
-        />
+            onSelect={(address) => {
+              if (address.addressLine1) setValue('addressLine1', address.addressLine1, { shouldValidate: true });
+              if (address.addressLine2) setValue('addressLine2', address.addressLine2);
+              if (address.town) setValue('town', address.town);
+              if (address.postCode) setValue('postCode', address.postCode);
+              // Ideal Postcodes returns England/Wales/Scotland/Northern Ireland;
+              // the country field only offers "GB" as an option, so normalize.
+              if (!isCountryUnlocked()) setValue('country', 'GB', { shouldValidate: true });
+              clearErrors(['addressLine1', 'country']);
+            }}
+          />
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
         <InputField setValue={setValue} label="Post Code" name="postCode" register={register} error={errors.postCode?.message?.toString()} />
@@ -233,6 +225,17 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
           register={register}
           error={errors.country?.message?.toString()}
           disabled={!isCountryUnlocked()}
+        />
+
+        <SelectField
+          label="Council"
+          name="councilId"
+          watch={watch}
+          setValue={setValue}
+          options={councilOptions}
+          register={register}
+          error={errors.councilId?.message?.toString()}
+          onChange={(value) => handleSelectChange('councilId', value)}
         />
         </div>
       </div>

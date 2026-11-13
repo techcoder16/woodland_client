@@ -12,11 +12,16 @@ import { CertificatesSection, GeneralDocumentsSection } from "./Manager/Document
 import PaymentHistorySection from "./Manager/PaymentHistorySection";
 import TransactionPage from "./Manager/TransactionPage";
 import { useAuth } from "@/context/AuthContext";
+import { Hint } from "@/components/ui/hint";
+import { StaffRole } from "@/types/permissions";
+
+const TAB_HINTS: Record<string, string> = {"overview": "Summary of the property: address, landlord, key details.", "tenancies": "Who lives here now and past occupiers: bookings, move-in/out dates and tasks.", "maintenance": "Repair and maintenance jobs for this property.", "notes": "Internal notes about this property. Not shown to landlords or occupiers.", "compliance": "Safety certificates and legal checks (gas, electrical, EPC...) with expiry dates.", "documents": "Files for this property, e.g. the management agreement.", "finance": "Rent received and payments made to the landlord for this property.", "hmo": "House in Multiple Occupation licence details.", "activity": "A log of who changed what on this property, and when."};
 
 const TABS = [
   { key: "overview", label: "Overview" },
-  { key: "tenancies", label: "Tenancies" },
-  { key: "maintenance", label: "Maintenance & Notes" },
+  { key: "tenancies", label: "Occupancy" },
+  { key: "maintenance", label: "Maintenance" },
+  { key: "notes", label: "Notes" },
   { key: "compliance", label: "Compliance" },
   { key: "documents", label: "Documents" },
   { key: "finance", label: "Finance" },
@@ -26,7 +31,8 @@ const TABS = [
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Building2 } from "lucide-react";
-import { get } from "@/helper/api";
+import { get, patch } from "@/helper/api";
+import { toast } from "sonner";
 import { formatPropertyReference } from "@/utils/propertyReference";
 
 export default function PropertyDetailPage() {
@@ -36,7 +42,10 @@ export default function PropertyDetailPage() {
   const [fetchedProperty, setFetchedProperty] = useState<any>(null);
   const property: any = location.state?.property || fetchedProperty;
   const [searchParams, setSearchParams] = useSearchParams();
-  const { canAccessFinance } = useAuth();
+  const { canAccessFinance, user } = useAuth();
+  // Only admins decide whether a draft property goes live.
+  const canPublish = user?.role === StaffRole.SuperUser || user?.role === StaffRole.AdminUser;
+  const [publishing, setPublishing] = useState(false);
   const [financeView, setFinanceView] = useState<"history" | "transactions">("history");
   const requestedTab = searchParams.get("tab") || "overview";
   const tab = TABS.some((t) => t.key === requestedTab) ? requestedTab : "overview";
@@ -80,7 +89,7 @@ export default function PropertyDetailPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-2xl font-semibold tracking-tight">{property.addressLine1 || "Property"}</h1>
-                  <Badge className="bg-emerald-100 text-emerald-700">{property.propertyStatus === "PUBLISHED" ? "Active" : "Draft"}</Badge>
+                  <Hint text={property.propertyStatus === "PUBLISHED" ? "Published: live and available across the system." : "Draft: saved but not live yet. An admin must publish it."}><Badge className={property.propertyStatus === "PUBLISHED" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800"}>{property.propertyStatus === "PUBLISHED" ? "Published" : "Draft"}</Badge></Hint>
                 </div>
                 <p className="text-sm text-muted-foreground">{[property.town, property.postCode].filter(Boolean).join(", ")}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -100,14 +109,33 @@ export default function PropertyDetailPage() {
                 </div>
               </div>
             </div>
-            <Button variant="outline" onClick={() => navigate(`/property/edit?id=${property.id}`, { state: { property } })}>Edit Property</Button>
+            <div className="flex flex-wrap gap-2">
+              {canPublish && (
+                <Hint text={property.propertyStatus === "PUBLISHED" ? "Move this property back to draft. Only admins can do this." : "Make this property live. Only admins can publish."}><Button
+                  disabled={publishing}
+                  variant={property.propertyStatus === "PUBLISHED" ? "outline" : "default"}
+                  onClick={async () => {
+                    const publish = property.propertyStatus !== "PUBLISHED";
+                    setPublishing(true);
+                    const { data, error } = await patch<any>(`properties/${property.id}/${publish ? "publish" : "unpublish"}`, {});
+                    setPublishing(false);
+                    if (error || !data?.property) return toast.error(error?.message || data?.error || "Could not update the property");
+                    setFetchedProperty({ ...property, propertyStatus: data.property.propertyStatus });
+                    navigate(location.pathname + location.search, { replace: true, state: { property: { ...property, propertyStatus: data.property.propertyStatus } } });
+                    toast.success(publish ? "Property published" : "Property moved back to draft");
+                  }}
+                >
+                  {property.propertyStatus === "PUBLISHED" ? "Unpublish" : "Publish"}
+                </Button></Hint>
+              )}
+              <Button variant="outline" onClick={() => navigate(`/property/edit?id=${property.id}`, { state: { property } })}>Edit Property</Button>
+            </div>
           </div>
         </div>
 
         <div className="mb-6 flex gap-6 overflow-x-auto border-b">
           {TABS.map((t) => (
-            <button
-              key={t.key}
+            <Hint key={t.key} text={TAB_HINTS[t.key] ?? t.label}><button
               type="button"
               onClick={() => setSearchParams(t.key === "overview" ? {} : { tab: t.key }, { replace: true, state: { property } })}
               className={`-mb-px whitespace-nowrap border-b-2 px-1 pb-3 text-sm font-medium transition-colors ${
@@ -115,7 +143,7 @@ export default function PropertyDetailPage() {
               }`}
             >
               {t.label}
-            </button>
+            </button></Hint>
           ))}
         </div>
 
@@ -123,7 +151,8 @@ export default function PropertyDetailPage() {
         {tab === "tenancies" && <PropertyTenancies propertyId={property.id} />}
         {tab === "hmo" && <PropertyHmo property={property} />}
         {tab === "activity" && <PropertyActivityLog propertyId={property.id} />}
-        {tab === "maintenance" && <Notes propertyId={property.id} property={property} />}
+        {tab === "maintenance" && <Notes view="jobtypes" propertyId={property.id} property={property} />}
+        {tab === "notes" && <Notes view="notes" propertyId={property.id} property={property} />}
         {tab === "compliance" && <CertificatesSection propertyId={property.id} />}
         {tab === "documents" && <GeneralDocumentsSection propertyId={property.id} />}
         {tab === "finance" &&

@@ -30,7 +30,7 @@ const STEP_LABELS = [
 
 const STEP_FIELDS: string[][] = [
   ["vendor", "for", "postCode", "addressLine1", "addressLine2", "town", "country", "propertyTypeCategory", "bedrooms", "bathrooms", "receptions", "floorNumber", "steps", "bedroomsGround", "bedroomsFirst", "wheelchairAccess", "hasGarden", "hasParking", "communal", "fireRiskAssessmentFileId", "councilId", "lift", "gas", "rooms"],
-  ["photographFileId", "floorPlanFileId"],
+  ["photographFileIds", "floorPlanFileIds"],
   ["managementDate", "rentEffectiveDate", "rentPerMonth", "rentPayableInAdvance", "rentPayableTiming", "rentalTerms", "termMonths"],
   [],
 ];
@@ -103,6 +103,9 @@ const EditProperty = () => {
       rooms: parseJsonArray(property.rooms),
       photographFileId: property.photographFileId ?? "",
       floorPlanFileId: property.floorPlanFileId ?? "",
+      // Older properties only have the single cover/first file; fold it in.
+      photographFileIds: property.photographFileIds?.length ? property.photographFileIds : property.photographFileId ? [property.photographFileId] : [],
+      floorPlanFileIds: property.floorPlanFileIds?.length ? property.floorPlanFileIds : property.floorPlanFileId ? [property.floorPlanFileId] : [],
       attachmentFileIds: property.attachmentFileIds ?? [],
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

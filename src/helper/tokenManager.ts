@@ -29,13 +29,39 @@ export async function isTokenExpired(): Promise<boolean> {
   }
 }
 
+// The server ROTATES the refresh token on every refresh, so two refreshes using the same
+// token race: the loser gets a 401 and used to log the user out. All callers (every API
+// helper, the 401 interceptor, the periodic validator) share this one in-flight promise.
+let refreshInFlight: Promise<boolean> | null = null;
+
+export function refreshAccessToken(): Promise<boolean> {
+  if (!refreshInFlight) {
+    refreshInFlight = doRefresh().finally(() => {
+      refreshInFlight = null;
+    });
+  }
+  return refreshInFlight;
+}
+
 // Function to refresh token proactively
 export async function refreshTokenIfNeeded(): Promise<boolean> {
-  try {
-    if (!(await isTokenExpired())) {
-      return true; // Token is still valid
-    }
+  if (!(await isTokenExpired())) {
+    return true; // Token is still valid
+  }
+  return refreshAccessToken();
+}
 
+async function postRefresh(refreshTokenValue: string) {
+  return axios.post(`${API_URL}auth/refresh`, {}, {
+    headers: {
+      Authorization: `Bearer ${refreshTokenValue}`,
+      'Content-Type': 'application/json'
+    }
+  });
+}
+
+async function doRefresh(): Promise<boolean> {
+  try {
     const refreshTokenValue = await DEFAULT_COOKIE_GETTER("refresh_token");
     if (!refreshTokenValue) {
       console.error('No refresh token available');
@@ -44,13 +70,20 @@ export async function refreshTokenIfNeeded(): Promise<boolean> {
       return false;
     }
 
-    console.log('Refreshing token due to expiry...');
-    const response = await axios.post(`${API_URL}auth/refresh`, {}, {
-      headers: {
-        Authorization: `Bearer ${refreshTokenValue}`,
-        'Content-Type': 'application/json'
+    let response;
+    try {
+      response = await postRefresh(refreshTokenValue);
+    } catch (err) {
+      // Another tab may have rotated the token between our cookie read and the call.
+      // If the cookie now holds a different refresh token, retry once with that one
+      // instead of treating the rejection as a dead session.
+      const latest = await DEFAULT_COOKIE_GETTER("refresh_token");
+      if (isAuthRejection(err) && latest && latest !== refreshTokenValue) {
+        response = await postRefresh(latest);
+      } else {
+        throw err;
       }
-    });
+    }
 
     const responseData = response.data;
     const accessToken = responseData.accessToken || responseData.access_token;

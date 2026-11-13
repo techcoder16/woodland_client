@@ -33,7 +33,6 @@ import {
 } from "lucide-react";
 import { Button } from "../ui/button";
 import logo from "@/assets/logo.png";
-import { TbTransactionDollar } from "react-icons/tb";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -47,7 +46,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     path.startsWith("/finance/incoming-payments") ? canManageIncomingPayments : canAccess(path);
   const navigate = useNavigate();
   const location = useLocation();
-  const financeActive = location.pathname.startsWith("/finance/");
+  const financeActive = location.pathname.startsWith("/finance/") || location.pathname.startsWith("/transaction");
   const [financeOpen, setFinanceOpen] = useState(financeActive);
   const maintenanceActive =
     location.pathname.startsWith("/maintenance") || location.pathname.startsWith("/contractors");
@@ -77,7 +76,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     { label: "Occupancy", path: "/occupancy", icon: KeyRound },
     { label: "Landlords", path: "/vendors", icon: Users2 },
     { label: "Maintenance", path: "/maintenance", icon: Wrench },
-    { label: "Transactions", path: "/transaction", icon: TbTransactionDollar },
     { label: "Finance", path: "/finance/landlord-payments", icon: Wallet },
     { label: "Compliance", path: "/compliance", icon: ShieldCheck },
     { label: "Occupiers", path: "/tenants", icon: CircleUser },
@@ -100,7 +98,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
     // The Finance parent row shows if the user has access to any child route
     if (item.label === "Finance") {
-      return financeRoutes.some(route => canSee(route));
+      return financeRoutes.some(route => canSee(route)) || canAccess("/transaction");
     }
 
     // Regular users can only see items they have permission for
@@ -172,8 +170,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 const financeItems = [
                   { label: "Incoming Payments", path: "/finance/incoming-payments" },
                   { label: "Landlord Transactions", path: "/finance/landlord-transactions" },
+                  { label: "Transactions", path: "/transaction" },
                   // { label: "Woodland OCR", path: "/finance/woodland-ocr" },
-                ].filter((item) => isAdmin || canSee(item.path));
+                ].filter((item) => isAdmin || (item.path === "/transaction" ? canAccess(item.path) : canSee(item.path)));
                 // Clicking "Finance" opens the first page this user can actually see.
                 const financeHome = financeItems[0]?.path ?? path;
                 return (

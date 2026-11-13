@@ -28,6 +28,7 @@ import { formatPropertyReference } from "@/utils/propertyReference";
 import { exportTransactionsToExcel, exportTransactionsToPdf } from "@/utils/transactionExport";
 import { useTheme } from "@/context/ThemeContext";
 import { useToast } from "@/components/ui/use-toast";
+import { Hint, InfoHint } from "@/components/ui/hint";
 import { useAuth } from "@/context/AuthContext";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -35,6 +36,8 @@ type Payment = any;
 
 const money = (value: unknown) => `£${Number(value || 0).toLocaleString("en-GB", { minimumFractionDigits: 2 })}`;
 const paymentAmount = (payment: Payment) => Number(payment.toLandlordNetPaid ?? payment.toLandlordNetReceived ?? payment.toLandlordRentReceived ?? 0);
+const HEADING_HINTS: Record<string, string> = {"Reference": "Unique payment number, e.g. LLP-1126-001 (month/year + counter).", "Landlord": "Who is being paid.", "Property": "The property this payment is for.", "Type": "What kind of payment this is.", "Period": "The rental period this payment covers.", "Due date": "The date the landlord should be paid by.", "Contractual": "Rent due to the landlord under the agreement, before deductions.", "Adjustments": "Deductions or additions: management fee, VAT, maintenance recharges.", "Payable": "Final amount to pay the landlord after adjustments.", "Docs": "Attached files, e.g. statements and invoices.", "Status": "Draft, Approval (needs an admin sign-off), Ready (approved, can be paid), Hold (paused), Paid (locked)."};
+const CARD_HINTS: Record<string, string> = {"All payments": "Every landlord payment, whatever its status.", "Approval required": "Payments waiting for an admin to approve before they can be paid.", "Ready to pay": "Approved payments that can be paid now.", "On hold": "Payments paused. Release them before paying.", "Paid": "Completed payments. These are locked and cannot be changed."};
 const STATUS_LABEL: Record<string, string> = { ACTIVE: "Ready", DRAFT: "Draft", PENDING: "Hold", APPROVAL_REQUIRED: "Approval", PAID: "Paid" };
 const STATUS_BADGE: Record<string, string> = {
   PAID: "bg-violet-100 text-violet-700",
@@ -389,7 +392,7 @@ export default function LandlordPayments() {
             ["Paid", paid, money(totals.paid), "text-violet-600"],
           ] as [string, Payment[], string, string][]).filter(([, records]) => records.length > 0).map(([label, records, total, color]) => (
             <div key={label} className="surface p-4">
-              <div className={`mb-2 flex items-center gap-2 text-xs font-semibold uppercase ${color}`}><WalletCards className="h-4 w-4" />{label}</div>
+              <div className={`mb-2 flex items-center gap-2 text-xs font-semibold uppercase ${color}`}><WalletCards className="h-4 w-4" />{label}<InfoHint text={CARD_HINTS[label] ?? label} /></div>
               <div className="text-xl font-semibold">{total}</div>
               <div className="text-xs text-muted-foreground">{records.length} payment{records.length === 1 ? "" : "s"}</div>
             </div>
@@ -492,7 +495,7 @@ export default function LandlordPayments() {
               <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3 font-medium"><input type="checkbox" checked={visible.length > 0 && selectedIds.size === visible.length} onChange={toggleSelectAll} /></th>
-                  {["Reference", "Landlord", "Property", "Type", "Period", "Due date", "Contractual", "Adjustments", "Payable", "Docs", "Status", ""].map((heading) => <th key={heading} className="px-4 py-3 font-medium">{heading}</th>)}
+                  {["Reference", "Landlord", "Property", "Type", "Period", "Due date", "Contractual", "Adjustments", "Payable", "Docs", "Status", ""].map((heading) => <th key={heading} className="px-4 py-3 font-medium">{heading}{HEADING_HINTS[heading] && <InfoHint text={HEADING_HINTS[heading]} />}</th>)}
                 </tr>
               </thead>
               <tbody>

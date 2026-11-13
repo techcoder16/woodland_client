@@ -82,12 +82,14 @@ interface User {
 interface NotesProps {
   propertyId: string;
   property?: any;
+  /** Which part to show: each is its own tab on the property page. */
+  view?: "notes" | "jobtypes";
 }
 
-const Notes = ({ propertyId, property }: NotesProps) => {
+const Notes = ({ propertyId, property, view = "notes" }: NotesProps) => {
   const dispatch = useAppDispatch();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<"notes" | "jobtypes">("notes");
+  const activeTab = view;
   const [isJobTypeDialogOpen, setIsJobTypeDialogOpen] = useState(false);
   const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
   const [editingJobType, setEditingJobType] = useState<JobType | null>(null);

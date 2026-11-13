@@ -13,7 +13,7 @@ export function buildPropertyPayload(data: Record<string, any>, isDraft: boolean
   for (const [key, value] of Object.entries(data)) {
     if (key === "propertyStatus" || key === "id") continue;
 
-    if (key === "attachmentFileIds") {
+    if (key === "attachmentFileIds" || key === "photographFileIds" || key === "floorPlanFileIds") {
       payload[key] = Array.isArray(value) ? value.filter((v) => typeof v === "string" && v) : [];
     } else if (key === "rooms") {
       let rooms = value;
@@ -29,6 +29,10 @@ export function buildPropertyPayload(data: Record<string, any>, isDraft: boolean
       payload[key] = value;
     }
   }
+
+  // The single cover / first-file fields stay in sync with the lists for every other consumer.
+  if (Array.isArray(payload.photographFileIds)) payload.photographFileId = payload.photographFileIds[0] ?? null;
+  if (Array.isArray(payload.floorPlanFileIds)) payload.floorPlanFileId = payload.floorPlanFileIds[0] ?? null;
 
   payload.propertyStatus = isDraft ? "DRAFT" : "PUBLISHED";
   return payload;

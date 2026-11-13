@@ -89,6 +89,7 @@ const EditVendor = () => {
   const { watch, register, setValue } = form;
 
   const [activeTab, setActiveTab] = useState("personal");
+  const linkedProperties: any[] = Array.isArray(vendor?.property) ? vendor.property : vendor?.property ? [vendor.property] : [];
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [progress, setProgress] = useState(0);
 
@@ -164,7 +165,7 @@ const EditVendor = () => {
 
   const activeErrors = form.formState.errors;
 
-  const TAB_ORDER = ["personal", "bank", "documents"] as const;
+  const TAB_ORDER = ["personal", "bank", "documents", "properties"] as const;
   const currentTabIndex = TAB_ORDER.indexOf(activeTab as typeof TAB_ORDER[number]);
   const isLastTab = currentTabIndex === TAB_ORDER.length - 1;
 
@@ -189,10 +190,11 @@ const EditVendor = () => {
           <Card className="p-6 shadow-md">
             <form onSubmit={form.handleSubmit(onSubmit)}>
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid grid-cols-3 mb-4">
+                <TabsList className="grid grid-cols-4 mb-4">
                   <TabsTrigger value="personal">Personal Info</TabsTrigger>
                   <TabsTrigger value="bank">Bank Details</TabsTrigger>
                   <TabsTrigger value="documents">Documents</TabsTrigger>
+                  <TabsTrigger value="properties">Properties ({linkedProperties.length})</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="personal" className="mt-0">
@@ -203,6 +205,25 @@ const EditVendor = () => {
                 </TabsContent>
                 <TabsContent value="documents" className="mt-0">
                   <Documents watch={watch} register={register} setValue={setValue} errors={activeErrors} vendorId={vendor?.id} />
+                </TabsContent>
+                <TabsContent value="properties" className="mt-0">
+                  {linkedProperties.length === 0 ? (
+                    <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">No properties are linked to this landlord yet.</div>
+                  ) : (
+                    <div className="divide-y rounded-lg border">
+                      {linkedProperties.map((p: any) => (
+                        <button
+                          type="button"
+                          key={p.id}
+                          onClick={() => navigate(`/properties/${p.id}`)}
+                          className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-muted/40"
+                        >
+                          <span className="font-medium">{p.addressLine1 || "Property"}</span>
+                          <span className="text-muted-foreground">{[p.town, p.postCode].filter(Boolean).join(", ")}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </TabsContent>
               </Tabs>
 
