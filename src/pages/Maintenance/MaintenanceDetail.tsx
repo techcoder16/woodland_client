@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { priorityBadgeClass } from "@/utils/priorityStyle";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -26,6 +27,7 @@ import { get, post } from "@/helper/api";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { buildMaintenanceInvoice, downloadMaintenanceInvoice, invoiceToBase64, invoiceRef } from "@/utils/maintenanceInvoice";
+import { InfoHint } from "@/components/ui/hint";
 import { JOB_TYPE_OPTIONS, JOB_LOCATION_OPTIONS } from "@/helper/jobTypeOptions";
 
 interface HistoryEntry {
@@ -101,8 +103,7 @@ const MaintenanceDetail = () => {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [pendingContractorId, setPendingContractorId] = useState("");
   const [isAssigning, setIsAssigning] = useState(false);
-  // Landlord email: nothing is sent automatically — staff tick the box and send.
-  const [emailLandlordTicked, setEmailLandlordTicked] = useState(false);
+  // Landlord email: nothing is sent automatically — staff press the send button.
   const [isEmailingLandlord, setIsEmailingLandlord] = useState(false);
   const [invoicePrompt, setInvoicePrompt] = useState<{ base64: string } | null>(null);
   const [isSavingDeductible, setIsSavingDeductible] = useState(false);
@@ -362,24 +363,6 @@ const MaintenanceDetail = () => {
 
           <TabsContent value="payments" className="space-y-4">
             <Card className="p-4">
-              <label className="flex items-start gap-3">
-                <Checkbox
-                  checked={job.deductible !== false}
-                  disabled={!canManageMaintenance || isSavingDeductible}
-                  onCheckedChange={(v) => handleToggleDeductible(v === true)}
-                />
-                <span>
-                  <span className="font-semibold block">Deductible from landlord</span>
-                  <span className="text-sm text-muted-foreground">
-                    {job.deductible !== false
-                      ? "This job's cost can be recharged on the landlord's transactions."
-                      : "Not deductible — this job won't appear in the landlord's transactions."}
-                  </span>
-                </span>
-              </label>
-            </Card>
-
-            <Card className="p-4">
               <div className="font-semibold mb-3">Cost breakdown</div>
               {job.totalCost == null ? (
                 <p className="text-sm text-muted-foreground">Waiting on the contractor to enter their cost.</p>
@@ -498,7 +481,7 @@ const MaintenanceDetail = () => {
                       onCheckedChange={(v) => handleTogglePortal(v === true)}
                     />
                     <span>
-                      <span className="font-semibold block">Show on landlord portal</span>
+                      <span className="font-semibold block">Show on landlord portal<InfoHint text="When ticked, the landlord can see this job (and its invoice) when they log in to their portal. Untick to keep it internal." /></span>
                       <span className="text-sm text-muted-foreground">
                         {job.showOnLandlordPortal !== false
                           ? "The landlord can see this job in their portal."
@@ -506,34 +489,29 @@ const MaintenanceDetail = () => {
                       </span>
                     </span>
                   </label>
-                  <div className="font-semibold">Email landlord</div>
+                  <div className="font-semibold">Email landlord<InfoHint text="Sends the landlord the job details and invoice by email. Use it again after changes to send them an updated copy." /></div>
                   {landlord?.email ? (
                     <>
-                      <label className="flex items-center gap-3 text-sm">
-                        <Checkbox checked={emailLandlordTicked} onCheckedChange={(v) => setEmailLandlordTicked(v === true)} />
-                        <span>
-                          Send to <span className="font-medium">{landlordName}</span>{" "}
-                          <span className="text-muted-foreground">({landlord.email})</span>
-                        </span>
-                      </label>
+                      <p className="text-sm">
+                        Send to <span className="font-medium">{landlordName}</span>{" "}
+                        <span className="text-muted-foreground">({landlord.email})</span>
+                      </p>
                       <div className="flex flex-wrap gap-2">
                         <Button
                           type="button"
                           variant="outline"
-                          disabled={!emailLandlordTicked || isEmailingLandlord}
-                          onClick={async () => { if (await sendLandlordEmail()) setEmailLandlordTicked(false); }}
+                          disabled={isEmailingLandlord}
+                          onClick={() => void sendLandlordEmail()}
                         >
-                          <Mail className="h-4 w-4 mr-2" /> Send job update
+                          <Mail className="h-4 w-4 mr-2" /> {isEmailingLandlord ? "Sending…" : "Send / update email to landlord"}
                         </Button>
                         <Button
                           type="button"
                           variant="outline"
-                          disabled={!emailLandlordTicked || isEmailingLandlord || (job.totalCharged == null && job.totalCost == null)}
-                          onClick={async () => {
-                            if (await sendLandlordEmail(invoiceToBase64(buildMaintenanceInvoice(job)))) setEmailLandlordTicked(false);
-                          }}
+                          disabled={isEmailingLandlord || (job.totalCharged == null && job.totalCost == null)}
+                          onClick={() => void sendLandlordEmail(invoiceToBase64(buildMaintenanceInvoice(job)))}
                         >
-                          <Mail className="h-4 w-4 mr-2" /> Email invoice
+                          <Mail className="h-4 w-4 mr-2" /> Send invoice to landlord
                         </Button>
                       </div>
                       <p className="text-xs text-muted-foreground">The landlord is never emailed automatically.</p>
@@ -608,6 +586,23 @@ const MaintenanceDetail = () => {
           )}
 
           <TabsContent value="details" className="space-y-6">
+            <Card className="p-4">
+              <label className="flex items-start gap-3">
+                <Checkbox
+                  checked={job.deductible !== false}
+                  disabled={!canManageMaintenance || isSavingDeductible}
+                  onCheckedChange={(v) => handleToggleDeductible(v === true)}
+                />
+                <span>
+                  <span className="font-semibold block">Deductible from landlord<InfoHint text="Ticked: the cost of this job can be charged back to the landlord on their payment transaction. Unticked: Woodland absorbs it and it never appears on the landlord's transactions." /></span>
+                  <span className="text-sm text-muted-foreground">
+                    {job.deductible !== false
+                      ? "This job's cost can be recharged on the landlord's transactions."
+                      : "Not deductible — this job won't appear in the landlord's transactions."}
+                  </span>
+                </span>
+              </label>
+            </Card>
 
         {isEditing ? (
           <Card className="p-6">
@@ -720,7 +715,7 @@ const MaintenanceDetail = () => {
                 )}
               </div>
               <div className="flex gap-2 mb-3">
-                {job.priority && <Badge variant="outline">Priority: {job.priority}</Badge>}
+                {job.priority && <Badge variant="outline" className={priorityBadgeClass(job.priority)}>Priority: {job.priority}</Badge>}
                 <Badge variant={getStatusBadgeVariant(job.status)}>Status: {STATUS_LABELS[job.status] ?? job.status}</Badge>
                 {isJobOverdue && <Badge variant="destructive">Overdue</Badge>}
               </div>

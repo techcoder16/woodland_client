@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useDispatch } from "react-redux";
 import { useAppSelector } from "@/redux/reduxHooks";
@@ -35,7 +35,7 @@ const STEP_LABELS = [
 
 const STEP_FIELDS: string[][] = [
   ["vendor", "for", "postCode", "addressLine1", "addressLine2", "town", "country", "propertyTypeCategory", "bedrooms", "bathrooms", "receptions", "floorNumber", "steps", "bedroomsGround", "bedroomsFirst", "wheelchairAccess", "hasGarden", "hasParking", "communal", "fireRiskAssessmentFileId", "councilId", "lift", "gas", "rooms"],
-  ["photographFileId", "floorPlanFileId"],
+  ["photographFileIds", "floorPlanFileIds"],
   ["managementDate", "rentEffectiveDate", "rentPerMonth", "rentPayableInAdvance", "rentPayableTiming", "rentalTerms", "termMonths"],
   [],
 ];
@@ -50,6 +50,8 @@ const AddProperty = () => {
       country: "GB",
       photographFileId: "",
       floorPlanFileId: "",
+      photographFileIds: [],
+      floorPlanFileIds: [],
       attachmentFileIds: [],
       rooms: [],
     },
@@ -70,6 +72,15 @@ const AddProperty = () => {
   const [complianceDrafts, setComplianceDrafts] = useState<DraftComplianceDoc[]>([]);
   const [documentDrafts, setDocumentDrafts] = useState<DraftPropertyDoc[]>([]);
   const isLastStep = currentStep === STEP_LABELS.length - 1;
+
+  // Warn before closing/refreshing while there is anything not yet saved to the server.
+  const hasUnsaved = form.formState.isDirty || noteDrafts.length + complianceDrafts.length + documentDrafts.length > 0;
+  useEffect(() => {
+    if (!hasUnsaved) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [hasUnsaved]);
 
   const saveDraft = async (): Promise<any | null> => {
     try {
@@ -97,7 +108,7 @@ const AddProperty = () => {
     }
   };
 
-  const onSubmit = async (data: FormData, isDraft: boolean = false) => {
+  const onSubmit = async (data: FormData, isDraft: boolean = false, silent: boolean = false): Promise<boolean> => {
     if (!isDraft) {
       const isValid = await form.trigger();
       if (!isValid) {
@@ -106,12 +117,13 @@ const AddProperty = () => {
           description: "Please fix the highlighted fields before publishing.",
           variant: "destructive",
         });
-        return;
+        return false;
       }
     }
 
     setProgress(30);
     setIsSubmitting(true);
+    let ok = false;
 
     try {
       const payload = buildPropertyPayload(data as any, isDraft);
@@ -123,7 +135,7 @@ const AddProperty = () => {
 
       if (error?.message) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
-        return;
+        return false;
       }
 
       const propertyId = apiData?.property?.id;
@@ -132,13 +144,18 @@ const AddProperty = () => {
 
         if (noteDrafts.length > 0) {
           let failedNotes = 0;
-          for (const { localId, ...noteData } of noteDrafts) {
+          const keptNotes: DraftNote[] = [];
+          for (const draft of noteDrafts) {
+            const { localId, ...noteData } = draft;
             try {
               await dispatch(createNote({ ...noteData, propertyId } as any)).unwrap();
             } catch {
               failedNotes += 1;
+              keptNotes.push(draft);
             }
           }
+          // Saved drafts must leave the pending list or the next save would add them again.
+          setNoteDrafts(keptNotes);
           if (failedNotes > 0) {
             toast({
               title: "Some notes failed to save",
@@ -150,7 +167,9 @@ const AddProperty = () => {
 
         if (complianceDrafts.length > 0) {
           let failedCompliance = 0;
-          for (const { localId, file, ...docData } of complianceDrafts) {
+          const keptCompliance: DraftComplianceDoc[] = [];
+          for (const draft of complianceDrafts) {
+            const { localId, file, ...docData } = draft;
             try {
               const fileId = file ? (await uploadFileOnce(file, { category: "compliance", entityType: "property" })).id : undefined;
               const compliancePayload = {
@@ -168,8 +187,10 @@ const AddProperty = () => {
               if (complianceError) throw new Error(complianceError.message);
             } catch {
               failedCompliance += 1;
+              keptCompliance.push(draft);
             }
           }
+          setComplianceDrafts(keptCompliance);
           if (failedCompliance > 0) {
             toast({
               title: "Some certificates failed to save",
@@ -181,7 +202,9 @@ const AddProperty = () => {
 
         if (documentDrafts.length > 0) {
           let failedDocuments = 0;
-          for (const { localId, file, ...docData } of documentDrafts) {
+          const keptDocuments: DraftPropertyDoc[] = [];
+          for (const draft of documentDrafts) {
+            const { localId, file, ...docData } = draft;
             try {
               if (!file) throw new Error("No file");
               const { id: fileId } = await uploadFileOnce(file, { category: "property-document", entityType: "property" });
@@ -196,8 +219,10 @@ const AddProperty = () => {
               if (documentError) throw new Error(documentError.message);
             } catch {
               failedDocuments += 1;
+              keptDocuments.push(draft);
             }
           }
+          setDocumentDrafts(keptDocuments);
           if (failedDocuments > 0) {
             toast({
               title: "Some documents failed to save",
@@ -207,11 +232,20 @@ const AddProperty = () => {
           }
         }
 
-        toast({
-          title: "Success",
-          description: isDraft ? "Property saved as draft successfully!" : apiData.message || "Property published successfully!",
-        });
+        const stillDraft = apiData.property?.propertyStatus !== "PUBLISHED";
+        if (!silent) {
+          toast({
+            title: "Success",
+            description: isDraft
+              ? "Property saved as draft successfully!"
+              : stillDraft
+                ? "Property saved as a draft. An admin must publish it before it goes live."
+                : apiData.message || "Property published successfully!",
+          });
+        }
         setProgress(100);
+        ok = true;
+        form.reset(form.getValues());
         if (!isDraft) {
           setTimeout(() => { navigate("/properties"); }, 1500);
         }
@@ -228,6 +262,7 @@ const AddProperty = () => {
     } finally {
       setIsSubmitting(false);
     }
+    return ok;
   };
 
   const handleSaveDraft = () => onSubmit(form.getValues(), true);
@@ -244,6 +279,9 @@ const AddProperty = () => {
     }
 
     form.clearErrors();
+    // Persist as a draft on every step so uploaded files, certificates, notes and the
+    // management agreement are never lost by leaving the page before the final Save.
+    await onSubmit(form.getValues(), true, true);
     setCurrentStep((prev) => prev + 1);
   };
 
@@ -268,6 +306,7 @@ const AddProperty = () => {
       return;
     }
     form.clearErrors();
+    await onSubmit(form.getValues(), true, true);
     setCurrentStep(index);
   };
 

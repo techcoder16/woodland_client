@@ -29,25 +29,25 @@ const DocumentsCertificates = ({
         <div className="text-lg font-medium flex justify-start underline p-5">Photographs & Floor Plans</div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-3">
           <FileUploadField
-            label="Photograph"
-            name="photographFileId"
+            label="Photographs"
+            name="photographFileIds"
             accept="image/*"
-            multiple={false}
+            multiple
             register={register}
             setValue={setValue}
             watch={watch}
-            error={errors?.photographFileId?.message?.toString()}
+            error={errors?.photographFileIds?.message?.toString()}
             upload={{ category: "photograph", entityType: "property", entityId: propertyId, propertyId }}
           />
           <FileUploadField
-            label="Floor Plan"
-            name="floorPlanFileId"
+            label="Floor Plans"
+            name="floorPlanFileIds"
             accept="image/*,.pdf"
-            multiple={false}
+            multiple
             register={register}
             setValue={setValue}
             watch={watch}
-            error={errors?.floorPlanFileId?.message?.toString()}
+            error={errors?.floorPlanFileIds?.message?.toString()}
             upload={{ category: "floor-plan", entityType: "property", entityId: propertyId, propertyId }}
           />
         </div>

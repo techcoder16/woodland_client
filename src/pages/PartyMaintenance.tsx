@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { priorityBadgeClass } from "@/utils/priorityStyle";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -58,6 +59,7 @@ interface JobType {
   status: ReportingStatus;
   createdAt?: string;
   totalCharged?: number | null;
+  deductible?: boolean;
   totalCost?: number | null;
   contractorId?: string;
   mediaFileIds?: string[];
@@ -463,7 +465,12 @@ const PartyMaintenance = ({ kind }: { kind: PartyKind }) => {
                   </div>
                   <div className="flex flex-col items-end gap-2">
                     <Badge variant={getStatusBadgeVariant(job.status)}>{STATUS_LABELS[job.status] ?? job.status}</Badge>
-                    {job.priority && <Badge variant="outline">{job.priority}</Badge>}
+                    {job.priority && <Badge variant="outline" className={priorityBadgeClass(job.priority)}>{job.priority}</Badge>}
+                    {kind === "vendor" && (
+                      <Badge variant="outline" className={job.deductible !== false ? "border-amber-300 bg-amber-50 text-amber-800" : "border-slate-300 bg-slate-50 text-slate-600"}>
+                        {job.deductible !== false ? "Deductible from you" : "Not deductible"}
+                      </Badge>
+                    )}
                     {kind === "contractor" && job.status !== "COMPLETED" && job.status !== "CANCELLED" && (
                       <ContractorUpdateDialog job={job} onUpdated={loadJobs} />
                     )}

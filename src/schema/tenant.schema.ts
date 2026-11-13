@@ -19,10 +19,15 @@ export const tenantSchema = z.object({
     .union([z.literal(""), z.string().email()])
     .optional()
     .nullable(),
+  // Additional emails, ", " separated — each one must be a valid address.
   Email2: z
-    .union([z.literal(""), z.string().email()])
+    .string()
     .optional()
-    .nullable(),
+    .nullable()
+    .refine(
+      (v) => !v || v.split(",").map((e) => e.trim()).filter(Boolean).every((e) => z.string().email().safeParse(e).success),
+      { message: "Enter valid email addresses" },
+    ),
   EmployeeName: optionalText,
   BankAccountNo: optionalText,
   SortCode: optionalText,

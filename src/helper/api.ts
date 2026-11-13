@@ -1,6 +1,5 @@
 import axios from "axios";
-import { refreshTokenIfNeeded, getAccessToken } from "./tokenManager";
-import { DEFAULT_COOKIE_GETTER, DEFAULT_COOKIE_SETTER, DEFAULT_COOKIE_DELETE, AUTH_COOKIE_DAYS } from "./Cookie";
+import { refreshTokenIfNeeded, refreshAccessToken, getAccessToken } from "./tokenManager";
 import { extractApiMessage } from "./parseApiError";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -11,25 +10,6 @@ const axiosInstance = axios.create({
   // Set VITE_API_TIMEOUT_MS in the client .env to change this (default 30s).
   timeout: Number(import.meta.env.VITE_API_TIMEOUT_MS) || 30000,
 });
-
-// Flag to prevent multiple refresh attempts
-let isRefreshing = false;
-let failedQueue: Array<{
-  resolve: (value?: any) => void;
-  reject: (error?: any) => void;
-}> = [];
-
-const processQueue = (error: any, token: string | null = null) => {
-  failedQueue.forEach(({ resolve, reject }) => {
-    if (error) {
-      reject(error);
-    } else {
-      resolve(token);
-    }
-  });
-  
-  failedQueue = [];
-};
 
 // Request interceptor to add auth token
 axiosInstance.interceptors.request.use(
@@ -52,70 +32,18 @@ axiosInstance.interceptors.response.use(
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {
-      if (isRefreshing) {
-        // If already refreshing, queue this request
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        }).then(token => {
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return axiosInstance(originalRequest);
-        }).catch(err => {
-          return Promise.reject(err);
-        });
-      }
-
       originalRequest._retry = true;
-      isRefreshing = true;
 
-      try {
-        const refreshTokenValue = await DEFAULT_COOKIE_GETTER("refresh_token");
-        
-        if (!refreshTokenValue) {
-          throw new Error("No refresh token available");
-        }
-
-        const response = await axios.post(`${API_URL}auth/refresh`, {}, {
-          headers: {
-            Authorization: `Bearer ${refreshTokenValue}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        // Handle different possible response formats
-        const responseData = response.data;
-        const accessToken = responseData.accessToken || responseData.access_token;
-        const newRefreshToken = responseData.refreshToken || responseData.refresh_token;
-        
-        if (!accessToken) {
-          throw new Error('No access token received from refresh endpoint');
-        }
-        
-        await DEFAULT_COOKIE_SETTER("access_token", accessToken, false, AUTH_COOKIE_DAYS);
-        if (newRefreshToken) {
-          await DEFAULT_COOKIE_SETTER("refresh_token", newRefreshToken, false, AUTH_COOKIE_DAYS);
-        }
-
-        processQueue(null, accessToken);
-        
-        // Retry original request with new token
-        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-        return axiosInstance(originalRequest);
-        
-      } catch (refreshError) {
-        processQueue(refreshError, null);
-        
-        // Clear tokens and redirect to login
-        await DEFAULT_COOKIE_DELETE("access_token");
-        await DEFAULT_COOKIE_DELETE("refresh_token");
-        await DEFAULT_COOKIE_DELETE("user");
-        
-        // Redirect to login page
-        window.location.href = "/";
-        
-        return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
+      // Shared single-flight refresh (also updates token_expiry and only logs the user
+      // out on a genuine auth rejection, never on a timeout or network error).
+      const refreshed = await refreshAccessToken();
+      if (!refreshed) {
+        return Promise.reject(error);
       }
+
+      const newToken = await getAccessToken();
+      originalRequest.headers.Authorization = `Bearer ${newToken}`;
+      return axiosInstance(originalRequest);
     }
 
     return Promise.reject(error);

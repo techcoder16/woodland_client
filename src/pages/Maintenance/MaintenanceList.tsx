@@ -4,7 +4,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { priorityBadgeClass } from "@/utils/priorityStyle";
 import { Badge } from "@/components/ui/badge";
+import { Hint, InfoHint } from "@/components/ui/hint";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
@@ -411,14 +413,14 @@ const MaintenanceList = () => {
               <table className="min-w-full border-collapse table-auto">
                 <thead className="bg-background">
                   <tr className="border-b border-border/70">
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Address</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Description</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Priority</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Contractor</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Due Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Status</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Actions</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Date<InfoHint text="Date the job was logged." /></th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Address<InfoHint text="The property this job is for." /></th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Description<InfoHint text="What needs doing." /></th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Priority<InfoHint text="How urgent the job is. Critical (red) needs action now, High (orange), Medium (amber), Low (grey)." /></th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Contractor<InfoHint text="The contractor assigned to carry out the work." /></th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Due Date<InfoHint text="Date the work should be finished by." /></th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Status<InfoHint text="Where the job is: Quoting, Assigned, In Progress, Pending (contractor finished, awaiting sign-off), Completed or Cancelled." /></th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Actions<InfoHint text="Click any row to open the job." /></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -437,7 +439,7 @@ const MaintenanceList = () => {
                   ) : (
                     filteredJobTypes.map((job) => {
                       return (
-                        <tr key={job.id} className="border-b border-border/50 hover:bg-muted/40 transition-colors align-top">
+                        <tr key={job.id} className="border-b border-border/50 hover:bg-muted/40 transition-colors align-top cursor-pointer" onClick={() => navigate(`/maintenance/${job.id}`)}>
                           <td className="px-4 py-3 text-sm whitespace-nowrap">
                             {job.createdAt ? new Date(job.createdAt).toLocaleDateString() : "-"}
                           </td>
@@ -449,7 +451,7 @@ const MaintenanceList = () => {
                             <div className="text-muted-foreground truncate">{job.description || "-"}</div>
                           </td>
                           <td className="px-4 py-3 text-sm">
-                            {job.priority ? <Badge variant="outline">{job.priority}</Badge> : "-"}
+                            {job.priority ? <Hint text={`${job.priority} priority`}><Badge variant="outline" className={priorityBadgeClass(job.priority)}>{job.priority}</Badge></Hint> : "-"}
                           </td>
                           <td className="px-4 py-3 text-sm">
                             {job.contractorRef ? job.contractorRef.name : job.employeeId ? getEmployeeName(job.employeeId) : "-"}
@@ -458,11 +460,8 @@ const MaintenanceList = () => {
                           <td className="px-4 py-3 text-sm">
                             <Badge variant={getStatusBadgeVariant(job.status)}>{STATUS_LABELS[job.status] ?? job.status}</Badge>
                           </td>
-                          <td className="px-4 py-3 text-center">
+                          <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                             <div className="flex justify-center space-x-2">
-                              <Button size="sm" variant="outline" onClick={() => navigate(`/maintenance/${job.id}`)}>
-                                View details
-                              </Button>
                               {canManageMaintenance && job.status !== "COMPLETED" && (
                                 <Button size="sm" variant="outline" onClick={() => handleCompleteJob(job)}>
                                   <CheckCircle2 className="h-4 w-4" />
