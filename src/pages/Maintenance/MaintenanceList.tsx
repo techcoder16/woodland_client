@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { priorityBadgeClass } from "@/utils/priorityStyle";
+import { priorityBadgeClass, statusBadgeClass, statusRowClass } from "@/utils/priorityStyle";
 import { Badge } from "@/components/ui/badge";
 import { Hint, InfoHint } from "@/components/ui/hint";
 import { Input } from "@/components/ui/input";
@@ -79,6 +79,15 @@ const STATUS_LABELS: Record<ReportingStatus, string> = {
   CONTRACTOR_DONE: "Pending",
   COMPLETED: "Completed",
   CANCELLED: "Cancelled",
+};
+
+const STATUS_HINTS: Record<string, string> = {
+  QUOTING: "Waiting for quotes; no contractor chosen yet.",
+  ASSIGNED: "A contractor has been assigned but has not started.",
+  IN_PROGRESS: "The contractor is working on it.",
+  CONTRACTOR_DONE: "Contractor says it is finished; waiting for sign-off.",
+  COMPLETED: "Signed off and done.",
+  CANCELLED: "Cancelled; no further work.",
 };
 
 const getStatusBadgeVariant = (status: ReportingStatus) => {
@@ -439,7 +448,7 @@ const MaintenanceList = () => {
                   ) : (
                     filteredJobTypes.map((job) => {
                       return (
-                        <tr key={job.id} className="border-b border-border/50 hover:bg-muted/40 transition-colors align-top cursor-pointer" onClick={() => navigate(`/maintenance/${job.id}`)}>
+                        <tr key={job.id} className={`border-b border-border/50 hover:brightness-95 transition-colors align-top cursor-pointer ${statusRowClass(job.status)}`} onClick={() => navigate(`/maintenance/${job.id}`)}>
                           <td className="px-4 py-3 text-sm whitespace-nowrap">
                             {job.createdAt ? new Date(job.createdAt).toLocaleDateString() : "-"}
                           </td>
@@ -458,7 +467,7 @@ const MaintenanceList = () => {
                           </td>
                           <td className="px-4 py-3 text-sm whitespace-nowrap">{job.dueDate}</td>
                           <td className="px-4 py-3 text-sm">
-                            <Badge variant={getStatusBadgeVariant(job.status)}>{STATUS_LABELS[job.status] ?? job.status}</Badge>
+                            <Hint text={STATUS_HINTS[job.status] ?? job.status}><Badge variant="outline" className={statusBadgeClass(job.status)}>{STATUS_LABELS[job.status] ?? job.status}</Badge></Hint>
                           </td>
                           <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                             <div className="flex justify-center space-x-2">

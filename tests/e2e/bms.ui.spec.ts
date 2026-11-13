@@ -82,6 +82,8 @@ test.describe('staff UI (admin)', () => {
     const badge = row.getByText('Critical', { exact: true }).first();
     await expect(badge).toBeVisible();
     await expect(badge).toHaveClass(/red/);
+    // The whole row is tinted by status (this job is new, so it is the "Quoting" purple).
+    await expect(row).toHaveClass(/border-l-purple/);
     await row.click();
     await expect(page).toHaveURL(new RegExp(`/maintenance/${jobId}`));
   });
@@ -105,6 +107,10 @@ test.describe('staff UI (admin)', () => {
     }
     await expect(page.getByText('Tenancies', { exact: true })).toHaveCount(0);
     await expect(page.getByRole('button', { name: /unpublish/i })).toBeVisible();
+    // The word must be gone inside the Occupancy tab as well, not only on Overview.
+    await page.getByRole('button', { name: 'Occupancy', exact: true }).last().click();
+    await expect(page.getByRole('heading', { name: 'Occupancy', level: 3 })).toBeVisible();
+    await expect(page.getByText('Tenancies', { exact: true })).toHaveCount(0);
     await page.getByRole('button', { name: 'Maintenance' }).or(page.getByRole('tab', { name: 'Maintenance' })).first().click();
     await expect(page.getByText(`Leaking tap ${RUN}`)).toBeVisible();
   });
