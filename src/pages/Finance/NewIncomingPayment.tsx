@@ -448,7 +448,7 @@ export default function NewIncomingPayment() {
                         <Detail label="Occupancy Ref" value={occupancy.reference} />
                         <Detail label="Tenant" value={occupancy.tenantName} />
                         <Detail label="Paid By" value={occupancy.tenancyType === "Private" ? occupancy.payerName : occupancy.tenancyType} />
-                        <Detail label="Tenancy Start" value={new Date(occupancy.moveInDate).toLocaleDateString("en-GB")} />
+                        <Detail label="Occupancy Start" value={new Date(occupancy.moveInDate).toLocaleDateString("en-GB")} />
                         <Detail label="Rent" value={`${money(occupancy.rateAmount)} ${RATE_SHORT[occupancy.rateFrequency]}`} strong />
                       </div>
                     </div>

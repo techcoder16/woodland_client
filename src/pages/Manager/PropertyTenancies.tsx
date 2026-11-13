@@ -8,7 +8,7 @@ import { get } from "@/helper/api";
 import { useOccupancyMeta } from "@/pages/Occupancy/useOccupancyMeta";
 import { statusOf, typeOf, formatRate, fmtDate, toneBadge } from "@/pages/Occupancy/occupancyShared";
 
-/** Tenancies = the occupancies linked to this property. */
+/** Occupancy tab = the occupancies linked to this property. */
 export default function PropertyTenancies({ propertyId }: { propertyId: string }) {
   const navigate = useNavigate();
   const meta = useOccupancyMeta();
@@ -37,7 +37,7 @@ export default function PropertyTenancies({ propertyId }: { propertyId: string }
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">Tenancies</h3>
+          <h3 className="text-lg font-semibold">Occupancy</h3>
           <p className="text-sm text-muted-foreground">Every occupancy linked to this property, current and past.</p>
         </div>
         <Button onClick={() => navigate("/occupancy/new")}><Plus className="mr-2 h-4 w-4" />New occupancy</Button>
