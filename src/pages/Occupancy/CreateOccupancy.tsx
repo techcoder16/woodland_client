@@ -754,13 +754,13 @@ export default function CreateOccupancy() {
                                   setSelectedOccupier(o);
                                   set("occupierId", o.id);
                                 }}
-                                className={cn("flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-muted", form.occupierId === o.id && "bg-primary/5")}
+                                className={cn("flex w-full items-center justify-between border-l-4 border-l-transparent px-3 py-2 text-left text-sm hover:bg-muted", form.occupierId === o.id && "border-l-primary bg-primary/10 font-medium")}
+                                aria-pressed={form.occupierId === o.id}
                               >
                                 <span>
                                   <span className="block font-medium">{fullName(o, true) || "Unnamed"}</span>
                                   <span className="block text-xs text-muted-foreground">{[o.Email, o.MobileNo].filter(Boolean).join(" · ")}</span>
                                 </span>
-                                {form.occupierId === o.id && <Check className="h-4 w-4 text-primary" />}
                               </button>
                             ))
                           )}
