@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { AutoHint } from "@/components/ui/hint";
 import { Button } from "@/components/ui/button";
 
 import { useNavigate } from "react-router-dom";
@@ -119,11 +120,11 @@ const VendorList = () => {
               <table className="min-w-full border-collapse table-auto">
                 <thead className="bg-background">
                   <tr className="border-b border-border/70">
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Landlord</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Address</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Landlord<AutoHint for="Landlord" /></th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Address<AutoHint for="Address" /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Property</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Contact</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Actions</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Actions<AutoHint for="Actions" /></th>
                   </tr>
                 </thead>
                 <tbody>

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { AutoHint } from "@/components/ui/hint";
 import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -73,7 +74,7 @@ const PropertyPicker: React.FC<PropertyPickerProps> = ({
 
   return (
     <div className="space-y-1.5">
-      {label && <label className="text-muted-foreground font-medium text-sm">{label}</label>}
+      {label && <label className="text-muted-foreground font-medium text-sm">{label}<AutoHint for={String(label ?? "")} /></label>}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button

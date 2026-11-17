@@ -102,6 +102,25 @@ test.describe('staff UI (admin)', () => {
     await expect(page.getByRole('tooltip').filter({ hasText: /Waiting for quotes/ })).toBeVisible({ timeout: 5000 });
   });
 
+  test('tooltips exist in every section, not only maintenance', async ({ page }) => {
+    test.setTimeout(180000);
+    const sections = ['/properties', '/vendors', '/tenants', '/occupancy', '/contractors', '/finance/landlord-payments', '/finance/incoming-payments', '/compliance', '/vendors/add', '/property/add'];
+    const missing: string[] = [];
+    for (const path of sections) {
+      await page.goto(path);
+      await page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
+      const icons = page.locator('svg.lucide-info');
+      const hovers = page.locator('[aria-hidden="true"] > svg.lucide-info, span.cursor-help');
+      if ((await icons.count()) === 0 && (await hovers.count()) === 0) { missing.push(path); continue; }
+    }
+    expect(missing, `no tooltips found on: ${missing.join(', ')}`).toEqual([]);
+    // and one in a non-maintenance section really opens on hover
+    await page.goto('/occupancy');
+    await page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
+    await page.locator('span.cursor-help').first().hover();
+    await expect(page.getByRole('tooltip').first()).toBeVisible({ timeout: 5000 });
+  });
+
   test('maintenance detail: deductible toggle and landlord email button (no checkbox)', async ({ page }) => {
     await page.goto(`/maintenance/${jobId}`);
     await expect(page.getByText(/deductible/i).first()).toBeVisible({ timeout: 15000 });

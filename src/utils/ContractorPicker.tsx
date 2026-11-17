@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { AutoHint } from "@/components/ui/hint";
 import { useNavigate } from "react-router-dom";
 import { Check, ChevronsUpDown, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -76,7 +77,7 @@ const ContractorPicker: React.FC<ContractorPickerProps> = ({
 
   return (
     <div className="space-y-1.5">
-      <label className="text-muted-foreground font-medium text-sm">{label}</label>
+      <label className="text-muted-foreground font-medium text-sm">{label}<AutoHint for={String(label ?? "")} /></label>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button

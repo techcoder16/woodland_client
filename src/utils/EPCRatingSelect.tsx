@@ -1,4 +1,5 @@
 import React from "react";
+import { AutoHint } from "@/components/ui/hint";
 import { UseFormRegister, UseFormWatch } from "react-hook-form";
 
 interface EPCRatingSelectProps {
@@ -22,7 +23,7 @@ const EPCRatingSelect: React.FC<EPCRatingSelectProps> = ({
 
   return (
     <div className="space-y-1.5">
-      <label className="text-muted-foreground text-sm font-medium">{label}</label>
+      <label className="text-muted-foreground text-sm font-medium">{label}<AutoHint for={String(label ?? "")} /></label>
 
       <select
         {...register(name, {

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { AutoHint } from "@/components/ui/hint";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Download, Eye, Loader2, Plus, RefreshCw, Search, Trash2 } from "lucide-react";
 import { exportIncomingPaymentToPdf } from "@/utils/incomingPaymentExport";
@@ -112,15 +113,15 @@ export default function IncomingPayments() {
               <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
                 <tr>
                   <th className="px-4 py-2.5 font-medium">#</th>
-                  <th className="px-4 py-2.5 font-medium">Reference</th>
-                  <th className="px-4 py-2.5 font-medium">Date</th>
+                  <th className="px-4 py-2.5 font-medium">Reference<AutoHint for="Reference" /></th>
+                  <th className="px-4 py-2.5 font-medium">Date<AutoHint for="Date" /></th>
                   <th className="px-4 py-2.5 font-medium">Payer</th>
                   <th className="px-4 py-2.5 font-medium">Property</th>
                   <th className="px-4 py-2.5 font-medium">Occupancy Ref</th>
-                  <th className="px-4 py-2.5 font-medium">Period</th>
-                  <th className="px-4 py-2.5 text-right font-medium">Amount</th>
+                  <th className="px-4 py-2.5 font-medium">Period<AutoHint for="Period" /></th>
+                  <th className="px-4 py-2.5 text-right font-medium">Amount<AutoHint for="Amount" /></th>
                   <th className="px-4 py-2.5 font-medium">Method</th>
-                  <th className="px-4 py-2.5 text-right font-medium">Actions</th>
+                  <th className="px-4 py-2.5 text-right font-medium">Actions<AutoHint for="Actions" /></th>
                 </tr>
               </thead>
               <tbody>
@@ -188,7 +189,7 @@ export default function IncomingPayments() {
               <div className="overflow-hidden rounded-lg border">
                 <table className="w-full text-sm">
                   <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
-                    <tr><th className="px-3 py-2 font-medium">Property</th><th className="px-3 py-2 font-medium">Occupancy</th><th className="px-3 py-2 font-medium">Period</th><th className="px-3 py-2 text-right font-medium">Amount</th></tr>
+                    <tr><th className="px-3 py-2 font-medium">Property</th><th className="px-3 py-2 font-medium">Occupancy</th><th className="px-3 py-2 font-medium">Period<AutoHint for="Period" /></th><th className="px-3 py-2 text-right font-medium">Amount<AutoHint for="Amount" /></th></tr>
                   </thead>
                   <tbody>
                     {viewing.allocations.map((a) => (

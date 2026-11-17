@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AutoHint } from "@/components/ui/hint";
 import { uploadFiles } from "@/helper/fileUpload";
 import StoredImage from "@/components/StoredImage";
 import { useNavigate } from "react-router-dom";
@@ -836,7 +837,7 @@ export default function CreateOccupancy() {
                       {form.additionalOccupiers.length > 0 && (
                         <table className="w-full rounded-lg border text-sm">
                           <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
-                            <tr><th className="p-2">Name</th><th className="p-2">Date of Birth</th><th className="p-2">Relationship</th><th className="p-2 text-right">Actions</th></tr>
+                            <tr><th className="p-2">Name<AutoHint for="Name" /></th><th className="p-2">Date of Birth<AutoHint for="Date of Birth" /></th><th className="p-2">Relationship<AutoHint for="Relationship" /></th><th className="p-2 text-right">Actions<AutoHint for="Actions" /></th></tr>
                           </thead>
                           <tbody>
                             {form.additionalOccupiers.map((m, i) => (

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AutoHint } from "@/components/ui/hint";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,7 +50,7 @@ export default function PropertyMaintenance({ propertyId }: { propertyId: string
         <div className="overflow-hidden rounded-lg border">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
-              <tr><th className="px-4 py-2.5">Job</th><th className="px-4 py-2.5">Priority</th><th className="px-4 py-2.5">Due date</th><th className="px-4 py-2.5">Status</th></tr>
+              <tr><th className="px-4 py-2.5">Job</th><th className="px-4 py-2.5">Priority<AutoHint for="Priority" /></th><th className="px-4 py-2.5">Due date<AutoHint for="Due date" /></th><th className="px-4 py-2.5">Status<AutoHint for="Status" /></th></tr>
             </thead>
             <tbody>
               {jobTypes.map((j: any) => (

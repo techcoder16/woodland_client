@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { AutoHint } from "@/components/ui/hint";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
 import { deleteTenant, fetchtenants } from "@/redux/dataStore/tenantSlice";
 import { Button } from "@/components/ui/button";
@@ -130,13 +131,13 @@ const TenantList = ({ property }: any) => {
                 <table className="min-w-full">
                   <thead>
                     <tr className="border-b border-border/70">
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Title</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Name</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Email</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Phone</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Type</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Status</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Actions</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Title<AutoHint for="Title" /></th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Name<AutoHint for="Name" /></th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Email<AutoHint for="Email" /></th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Phone<AutoHint for="Phone" /></th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Type<AutoHint for="Type" /></th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Status<AutoHint for="Status" /></th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Actions<AutoHint for="Actions" /></th>
                     </tr>
                   </thead>
                   <tbody>

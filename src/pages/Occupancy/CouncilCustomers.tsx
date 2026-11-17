@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { AutoHint } from "@/components/ui/hint";
 import { Building2, Search } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Input } from "@/components/ui/input";
@@ -45,7 +46,7 @@ export default function CouncilCustomers() {
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="border-b border-border/70 text-left text-xs text-muted-foreground">
-                  <th className="px-4 py-3 font-medium">Council</th>
+                  <th className="px-4 py-3 font-medium">Council<AutoHint for="Council" /></th>
                   <th className="px-4 py-3 font-medium">Live Occupancies</th>
                 </tr>
               </thead>

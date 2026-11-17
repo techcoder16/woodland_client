@@ -1,4 +1,5 @@
 import React from "react";
+import { AutoHint } from "@/components/ui/hint";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -72,7 +73,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   return (
     <div className="space-y-1">
       {label && (
-        <label className="text-sm font-medium text-muted-foreground">{label}</label>
+        <label className="text-sm font-medium text-muted-foreground">{label}<AutoHint for={String(label ?? "")} /></label>
       )}
 
       <div className={cn("border rounded-lg overflow-hidden", error ? "border-destructive" : "border-border")}>

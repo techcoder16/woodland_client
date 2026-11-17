@@ -89,7 +89,7 @@ export default function PropertyDetailPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-2xl font-semibold tracking-tight">{property.addressLine1 || "Property"}</h1>
-                  <Hint text={property.propertyStatus === "PUBLISHED" ? "Published: live and available across the system." : "Draft: saved but not live yet. An admin must publish it."}><Badge className={property.propertyStatus === "PUBLISHED" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800"}>{property.propertyStatus === "PUBLISHED" ? "Published" : "Draft"}</Badge></Hint>
+                  <Hint text={property.propertyStatus === "PUBLISHED" ? "Published: live and available across the system." : "Draft: saved but not live yet. An admin must publish it."}><Badge noHint className={property.propertyStatus === "PUBLISHED" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800"}>{property.propertyStatus === "PUBLISHED" ? "Published" : "Draft"}</Badge></Hint>
                 </div>
                 <p className="text-sm text-muted-foreground">{[property.town, property.postCode].filter(Boolean).join(", ")}</p>
                 <p className="mt-1 text-xs text-muted-foreground">

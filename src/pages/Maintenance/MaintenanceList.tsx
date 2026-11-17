@@ -460,14 +460,14 @@ const MaintenanceList = () => {
                             <div className="text-muted-foreground truncate">{job.description || "-"}</div>
                           </td>
                           <td className="px-4 py-3 text-sm">
-                            {job.priority ? <Hint text={`${job.priority} priority`}><Badge variant="outline" className={priorityBadgeClass(job.priority)}>{job.priority}</Badge></Hint> : "-"}
+                            {job.priority ? <Hint text={`${job.priority} priority`}><Badge noHint variant="outline" className={priorityBadgeClass(job.priority)}>{job.priority}</Badge></Hint> : "-"}
                           </td>
                           <td className="px-4 py-3 text-sm">
                             {job.contractorRef ? job.contractorRef.name : job.employeeId ? getEmployeeName(job.employeeId) : "-"}
                           </td>
                           <td className="px-4 py-3 text-sm whitespace-nowrap">{job.dueDate}</td>
                           <td className="px-4 py-3 text-sm">
-                            <Hint text={STATUS_HINTS[job.status] ?? job.status}><Badge variant="outline" className={statusBadgeClass(job.status)}>{STATUS_LABELS[job.status] ?? job.status}</Badge></Hint>
+                            <Hint text={STATUS_HINTS[job.status] ?? job.status}><Badge noHint variant="outline" className={statusBadgeClass(job.status)}>{STATUS_LABELS[job.status] ?? job.status}</Badge></Hint>
                           </td>
                           <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                             <div className="flex justify-center space-x-2">

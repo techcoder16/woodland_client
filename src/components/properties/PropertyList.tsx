@@ -1,5 +1,6 @@
 
 import React, { useState } from "react";
+import { AutoHint } from "@/components/ui/hint";
 import { 
   Building, 
   ChevronDown, 
@@ -187,11 +188,11 @@ export function PropertyList() {
                   />
                 </th>
                 <th className="px-4 py-3 text-left font-medium">Property</th>
-                <th className="px-4 py-3 text-left font-medium">Type</th>
+                <th className="px-4 py-3 text-left font-medium">Type<AutoHint for="Type" /></th>
                 <th className="px-4 py-3 text-center font-medium">Units</th>
                 <th className="px-4 py-3 text-center font-medium">Occupancy</th>
-                <th className="px-4 py-3 text-center font-medium">Status</th>
-                <th className="px-4 py-3 text-right font-medium">Actions</th>
+                <th className="px-4 py-3 text-center font-medium">Status<AutoHint for="Status" /></th>
+                <th className="px-4 py-3 text-right font-medium">Actions<AutoHint for="Actions" /></th>
               </tr>
             </thead>
             <tbody>

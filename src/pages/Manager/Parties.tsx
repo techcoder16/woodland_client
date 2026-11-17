@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { AutoHint } from "@/components/ui/hint";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
 import { deleteTenant, fetchtenants } from "@/redux/dataStore/tenantSlice";
 import { fetchVendors } from "@/redux/dataStore/vendorSlice";
@@ -338,10 +339,10 @@ console.log("Selected Tenants:", selectedTenants);
         <table className="min-w-full border">
           <thead>
             <tr>
-              <th className="px-4 py-2">Name</th>
-              <th className="px-4 py-2">Email</th>
-              <th className="px-4 py-2">Phone</th>
-              <th className="px-4 py-2">Actions</th>
+              <th className="px-4 py-2">Name<AutoHint for="Name" /></th>
+              <th className="px-4 py-2">Email<AutoHint for="Email" /></th>
+              <th className="px-4 py-2">Phone<AutoHint for="Phone" /></th>
+              <th className="px-4 py-2">Actions<AutoHint for="Actions" /></th>
             </tr>
           </thead>
           <tbody>
