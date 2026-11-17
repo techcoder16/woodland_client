@@ -203,40 +203,31 @@ export async function checkTokenInfo(): Promise<boolean> {
   }
 }
 
-// Function to check refresh token expiration specifically
+// Function to check refresh token expiration specifically.
+// The access token is refreshed FIRST: calling token-info with an expired access token
+// returns 401, which used to be misread as "refresh token expired" and logged the user out
+// every time the tab sat idle past the access-token lifetime.
 export async function checkRefreshTokenExpiration(): Promise<boolean> {
   try {
-    // Try to call token-info endpoint to check if refresh token is still valid
-    const response = await axios.get(`${API_URL}auth/token-info`, {
+    if (!(await refreshTokenIfNeeded())) return true; // refresh handles real rejections itself
+    await axios.get(`${API_URL}auth/token-info`, {
       headers: {
         Authorization: `Bearer ${await getAccessToken()}`,
         'Content-Type': 'application/json'
       }
     });
-
     return true;
   } catch (error: any) {
-    console.error('Refresh token expired or invalid:', error);
+    console.error('Token check failed:', error);
     return !isAuthRejection(error); // a timeout is not an expired token
   }
 }
 
-// Function to start periodic token validation
+// Function to start periodic token validation.
+// checkTokenInfo already refreshes first and only logs out on a real server rejection.
 export function startTokenValidation(intervalMinutes: number = 5): NodeJS.Timeout {
   return setInterval(async () => {
     console.log('Performing periodic token validation...');
-    
-    // First check if refresh token is still valid
-    const refreshTokenValid = await checkRefreshTokenExpiration();
-    
-    if (!refreshTokenValid) {
-      console.log('Refresh token expired, logging out...');
-      await clearTokens();
-      window.location.href = "/";
-      return;
-    }
-    
-    // If refresh token is valid, do full token check
     await checkTokenInfo();
   }, intervalMinutes * 60 * 1000);
 }

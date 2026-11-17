@@ -88,6 +88,20 @@ test.describe('staff UI (admin)', () => {
     await expect(page).toHaveURL(new RegExp(`/maintenance/${jobId}`));
   });
 
+  test('tooltips appear on hover (column heading, priority badge, status badge)', async ({ page }) => {
+    await page.goto('/maintenance');
+    const row = page.locator('tr', { hasText: `Leaking tap ${RUN}` });
+    await expect(row).toBeVisible({ timeout: 15000 });
+    // (i) icon on the Priority column heading
+    await page.getByLabel(/How urgent the job is/).hover();
+    await expect(page.getByRole('tooltip').filter({ hasText: 'How urgent the job is' })).toBeVisible({ timeout: 5000 });
+    // badges explain themselves too
+    await row.getByText('Critical', { exact: true }).first().hover();
+    await expect(page.getByRole('tooltip').filter({ hasText: 'Critical priority' })).toBeVisible({ timeout: 5000 });
+    await row.getByText('Quoting', { exact: true }).first().hover();
+    await expect(page.getByRole('tooltip').filter({ hasText: /Waiting for quotes/ })).toBeVisible({ timeout: 5000 });
+  });
+
   test('maintenance detail: deductible toggle and landlord email button (no checkbox)', async ({ page }) => {
     await page.goto(`/maintenance/${jobId}`);
     await expect(page.getByText(/deductible/i).first()).toBeVisible({ timeout: 15000 });
@@ -130,6 +144,31 @@ test.describe('staff UI (admin)', () => {
     await page.goto(`/property/edit?id=${propertyId}`);
     await expect(page.locator('input').first()).toBeVisible({ timeout: 15000 });
     await expect(page.getByText(/find address|search address|ideal postcodes/i)).toHaveCount(0);
+  });
+});
+
+test.describe('session stays alive', () => {
+  test('idle tab with an expired access token is refreshed, not logged out, by the 5-minute check', async ({ page }) => {
+    await uiLogin(page, ADMIN.email, ADMIN.password);
+    await expect(page).toHaveURL(/dashboard/, { timeout: 20000 });
+    // Control time from here on: reload so the 5-minute validator starts under the fake clock.
+    await page.clock.install();
+    await page.reload();
+    await expect(page).toHaveURL(/dashboard/, { timeout: 20000 });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    // Simulate an idle tab: the access token has expired, the refresh token is still good.
+    await page.evaluate(() => {
+      document.cookie = 'access_token=expired.invalid.token; path=/';
+      document.cookie = 'token_expiry=1; path=/';
+    });
+    const refreshed = page.waitForResponse((r) => r.url().includes('/auth/refresh') && r.request().method() === 'POST', { timeout: 20000 });
+    await page.clock.fastForward('06:00'); // past the 5-minute periodic validation
+    expect((await refreshed).ok()).toBeTruthy();
+    await page.waitForTimeout(1500);
+    await expect(page).toHaveURL(/dashboard/);
+    const cookies = await page.context().cookies();
+    expect(cookies.some((c) => c.name === 'refresh_token')).toBeTruthy();
+    expect(cookies.find((c) => c.name === 'access_token')?.value).not.toBe('expired.invalid.token');
   });
 });
 
