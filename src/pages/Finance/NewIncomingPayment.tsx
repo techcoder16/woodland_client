@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { AutoHint } from "@/components/ui/hint";
 import StoredImage from "@/components/StoredImage";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Building2, Check, CheckCircle2, Download, Layers, Loader2, Plus, Search, User } from "lucide-react";
@@ -632,7 +633,7 @@ export default function NewIncomingPayment() {
                 <div className="surface p-5 text-sm">
                   <h3 className="mb-3 font-semibold">Allocations ({allocationList.length} items)</h3>
                   <table className="w-full">
-                    <thead className="text-left text-xs text-muted-foreground"><tr><th className="py-1.5 font-medium">Property</th><th className="py-1.5 font-medium">Occupancy</th><th className="py-1.5 font-medium">Period</th><th className="py-1.5 text-right font-medium">Amount</th></tr></thead>
+                    <thead className="text-left text-xs text-muted-foreground"><tr><th className="py-1.5 font-medium">Property</th><th className="py-1.5 font-medium">Occupancy</th><th className="py-1.5 font-medium">Period<AutoHint for="Period" /></th><th className="py-1.5 text-right font-medium">Amount<AutoHint for="Amount" /></th></tr></thead>
                     <tbody>
                       {allocationList.map((a) => {
                         const row = ticked[a.occupancyId];

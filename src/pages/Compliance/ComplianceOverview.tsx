@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { AutoHint } from "@/components/ui/hint";
 import { useNavigate } from "react-router-dom";
 import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, Clock, FileQuestion, Search, ShieldCheck } from "lucide-react";
 import { get } from "@/helper/api";
@@ -184,9 +185,9 @@ export default function ComplianceOverview() {
             <tr>
               <th className="px-4 py-2.5 font-medium">Property</th>
               <th className="px-4 py-2.5 font-medium">Certificate</th>
-              <th className="px-4 py-2.5 font-medium">Expiry Date</th>
+              <th className="px-4 py-2.5 font-medium">Expiry Date<AutoHint for="Expiry Date" /></th>
               <th className="px-4 py-2.5 text-right font-medium">Days Left</th>
-              <th className="px-4 py-2.5 font-medium">Status</th>
+              <th className="px-4 py-2.5 font-medium">Status<AutoHint for="Status" /></th>
               <th className="px-4 py-2.5 text-right font-medium">Action</th>
             </tr>
           </thead>

@@ -1,5 +1,6 @@
 // InputField.tsx
 import React from 'react';
+import { AutoHint } from "@/components/ui/hint";
 import { FieldValues, UseFormRegister } from 'react-hook-form';
 import { Textarea } from '@/components/ui/textarea';
 import { renderLabel } from './FieldLabel';
@@ -31,7 +32,7 @@ const InputField: React.FC<InputFieldProps> = ({
   
  return (
   <div className="space-y-1.5">
-      <label className="font-medium text-muted-foreground text-sm">{renderLabel(label)}</label>
+      <label className="font-medium text-muted-foreground text-sm">{renderLabel(label)}<AutoHint for={String(label ?? "")} /></label>
       <Textarea
         {...register(name)}
         placeholder={placeholder}

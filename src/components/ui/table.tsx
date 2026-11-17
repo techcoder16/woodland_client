@@ -1,5 +1,7 @@
 import * as React from "react"
 
+import { InfoHint } from "@/components/ui/hint"
+import { getHint } from "@/helper/hints"
 import { cn } from "@/lib/utils"
 
 const Table = React.forwardRef<
@@ -19,7 +21,7 @@ Table.displayName = "Table"
 const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
->(({ className, ...props }, ref) => (
+>(({ className, children, ...props }, ref) => (
   <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />
 ))
 TableHeader.displayName = "TableHeader"
@@ -77,7 +79,10 @@ const TableHead = React.forwardRef<
       className
     )}
     {...props}
-  />
+  >
+    {children}
+    {getHint(children) && <InfoHint quiet text={getHint(children)!} />}
+  </th>
 ))
 TableHead.displayName = "TableHead"
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AutoHint } from "@/components/ui/hint";
 import StoredImage from "@/components/StoredImage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -202,8 +203,8 @@ const PropertyDetail = ({ kind, property }: { kind: PartyKind; property: Propert
                   <table className="w-full border text-sm">
                     <thead>
                       <tr className="text-left border-b bg-muted/50">
-                        <th className="p-2">Date</th>
-                        <th className="p-2">Rent received</th>
+                        <th className="p-2">Date<AutoHint for="Date" /></th>
+                        <th className="p-2">Rent received<AutoHint for="Rent received" /></th>
                         <th className="p-2">Net paid</th>
                         <th className="p-2">Mode</th>
                       </tr>

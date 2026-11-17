@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { AutoHint } from "@/components/ui/hint";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -149,10 +150,10 @@ const PropertyList = () => {
   <thead>
     <tr className="border-b border-border/70">
       <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs">No</th>
-      <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs">Address</th>
-      <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs">Country</th>
+      <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs">Address<AutoHint for="Address" /></th>
+      <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs">Country<AutoHint for="Country" /></th>
       <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs">Category</th>
-      <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs">Status</th>
+      <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs">Status<AutoHint for="Status" /></th>
       <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs">Property Status</th>
       <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs">Price</th>
 

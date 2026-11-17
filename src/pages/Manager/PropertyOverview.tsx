@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AutoHint } from "@/components/ui/hint";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, Building2, ClipboardList, FileText, Loader2, Search, StickyNote, User, Wallet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -273,7 +274,7 @@ export default function PropertyOverview({ property }: PropertyOverviewProps) {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="text-left text-xs text-muted-foreground"><tr><th className="py-1.5 pr-3">Document Type</th><th className="py-1.5 pr-3">Expiry Date</th><th className="py-1.5">Status</th></tr></thead>
+                <thead className="text-left text-xs text-muted-foreground"><tr><th className="py-1.5 pr-3">Document Type</th><th className="py-1.5 pr-3">Expiry Date<AutoHint for="Expiry Date" /></th><th className="py-1.5">Status<AutoHint for="Status" /></th></tr></thead>
                 <tbody>
                   {complianceDocs.slice(0, 5).map((d: any) => {
                     const status = expiryLabel(d.expiryDate);

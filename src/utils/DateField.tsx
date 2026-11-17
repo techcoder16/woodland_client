@@ -1,4 +1,5 @@
 import { Calendar } from "@/components/ui/calendar";
+import { AutoHint } from "@/components/ui/hint";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,7 @@ export const DateField = ({
   disabled?: boolean;
 }) => (
   <div className="space-y-4">
-    <label className="block text-sm font-medium text-muted-foreground">{renderLabel(label)}</label>
+    <label className="block text-sm font-medium text-muted-foreground">{renderLabel(label)}<AutoHint for={String(label ?? "")} /></label>
     <Popover>
       <PopoverTrigger asChild disabled={disabled}>
         <Button

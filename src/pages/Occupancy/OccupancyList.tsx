@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { AutoHint } from "@/components/ui/hint";
 import { useNavigate } from "react-router-dom";
 import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 import {
@@ -273,13 +274,13 @@ export default function OccupancyList() {
                     <thead>
                       <tr className="border-b border-border/70 text-left text-xs text-muted-foreground">
                         <th className="px-4 py-3 font-medium">Property</th>
-                        <th className="px-4 py-3 font-medium">Type</th>
+                        <th className="px-4 py-3 font-medium">Type<AutoHint for="Type" /></th>
                         <th className="px-4 py-3 font-medium">Council / Customer (Payer)</th>
                         <th className="px-4 py-3 font-medium">Occupier / Household</th>
                         <th className="px-4 py-3 font-medium">Start Date</th>
                         <th className="px-4 py-3 font-medium">End Date</th>
                         <th className="px-4 py-3 font-medium">Rate / Rent</th>
-                        <th className="px-4 py-3 font-medium">Status</th>
+                        <th className="px-4 py-3 font-medium">Status<AutoHint for="Status" /></th>
                       </tr>
                     </thead>
                     <tbody>

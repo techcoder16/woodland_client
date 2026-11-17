@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AutoHint } from "@/components/ui/hint";
 import { uploadFileOnce } from "@/helper/fileUpload";
 import { ArrowLeft, ArrowRight, Check, Download, FileText, Loader2, Plus, Trash2, Upload, Wand2, Wrench, X } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -479,7 +480,7 @@ export default function NewLandlordPayment() {
                         <p className="p-4 text-sm text-muted-foreground">No adjustments added.</p>
                       ) : (
                         <table className="w-full text-sm">
-                          <thead className="bg-muted/40 text-left text-xs text-muted-foreground"><tr><th className="px-3 py-2 font-medium">Type</th><th className="px-3 py-2 font-medium">Description</th><th className="px-3 py-2 font-medium">Related To</th><th className="px-3 py-2 text-right font-medium">Amount (£)</th><th className="px-3 py-2 font-medium"></th></tr></thead>
+                          <thead className="bg-muted/40 text-left text-xs text-muted-foreground"><tr><th className="px-3 py-2 font-medium">Type<AutoHint for="Type" /></th><th className="px-3 py-2 font-medium">Description<AutoHint for="Description" /></th><th className="px-3 py-2 font-medium">Related To</th><th className="px-3 py-2 text-right font-medium">Amount (£)</th><th className="px-3 py-2 font-medium"></th></tr></thead>
                           <tbody>
                             {adjustments.map((a) => (
                               <tr key={a.id} className="border-t">

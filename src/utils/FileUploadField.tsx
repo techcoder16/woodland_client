@@ -1,4 +1,5 @@
 import { Loader2, UploadCloud, X } from "lucide-react";
+import { AutoHint } from "@/components/ui/hint";
 import React, { useState, useEffect, useCallback } from "react";
 import { UseFormRegister, UseFormSetValue, UseFormWatch } from "react-hook-form";
 import { renderLabel } from "./FieldLabel";
@@ -177,7 +178,7 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
 
   return (
     <div>
-      {label && <label className="block text-muted-foreground mb-2">{renderLabel(label)}</label>}
+      {label && <label className="block text-muted-foreground mb-2">{renderLabel(label)}<AutoHint for={String(label ?? "")} /></label>}
       <div
         className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-colors ${
           isDragging ? "border-primary bg-primary/5" : ""
