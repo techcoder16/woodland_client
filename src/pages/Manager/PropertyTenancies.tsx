@@ -40,7 +40,7 @@ export default function PropertyTenancies({ propertyId }: { propertyId: string }
           <h3 className="text-lg font-semibold">Occupancy</h3>
           <p className="text-sm text-muted-foreground">Every occupancy linked to this property, current and past.</p>
         </div>
-        <Button onClick={() => navigate("/occupancy/new")}><Plus className="mr-2 h-4 w-4" />New occupancy</Button>
+        <Button onClick={() => navigate(`/occupancy/new?propertyId=${propertyId}`)}><Plus className="mr-2 h-4 w-4" />New occupancy</Button>
       </div>
 
       {loading ? (
