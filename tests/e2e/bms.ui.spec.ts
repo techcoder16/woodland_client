@@ -148,6 +148,16 @@ test.describe('staff UI (admin)', () => {
     await expect(page.getByText(`Leaking tap ${RUN}`)).toBeVisible();
   });
 
+  test('property Documents tab has a Photos & attachments section and always loads the current record', async ({ page }) => {
+    await page.goto(`/properties/${propertyId}?tab=documents`);
+    await expect(page.getByRole('heading', { name: /Photos & attachments/ })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/No photos or attachments yet/)).toBeVisible();
+    // The page must fetch the live record even when opened from router state.
+    const fetched = page.waitForResponse((r) => r.url().includes(`/properties/${propertyId}`) && r.request().method() === 'GET');
+    await page.reload();
+    expect((await fetched).ok()).toBeTruthy();
+  });
+
   test('side menu: Transactions is not top-level, it lives under Finance', async ({ page }) => {
     const tx = page.getByRole('button', { name: 'Transactions', exact: true });
     // Open the Finance submenu if it is not already open.

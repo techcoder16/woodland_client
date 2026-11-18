@@ -9,6 +9,7 @@ import PropertyTenancies from "./Manager/PropertyTenancies";
 import PropertyActivityLog from "./Manager/PropertyActivityLog";
 import PropertyHmo from "./Manager/PropertyHmo";
 import { CertificatesSection, GeneralDocumentsSection } from "./Manager/Documents";
+import PropertyFiles from "./Manager/PropertyFiles";
 import PaymentHistorySection from "./Manager/PaymentHistorySection";
 import TransactionPage from "./Manager/TransactionPage";
 import { useAuth } from "@/context/AuthContext";
@@ -40,7 +41,8 @@ export default function PropertyDetailPage() {
   const params = useParams();
   const navigate = useNavigate();
   const [fetchedProperty, setFetchedProperty] = useState<any>(null);
-  const property: any = location.state?.property || fetchedProperty;
+  // The router copy is only a first paint; the fetched record is the truth (uploads, edits and publish state).
+  const property: any = fetchedProperty || location.state?.property;
   const [searchParams, setSearchParams] = useSearchParams();
   const { canAccessFinance, user } = useAuth();
   // Only admins decide whether a draft property goes live.
@@ -54,10 +56,10 @@ export default function PropertyDetailPage() {
   // but that's empty on a direct link, bookmark, or refresh — fetch by
   // :id in that case so the page doesn't crash.
   useEffect(() => {
-    if (!location.state?.property && params.id) {
-      get<any>(`properties/${params.id}`).then(({ data }) => setFetchedProperty(data));
+    if (params.id) {
+      get<any>(`properties/${params.id}`).then(({ data }) => { if (data?.id) setFetchedProperty(data); });
     }
-  }, [params.id, location.state]);
+  }, [params.id]);
 
   if (!property) {
     return (
@@ -78,7 +80,7 @@ export default function PropertyDetailPage() {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex gap-4">
               <StoredImage
-                fileId={property.photographFileId}
+                fileId={property.photographFileId ?? property.photographFileIds?.[0]}
                 className="h-24 w-28 shrink-0 rounded-lg object-cover"
                 fallback={
                   <div className="flex h-24 w-28 shrink-0 items-center justify-center rounded-lg bg-muted">
@@ -154,7 +156,12 @@ export default function PropertyDetailPage() {
         {tab === "maintenance" && <Notes view="jobtypes" propertyId={property.id} property={property} />}
         {tab === "notes" && <Notes view="notes" propertyId={property.id} property={property} />}
         {tab === "compliance" && <CertificatesSection propertyId={property.id} />}
-        {tab === "documents" && <GeneralDocumentsSection propertyId={property.id} />}
+        {tab === "documents" && (
+          <div className="space-y-8">
+            <PropertyFiles property={property} />
+            <GeneralDocumentsSection propertyId={property.id} />
+          </div>
+        )}
         {tab === "finance" &&
           (canAccessFinance ? (
             <>
