@@ -158,6 +158,17 @@ test.describe('staff UI (admin)', () => {
     expect((await fetched).ok()).toBeTruthy();
   });
 
+  test('New occupancy from a property page pre-selects that property and skips the property step', async ({ page }) => {
+    await page.goto(`/properties/${propertyId}?tab=tenancies`);
+    await page.getByRole('button', { name: /new occupancy/i }).click();
+    await expect(page).toHaveURL(new RegExp(`/occupancy/new[?]propertyId=${propertyId}`));
+    // Straight to the Occupancy Type step, with the property's address already chosen.
+    await expect(page.getByText(/Council Occupancy|Private Occupancy/).first()).toBeVisible({ timeout: 15000 });
+    await expect(page.getByPlaceholder(/search.*(address|postcode|property)/i)).toHaveCount(0);
+    await page.getByRole('button', { name: /Step 1: Property/ }).click();
+    await expect(page.getByText(`${RUN} UI Street`).first()).toBeVisible();
+  });
+
   test('side menu: Transactions is not top-level, it lives under Finance', async ({ page }) => {
     const tx = page.getByRole('button', { name: 'Transactions', exact: true });
     // Open the Finance submenu if it is not already open.

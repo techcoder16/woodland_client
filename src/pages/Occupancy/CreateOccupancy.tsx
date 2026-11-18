@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AutoHint } from "@/components/ui/hint";
 import { uploadFiles } from "@/helper/fileUpload";
 import StoredImage from "@/components/StoredImage";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowRight,
@@ -207,6 +207,9 @@ function ReviewBlock({ title, rows }: { title: string; rows: [string, React.Reac
 
 export default function CreateOccupancy() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // Opened from a property page: that property is already chosen, so skip the first step.
+  const presetPropertyId = searchParams.get("propertyId");
   const meta = useOccupancyMeta();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormState>(EMPTY);
@@ -233,6 +236,17 @@ export default function CreateOccupancy() {
     setForm((f) => ({ ...f, [key]: value }));
     setErrors((e) => ({ ...e, [key]: "" }));
   };
+
+  useEffect(() => {
+    if (!presetPropertyId) return;
+    get<{ properties: PropertyOption[] }>(`occupancy/options/properties?id=${encodeURIComponent(presetPropertyId)}`).then(({ data }) => {
+      const p = data?.properties?.[0];
+      if (!p) return;
+      setSelectedProperty(p);
+      setForm((f) => ({ ...f, propertyId: p.id }));
+      setStep((st) => (st === 0 ? 1 : st));
+    });
+  }, [presetPropertyId]);
 
   useEffect(() => {
     get<{ properties: PropertyOption[] }>(`occupancy/options/properties?search=${encodeURIComponent(debouncedPropertySearch)}`).then(({ data }) =>
