@@ -119,7 +119,7 @@ test.describe('API: occupancy lifecycle', () => {
   let councilId = '';
   let privateId = '';
 
-  test('private occupancy: created with occupier, extra occupier and default tasks; property becomes reserved', async () => {
+  test('private occupancy: created with occupier, extra occupier and default tasks; property becomes occupied', async () => {
     const res = await api.post(`${API}/occupancy`, {
       headers: idem('occ-private'),
       data: {
@@ -127,7 +127,7 @@ test.describe('API: occupancy lifecycle', () => {
         customerEmail: `private.${RUN}@bms.test`, occupier: { FirstName: 'Olly', SureName: 'Occupier', Email: `olly.${RUN}@bms.test`, MobileNo: '07000000020' },
         additionalOccupiers: [{ name: 'Partner One', relationship: 'Partner' }, { name: 'Child One', relationship: 'Son' }],
         moveInDate: day(3), rateAmount: 950, rateFrequency: 'MONTHLY',
-        tasks: [{ title: 'Property handover', priority: 'High' }, { title: 'Record meter readings' }],
+        tasks: [{ title: 'Keys issued', priority: 'High' }, { title: 'Record meter readings' }],
       },
     });
     expect(res.ok(), await res.text()).toBeTruthy();
@@ -136,11 +136,12 @@ test.describe('API: occupancy lifecycle', () => {
     expect(privateId).toBeTruthy();
     const full = await (await api.get(`${API}/occupancy/${privateId}`, { headers: auth() })).json();
     const o = full.occupancy ?? full;
-    expect(o.status).toBe('PENDING');
+    expect(o.status, 'created active, not pending').toBe('ACTIVE');
+    expect(JSON.stringify(o.tasks)).not.toContain('Property handover');
     expect(o.tasks?.length).toBeGreaterThanOrEqual(2);
     expect(JSON.stringify(o)).toContain('Partner One');
     const opts = await (await api.get(`${API}/occupancy/options/properties?search=${RUN}`, { headers: auth() })).json();
-    expect(JSON.stringify(opts)).toMatch(/Reserved/);
+    expect(JSON.stringify(opts)).toMatch(/Occupied/);
   });
 
   test('a second live occupancy on the same property is rejected', async () => {
@@ -163,10 +164,9 @@ test.describe('API: occupancy lifecycle', () => {
     expect(upd.ok(), await upd.text()).toBeTruthy();
   });
 
-  test('status machine: PENDING -> ACTIVE -> ENDING -> ENDED, and illegal jumps are refused', async () => {
+  test('status machine: ACTIVE -> ENDING -> ENDED, and illegal jumps are refused', async () => {
     const set = (status: string, extra: object = {}) => api.patch(`${API}/occupancy/${privateId}/status`, { headers: auth(), data: { status, ...extra } });
-    expect((await set('ENDED')).status(), 'PENDING cannot jump to ENDED').toBeGreaterThanOrEqual(400);
-    expect((await set('ACTIVE')).ok()).toBeTruthy();
+    expect((await set('PENDING')).status(), 'cannot go back to pending').toBeGreaterThanOrEqual(400);
     expect((await set('ENDING', { expectedMoveOutDate: day(20) })).ok()).toBeTruthy();
     expect((await set('ENDED', { actualMoveOutDate: day(20) })).ok()).toBeTruthy();
     expect((await set('ACTIVE')).status(), 'ENDED is final').toBeGreaterThanOrEqual(400);

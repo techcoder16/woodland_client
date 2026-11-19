@@ -357,7 +357,9 @@ export function AnalyticsChart() {
                 type="category"
                 tickLine={false}
                 axisLine={false}
-                width={100}
+                width={120}
+                interval={0}
+                tickFormatter={(v: string) => (String(v).length > 16 ? `${String(v).slice(0, 15)}…` : String(v))}
                 tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
               />
               <Tooltip content={<ChartTooltip />} />

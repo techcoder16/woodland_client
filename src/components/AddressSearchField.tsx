@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Search, Loader2 } from "lucide-react";
 import { get } from "@/helper/api";
-import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+
+// Full UK postcode, e.g. "SW1A 1AA" or "M11AE". Lookups are paid per call, so we only
+// search when the user presses Search and the text is a complete postcode.
+export const UK_POSTCODE = /^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i;
 
 interface AddressSuggestion {
   id: number | string;
@@ -21,7 +25,7 @@ interface AddressSearchFieldProps {
   onSelect: (address: ResolvedAddress) => void;
 }
 
-// Search-as-you-type UK address lookup, backed by our own /address-lookup
+// Button-triggered UK postcode address lookup, backed by our own /address-lookup
 // proxy (which holds the Ideal Postcodes API key server-side). Selecting a
 // suggestion resolves the full address and hands it to the caller to
 // populate the surrounding form fields — this component holds no form state
@@ -33,37 +37,41 @@ const AddressSearchField: React.FC<AddressSearchFieldProps> = ({ onSelect }) => 
   const [isSearching, setIsSearching] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
-  const debouncedQuery = useDebouncedValue(query, 300);
+  const [error, setError] = useState<string | null>(null);
+  const cache = useRef<Record<string, AddressSuggestion[]>>({});
 
-  useEffect(() => {
-    if (!debouncedQuery || debouncedQuery.trim().length < 2) {
+  const runSearch = async () => {
+    const q = query.trim().toUpperCase();
+    if (!UK_POSTCODE.test(q)) {
+      setError("Enter a full UK postcode, e.g. SW1A 1AA");
       setSuggestions([]);
       setIsOpen(false);
       return;
     }
-
-    let cancelled = false;
-    (async () => {
-      setIsSearching(true);
-      try {
-        const { data } = await get<{ suggestions: AddressSuggestion[] }>(
-          `address-lookup/autocomplete?q=${encodeURIComponent(debouncedQuery)}`
-        );
-        if (!cancelled) {
-          setSuggestions(data?.suggestions || []);
-          setIsOpen(true);
-        }
-      } catch {
-        if (!cancelled) setSuggestions([]);
-      } finally {
-        if (!cancelled) setIsSearching(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [debouncedQuery]);
+    setError(null);
+    const key = q.replace(/\s+/g, "");
+    if (cache.current[key]) {
+      setSuggestions(cache.current[key]);
+      setIsOpen(true);
+      return;
+    }
+    setIsSearching(true);
+    try {
+      const { data } = await get<{ suggestions: AddressSuggestion[] }>(
+        `address-lookup/autocomplete?q=${encodeURIComponent(q)}`
+      );
+      const list = data?.suggestions || [];
+      cache.current[key] = list;
+      setSuggestions(list);
+      setIsOpen(true);
+      if (list.length === 0) setError("No addresses found for that postcode.");
+    } catch {
+      setSuggestions([]);
+      setError("Address search failed. Try again.");
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -91,19 +99,20 @@ const AddressSearchField: React.FC<AddressSearchFieldProps> = ({ onSelect }) => 
 
   return (
     <div className="space-y-1.5" ref={boxRef}>
-      <label className="text-muted-foreground font-medium text-sm">Search for an address</label>
+      <label className="text-muted-foreground font-medium text-sm">Search by postcode</label>
       <div className="relative">
-        <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => suggestions.length > 0 && setIsOpen(true)}
-          placeholder="Start typing an address or postcode..."
-          className="pl-9"
-        />
-        {(isSearching || isResolving) && (
-          <Loader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />
-        )}
+        <div className="flex gap-2">
+          <Input
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setError(null); }}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void runSearch(); } }}
+            placeholder="Enter a postcode, e.g. SW1A 1AA"
+            aria-label="Postcode"
+          />
+          <Button type="button" variant="outline" onClick={() => void runSearch()} disabled={isSearching || isResolving}>
+            {isSearching || isResolving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Search className="mr-1.5 h-4 w-4" />}Search
+          </Button>
+        </div>
         {isOpen && suggestions.length > 0 && (
           <div className="absolute z-50 top-full mt-1 w-full rounded-md border bg-popover shadow-md max-h-72 overflow-y-auto">
             {suggestions.map((s) => (
@@ -119,7 +128,8 @@ const AddressSearchField: React.FC<AddressSearchFieldProps> = ({ onSelect }) => 
           </div>
         )}
       </div>
-      <p className="text-xs text-muted-foreground">Fills in the address fields below — you can still edit them after.</p>
+      {error && <p className="text-xs text-red-600" role="alert">{error}</p>}
+      <p className="text-xs text-muted-foreground">Press Search to list the addresses at that postcode. Fills in the address fields below; you can still edit them.</p>
     </div>
   );
 };
