@@ -19,6 +19,7 @@ interface ResolvedAddress {
   town?: string;
   postCode?: string;
   country?: string;
+  council?: string;
 }
 
 interface AddressSearchFieldProps {

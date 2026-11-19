@@ -169,6 +169,31 @@ test.describe('staff UI (admin)', () => {
     await expect(page.getByText(`${RUN} UI Street`).first()).toBeVisible();
   });
 
+  test('Licences tab: add a Council licence, it is listed; EPC grade can be saved and shown', async ({ page }) => {
+    await page.goto(`/properties/${propertyId}?tab=licences`);
+    await expect(page.getByRole('heading', { name: 'Licences' })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/No licences added/)).toBeVisible();
+    await page.getByRole('button', { name: /Add licence/ }).click();
+    await page.getByRole('combobox').click();
+    for (const name of ['Council Licence', 'Selective Licence', 'HMO Licence']) await expect(page.getByRole('option', { name })).toBeVisible();
+    await page.getByRole('option', { name: 'Council Licence' }).click();
+    await page.getByPlaceholder('Council that issued it').fill('Test Borough');
+    await page.locator('input[type=date]').nth(1).fill('2030-01-01');
+    await page.getByRole('button', { name: /Save licence/ }).click();
+    const row = page.getByRole('row', { name: /Council Licence/ });
+    await expect(row).toBeVisible({ timeout: 15000 });
+    await expect(row).toContainText('Test Borough');
+    await expect(row).toContainText('Valid');
+
+    await page.goto(`/properties/${propertyId}?tab=compliance`);
+    const grade = page.getByLabel('EPC grade');
+    await expect(grade).toBeVisible({ timeout: 15000 });
+    await expect(grade.locator('option')).toHaveText(['Select', 'A', 'B', 'C', 'D', 'E', 'F', 'G']);
+    await grade.selectOption('C');
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(page.getByTitle('EPC grade C')).toBeVisible({ timeout: 15000 });
+  });
+
   test('side menu: Transactions is not top-level, it lives under Finance', async ({ page }) => {
     const tx = page.getByRole('button', { name: 'Transactions', exact: true });
     // Open the Finance submenu if it is not already open.

@@ -43,17 +43,31 @@ function shortStatus(expiryDate?: string) {
   return { label: "Valid", className: "bg-emerald-100 text-emerald-700 border-transparent" };
 }
 
+// Property licence options when uploading. ADDITIONAL is kept only so old records still show a name.
 const LICENCE_TYPES = [
+  { value: "COUNCIL", label: "Council Licence" },
   { value: "SELECTIVE", label: "Selective Licence" },
-  { value: "ADDITIONAL", label: "Additional Licence" },
   { value: "HMO", label: "HMO Licence" },
 ];
+const LICENCE_LABELS: Record<string, string> = { ...Object.fromEntries(LICENCE_TYPES.map((t) => [t.value, t.label])), ADDITIONAL: "Additional Licence" };
+
+// Energy performance grades on an EPC (A is best).
+export const EPC_GRADES = ["A", "B", "C", "D", "E", "F", "G"];
+const GRADE_CLASS: Record<string, string> = {
+  A: "bg-emerald-600 text-white", B: "bg-green-500 text-white", C: "bg-lime-500 text-white",
+  D: "bg-yellow-400 text-black", E: "bg-amber-500 text-white", F: "bg-orange-600 text-white", G: "bg-red-600 text-white",
+};
+export function EpcGradeBadge({ grade }: { grade?: string | null }) {
+  if (!grade) return null;
+  return <span className={`inline-flex h-6 min-w-6 items-center justify-center rounded px-1.5 text-xs font-bold ${GRADE_CLASS[grade] || "bg-slate-200"}`} title={`EPC grade ${grade}`}>{grade}</span>;
+}
 
 type ComplianceDoc = {
   id: string;
   docType: string;
   label?: string;
   licenceType?: string;
+  epcGrade?: string | null;
   borough?: string;
   startDate?: string;
   expiryDate?: string;
@@ -164,24 +178,28 @@ function MandatoryCertRow({ config, doc, propertyId, onSaved }: {
   const savedExpiry = doc?.expiryDate ? doc.expiryDate.slice(0, 10) : "";
   const [startDate, setStartDate] = useState(savedStart);
   const [expiryDate, setExpiryDate] = useState(savedExpiry);
+  const savedGrade = doc?.epcGrade || "";
+  const [epcGrade, setEpcGrade] = useState(savedGrade);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [reading, setReading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const Icon = config.icon;
   const status = shortStatus(expiryDate);
-  const dirty = !!pendingFile || startDate !== savedStart || expiryDate !== savedExpiry;
+  const isEpc = config.value === "EPC";
+  const dirty = !!pendingFile || startDate !== savedStart || expiryDate !== savedExpiry || (isEpc && epcGrade !== savedGrade);
 
   const discard = () => {
     setStartDate(savedStart);
     setExpiryDate(savedExpiry);
+    setEpcGrade(savedGrade);
     setPendingFile(null);
   };
-  useEffect(discard, [doc?.id, savedStart, savedExpiry]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(discard, [doc?.id, savedStart, savedExpiry, savedGrade]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const upsert = async (fields: { startDate?: string; expiryDate?: string; file?: File | null }) => {
     // Nothing to record yet — don't create an empty certificate row.
-    if (!doc && !fields.file && !fields.startDate && !fields.expiryDate) return;
+    if (!doc && !fields.file && !fields.startDate && !fields.expiryDate && !epcGrade) return;
     setBusy(true);
     try {
       // propertyId is always sent: on update the server refuses a
@@ -200,6 +218,7 @@ function MandatoryCertRow({ config, doc, propertyId, onSaved }: {
       const expiryIso = isoDate(fields.expiryDate);
       if (startIso) payload.startDate = startIso;
       if (expiryIso) payload.expiryDate = expiryIso;
+      if (isEpc) payload.epcGrade = epcGrade;
       if (fields.file) payload.fileId = (await uploadFileOnce(fields.file, { category: "compliance", entityType: "property", propertyId })).id;
 
       const { error } = doc
@@ -286,6 +305,15 @@ function MandatoryCertRow({ config, doc, propertyId, onSaved }: {
         <Label className="text-xs text-muted-foreground">Expiry Date</Label>
         <Input type="date" className="h-8 w-36" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
       </div>
+      {isEpc && (
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">EPC Grade</Label>
+          <select aria-label="EPC grade" className="h-8 w-28 rounded-md border border-input bg-background px-2 text-sm" value={epcGrade} onChange={(e) => setEpcGrade(e.target.value)}>
+            <option value="">Select</option>
+            {EPC_GRADES.map((g) => <option key={g} value={g}>{g}</option>)}
+          </select>
+        </div>
+      )}
       <Badge className={status.className}>{status.label}</Badge>
       {dirty && (
         <div className="flex w-full items-center justify-end gap-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">
@@ -455,7 +483,7 @@ export function CertificatesSection({ propertyId }: { propertyId: string }) {
               return (
                 <div key={config.value} className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">{config.label.replace(/ \(.*\)$/, "")}</span>
-                  <Badge className={status.className}>{status.label}</Badge>
+                  <span className="flex items-center gap-2">{config.value === "EPC" && <EpcGradeBadge grade={d?.epcGrade} />}<Badge className={status.className}>{status.label}</Badge></span>
                 </div>
               );
             })}
@@ -492,7 +520,7 @@ export function CertificatesSection({ propertyId }: { propertyId: string }) {
                   <p className="font-medium flex items-center gap-2"><FileText className="h-4 w-4 text-primary" />{doc.label || typeLabel}</p>
                   <p className="text-xs text-muted-foreground">
                     {typeLabel}
-                    {doc.licenceType ? ` · ${LICENCE_TYPES.find((t) => t.value === doc.licenceType)?.label || doc.licenceType}` : ""}
+                    {doc.licenceType ? ` · ${LICENCE_LABELS[doc.licenceType] || doc.licenceType}` : ""}
                     {doc.borough ? ` · ${doc.borough}` : ""}
                   </p>
                 </div>
@@ -534,8 +562,8 @@ export function CertificatesSection({ propertyId }: { propertyId: string }) {
                   </Select>
                 </div>
                 <div className="space-y-1">
-                  <Label>Borough</Label>
-                  <Input value={form.borough} onChange={(e) => setForm((f) => ({ ...f, borough: e.target.value }))} placeholder="Filled from the scan" />
+                  <Label>Council / Borough</Label>
+                  <Input value={form.borough} onChange={(e) => setForm((f) => ({ ...f, borough: e.target.value }))} placeholder="Council that issued it" />
                 </div>
               </div>
             )}
@@ -562,6 +590,131 @@ export function CertificatesSection({ propertyId }: { propertyId: string }) {
             <Button className="w-full" onClick={save} disabled={saving}>
               {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
               Save document
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+/** Every property licence (Council / Selective / HMO) held for this property, with add and delete. */
+export function LicencesSection({ propertyId }: { propertyId: string }) {
+  const [docs, setDocs] = useState<ComplianceDoc[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const empty = { licenceType: "", borough: "", startDate: "", expiryDate: "", notes: "" };
+  const [form, setForm] = useState(empty);
+  const [file, setFile] = useState<File | null>(null);
+
+  const load = async () => {
+    setLoading(true);
+    const { data } = await get<{ data: ComplianceDoc[] }>(`property-management/compliance/${propertyId}`);
+    setDocs((data?.data || []).filter((d) => d.docType === "PROPERTY_LICENSE"));
+    setLoading(false);
+  };
+  useEffect(() => { setDocs([]); if (propertyId) void load(); }, [propertyId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const save = async () => {
+    if (!form.licenceType) return toast.error("Choose the licence type.");
+    setSaving(true);
+    try {
+      const iso = (v: string) => { const d = new Date(v); return v && !Number.isNaN(d.getTime()) ? d.toISOString() : null; };
+      const payload: Record<string, string> = { propertyId, docType: "PROPERTY_LICENSE", licenceType: form.licenceType };
+      if (form.borough.trim()) payload.borough = form.borough.trim();
+      if (iso(form.startDate)) payload.startDate = iso(form.startDate)!;
+      if (iso(form.expiryDate)) payload.expiryDate = iso(form.expiryDate)!;
+      if (form.notes) payload.notes = form.notes;
+      if (file) payload.fileId = (await uploadFileOnce(file, { category: "compliance", entityType: "property", propertyId })).id;
+      const { error } = await post("property-management/compliance", payload);
+      if (error) throw new Error(error.message);
+      toast.success("Licence saved.");
+      setOpen(false); setForm(empty); setFile(null);
+      void load();
+    } catch (e: any) {
+      toast.error(e.message || "Could not save the licence.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm("Delete this licence?")) return;
+    const { error } = await del(`property-management/compliance/${id}`);
+    if (error) return toast.error(error.message || "Could not delete the licence.");
+    toast.success("Licence deleted.");
+    void load();
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-lg font-semibold">Licences</h3>
+          <p className="text-sm text-muted-foreground">Council, Selective and HMO licences for this property, with their dates and status.</p>
+        </div>
+        <Button onClick={() => setOpen(true)}><Plus className="mr-2 h-4 w-4" />Add licence</Button>
+      </div>
+
+      {loading ? (
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      ) : docs.length === 0 ? (
+        <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">No licences added for this property yet.</div>
+      ) : (
+        <div className="surface overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b text-left text-muted-foreground">
+                <th className="px-4 py-3 font-medium">Licence</th>
+                <th className="px-4 py-3 font-medium">Council / Borough</th>
+                <th className="px-4 py-3 font-medium">Start</th>
+                <th className="px-4 py-3 font-medium">Expiry</th>
+                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">File</th>
+                <th className="px-4 py-3" />
+              </tr>
+            </thead>
+            <tbody>
+              {docs.map((d) => {
+                const st = shortStatus(d.expiryDate);
+                return (
+                  <tr key={d.id} className="border-b last:border-0">
+                    <td className="px-4 py-3 font-medium">{(d.licenceType && LICENCE_LABELS[d.licenceType]) || "Licence"}</td>
+                    <td className="px-4 py-3">{d.borough || "-"}</td>
+                    <td className="px-4 py-3">{d.startDate ? new Date(d.startDate).toLocaleDateString("en-GB") : "-"}</td>
+                    <td className="px-4 py-3">{d.expiryDate ? new Date(d.expiryDate).toLocaleDateString("en-GB") : "-"}</td>
+                    <td className="px-4 py-3"><Badge className={st.className}>{st.label}</Badge></td>
+                    <td className="px-4 py-3">{d.fileId ? <FileLinks fileId={d.fileId} fileName={d.fileName} /> : "-"}</td>
+                    <td className="px-4 py-3 text-right"><Button size="icon" variant="ghost" aria-label="Delete licence" onClick={() => void remove(d.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setForm(empty); setFile(null); } }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Add licence</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label>Licence type *</Label>
+              <Select value={form.licenceType || undefined} onValueChange={(v) => setForm((f) => ({ ...f, licenceType: v }))}>
+                <SelectTrigger><SelectValue placeholder="Council, Selective or HMO" /></SelectTrigger>
+                <SelectContent>{LICENCE_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1"><Label>Council / Borough</Label><Input value={form.borough} onChange={(e) => setForm((f) => ({ ...f, borough: e.target.value }))} placeholder="Council that issued it" /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1"><Label>Start date</Label><Input type="date" value={form.startDate} onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))} /></div>
+              <div className="space-y-1"><Label>Expiry date</Label><Input type="date" value={form.expiryDate} onChange={(e) => setForm((f) => ({ ...f, expiryDate: e.target.value }))} /></div>
+            </div>
+            <div className="space-y-1"><Label>Notes</Label><Input value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Optional" /></div>
+            <div className="space-y-1"><Label>Licence file</Label><FileDropZone file={file} onFile={setFile} /></div>
+            <Button className="w-full" onClick={save} disabled={saving}>
+              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Save licence
             </Button>
           </div>
         </DialogContent>

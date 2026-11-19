@@ -1,4 +1,5 @@
 import { LOGO_BASE64 } from "./logoBase64";
+import { DEFAULT_LEASE_TERMS } from "./defaultLeaseTerms";
 
 interface ManagementAgreementData {
   addressLine1?: string;
@@ -75,7 +76,7 @@ function agreementBody(data: ManagementAgreementData): string {
 
         <div class="section">
           <div class="label" style="font-weight:bold;margin-bottom:8px">Terms</div>
-          <div class="terms">${esc(data.rentalTerms)}</div>
+          <div class="terms">${esc(data.rentalTerms?.trim() ? data.rentalTerms : DEFAULT_LEASE_TERMS)}</div>
         </div>
 
         <div class="sign">

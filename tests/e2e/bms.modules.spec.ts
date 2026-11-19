@@ -229,3 +229,31 @@ test.describe('UI: every staff screen renders cleanly', () => {
     expect(problems, problems.join('\n')).toEqual([]);
   });
 });
+
+test.describe('licences and EPC grades', () => {
+  const post = (data: object, k: string) => api.post(`${API}/property-management/compliance`, { headers: idem(k), data });
+  test('licence types: COUNCIL, SELECTIVE and HMO accepted; junk refused', async () => {
+    for (const t of ['COUNCIL', 'SELECTIVE', 'HMO']) {
+      const r = await post({ propertyId, docType: 'PROPERTY_LICENSE', licenceType: t, borough: 'Test' }, `lic-${t}`);
+      expect(r.ok(), await r.text()).toBeTruthy();
+    }
+    expect((await post({ propertyId, docType: 'PROPERTY_LICENSE', licenceType: 'NOPE' }, 'lic-bad')).status()).toBe(422);
+    const list = await (await api.get(`${API}/property-management/compliance/${propertyId}`, { headers: auth() })).json();
+    const types = (list.data as any[]).filter((d) => d.docType === 'PROPERTY_LICENSE').map((d) => d.licenceType);
+    expect(types).toEqual(expect.arrayContaining(['COUNCIL', 'SELECTIVE', 'HMO']));
+  });
+  test('EPC grade A-G is stored on an EPC, rejected when invalid, ignored on other types', async () => {
+    const ok = await post({ propertyId, docType: 'EPC', epcGrade: 'B' }, 'epc-b');
+    expect(ok.ok(), await ok.text()).toBeTruthy();
+    const id = (await ok.json()).id ?? (await ok.json()).data?.id;
+    expect((await post({ propertyId, docType: 'EPC', epcGrade: 'Z' }, 'epc-z')).status()).toBe(422);
+    const other = await post({ propertyId, docType: 'GAS_SAFETY', epcGrade: 'A' }, 'gas-a');
+    expect(other.ok()).toBeTruthy();
+    const list = (await (await api.get(`${API}/property-management/compliance/${propertyId}`, { headers: auth() })).json()).data as any[];
+    expect(list.find((d) => d.docType === 'EPC').epcGrade).toBe('B');
+    expect(list.find((d) => d.docType === 'GAS_SAFETY').epcGrade).toBeNull();
+    const upd = await api.patch(`${API}/property-management/compliance/${list.find((d) => d.docType === 'EPC').id}`, { headers: auth(), data: { propertyId, epcGrade: 'E' } });
+    expect(upd.ok(), await upd.text()).toBeTruthy();
+    expect((await upd.json()).epcGrade ?? (await upd.json()).data?.epcGrade).toBe('E');
+  });
+});
