@@ -1034,7 +1034,7 @@ export default function CreateOccupancy() {
                 <div className="surface p-4 text-sm space-y-2">
                   <h4 className="font-semibold">What happens next</h4>
                   <ul className="list-disc pl-5 text-muted-foreground space-y-1">
-                    <li>The occupancy is created as <strong>{meta?.statuses.find((s) => s.value === "PENDING")?.label}</strong>.</li>
+                    <li>The occupancy is created as <strong>{meta?.statuses.find((s) => s.value === "ACTIVE")?.label}</strong>.</li>
                     {(form.occupierMode === "new" ? form.occEmail : selectedOccupier?.Email) && <li>The occupier is emailed their {typeMeta?.label.toLowerCase()} occupancy details and portal access.</li>}
                     <li>{staffName(assignedStaff) || "The assigned staff member"} is emailed the booking-in details.</li>
                     <li>Woodland's team inbox is notified.</li>
