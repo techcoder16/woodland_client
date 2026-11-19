@@ -155,9 +155,18 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
             onSelect={(address) => {
               if (address.addressLine1) setValue('addressLine1', address.addressLine1, { shouldValidate: true });
               if (address.addressLine2) setValue('addressLine2', address.addressLine2);
-              if (address.town) setValue('town', address.town);
+              if (address.town) {
+                // Use the list when the town is in it, otherwise switch to manual entry so it is not lost.
+                const opt = TOWN_AREA.find((t) => t.label.toLowerCase() === address.town!.toLowerCase());
+                setIsAddingArea(!opt);
+                setValue('town', opt ? opt.value : address.town, { shouldValidate: true });
+              }
               if (address.postCode) setValue('postCode', address.postCode);
               setCouncil(address.council || '');
+              // Pick the matching council in the Council box (e.g. "Redbridge" matches "London Borough of Redbridge").
+              const norm = (v: string) => v.toLowerCase().replace(/^(london borough of|royal borough of|city of|borough of)\s+/, '').replace(/\s+(london borough|borough|city|council)$/, '').replace(/\s+council$/, '').trim();
+              const match = councilOptions.find((c) => address.council && norm(c.label) === norm(address.council));
+              if (match) setValue('councilId', match.value, { shouldValidate: true });
               // Ideal Postcodes returns England/Wales/Scotland/Northern Ireland;
               // the country field only offers "GB" as an option, so normalize.
               if (!isCountryUnlocked()) setValue('country', 'GB', { shouldValidate: true });
@@ -166,7 +175,7 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
           />
         )}
 
-        {council && <p className="mt-3 text-sm text-muted-foreground">Council: <span className="font-medium text-foreground">{council}</span></p>}
+        {council && <p className="mt-3 text-sm text-muted-foreground">Council from address: <span className="font-medium text-foreground">{council}</span>{!councilOptions.some((c) => c.label.toLowerCase().includes(council.toLowerCase())) && " (not in your council list, add it under Councils to link it)"}</p>}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
         <InputField setValue={setValue} label="Post Code" name="postCode" register={register} error={errors.postCode?.message?.toString()} />
         <InputField setValue={setValue} label="Address Line 1 *" name="addressLine1" register={register} error={errors.addressLine1?.message?.toString()} />
