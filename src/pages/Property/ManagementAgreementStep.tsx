@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { generateManagementAgreementPdf, buildManagementAgreementPdfFile } from "@/helper/generateManagementAgreement";
 import { get, post } from "@/helper/api";
 import { uploadFileOnce } from "@/helper/fileUpload";
+import { DEFAULT_LEASE_TERMS } from "@/helper/defaultLeaseTerms";
 
 interface ManagementAgreementStepProps {
   register: any;
@@ -39,6 +40,11 @@ const PAYABLE_IN_ADVANCE_OPTIONS = [
 const ManagementAgreementStep = ({ register, watch, setValue, clearErrors, errors, vendorName, propertyId, ensurePropertyId }: ManagementAgreementStepProps) => {
   const [saving, setSaving] = useState<"DRAFT" | "PUBLISHED" | null>(null);
   const [agreementStatus, setAgreementStatus] = useState<string | null>(null);
+
+  // New agreements start with the standard Woodland lease terms; they can still be edited.
+  useEffect(() => {
+    if (!String(watch("rentalTerms") || "").trim()) setValue("rentalTerms", DEFAULT_LEASE_TERMS);
+  }, [propertyId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!propertyId) return;

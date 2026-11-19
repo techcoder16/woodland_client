@@ -8,7 +8,7 @@ import Notes from "./Manager/Notes";
 import PropertyTenancies from "./Manager/PropertyTenancies";
 import PropertyActivityLog from "./Manager/PropertyActivityLog";
 import PropertyHmo from "./Manager/PropertyHmo";
-import { CertificatesSection, GeneralDocumentsSection } from "./Manager/Documents";
+import { CertificatesSection, GeneralDocumentsSection, LicencesSection } from "./Manager/Documents";
 import PropertyFiles from "./Manager/PropertyFiles";
 import PaymentHistorySection from "./Manager/PaymentHistorySection";
 import TransactionPage from "./Manager/TransactionPage";
@@ -16,7 +16,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Hint } from "@/components/ui/hint";
 import { StaffRole } from "@/types/permissions";
 
-const TAB_HINTS: Record<string, string> = {"overview": "Summary of the property: address, landlord, key details.", "tenancies": "Who lives here now and past occupiers: bookings, move-in/out dates and tasks.", "maintenance": "Repair and maintenance jobs for this property.", "notes": "Internal notes about this property. Not shown to landlords or occupiers.", "compliance": "Safety certificates and legal checks (gas, electrical, EPC...) with expiry dates.", "documents": "Files for this property, e.g. the management agreement.", "finance": "Rent received and payments made to the landlord for this property.", "hmo": "House in Multiple Occupation licence details.", "activity": "A log of who changed what on this property, and when."};
+const TAB_HINTS: Record<string, string> = {"overview": "Summary of the property: address, landlord, key details.", "tenancies": "Who lives here now and past occupiers: bookings, move-in/out dates and tasks.", "maintenance": "Repair and maintenance jobs for this property.", "notes": "Internal notes about this property. Not shown to landlords or occupiers.", "licences": "Council, Selective and HMO licences with dates and status.", "compliance": "Safety certificates and legal checks (gas, electrical, EPC...) with expiry dates.", "documents": "Files for this property, e.g. the management agreement.", "finance": "Rent received and payments made to the landlord for this property.", "hmo": "House in Multiple Occupation licence details.", "activity": "A log of who changed what on this property, and when."};
 
 const TABS = [
   { key: "overview", label: "Overview" },
@@ -24,6 +24,7 @@ const TABS = [
   { key: "maintenance", label: "Maintenance" },
   { key: "notes", label: "Notes" },
   { key: "compliance", label: "Compliance" },
+  { key: "licences", label: "Licences" },
   { key: "documents", label: "Documents" },
   { key: "finance", label: "Finance" },
   { key: "hmo", label: "HMO" },
@@ -156,6 +157,7 @@ export default function PropertyDetailPage() {
         {tab === "maintenance" && <Notes view="jobtypes" propertyId={property.id} property={property} />}
         {tab === "notes" && <Notes view="notes" propertyId={property.id} property={property} />}
         {tab === "compliance" && <CertificatesSection propertyId={property.id} />}
+        {tab === "licences" && <LicencesSection propertyId={property.id} />}
         {tab === "documents" && (
           <div className="space-y-8">
             <PropertyFiles property={property} />

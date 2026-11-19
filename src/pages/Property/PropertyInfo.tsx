@@ -32,6 +32,7 @@ const propertyTypeCategoryOptions = [
 
 const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, property }: any) => {
 
+  const [council, setCouncil] = useState('');
   const [isAddingArea, setIsAddingArea] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [councilOptions, setCouncilOptions] = useState<{ value: string; label: string }[]>([]);
@@ -156,6 +157,7 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
               if (address.addressLine2) setValue('addressLine2', address.addressLine2);
               if (address.town) setValue('town', address.town);
               if (address.postCode) setValue('postCode', address.postCode);
+              setCouncil(address.council || '');
               // Ideal Postcodes returns England/Wales/Scotland/Northern Ireland;
               // the country field only offers "GB" as an option, so normalize.
               if (!isCountryUnlocked()) setValue('country', 'GB', { shouldValidate: true });
@@ -164,6 +166,7 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
           />
         )}
 
+        {council && <p className="mt-3 text-sm text-muted-foreground">Council: <span className="font-medium text-foreground">{council}</span></p>}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
         <InputField setValue={setValue} label="Post Code" name="postCode" register={register} error={errors.postCode?.message?.toString()} />
         <InputField setValue={setValue} label="Address Line 1 *" name="addressLine1" register={register} error={errors.addressLine1?.message?.toString()} />
