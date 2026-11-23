@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect } from "react";
+import { contractorLabel } from "@/utils/contractorLabel";
 import StoredFilePreview from "@/components/StoredFilePreview";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -388,7 +389,7 @@ const MaintenanceDetail = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                 <div><span className="text-muted-foreground">Chase up at:</span> {job.chaseUpAt ? formatLondonDateTime(job.chaseUpAt) : "-"}</div>
                 <div><span className="text-muted-foreground">Due:</span> {job.dueAt ? formatLondonDateTime(job.dueAt) : "-"}</div>
-                <div><span className="text-muted-foreground">Contractor:</span> {job.contractorRef?.name || "Not assigned"}</div>
+                <div><span className="text-muted-foreground">Contractor:</span> {contractorLabel(job.contractorRef?.name) || "Not assigned"}</div>
               </div>
               {canManageMaintenance && !isJobClosed && (
                 <div className="space-y-2">
@@ -557,7 +558,7 @@ const MaintenanceDetail = () => {
                 <div className="font-semibold mb-3">Contractor details</div>
                 {job.contractorRef ? (
                   <div className="space-y-1 text-sm">
-                    <div><span className="text-muted-foreground">Name:</span> {job.contractorRef.name}</div>
+                    <div><span className="text-muted-foreground">Name:</span> {contractorLabel(job.contractorRef.name)}</div>
                     {job.contractorRef.company && <div><span className="text-muted-foreground">Company:</span> {job.contractorRef.company}</div>}
                     {job.contractorRef.phone && (
                       <div className="flex items-center gap-1"><Phone className="h-3.5 w-3.5 text-muted-foreground" /> {job.contractorRef.phone}</div>
@@ -782,7 +783,7 @@ const MaintenanceDetail = () => {
             <Card className="p-4 text-sm space-y-1">
               <div className="font-semibold">Property</div>
               <div>{formatJobAddress(job.property)}</div>
-              {job.contractorRef?.name && <div className="text-muted-foreground">Contractor: {job.contractorRef.name}</div>}
+              {job.contractorRef?.name && <div className="text-muted-foreground">Contractor: {contractorLabel(job.contractorRef.name)}</div>}
               {landlordName && <div className="text-muted-foreground">Landlord: {landlordName}</div>}
             </Card>
           </aside>

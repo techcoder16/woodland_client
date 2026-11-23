@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect, useMemo } from "react";
+import { contractorLabel } from "@/utils/contractorLabel";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -608,7 +609,7 @@ const MaintenanceList = () => {
                             {job.priority ? <Hint text={`${job.priority} priority`}><Badge noHint variant="outline" className={priorityBadgeClass(job.priority)}>{job.priority}</Badge></Hint> : "-"}
                           </td>
                           <td className="px-4 py-3 text-sm">
-                            {job.contractorRef ? job.contractorRef.name : job.employeeId ? getEmployeeName(job.employeeId) : "-"}
+                            {job.contractorRef ? contractorLabel(job.contractorRef.name) : job.employeeId ? getEmployeeName(job.employeeId) : "-"}
                           </td>
                           <td className="px-4 py-3 text-sm">
                             <Hint text={STATUS_HINTS[job.status] ?? job.status}><Badge noHint variant="outline" className={statusBadgeClass(job.status)}>{STATUS_LABELS[job.status] ?? job.status}</Badge></Hint>

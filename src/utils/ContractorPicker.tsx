@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { contractorLabel } from "@/utils/contractorLabel";
 import { AutoHint } from "@/components/ui/hint";
 import { useNavigate } from "react-router-dom";
 import { Check, ChevronsUpDown, Plus, Loader2 } from "lucide-react";
@@ -63,7 +64,7 @@ const ContractorPicker: React.FC<ContractorPickerProps> = ({
 
   const contractorOptions: ContractorOption[] = (contractors || []).map((contractor: any) => ({
     value: contractor.id,
-    label: contractor.specialty ? `${contractor.name} (${contractor.specialty})` : contractor.name,
+    label: contractor.specialty ? `${contractorLabel(contractor.name)} (${contractor.specialty})` : contractorLabel(contractor.name),
   }));
 
   const selectedContractor = contractorOptions.find((c) => c.value === currentValue);

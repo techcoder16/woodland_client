@@ -1,5 +1,6 @@
 ﻿// Assigned contractor jobs, filtered by visit day. Staff use this to check
 // tomorrow's visits, message contractors, and close jobs off.
+import { contractorLabel } from "@/utils/contractorLabel";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -169,7 +170,7 @@ const MaintenanceJobs = () => {
                           <td className="px-4 py-3 text-sm">
                             {job.contractorRef ? (
                               <div>
-                                <div className="font-medium">{job.contractorRef.name}</div>
+                                <div className="font-medium">{contractorLabel(job.contractorRef.name)}</div>
                                 {job.contractorRef.phone && <div className="text-xs text-muted-foreground">{job.contractorRef.phone}</div>}
                               </div>
                             ) : (
