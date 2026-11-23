@@ -281,11 +281,11 @@ const MaintenanceDetail = () => {
     }
   };
 
-  const handleAddNote = async () => {
+  const handleAddNote = async (kind: "NOTE" | "CHASE_UP" = "NOTE") => {
     if (!id || !newNote.trim()) return;
     setSavingNote(true);
     try {
-      await addJobNote(id, newNote.trim(), "NOTE");
+      await addJobNote(id, newNote.trim(), kind);
       setNewNote("");
       await loadNotes();
     } catch (error) {
@@ -334,12 +334,13 @@ const MaintenanceDetail = () => {
           defaultValue="details"
           onValueChange={(v) => {
             if (v === "history") loadHistory();
-            if (v === "notes") loadNotes();
+            if (v === "notes" || v === "chase-up") loadNotes();
           }}
         >
           <TabsList className="flex-wrap h-auto">
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="notes">Notes</TabsTrigger>
+            <TabsTrigger value="chase-up">Chase up</TabsTrigger>
             <TabsTrigger value="invoices">Invoices</TabsTrigger>
             <TabsTrigger value="adjustment">Payments</TabsTrigger>
             <TabsTrigger value="landlord-emails">Landlord emails</TabsTrigger>
@@ -353,7 +354,7 @@ const MaintenanceDetail = () => {
                 <div className="space-y-2">
                   <Textarea rows={3} placeholder="Add a note…" value={newNote} onChange={(e) => setNewNote(e.target.value)} />
                   <div className="flex justify-end">
-                    <Button type="button" size="sm" disabled={savingNote || !newNote.trim()} onClick={handleAddNote}>
+                    <Button type="button" size="sm" disabled={savingNote || !newNote.trim()} onClick={() => handleAddNote("NOTE")}>
                       {savingNote ? "Saving…" : "Add note"}
                     </Button>
                   </div>
@@ -373,6 +374,41 @@ const MaintenanceDetail = () => {
                         </Badge>
                         <span>{n.authorName || "Staff"} · {formatLondonDateTime(n.createdAt)}</span>
                       </div>
+                      <div className="mt-1 whitespace-pre-wrap text-sm">{n.note}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="chase-up" className="space-y-4">
+            <Card className="p-4 space-y-4">
+              <div className="font-semibold">Chase up<InfoHint text="When this job is chased and what was said each time. Only chase-up notes are listed here." /></div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                <div><span className="text-muted-foreground">Chase up at:</span> {job.chaseUpAt ? formatLondonDateTime(job.chaseUpAt) : "-"}</div>
+                <div><span className="text-muted-foreground">Due:</span> {job.dueAt ? formatLondonDateTime(job.dueAt) : "-"}</div>
+                <div><span className="text-muted-foreground">Contractor:</span> {job.contractorRef?.name || "Not assigned"}</div>
+              </div>
+              {canManageMaintenance && !isJobClosed && (
+                <div className="space-y-2">
+                  <Textarea rows={3} placeholder="What did you find out? e.g. contractor will attend Thursday" value={newNote} onChange={(e) => setNewNote(e.target.value)} />
+                  <div className="flex justify-end">
+                    <Button type="button" size="sm" disabled={savingNote || !newNote.trim()} onClick={() => handleAddNote("CHASE_UP")}>
+                      {savingNote ? "Saving…" : "Add chase-up note"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {notesLoading ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">Loading...</p>
+              ) : !notes || notes.filter((n) => n.kind === "CHASE_UP").length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">No chase-up notes yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {notes.filter((n) => n.kind === "CHASE_UP").map((n) => (
+                    <div key={n.id} className="border-l-2 border-red-300 pl-3 py-0.5">
+                      <div className="text-xs text-muted-foreground">{n.authorName || "Staff"} · {formatLondonDateTime(n.createdAt)}</div>
                       <div className="mt-1 whitespace-pre-wrap text-sm">{n.note}</div>
                     </div>
                   ))}

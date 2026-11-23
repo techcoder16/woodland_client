@@ -24,14 +24,12 @@ import { Input } from "@/components/ui/input";
 import { fetchContractors, deleteContractor } from "@/redux/dataStore/contractorSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import ContractorPdf from "./Contractor/ContractorPdf";
 
 const ContractorList = () => {
   const dispatch = useAppDispatch();
   const { contractors, totalPages } = useAppSelector((state) => state.contractors);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [viewContractor, setViewContractor] = useState<any>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -103,7 +101,7 @@ const ContractorList = () => {
                       <tr
                         key={contractor.id}
                         className="border-b border-border/50 hover:bg-muted/40 transition-colors cursor-pointer"
-                        onClick={() => setViewContractor(contractor)}
+                        onClick={() => navigate(`/contractors/${contractor.id}`)}
                       >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
@@ -135,7 +133,7 @@ const ContractorList = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => setViewContractor(contractor)}>
+                              <DropdownMenuItem onClick={() => navigate(`/contractors/${contractor.id}`)}>
                                 <Eye className="mr-2 h-4 w-4" />
                                 View
                               </DropdownMenuItem>
@@ -191,14 +189,6 @@ const ContractorList = () => {
         </div>
       </div>
 
-      {viewContractor && (
-        <ContractorPdf
-          contractor={viewContractor}
-          open={!!viewContractor}
-          onOpenChange={(next: boolean) => !next && setViewContractor(null)}
-          hideTrigger
-        />
-      )}
     </DashboardLayout>
   );
 };
