@@ -308,10 +308,12 @@ function MandatoryCertRow({ config, doc, propertyId, onSaved }: {
       {isEpc && (
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">EPC Grade</Label>
-          <select aria-label="EPC grade" className="h-8 w-28 rounded-md border border-input bg-background px-2 text-sm" value={epcGrade} onChange={(e) => setEpcGrade(e.target.value)}>
-            <option value="">Select</option>
-            {EPC_GRADES.map((g) => <option key={g} value={g}>{g}</option>)}
-          </select>
+          <Select value={epcGrade || undefined} onValueChange={setEpcGrade}>
+            <SelectTrigger aria-label="EPC grade" className="h-8 w-28"><SelectValue placeholder="Select" /></SelectTrigger>
+            <SelectContent>
+              {EPC_GRADES.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
       )}
       <Badge className={status.className}>{status.label}</Badge>

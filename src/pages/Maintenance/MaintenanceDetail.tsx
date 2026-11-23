@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import StoredFilePreview from "@/components/StoredFilePreview";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -6,29 +6,40 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { priorityBadgeClass } from "@/utils/priorityStyle";
+import { priorityBadgeClass, priorityTextClass, statusBadgeClass } from "@/utils/priorityStyle";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ChevronLeft, Phone, Mail } from "lucide-react";
-import InputField from "@/utils/InputField";
+import { ChevronLeft, CheckCircle2, Mail, Phone, RotateCcw, Send, ShieldCheck, XCircle } from "lucide-react";
 import TextAreaField from "@/utils/TextAreaField";
 import SelectField from "@/utils/SelectedField";
-import { DateField } from "@/utils/DateField";
 import ContractorPicker from "@/utils/ContractorPicker";
 import FileUploadField from "@/utils/FileUploadField";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
-import { fetchJobTypeById, updateJobType, JobType, ReportingStatus } from "@/redux/dataStore/jobTypeSlice";
+import { fetchJobTypeById, updateJobType, JobType, JobNote, ReportingStatus } from "@/redux/dataStore/jobTypeSlice";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/context/AuthContext";
 import { Department } from "@/types/permissions";
 import { formatLocalDate } from "@/helper/formatLocalDate";
-import { get, post } from "@/helper/api";
+import { get } from "@/helper/api";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { buildMaintenanceInvoice, downloadMaintenanceInvoice, invoiceToBase64, invoiceRef } from "@/utils/maintenanceInvoice";
 import { InfoHint } from "@/components/ui/hint";
 import { JOB_TYPE_OPTIONS, JOB_LOCATION_OPTIONS } from "@/helper/jobTypeOptions";
+import ContractorInvoicePanel from "@/components/maintenance/ContractorInvoicePanel";
+import { formatLondonDate, formatLondonDateTime, isJobOverdue, jobDueValue } from "@/utils/maintenanceSla";
+import {
+  addJobNote,
+  cancelJob,
+  emailLandlord,
+  fetchJobNotes,
+  formatJobAddress,
+  formatVisit,
+  markJobDone,
+  markJobNotComplete,
+  markLandlordAuthorised,
+} from "./jobActions";
+import { NotePromptDialog, VisitTimeDialog } from "./JobDialogs";
 
 interface HistoryEntry {
   id: string;
@@ -43,20 +54,20 @@ const editSchema = z.object({
   jobType: z.string().min(1, "Type is required"),
   location: z.string().min(1, "Location is required"),
   description: z.string().optional(),
-  dueDate: z
-    .string()
-    .min(1, "Due date is required")
-    .refine((value) => value > formatLocalDate(new Date()), { message: "Due date must be after today" }),
+  priority: z.string().min(1, "Priority is required"),
+  responsibility: z.string().optional(),
+  reportedBy: z.string().optional(),
   schedule: z.string().optional(),
   time: z.string().optional(),
   thingsToDo: z.string().optional(),
-  priority: z.string().optional(),
   mediaFileIds: z.array(z.string()).optional(),
 });
 
 type EditFormData = z.infer<typeof editSchema>;
 
 const STATUS_LABELS: Record<ReportingStatus, string> = {
+  OPEN: "Open",
+  WAITING_AUTHORIZATION: "Waiting Authorisation",
   QUOTING: "Quoting",
   ASSIGNED: "Assigned",
   IN_PROGRESS: "In Progress",
@@ -65,19 +76,23 @@ const STATUS_LABELS: Record<ReportingStatus, string> = {
   CANCELLED: "Cancelled",
 };
 
-const STATUS_OPTIONS: ReportingStatus[] = ["QUOTING", "ASSIGNED", "IN_PROGRESS", "CONTRACTOR_DONE", "COMPLETED", "CANCELLED"];
+const PRIORITY_OPTIONS = [
+  { value: "Low", label: "Low" },
+  { value: "Medium", label: "Medium" },
+  { value: "High", label: "High" },
+  { value: "Critical", label: "Critical" },
+];
 
-const getStatusBadgeVariant = (status: ReportingStatus) => {
-  switch (status) {
-    case "COMPLETED": return "default";
-    case "CONTRACTOR_DONE":
-    case "ASSIGNED":
-    case "IN_PROGRESS": return "secondary";
-    case "QUOTING": return "destructive";
-    case "CANCELLED": return "outline";
-    default: return "outline";
-  }
-};
+const RESPONSIBILITY_OPTIONS = [
+  { value: "Landlord", label: "Landlord" },
+  { value: "Internal", label: "Internal" },
+];
+
+const REPORTED_BY_OPTIONS = [
+  { value: "Tenant", label: "Tenant" },
+  { value: "Landlord", label: "Landlord" },
+  { value: "Internal", label: "Internal" },
+];
 
 const formatAddress = (property?: JobType["property"]) => {
   if (!property) return "-";
@@ -85,6 +100,8 @@ const formatAddress = (property?: JobType["property"]) => {
     .filter(Boolean)
     .join(", ");
 };
+
+const money = (n: number) => `Â£${n.toFixed(2)}`;
 
 const MaintenanceDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -101,16 +118,23 @@ const MaintenanceDetail = () => {
   const [isSavingMargin, setIsSavingMargin] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[] | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [notes, setNotes] = useState<JobNote[] | null>(null);
+  const [notesLoading, setNotesLoading] = useState(false);
+  const [newNote, setNewNote] = useState("");
+  const [savingNote, setSavingNote] = useState(false);
   const [pendingContractorId, setPendingContractorId] = useState("");
   const [isAssigning, setIsAssigning] = useState(false);
-  // Landlord email: nothing is sent automatically — staff press the send button.
-  const [isEmailingLandlord, setIsEmailingLandlord] = useState(false);
-  const [invoicePrompt, setInvoicePrompt] = useState<{ base64: string } | null>(null);
   const [isSavingDeductible, setIsSavingDeductible] = useState(false);
+  const [isActing, setIsActing] = useState(false);
+  const [notCompleteOpen, setNotCompleteOpen] = useState(false);
 
   useEffect(() => {
     if (id) dispatch(fetchJobTypeById(id));
   }, [dispatch, id]);
+
+  const refresh = () => {
+    if (id) dispatch(fetchJobTypeById(id));
+  };
 
   const loadHistory = async () => {
     if (!id || history !== null) return;
@@ -126,12 +150,23 @@ const MaintenanceDetail = () => {
     }
   };
 
+  const loadNotes = async () => {
+    if (!id) return;
+    setNotesLoading(true);
+    try {
+      setNotes(await fetchJobNotes(id));
+    } catch (error) {
+      toast.error(error?.message || "Failed to load notes");
+    } finally {
+      setNotesLoading(false);
+    }
+  };
+
   const {
     register,
     handleSubmit,
     setValue,
     watch,
-    clearErrors,
     reset,
     formState: { errors },
   } = useForm<EditFormData>({
@@ -144,11 +179,12 @@ const MaintenanceDetail = () => {
         jobType: job.jobType,
         location: job.location || "",
         description: job.description,
-        dueDate: job.dueDate,
+        priority: job.priority || "",
+        responsibility: job.responsibility || "",
+        reportedBy: job.reportedBy || "",
         schedule: job.schedule || "",
         time: job.time || "",
         thingsToDo: job.thingsToDo || "",
-        priority: job.priority || "",
         mediaFileIds: job.mediaFileIds || [],
       });
       setPendingContractorId(job.contractorId || "");
@@ -156,65 +192,26 @@ const MaintenanceDetail = () => {
   }, [job, reset]);
 
   // Once a contractor is assigned, reassigning is locked until the job is
-  // awaiting review/completed, or its due date has passed — mirrors the
+  // awaiting review/completed, or its due time has passed â€” mirrors the
   // backend rule in job-type-note.service.ts exactly.
-  const isJobOverdue = !!job && job.status !== "COMPLETED" && job.status !== "CANCELLED" && job.dueDate < formatLocalDate(new Date());
+  const isOverdue = !!job && isJobOverdue(job);
   const isAwaitingReviewOrDone = job?.status === "CONTRACTOR_DONE" || job?.status === "COMPLETED";
-  const canReassignContractor = !job?.contractorId || isAwaitingReviewOrDone || isJobOverdue;
-  // COMPLETED/CANCELLED are terminal — mirrors the backend's hard lock in
+  const canReassignContractor = !job?.contractorId || isAwaitingReviewOrDone || isOverdue;
+  // COMPLETED/CANCELLED are terminal â€” mirrors the backend's hard lock in
   // updateJobType, which now rejects any edit to a closed job outright.
   const isJobClosed = job?.status === "COMPLETED" || job?.status === "CANCELLED";
 
   const landlord = job?.property?.vendor;
   const landlordName = landlord ? [landlord.firstName, landlord.lastName].filter(Boolean).join(" ") || "Landlord" : "";
 
-  const sendLandlordEmail = async (invoicePdfBase64?: string) => {
-    if (!job?.id) return false;
-    setIsEmailingLandlord(true);
-    try {
-      const { data, error }: any = await post(`property-management/job-type/${job.id}/email-landlord`, invoicePdfBase64 ? { invoicePdfBase64 } : {});
-      if (error) throw new Error(error.message);
-      toast.success(data?.message || "Email sent to landlord");
-      setHistory(null); // refresh history next time it's opened
-      return true;
-    } catch (error: any) {
-      toast.error(error?.message || "Failed to email landlord");
-      return false;
-    } finally {
-      setIsEmailingLandlord(false);
-    }
-  };
-
-  const handleGenerateInvoice = () => {
-    if (!job) return;
-    const doc = buildMaintenanceInvoice(job);
-    downloadMaintenanceInvoice(doc, job);
-    // After generating, ask whether to send it to the landlord.
-    if (landlord?.email && canManageMaintenance) setInvoicePrompt({ base64: invoiceToBase64(doc) });
-  };
-
-  const handleTogglePortal = async (showOnLandlordPortal: boolean) => {
-    if (!job?.id) return;
-    setIsSavingDeductible(true);
-    try {
-      await dispatch(updateJobType({ id: job.id, jobTypeData: { propertyId: job.propertyId, showOnLandlordPortal } as any })).unwrap();
-      await dispatch(fetchJobTypeById(job.id));
-      toast.success(showOnLandlordPortal ? "Now shown on the landlord portal" : "Hidden from the landlord portal");
-    } catch (error: any) {
-      toast.error(typeof error === "string" ? error : error?.message || "Failed to update");
-    } finally {
-      setIsSavingDeductible(false);
-    }
-  };
-
   const handleToggleDeductible = async (deductible: boolean) => {
     if (!job?.id) return;
     setIsSavingDeductible(true);
     try {
-      await dispatch(updateJobType({ id: job.id, jobTypeData: { propertyId: job.propertyId, deductible } as any })).unwrap();
+      await dispatch(updateJobType({ id: job.id, jobTypeData: { propertyId: job.propertyId, deductible } })).unwrap();
       await dispatch(fetchJobTypeById(job.id));
-      toast.success(deductible ? "Marked as deductible from landlord" : "Marked as not deductible — hidden from landlord transactions");
-    } catch (error: any) {
+      toast.success(deductible ? "Marked as deductible from landlord" : "Marked as not deductible â€” hidden from landlord transactions");
+    } catch (error) {
       toast.error(typeof error === "string" ? error : error?.message || "Failed to update");
     } finally {
       setIsSavingDeductible(false);
@@ -228,7 +225,7 @@ const MaintenanceDetail = () => {
       await dispatch(updateJobType({ id: job.id, jobTypeData: { propertyId: job.propertyId, contractorId: pendingContractorId } })).unwrap();
       await dispatch(fetchJobTypeById(job.id));
       toast.success("Contractor assigned");
-    } catch (error: any) {
+    } catch (error) {
       toast.error(typeof error === "string" ? error : error?.message || "Failed to assign contractor");
     } finally {
       setIsAssigning(false);
@@ -238,7 +235,7 @@ const MaintenanceDetail = () => {
   const onSubmit = async (data: EditFormData) => {
     if (!job?.id) return;
     try {
-      // .unwrap() is required — createAsyncThunk never throws on its own,
+      // .unwrap() is required â€” createAsyncThunk never throws on its own,
       // so without it a rejected update (e.g. the backend's closed-job
       // lock) was silently treated as success here.
       await dispatch(
@@ -249,9 +246,10 @@ const MaintenanceDetail = () => {
             jobType: data.jobType,
             location: data.location,
             description: data.description,
-            dueDate: data.dueDate,
             thingsToDo: data.thingsToDo,
             priority: data.priority,
+            responsibility: data.responsibility || undefined,
+            reportedBy: data.reportedBy || undefined,
             mediaFileIds: data.mediaFileIds,
           },
         })
@@ -259,24 +257,22 @@ const MaintenanceDetail = () => {
       await dispatch(fetchJobTypeById(job.id));
       toast.success("Maintenance job updated successfully");
       setIsEditing(false);
-    } catch (error: any) {
+    } catch (error) {
       toast.error(typeof error === "string" ? error : error?.message || "Error updating maintenance job");
     }
   };
 
-  const handleCompleteJob = async () => {
-    if (!job?.id) return;
+  // Shared runner for the status buttons: one action at a time, then reload the job.
+  const runAction = async (action: () => Promise<unknown>, successMessage: string) => {
+    setIsActing(true);
     try {
-      await dispatch(
-        updateJobType({
-          id: job.id,
-          jobTypeData: { propertyId: job.propertyId, dateDone: formatLocalDate(new Date()), status: "COMPLETED" },
-        })
-      ).unwrap();
-      await dispatch(fetchJobTypeById(job.id));
-      toast.success("Maintenance job marked as done");
-    } catch (error: any) {
-      toast.error(typeof error === "string" ? error : error?.message || "Error completing maintenance job");
+      await action();
+      toast.success(successMessage);
+      refresh();
+    } catch (error) {
+      toast.error(error?.message || "Something went wrong");
+    } finally {
+      setIsActing(false);
     }
   };
 
@@ -301,23 +297,24 @@ const MaintenanceDetail = () => {
       await dispatch(fetchJobTypeById(job.id));
       toast.success("Landlord cost updated");
       setMarginValue("");
-    } catch (error: any) {
+    } catch (error) {
       toast.error(typeof error === "string" ? error : error?.message || "Failed to apply margin");
     } finally {
       setIsSavingMargin(false);
     }
   };
 
-  const handleCancelJob = async () => {
-    if (!job?.id) return;
+  const handleAddNote = async () => {
+    if (!id || !newNote.trim()) return;
+    setSavingNote(true);
     try {
-      await dispatch(
-        updateJobType({ id: job.id, jobTypeData: { propertyId: job.propertyId, status: "CANCELLED" } })
-      ).unwrap();
-      await dispatch(fetchJobTypeById(job.id));
-      toast.success("Maintenance job cancelled");
-    } catch (error: any) {
-      toast.error(typeof error === "string" ? error : error?.message || "Error cancelling maintenance job");
+      await addJobNote(id, newNote.trim(), "NOTE");
+      setNewNote("");
+      await loadNotes();
+    } catch (error) {
+      toast.error(error?.message || "Failed to add note");
+    } finally {
+      setSavingNote(false);
     }
   };
 
@@ -338,6 +335,7 @@ const MaintenanceDetail = () => {
   }
 
   const vendor = job.property?.vendor;
+  const due = jobDueValue(job);
 
   return (
     <DashboardLayout>
@@ -353,13 +351,57 @@ const MaintenanceDetail = () => {
           </div>
         </div>
 
-        <Tabs defaultValue="details" onValueChange={(v) => v === "history" && loadHistory()}>
-          <TabsList>
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] items-start">
+          <div className="min-w-0">
+        <Tabs
+          defaultValue="details"
+          onValueChange={(v) => {
+            if (v === "history") loadHistory();
+            if (v === "notes") loadNotes();
+          }}
+        >
+          <TabsList className="flex-wrap h-auto">
             <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="notes">Notes</TabsTrigger>
             <TabsTrigger value="payments">Payments</TabsTrigger>
             <TabsTrigger value="invoices">Invoices</TabsTrigger>
             {canManageMaintenance && <TabsTrigger value="history">History</TabsTrigger>}
           </TabsList>
+
+          <TabsContent value="notes" className="space-y-4">
+            <Card className="p-4 space-y-4">
+              <div className="font-semibold">Notes<InfoHint text="Office notes and chase-up notes for this job, newest first." /></div>
+              {canManageMaintenance && !isJobClosed && (
+                <div className="space-y-2">
+                  <Textarea rows={3} placeholder="Add a noteâ€¦" value={newNote} onChange={(e) => setNewNote(e.target.value)} />
+                  <div className="flex justify-end">
+                    <Button type="button" size="sm" disabled={savingNote || !newNote.trim()} onClick={handleAddNote}>
+                      {savingNote ? "Savingâ€¦" : "Add note"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {notesLoading ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">Loading...</p>
+              ) : !notes || notes.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">No notes yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {notes.map((n) => (
+                    <div key={n.id} className="border-l-2 border-border pl-3 py-0.5">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Badge variant="outline" className={n.kind === "CHASE_UP" ? "border-red-300 bg-red-50 text-red-700" : ""}>
+                          {n.kind === "CHASE_UP" ? "Chase-up" : "Note"}
+                        </Badge>
+                        <span>{n.authorName || "Staff"} Â· {formatLondonDateTime(n.createdAt)}</span>
+                      </div>
+                      <div className="mt-1 whitespace-pre-wrap text-sm">{n.note}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </TabsContent>
 
           <TabsContent value="payments" className="space-y-4">
             <Card className="p-4">
@@ -372,28 +414,28 @@ const MaintenanceDetail = () => {
                     <tbody>
                       <tr className="border-b">
                         <td className="py-1.5 text-muted-foreground">Contractor cost</td>
-                        <td className="py-1.5 text-right font-medium">£{job.totalCost.toFixed(2)}</td>
+                        <td className="py-1.5 text-right font-medium">{money(job.totalCost)}</td>
                       </tr>
                       {job.marginPercent != null && (
                         <tr className="border-b">
                           <td className="py-1.5 text-muted-foreground">
-                            Markup ({job.marginPercent}% of £{job.totalCost.toFixed(2)})
+                            Markup ({job.marginPercent}% of {money(job.totalCost)})
                           </td>
                           <td className="py-1.5 text-right font-medium">
-                            + £{(job.totalCost * (job.marginPercent / 100)).toFixed(2)}
+                            + {money(job.totalCost * (job.marginPercent / 100))}
                           </td>
                         </tr>
                       )}
                       {job.marginAmount != null && (
                         <tr className="border-b">
                           <td className="py-1.5 text-muted-foreground">Markup (flat amount)</td>
-                          <td className="py-1.5 text-right font-medium">+ £{job.marginAmount.toFixed(2)}</td>
+                          <td className="py-1.5 text-right font-medium">+ {money(job.marginAmount)}</td>
                         </tr>
                       )}
                       <tr>
                         <td className="py-1.5 font-semibold">Landlord cost</td>
                         <td className="py-1.5 text-right font-semibold">
-                          {job.totalCharged != null ? `£${job.totalCharged.toFixed(2)}` : "Not set yet"}
+                          {job.totalCharged != null ? money(job.totalCharged) : "Not set yet"}
                         </td>
                       </tr>
                     </tbody>
@@ -439,7 +481,7 @@ const MaintenanceDetail = () => {
                         step="0.01"
                         min="0"
                         className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
-                        placeholder={marginType === "percent" ? "e.g. 20 (%)" : "e.g. 15.00 (£)"}
+                        placeholder={marginType === "percent" ? "e.g. 20 (%)" : "e.g. 15.00 (Â£)"}
                         value={marginValue}
                         onChange={(e) => setMarginValue(e.target.value)}
                       />
@@ -448,7 +490,7 @@ const MaintenanceDetail = () => {
                       </Button>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Only one of percentage or flat amount can be active — applying one clears the other.
+                      Only one of percentage or flat amount can be active â€” applying one clears the other.
                     </p>
                   </div>
                 )}
@@ -457,107 +499,7 @@ const MaintenanceDetail = () => {
           </TabsContent>
 
           <TabsContent value="invoices" className="space-y-4">
-            <Card className="p-4 space-y-4">
-              <div>
-                <div className="font-semibold">Landlord invoice</div>
-                <p className="text-sm text-muted-foreground">
-                  {job.totalCharged != null || job.totalCost != null
-                    ? `Amount: £${Number(job.totalCharged ?? job.totalCost).toFixed(2)}`
-                    : "No cost has been entered for this job yet."}
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button type="button" disabled={job.totalCharged == null && job.totalCost == null} onClick={handleGenerateInvoice}>
-                  Generate invoice
-                </Button>
-              </div>
-
-              {canManageMaintenance && (
-                <div className="border-t pt-4 space-y-3">
-                  <label className="flex items-start gap-3">
-                    <Checkbox
-                      checked={job.showOnLandlordPortal !== false}
-                      disabled={isSavingDeductible}
-                      onCheckedChange={(v) => handleTogglePortal(v === true)}
-                    />
-                    <span>
-                      <span className="font-semibold block">Show on landlord portal<InfoHint text="When ticked, the landlord can see this job (and its invoice) when they log in to their portal. Untick to keep it internal." /></span>
-                      <span className="text-sm text-muted-foreground">
-                        {job.showOnLandlordPortal !== false
-                          ? "The landlord can see this job in their portal."
-                          : "Hidden — the landlord can't see this job in their portal."}
-                      </span>
-                    </span>
-                  </label>
-                  <div className="font-semibold">Email landlord<InfoHint text="Sends the landlord the job details and invoice by email. Use it again after changes to send them an updated copy." /></div>
-                  {landlord?.email ? (
-                    <>
-                      <p className="text-sm">
-                        Send to <span className="font-medium">{landlordName}</span>{" "}
-                        <span className="text-muted-foreground">({landlord.email})</span>
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          disabled={isEmailingLandlord}
-                          onClick={() => void sendLandlordEmail()}
-                        >
-                          <Mail className="h-4 w-4 mr-2" /> {isEmailingLandlord ? "Sending…" : "Send / update email to landlord"}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          disabled={isEmailingLandlord || (job.totalCharged == null && job.totalCost == null)}
-                          onClick={() => void sendLandlordEmail(invoiceToBase64(buildMaintenanceInvoice(job)))}
-                        >
-                          <Mail className="h-4 w-4 mr-2" /> Send invoice to landlord
-                        </Button>
-                      </div>
-                      <p className="text-xs text-muted-foreground">The landlord is never emailed automatically.</p>
-                    </>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">This property's landlord has no email on file.</p>
-                  )}
-                </div>
-              )}
-            </Card>
-
-            <Dialog open={!!invoicePrompt} onOpenChange={(open) => !open && setInvoicePrompt(null)}>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Send invoice to landlord?</DialogTitle>
-                </DialogHeader>
-                <p className="text-sm">
-                  Invoice {invoiceRef(job)} has been downloaded. Do you want to email it to{" "}
-                  <span className="font-medium">{landlordName}</span>{" "}
-                  <span className="text-muted-foreground">({landlord?.email})</span>?
-                </p>
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setInvoicePrompt(null)} disabled={isEmailingLandlord}>
-                    No, don't send
-                  </Button>
-                  <Button
-                    type="button"
-                    disabled={isEmailingLandlord}
-                    onClick={async () => {
-                      if (invoicePrompt && (await sendLandlordEmail(invoicePrompt.base64))) setInvoicePrompt(null);
-                    }}
-                  >
-                    {isEmailingLandlord ? "Sending…" : "Yes, send to landlord"}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            <Card className="p-4">
-              <div className="font-semibold mb-3">Contractor invoice</div>
-              {job.invoiceFileId ? (
-                <StoredFilePreview fileId={job.invoiceFileId} alt="Contractor invoice" className="w-full h-96 rounded-md border object-contain" />
-              ) : (
-                <p className="text-sm text-muted-foreground">No invoice has been uploaded by the contractor yet.</p>
-              )}
-            </Card>
+            <ContractorInvoicePanel job={job} canManage={canManageMaintenance} onChanged={refresh} />
           </TabsContent>
 
           {canManageMaintenance && (
@@ -574,7 +516,7 @@ const MaintenanceDetail = () => {
                       <div key={entry.id} className="border-l-2 border-border pl-3 py-0.5">
                         <div className="text-sm">{entry.description}</div>
                         <div className="text-xs text-muted-foreground">
-                          {entry.actorName ? `${entry.actorName} (${entry.actorKind})` : entry.actorKind} —{" "}
+                          {entry.actorName ? `${entry.actorName} (${entry.actorKind})` : entry.actorKind} â€”{" "}
                           {new Date(entry.createdAt).toLocaleString()}
                         </div>
                       </div>
@@ -598,7 +540,7 @@ const MaintenanceDetail = () => {
                   <span className="text-sm text-muted-foreground">
                     {job.deductible !== false
                       ? "This job's cost can be recharged on the landlord's transactions."
-                      : "Not deductible — this job won't appear in the landlord's transactions."}
+                      : "Not deductible â€” this job won't appear in the landlord's transactions."}
                   </span>
                 </span>
               </label>
@@ -607,7 +549,7 @@ const MaintenanceDetail = () => {
         {isEditing ? (
           <Card className="p-6">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <SelectField
                   label="Type *"
                   name="jobType"
@@ -627,27 +569,41 @@ const MaintenanceDetail = () => {
                   options={JOB_LOCATION_OPTIONS.map((o) => ({ value: o, label: o }))}
                 />
                 <SelectField
-                  label="Priority"
+                  label="Priority *"
                   name="priority"
                   register={register}
                   setValue={setValue}
                   watch={watch}
                   error={errors.priority?.message}
-                  options={[
-                    { value: "Low", label: "Low" },
-                    { value: "Medium", label: "Medium" },
-                    { value: "Critical", label: "Critical" },
-                  ]}
+                  options={PRIORITY_OPTIONS}
                 />
+                <SelectField
+                  label="Responsibility"
+                  name="responsibility"
+                  register={register}
+                  setValue={setValue}
+                  watch={watch}
+                  error={errors.responsibility?.message}
+                  options={RESPONSIBILITY_OPTIONS}
+                />
+                <SelectField
+                  label="Reported by"
+                  name="reportedBy"
+                  register={register}
+                  setValue={setValue}
+                  watch={watch}
+                  error={errors.reportedBy?.message}
+                  options={REPORTED_BY_OPTIONS}
+                />
+              </div>
+
+              <div className="rounded-md border bg-muted/40 p-3 text-sm text-muted-foreground">
+                Due date is set automatically from the priority. It cannot be edited by hand.
               </div>
 
               <TextAreaField label="Description" name="description" register={register} error={errors.description?.message} />
 
-              <div className="grid grid-cols-3 gap-4">
-                <DateField label="Due Date *" value={watch("dueDate") || ""} onChange={(date) => setValue("dueDate", formatLocalDate(date))} error={errors.dueDate?.message} />
-              </div>
-
-              <TextAreaField label="Things To Do" name="thingsToDo" register={register} error={errors.thingsToDo?.message} />
+              <TextAreaField label="Notes" name="thingsToDo" register={register} error={errors.thingsToDo?.message} />
 
               <FileUploadField
                 label="Photos"
@@ -707,6 +663,41 @@ const MaintenanceDetail = () => {
               </Card>
             </div>
 
+            {canManageMaintenance && !isJobClosed && (
+              <Card className="p-4 space-y-3">
+                <div className="font-semibold">Landlord authorisation<InfoHint text="Inform the landlord about this job by email. They must authorise the work before it goes ahead. Nothing is sent automatically." /></div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={isActing || !landlord?.email}
+                    title={!landlord?.email ? "This property's landlord has no email on file" : undefined}
+                    onClick={() => runAction(async () => {
+                      const result = await emailLandlord(job.id as string);
+                      toast.success(result?.message || "Landlord informed");
+                    }, "Landlord informed")}
+                  >
+                    <Send className="h-4 w-4 mr-2" /> {job.landlordInformedAt ? "Inform landlord again" : "Inform landlord"}
+                  </Button>
+                  {job.status === "WAITING_AUTHORIZATION" && (
+                    <Button
+                      type="button"
+                      disabled={isActing}
+                      onClick={() => runAction(() => markLandlordAuthorised(job.id as string), "Landlord authorised")}
+                    >
+                      <ShieldCheck className="h-4 w-4 mr-2" /> Landlord authorised
+                    </Button>
+                  )}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {job.landlordInformedAt
+                    ? `Landlord informed ${formatLondonDateTime(job.landlordInformedAt)}.`
+                    : "The landlord has not been informed yet."}
+                  {!landlord?.email && " This property's landlord has no email on file."}
+                </div>
+              </Card>
+            )}
+
             <Card className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="font-semibold">Job details</div>
@@ -714,32 +705,69 @@ const MaintenanceDetail = () => {
                   <Button size="sm" variant="outline" onClick={() => setIsEditing(true)}>Edit</Button>
                 )}
               </div>
-              <div className="flex gap-2 mb-3">
+              <div className="flex flex-wrap gap-2 mb-3">
                 {job.priority && <Badge variant="outline" className={priorityBadgeClass(job.priority)}>Priority: {job.priority}</Badge>}
-                <Badge variant={getStatusBadgeVariant(job.status)}>Status: {STATUS_LABELS[job.status] ?? job.status}</Badge>
-                {isJobOverdue && <Badge variant="destructive">Overdue</Badge>}
+                <Badge variant="outline" className={statusBadgeClass(job.status)}>Status: {STATUS_LABELS[job.status] ?? job.status}</Badge>
+                {isOverdue && <Badge variant="destructive">Overdue</Badge>}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1 text-sm">
                 <div><span className="text-muted-foreground">Type:</span> {job.jobType}</div>
                 <div><span className="text-muted-foreground">Location:</span> {job.location || "-"}</div>
+                <div><span className="text-muted-foreground">Responsibility:</span> {job.responsibility || "-"}</div>
+                <div><span className="text-muted-foreground">Reported by:</span> {job.reportedBy || "-"}</div>
                 <div className="md:col-span-2"><span className="text-muted-foreground">Description:</span> {job.description}</div>
                 {job.thingsToDo && <div className="md:col-span-2"><span className="text-muted-foreground">Notes:</span> {job.thingsToDo}</div>}
-                <div><span className="text-muted-foreground">Due date:</span> {job.dueDate}</div>
+                <div><span className="text-muted-foreground">Due:</span> <span className={priorityTextClass(job.priority, isOverdue)}>{job.dueAt ? formatLondonDateTime(job.dueAt) : due ? formatLondonDate(due) : "-"}</span></div>
+                <div><span className="text-muted-foreground">Visit:</span> {formatVisit(job)}</div>
                 {job.startDate && <div><span className="text-muted-foreground">Start date (set by contractor):</span> {job.startDate}</div>}
                 {job.endDate && <div><span className="text-muted-foreground">End date (set by contractor):</span> {job.endDate}</div>}
                 {job.dateDone && <div><span className="text-muted-foreground">Done:</span> {job.dateDone}</div>}
               </div>
 
-              {/* Next-step hint row — read only, no edit needed to see what's pending */}
+              {/* Next-step hint row â€” read only, no edit needed to see what's pending */}
               <div className="mt-3 pt-3 border-t text-sm text-muted-foreground">
+                {job.status === "OPEN" && "Next step: inform the landlord (if they are responsible) or assign a contractor."}
+                {job.status === "WAITING_AUTHORIZATION" && "Next step: waiting for the landlord to authorise the work."}
                 {job.status === "QUOTING" && "Next step: assign a contractor."}
                 {job.status === "ASSIGNED" && "Next step: waiting on the contractor to set a start date."}
                 {job.status === "IN_PROGRESS" && "Next step: waiting on the contractor to submit as done."}
-                {job.status === "CONTRACTOR_DONE" && "Next step: review the contractor's cost, set a markup, and complete the job."}
+                {job.status === "CONTRACTOR_DONE" && "Next step: review the contractor's cost, set a markup, and mark the job done."}
                 {job.status === "COMPLETED" && "This job is complete."}
                 {job.status === "CANCELLED" && "This job was cancelled."}
               </div>
             </Card>
+
+            {canManageMaintenance && (
+              <Card className="p-4 space-y-3">
+                <div className="font-semibold">Job actions<InfoHint text="Staff can do these even if the contractor has not updated anything." /></div>
+                {isJobClosed ? (
+                  <p className="text-sm text-muted-foreground">
+                    This job is {job.status === "COMPLETED" ? "completed" : "cancelled"}; no further actions.
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      disabled={isActing}
+                      onClick={() => runAction(() => markJobDone(job), "Maintenance job marked as done")}
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-2" /> Done
+                    </Button>
+                    <Button type="button" variant="outline" disabled={isActing} onClick={() => setNotCompleteOpen(true)}>
+                      <RotateCcw className="h-4 w-4 mr-2" /> Not complete
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={isActing}
+                      onClick={() => runAction(() => cancelJob(job), "Maintenance job cancelled")}
+                    >
+                      <XCircle className="h-4 w-4 mr-2" /> Cancel job
+                    </Button>
+                  </div>
+                )}
+              </Card>
+            )}
 
             {canManageMaintenance && (
               <Card className="p-4">
@@ -768,18 +796,11 @@ const MaintenanceDetail = () => {
                     </Button>
                   </div>
                 )}
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t pt-3 text-sm">
+                  <div><span className="text-muted-foreground">Visit:</span> {formatVisit(job)}</div>
+                  {!isJobClosed && <VisitTimeDialog job={job} onSaved={refresh} />}
+                </div>
               </Card>
-            )}
-
-            {canManageMaintenance && (
-              <div className="flex justify-end gap-2">
-                {job.status !== "CANCELLED" && job.status !== "COMPLETED" && (
-                  <Button variant="outline" onClick={handleCancelJob}>Cancel Job</Button>
-                )}
-                {job.status === "CONTRACTOR_DONE" && (
-                  <Button onClick={handleCompleteJob}>Complete Job</Button>
-                )}
-              </div>
             )}
 
             <Card>
@@ -802,7 +823,82 @@ const MaintenanceDetail = () => {
         )}
           </TabsContent>
         </Tabs>
+          </div>
+
+          <aside className="space-y-4 lg:sticky lg:top-4">
+            <Card className="p-4 space-y-3">
+              <div className="font-semibold">Summary</div>
+              <dl className="space-y-2.5 text-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-muted-foreground">Status</dt>
+                  <dd><Badge variant="outline" className={statusBadgeClass(job.status)}>{STATUS_LABELS[job.status] ?? job.status}</Badge></dd>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-muted-foreground">Responsibility</dt>
+                  <dd className="font-medium">{job.responsibility || "-"}</dd>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-muted-foreground">Reported by</dt>
+                  <dd className="font-medium">{job.reportedBy || "-"}</dd>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-muted-foreground">Priority</dt>
+                  <dd>
+                    {job.priority ? (
+                      <Badge variant="outline" className={priorityBadgeClass(job.priority)}>{job.priority}</Badge>
+                    ) : (
+                      "-"
+                    )}
+                  </dd>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <dt className="text-muted-foreground">Due</dt>
+                  <dd className={`text-right ${priorityTextClass(job.priority, isOverdue)}`}>
+                    {job.dueAt ? formatLondonDateTime(job.dueAt) : due ? formatLondonDate(due) : "-"}
+                    {isOverdue && <div className="text-xs font-semibold text-red-600">Overdue</div>}
+                  </dd>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <dt className="text-muted-foreground">Chase up at</dt>
+                  <dd className="text-right">{formatLondonDateTime(job.chaseUpAt)}</dd>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <dt className="text-muted-foreground">Landlord informed at</dt>
+                  <dd className="text-right">{job.landlordInformedAt ? formatLondonDateTime(job.landlordInformedAt) : "Not yet"}</dd>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <dt className="text-muted-foreground">Visit</dt>
+                  <dd className="text-right">{formatVisit(job)}</dd>
+                </div>
+              </dl>
+            </Card>
+            <Card className="p-4 text-sm space-y-1">
+              <div className="font-semibold">Property</div>
+              <div>{formatJobAddress(job.property)}</div>
+              {job.contractorRef?.name && <div className="text-muted-foreground">Contractor: {job.contractorRef.name}</div>}
+              {landlordName && <div className="text-muted-foreground">Landlord: {landlordName}</div>}
+            </Card>
+          </aside>
+        </div>
       </div>
+
+      <NotePromptDialog
+        open={notCompleteOpen}
+        onOpenChange={setNotCompleteOpen}
+        title="Mark as not complete"
+        description="The job goes back to the contractor. Say what is still outstanding."
+        submitLabel="Mark not complete"
+        onSubmit={async (note) => {
+          if (!job.id) return;
+          try {
+            await markJobNotComplete(job, note);
+            toast.success("Job sent back as not complete");
+            refresh();
+          } catch (error) {
+            toast.error(error?.message || "Failed to update the job");
+          }
+        }}
+      />
     </DashboardLayout>
   );
 };

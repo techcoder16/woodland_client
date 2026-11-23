@@ -1,6 +1,7 @@
 // Landlord invoice for a maintenance job — built in the browser with jsPDF
-// (same branding as the transaction exports). Used by the job page's
-// "Generate invoice" button, which can also email it to the landlord.
+// (same branding as the transaction exports). Shows ONLY the chargeable amount
+// (totalCharged = contractor cost + other cost + Woodland markup). The
+// contractor's cost, their invoice and the markup are never printed here.
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import logo from "@/assets/logo.png";
@@ -10,12 +11,18 @@ const money = (n?: number | null) => `£${Number(n ?? 0).toFixed(2)}`;
 
 export const invoiceRef = (job: JobType) => `INV-${String(job.id || "").slice(-8).toUpperCase()}`;
 
+// jspdf-autotable records the bottom of the last table it drew on the doc.
+type DocWithTable = jsPDF & { lastAutoTable?: { finalY?: number } };
+const lastTableY = (doc: jsPDF) => (doc as DocWithTable).lastAutoTable?.finalY;
+
 export function buildMaintenanceInvoice(job: JobType): jsPDF {
   const doc = new jsPDF();
   const vendor = job.property?.vendor;
   const address = [job.property?.addressLine1, job.property?.addressLine2, job.property?.town, job.property?.postCode]
     .filter(Boolean)
     .join(", ");
+  // Only the landlord-facing total; never fall back to the contractor cost.
+  const chargeable = job.totalCharged ?? 0;
 
   doc.addImage(logo, "PNG", 14, 10, 40, 16);
   doc.setFontSize(16);
@@ -50,17 +57,24 @@ export function buildMaintenanceInvoice(job: JobType): jsPDF {
     columnStyles: { 0: { fontStyle: "bold", cellWidth: 35 } },
   });
 
-  const startY = ((doc as any).lastAutoTable?.finalY || 90) + 6;
+  const startY = (lastTableY(doc) || 90) + 6;
   autoTable(doc, {
     startY,
     head: [["Item", "Amount"]],
-    body: [[`${job.jobType || "Maintenance"}${job.description ? ` — ${job.description}` : ""}`, money(job.totalCharged ?? job.totalCost)]],
-    foot: [["Total due", money(job.totalCharged ?? job.totalCost)]],
+    body: [[`${job.jobType || "Maintenance"}${job.description ? ` — ${job.description}` : ""}`, money(chargeable)]],
+    foot: [["Total due", money(chargeable)]],
     styles: { fontSize: 9 },
     headStyles: { fillColor: [17, 24, 39] },
     footStyles: { fillColor: [243, 244, 246], textColor: 0, fontStyle: "bold" },
     columnStyles: { 1: { halign: "right", cellWidth: 40 } },
   });
+
+  const footerY = (lastTableY(doc) || 120) + 14;
+  doc.setFontSize(8);
+  doc.setTextColor(120);
+  doc.text("Managed by Woodland Properties Management Ltd.", 14, footerY);
+  doc.text("Please do not reply to this email or invoice.", 14, footerY + 5);
+  doc.setTextColor(0);
 
   return doc;
 }
@@ -72,4 +86,8 @@ export function downloadMaintenanceInvoice(doc: jsPDF, job: JobType) {
 export function invoiceToBase64(doc: jsPDF): string {
   // "data:application/pdf;filename=generated.pdf;base64,...." → raw base64
   return doc.output("datauristring").split(",")[1];
+}
+
+export function invoiceToBlob(doc: jsPDF): Blob {
+  return doc.output("blob");
 }

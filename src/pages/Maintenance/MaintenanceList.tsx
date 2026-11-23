@@ -1,13 +1,14 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { priorityBadgeClass, statusBadgeClass, statusRowClass } from "@/utils/priorityStyle";
+import { priorityBadgeClass, priorityTextClass, PRIORITY_BADGE, statusBadgeClass, statusRowClass } from "@/utils/priorityStyle";
 import { Badge } from "@/components/ui/badge";
 import { Hint, InfoHint } from "@/components/ui/hint";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   Pagination,
@@ -17,22 +18,20 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import InputField from "@/utils/InputField";
 import TextAreaField from "@/utils/TextAreaField";
 import SelectField from "@/utils/SelectedField";
-import { DateField } from "@/utils/DateField";
-import { useNavigate } from "react-router-dom";
-import { Plus, Trash2, Search, Phone, Mail, User2, CheckCircle2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Plus, Trash2, Search, CheckCircle2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
 import { get } from "@/helper/api";
-import { formatLocalDate } from "@/helper/formatLocalDate";
 import {
   fetchJobTypes,
   createJobType,
   updateJobType,
   deleteJobType,
   JobType,
+  JobStatusFilter,
   ReportingStatus,
 } from "@/redux/dataStore/jobTypeSlice";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -40,18 +39,23 @@ import { useAuth } from "@/context/AuthContext";
 import { Department } from "@/types/permissions";
 import FileUploadField from "@/utils/FileUploadField";
 import { JOB_TYPE_OPTIONS, JOB_LOCATION_OPTIONS } from "@/helper/jobTypeOptions";
+import { formatLocalDate } from "@/helper/formatLocalDate";
+import { useMaintenanceSummary } from "@/components/maintenance/useMaintenanceSummary";
+import { computeSla, formatLondonDate, formatLondonDateTime, isJobOverdue, jobDueValue } from "@/utils/maintenanceSla";
+import { emailLandlord } from "./jobActions";
 
-// Matches what CreateJobTypeDto actually persists on create — the backend
-// always forces status: QUOTING and ignores contractorId/dates/status here;
-// those only become settable afterward via the detail page (admin-gated).
+// Matches what CreateJobTypeDto persists on create. The server forces the
+// status and sets dueAt/chaseUpAt from the priority; the form only previews them.
 const maintenanceSchema = z.object({
   propertyId: z.string().min(1, "Property is required"),
   jobType: z.string().optional(),
   location: z.string().optional(),
   description: z.string().optional(),
-  dueDate: z.string().optional(),
   thingsToDo: z.string().optional(),
-  priority: z.string().optional(),
+  priority: z.string().min(1, "Priority is required"),
+  responsibility: z.string().optional(),
+  reportedBy: z.string().optional(),
+  deductible: z.boolean().optional(),
   mediaFileIds: z.array(z.string()).optional(),
 });
 
@@ -72,7 +76,16 @@ interface User {
   last_name?: string;
 }
 
+// The create endpoint's body: the new job itself, or wrapped in jobType / data.
+interface CreatedJobResponse {
+  id?: string;
+  jobType?: { id?: string };
+  data?: { id?: string; jobType?: { id?: string } };
+}
+
 const STATUS_LABELS: Record<ReportingStatus, string> = {
+  OPEN: "Open",
+  WAITING_AUTHORIZATION: "Waiting Authorisation",
   QUOTING: "Quoting",
   ASSIGNED: "Assigned",
   IN_PROGRESS: "In Progress",
@@ -81,7 +94,9 @@ const STATUS_LABELS: Record<ReportingStatus, string> = {
   CANCELLED: "Cancelled",
 };
 
-const STATUS_HINTS: Record<string, string> = {
+const STATUS_HINTS: Record<ReportingStatus, string> = {
+  OPEN: "Logged and waiting for the next step.",
+  WAITING_AUTHORIZATION: "The landlord has been emailed and needs to authorise the work.",
   QUOTING: "Waiting for quotes; no contractor chosen yet.",
   ASSIGNED: "A contractor has been assigned but has not started.",
   IN_PROGRESS: "The contractor is working on it.",
@@ -90,17 +105,37 @@ const STATUS_HINTS: Record<string, string> = {
   CANCELLED: "Cancelled; no further work.",
 };
 
-const getStatusBadgeVariant = (status: ReportingStatus) => {
-  switch (status) {
-    case "COMPLETED": return "default";
-    case "CONTRACTOR_DONE":
-    case "ASSIGNED":
-    case "IN_PROGRESS": return "secondary";
-    case "QUOTING": return "destructive";
-    case "CANCELLED": return "outline";
-    default: return "outline";
-  }
-};
+/** Status filter buttons. "Active" (everything not completed or cancelled) is the default. */
+const STATUS_FILTERS: { value: JobStatusFilter | ""; label: string }[] = [
+  { value: "ACTIVE", label: "Active" },
+  { value: "OPEN", label: "Open" },
+  { value: "WAITING_AUTHORIZATION", label: "Waiting Authorisation" },
+  { value: "QUOTING", label: "Quoting" },
+  { value: "ASSIGNED", label: "Assigned" },
+  { value: "IN_PROGRESS", label: "In Progress" },
+  { value: "CONTRACTOR_DONE", label: "Pending" },
+  { value: "COMPLETED", label: "Completed" },
+  { value: "CANCELLED", label: "Cancelled" },
+  { value: "", label: "All" },
+];
+
+const RESPONSIBILITY_OPTIONS = [
+  { value: "Landlord", label: "Landlord" },
+  { value: "Internal", label: "Internal" },
+];
+
+const REPORTED_BY_OPTIONS = [
+  { value: "Tenant", label: "Tenant" },
+  { value: "Landlord", label: "Landlord" },
+  { value: "Internal", label: "Internal" },
+];
+
+const PRIORITY_OPTIONS = [
+  { value: "Low", label: "Low" },
+  { value: "Medium", label: "Medium" },
+  { value: "High", label: "High" },
+  { value: "Critical", label: "Critical" },
+];
 
 const formatAddress = (property?: JobType["property"]) => {
   if (!property) return "-";
@@ -122,22 +157,42 @@ const AddressCell = ({ property }: { property?: JobType["property"] }) => {
   );
 };
 
+const DueCell = ({ job }: { job: JobType }) => {
+  const due = jobDueValue(job);
+  if (!due) return <span className="text-muted-foreground">-</span>;
+  const overdue = isJobOverdue(job);
+  return (
+    <div className={`whitespace-nowrap text-sm ${priorityTextClass(job.priority, overdue)}`}>
+      {job.dueAt ? formatLondonDateTime(job.dueAt) : formatLondonDate(due)}
+      {overdue && <div className="text-xs font-semibold text-red-600">Overdue</div>}
+    </div>
+  );
+};
+
+const SummaryTile = ({ label, value, className = "" }: { label: string; value?: number; className?: string }) => (
+  <div className={`rounded-lg border p-3 ${className}`}>
+    <div className="text-xs font-medium opacity-80">{label}</div>
+    <div className="text-2xl font-semibold leading-tight">{value ?? "â€“"}</div>
+  </div>
+);
+
 const MaintenanceList = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { jobTypes, loading, totalPages } = useAppSelector((state) => state.jobTypes);
   const { isDepartmentAdmin } = useAuth();
   const canManageMaintenance = isDepartmentAdmin(Department.Maintenance);
+  const { summary, reload: reloadSummary } = useMaintenanceSummary(true);
 
   const [properties, setProperties] = useState<Property[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<ReportingStatus | "OPEN" | "">("OPEN"); // default hides completed/cancelled
+  const [statusFilter, setStatusFilter] = useState<JobStatusFilter | "">("ACTIVE"); // default hides completed/cancelled
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isCreatingJob, setIsCreatingJob] = useState(false);
 
-  // Changing the status filter always resets to page 1 — combined into one
+  // Changing the status filter always resets to page 1 â€” combined into one
   // effect (rather than a separate "reset page" effect + "fetch" effect) so
   // there's no race between two effects dispatching fetchJobTypes with two
   // different page numbers for the same filter change, where the stale
@@ -156,7 +211,7 @@ const MaintenanceList = () => {
 
   useEffect(() => {
     (async () => {
-      const { data } = await get<any>("properties?page=1&limit=200&search=");
+      const { data } = await get<{ items?: Property[] }>("properties?page=1&limit=200&search=");
       setProperties(data?.items || []);
     })();
     (async () => {
@@ -181,18 +236,26 @@ const MaintenanceList = () => {
     formState: { errors },
   } = useForm<MaintenanceFormData>({
     resolver: zodResolver(maintenanceSchema),
+    defaultValues: { deductible: true, priority: "" },
   });
 
-  const handleDateChange = (field: keyof MaintenanceFormData, date: Date) => {
-    setValue(field, formatLocalDate(date));
-  };
+  const priorityValue = watch("priority");
+  const responsibilityValue = watch("responsibility");
+  const deductibleValue = watch("deductible");
+  // Live preview only: the server computes the real dueAt / chaseUpAt on save.
+  const slaPreview = useMemo(() => computeSla(priorityValue), [priorityValue]);
 
   const closeDialog = () => {
     setIsDialogOpen(false);
-    reset();
+    reset({ deductible: true, priority: "" });
   };
 
-  const onSubmit = async (data: MaintenanceFormData) => {
+  const refreshList = () => {
+    dispatch(fetchJobTypes({ page: currentPage, limit: 20, status: statusFilter || undefined }));
+    reloadSummary();
+  };
+
+  const submitJob = async (data: MaintenanceFormData, informLandlord: boolean) => {
     // Guards against duplicate jobs from a double-click/slow-network resubmit:
     // each dispatch generates its own fresh Idempotency-Key (idempotency only
     // catches identical retries of the SAME request, not two distinct clicks),
@@ -200,9 +263,6 @@ const MaintenanceList = () => {
     if (isCreatingJob) return;
     setIsCreatingJob(true);
     try {
-      // Backend always forces status: QUOTING on create and ignores
-      // contractorId/dates/cost fields here — they're set later via the
-      // detail page once a Maintenance Department Admin assigns a contractor.
       // Blank optional fields are sent as undefined (not ""), because the server's @IsIn checks reject "".
       const blank = (v?: string) => (v ? v : undefined);
       const payload = {
@@ -210,24 +270,42 @@ const MaintenanceList = () => {
         jobType: blank(data.jobType),
         location: blank(data.location),
         description: blank(data.description),
-        dueDate: blank(data.dueDate),
         thingsToDo: blank(data.thingsToDo),
-        priority: blank(data.priority),
+        priority: data.priority,
+        responsibility: blank(data.responsibility),
+        reportedBy: blank(data.reportedBy),
+        deductible: data.deductible !== false,
         mediaFileIds: data.mediaFileIds ?? [],
-        status: "QUOTING",
+        status: "OPEN",
       } as Omit<JobType, "id">;
 
-      // .unwrap() is required — createAsyncThunk never throws on its own, so
+      // .unwrap() is required â€” createAsyncThunk never throws on its own, so
       // without it a rejected (rejectWithValue) result was silently treated
       // as success: no error toast shown, and the dialog closed as if the
       // job had actually been created.
-      await dispatch(createJobType(payload)).unwrap();
+      const created = (await dispatch(createJobType(payload)).unwrap()) as CreatedJobResponse;
       toast.success("Maintenance job created successfully");
+
+      if (informLandlord) {
+        const jobId: string | undefined = created?.id ?? created?.jobType?.id ?? created?.data?.id ?? created?.data?.jobType?.id;
+        if (!jobId) {
+          toast.error("Job saved, but the landlord could not be informed from here. Open the job to inform them.");
+        } else {
+          try {
+            const result = await emailLandlord(jobId);
+            toast.success(result?.message || "Landlord informed. Waiting for authorisation.");
+          } catch (error) {
+            // The job is kept; the landlord can be informed later from the job page.
+            toast.error(error?.message || "Could not inform the landlord. The job has been saved.");
+          }
+        }
+      }
 
       setCurrentPage(1);
       dispatch(fetchJobTypes({ page: 1, limit: 20, status: statusFilter || undefined }));
+      reloadSummary();
       closeDialog();
-    } catch (error: any) {
+    } catch (error) {
       toast.error(typeof error === "string" ? error : error?.message || "Error saving maintenance job");
     } finally {
       setIsCreatingJob(false);
@@ -239,7 +317,7 @@ const MaintenanceList = () => {
     try {
       await dispatch(deleteJobType({ id: job.id, propertyId: job.propertyId }));
       toast.success("Maintenance job deleted successfully");
-      dispatch(fetchJobTypes({ page: currentPage, limit: 20, status: statusFilter || undefined }));
+      refreshList();
     } catch (error) {
       toast.error("Error deleting maintenance job");
     }
@@ -253,11 +331,11 @@ const MaintenanceList = () => {
           id: job.id,
           jobTypeData: { propertyId: job.propertyId, dateDone: formatLocalDate(new Date()), status: "COMPLETED" },
         })
-      );
+      ).unwrap();
       toast.success("Maintenance job marked as done");
-      dispatch(fetchJobTypes({ page: currentPage, limit: 20, status: statusFilter || undefined }));
+      refreshList();
     } catch (error) {
-      toast.error("Error completing maintenance job");
+      toast.error(typeof error === "string" ? error : error?.message || "Error completing maintenance job");
     }
   };
 
@@ -284,111 +362,176 @@ const MaintenanceList = () => {
                 Maintenance
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+            <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
               <DialogHeader>
                 <DialogTitle>Add New Maintenance</DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
-              <div className="space-y-4 overflow-y-auto pr-1 flex-1 min-h-0">
-                <SelectField
-                  label="Property"
-                  name="propertyId"
-                  register={register}
-                  setValue={setValue}
-                  watch={watch}
-                  error={errors.propertyId?.message}
-                  options={propertyOptions}
-                />
+              <form onSubmit={handleSubmit((data) => submitJob(data, false))} className="flex flex-col flex-1 min-h-0">
+                <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_18rem] gap-6 overflow-y-auto pr-1 flex-1 min-h-0">
+                  <div className="space-y-4">
+                    <SelectField
+                      label="Property"
+                      name="propertyId"
+                      register={register}
+                      setValue={setValue}
+                      watch={watch}
+                      error={errors.propertyId?.message}
+                      options={propertyOptions}
+                    />
 
-                <div className="grid grid-cols-2 gap-4">
-                  <SelectField
-                    label="Type *"
-                    name="jobType"
-                    register={register}
-                    setValue={setValue}
-                    watch={watch}
-                    error={errors.jobType?.message}
-                    options={JOB_TYPE_OPTIONS.map((o) => ({ value: o, label: o }))}
-                  />
-                  <SelectField
-                    label="Location *"
-                    name="location"
-                    register={register}
-                    setValue={setValue}
-                    watch={watch}
-                    error={errors.location?.message}
-                    options={JOB_LOCATION_OPTIONS.map((o) => ({ value: o, label: o }))}
-                  />
+                    <div className="grid grid-cols-2 gap-4">
+                      <SelectField
+                        label="Type *"
+                        name="jobType"
+                        register={register}
+                        setValue={setValue}
+                        watch={watch}
+                        error={errors.jobType?.message}
+                        options={JOB_TYPE_OPTIONS.map((o) => ({ value: o, label: o }))}
+                      />
+                      <SelectField
+                        label="Location *"
+                        name="location"
+                        register={register}
+                        setValue={setValue}
+                        watch={watch}
+                        error={errors.location?.message}
+                        options={JOB_LOCATION_OPTIONS.map((o) => ({ value: o, label: o }))}
+                      />
+                    </div>
+
+                    <TextAreaField
+                      label="Description"
+                      name="description"
+                      register={register}
+                      error={errors.description?.message}
+                      placeholder="Describe the issue..."
+                    />
+
+                    <FileUploadField
+                      label="Photos"
+                      name="mediaFileIds"
+                      accept="image/jpeg,image/png,image/webp"
+                      multiple
+                      register={register}
+                      setValue={setValue}
+                      watch={watch}
+                      error={errors.mediaFileIds?.message as string | undefined}
+                      upload={{ category: "job-media", entityType: "jobType" }}
+                    />
+
+                    <TextAreaField
+                      label="Notes"
+                      name="thingsToDo"
+                      register={register}
+                      error={errors.thingsToDo?.message}
+                      placeholder="List specific tasks to be completed..."
+                    />
+                  </div>
+
+                  <div className="space-y-4 rounded-lg border bg-muted/30 p-4 h-fit">
+                    <SelectField
+                      label="Responsibility"
+                      name="responsibility"
+                      register={register}
+                      setValue={setValue}
+                      watch={watch}
+                      error={errors.responsibility?.message}
+                      options={RESPONSIBILITY_OPTIONS}
+                    />
+
+                    <div className="space-y-1.5">
+                      <div className="text-muted-foreground text-sm font-medium">Job status</div>
+                      <div className="flex h-10 items-center rounded-md border bg-background px-3 text-sm">
+                        <Badge variant="outline" className={statusBadgeClass("OPEN")}>Open</Badge>
+                        <span className="ml-2 text-xs text-muted-foreground">set on create</span>
+                      </div>
+                    </div>
+
+                    <SelectField
+                      label="Reported by"
+                      name="reportedBy"
+                      register={register}
+                      setValue={setValue}
+                      watch={watch}
+                      error={errors.reportedBy?.message}
+                      options={REPORTED_BY_OPTIONS}
+                    />
+
+                    <SelectField
+                      label="Priority *"
+                      name="priority"
+                      register={register}
+                      setValue={setValue}
+                      watch={watch}
+                      error={errors.priority?.message}
+                      options={PRIORITY_OPTIONS}
+                    />
+
+                    <div className="rounded-md border bg-background p-3 text-sm space-y-1">
+                      <div className="font-medium">Due date</div>
+                      {slaPreview ? (
+                        <div className="text-muted-foreground">
+                          Due: <span className="text-foreground">{formatLondonDateTime(slaPreview.dueAt)}</span>
+                          {" Â· "}
+                          Chase up: <span className="text-foreground">{formatLondonDateTime(slaPreview.chaseUpAt)}</span>
+                        </div>
+                      ) : (
+                        <div className="text-muted-foreground">Set a priority to see when it is due.</div>
+                      )}
+                      <div className="text-xs text-muted-foreground">
+                        Set automatically from priority. Critical and High count office hours (Monâ€“Fri 9:00â€“17:00).
+                      </div>
+                    </div>
+
+                    <label className="flex items-start gap-3">
+                      <Checkbox
+                        checked={deductibleValue !== false}
+                        onCheckedChange={(v) => setValue("deductible", v === true, { shouldDirty: true })}
+                      />
+                      <span>
+                        <span className="block text-sm font-medium">
+                          Deductible from landlord<InfoHint text="Ticked: the cost of this job can be deducted from the landlord's payment." />
+                        </span>
+                      </span>
+                    </label>
+                  </div>
                 </div>
 
-                <SelectField
-                  label="Priority"
-                  name="priority"
-                  register={register}
-                  setValue={setValue}
-                  watch={watch}
-                  error={errors.priority?.message}
-                  options={[
-                    { value: "Low", label: "Low" },
-                    { value: "Medium", label: "Medium" },
-                    { value: "Critical", label: "Critical" },
-                  ]}
-                />
-
-                <TextAreaField
-                  label="Description"
-                  name="description"
-                  register={register}
-                  error={errors.description?.message}
-                  placeholder="Describe the issue..."
-                />
-
-                <FileUploadField
-                  label="Photos"
-                  name="mediaFileIds"
-                  accept="image/jpeg,image/png,image/webp"
-                  multiple
-                  register={register}
-                  setValue={setValue}
-                  watch={watch}
-                  error={errors.mediaFileIds?.message as string | undefined}
-                  upload={{ category: "job-media", entityType: "jobType" }}
-                />
-
-                <div className="grid grid-cols-2 gap-4">
-                  <DateField
-                    label="Due Date *"
-                    value={watch("dueDate") || ""}
-                    onChange={(date) => handleDateChange("dueDate", date)}
-                    error={errors.dueDate?.message}
-                  />
-                </div>
-
-                <TextAreaField
-                  label="Things To Do"
-                  name="thingsToDo"
-                  register={register}
-                  error={errors.thingsToDo?.message}
-                  placeholder="List specific tasks to be completed..."
-                />
-
-                <p className="text-sm text-muted-foreground">
-                  Contractor assignment, scheduling dates, and cost tracking become available
-                  once a Maintenance Department Admin reviews this request.
-                </p>
-
-              </div>
-                <div className="flex justify-end space-x-2 pt-4 border-t mt-2">
+                <div className="flex flex-wrap justify-end gap-2 pt-4 border-t mt-2">
                   <Button type="button" variant="outline" onClick={closeDialog} disabled={isCreatingJob}>
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={isCreatingJob}>
-                    {isCreatingJob ? "Creating…" : "Create"}
+                  <Button type="submit" variant="secondary" disabled={isCreatingJob}>
+                    {isCreatingJob ? "Savingâ€¦" : "Save"}
                   </Button>
+                  {responsibilityValue === "Landlord" && (
+                    <Button
+                      type="button"
+                      disabled={isCreatingJob}
+                      onClick={handleSubmit((data) => submitJob(data, true))}
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      {isCreatingJob ? "Savingâ€¦" : "Save & inform landlord"}
+                    </Button>
+                  )}
                 </div>
               </form>
             </DialogContent>
           </Dialog>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
+          <Link to="/maintenance/chase-up" className="block hover:opacity-90" title="Open the chase-up list">
+            <SummaryTile label="Chase up" value={summary?.chaseUp} className="border-red-300 bg-red-50 text-red-800" />
+          </Link>
+          <SummaryTile label="Overdue" value={summary?.overdue} className="border-red-300 bg-white text-red-700" />
+          <SummaryTile label="Waiting authorisation" value={summary?.waitingAuthorization} className="border-violet-300 bg-violet-50 text-violet-800" />
+          <SummaryTile label="Unassigned" value={summary?.unassigned} className="border-sky-300 bg-sky-50 text-sky-800" />
+          <SummaryTile label="Critical" value={summary?.byPriority?.Critical} className={PRIORITY_BADGE.Critical} />
+          <SummaryTile label="High" value={summary?.byPriority?.High} className={PRIORITY_BADGE.High} />
+          <SummaryTile label="Medium" value={summary?.byPriority?.Medium} className={PRIORITY_BADGE.Medium} />
+          <SummaryTile label="Low" value={summary?.byPriority?.Low} className={PRIORITY_BADGE.Low} />
         </div>
 
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -402,15 +545,15 @@ const MaintenanceList = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="flex items-center gap-2">
-            {(["OPEN", "QUOTING", "ASSIGNED", "IN_PROGRESS", "CONTRACTOR_DONE", "COMPLETED", "CANCELLED", ""] as const).map((status) => (
+          <div className="flex flex-wrap items-center gap-2">
+            {STATUS_FILTERS.map(({ value, label }) => (
               <Button
-                key={status || "all"}
-                variant={statusFilter === status ? "default" : "outline"}
+                key={value || "all"}
+                variant={statusFilter === value ? "default" : "outline"}
                 size="sm"
-                onClick={() => setStatusFilter(status)}
+                onClick={() => setStatusFilter(value)}
               >
-                {status === "OPEN" ? "Open" : status ? STATUS_LABELS[status] : "All"}
+                {label}
               </Button>
             ))}
           </div>
@@ -425,10 +568,10 @@ const MaintenanceList = () => {
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Date<InfoHint text="Date the job was logged." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Address<InfoHint text="The property this job is for." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Description<InfoHint text="What needs doing." /></th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Priority<InfoHint text="How urgent the job is. Critical (red) needs action now, High (orange), Medium (amber), Low (grey)." /></th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Priority<InfoHint text="How urgent the job is: Critical (red), High (orange), Medium (yellow), Low (pink)." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Contractor<InfoHint text="The contractor assigned to carry out the work." /></th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Due Date<InfoHint text="Date the work should be finished by." /></th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Status<InfoHint text="Where the job is: Quoting, Assigned, In Progress, Pending (contractor finished, awaiting sign-off), Completed or Cancelled." /></th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Due<InfoHint text="When the work is due. Shown in red once it is overdue." /></th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Status<InfoHint text="Where the job is: Open, Waiting Authorisation, Quoting, Assigned, In Progress, Pending (contractor finished, awaiting sign-off), Completed or Cancelled." /></th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Actions<InfoHint text="Click any row to open the job." /></th>
                   </tr>
                 </thead>
@@ -465,7 +608,9 @@ const MaintenanceList = () => {
                           <td className="px-4 py-3 text-sm">
                             {job.contractorRef ? job.contractorRef.name : job.employeeId ? getEmployeeName(job.employeeId) : "-"}
                           </td>
-                          <td className="px-4 py-3 text-sm whitespace-nowrap">{job.dueDate}</td>
+                          <td className="px-4 py-3 text-sm">
+                            <DueCell job={job} />
+                          </td>
                           <td className="px-4 py-3 text-sm">
                             <Hint text={STATUS_HINTS[job.status] ?? job.status}><Badge noHint variant="outline" className={statusBadgeClass(job.status)}>{STATUS_LABELS[job.status] ?? job.status}</Badge></Hint>
                           </td>

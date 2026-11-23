@@ -135,7 +135,7 @@ useEffect(()=>{
 
     } catch (error: any) {
       console.log(error)
-      toast({ title: "Error", description: error.message || "Failed to save transaction", variant: "destructive" });
+      toast({ title: "Error", description: (typeof error === "string" ? error : error?.message) || "Failed to save transaction", variant: "destructive" });
     } finally {
       setProgress(0);
     }
@@ -159,7 +159,7 @@ useEffect(()=>{
       form.reset();
     } catch (error: any) {
       console.log(error);
-      toast({ title: "Error", description: error.message || "Failed to save draft", variant: "destructive" });
+      toast({ title: "Error", description: (typeof error === "string" ? error : error?.message) || "Failed to save draft", variant: "destructive" });
     } finally {
       setProgress(0);
     }

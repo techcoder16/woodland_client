@@ -10,18 +10,21 @@ import PropertyActivityLog from "./Manager/PropertyActivityLog";
 import PropertyHmo from "./Manager/PropertyHmo";
 import { CertificatesSection, GeneralDocumentsSection, LicencesSection } from "./Manager/Documents";
 import PropertyFiles from "./Manager/PropertyFiles";
-import PaymentHistorySection from "./Manager/PaymentHistorySection";
+import RentDueSection from "./Manager/RentDueSection";
+import DeductionsSection from "./Manager/DeductionsSection";
+import PropertyContractorInvoices from "./Manager/PropertyContractorInvoices";
 import TransactionPage from "./Manager/TransactionPage";
 import { useAuth } from "@/context/AuthContext";
 import { Hint } from "@/components/ui/hint";
 import { StaffRole } from "@/types/permissions";
 
-const TAB_HINTS: Record<string, string> = {"overview": "Summary of the property: address, landlord, key details.", "tenancies": "Who lives here now and past occupiers: bookings, move-in/out dates and tasks.", "maintenance": "Repair and maintenance jobs for this property.", "notes": "Internal notes about this property. Not shown to landlords or occupiers.", "licences": "Council, Selective and HMO licences with dates and status.", "compliance": "Safety certificates and legal checks (gas, electrical, EPC...) with expiry dates.", "documents": "Files for this property, e.g. the management agreement.", "finance": "Rent received and payments made to the landlord for this property.", "hmo": "House in Multiple Occupation licence details.", "activity": "A log of who changed what on this property, and when."};
+const TAB_HINTS: Record<string, string> = {"overview": "Summary of the property: address, landlord, key details.", "tenancies": "Who lives here now and past occupiers: bookings, move-in/out dates and tasks.", "maintenance": "Repair and maintenance jobs for this property.", "contractor-invoices": "Contractor jobs on this property, their costs and the invoices generated for them.","notes": "Internal notes about this property. Not shown to landlords or occupiers.", "licences": "Council, Selective and HMO licences with dates and status.", "compliance": "Safety certificates and legal checks (gas, electrical, EPC...) with expiry dates.", "documents": "Files for this property, e.g. the management agreement.", "finance": "Rent received and payments made to the landlord for this property.", "hmo": "House in Multiple Occupation licence details.", "activity": "A log of who changed what on this property, and when."};
 
 const TABS = [
   { key: "overview", label: "Overview" },
   { key: "tenancies", label: "Occupancy" },
   { key: "maintenance", label: "Maintenance" },
+  { key: "contractor-invoices", label: "Contractor Invoices" },
   { key: "notes", label: "Notes" },
   { key: "compliance", label: "Compliance" },
   { key: "licences", label: "Licences" },
@@ -49,7 +52,7 @@ export default function PropertyDetailPage() {
   // Only admins decide whether a draft property goes live.
   const canPublish = user?.role === StaffRole.SuperUser || user?.role === StaffRole.AdminUser;
   const [publishing, setPublishing] = useState(false);
-  const [financeView, setFinanceView] = useState<"history" | "transactions">("history");
+  const [financeView, setFinanceView] = useState<"rent-due" | "deductions" | "transactions">("rent-due");
   const requestedTab = searchParams.get("tab") || "overview";
   const tab = TABS.some((t) => t.key === requestedTab) ? requestedTab : "overview";
 
@@ -155,6 +158,7 @@ export default function PropertyDetailPage() {
         {tab === "hmo" && <PropertyHmo property={property} />}
         {tab === "activity" && <PropertyActivityLog propertyId={property.id} />}
         {tab === "maintenance" && <Notes view="jobtypes" propertyId={property.id} property={property} />}
+        {tab === "contractor-invoices" && <PropertyContractorInvoices propertyId={property.id} />}
         {tab === "notes" && <Notes view="notes" propertyId={property.id} property={property} />}
         {tab === "compliance" && <CertificatesSection propertyId={property.id} />}
         {tab === "licences" && <LicencesSection propertyId={property.id} />}
@@ -168,14 +172,13 @@ export default function PropertyDetailPage() {
           (canAccessFinance ? (
             <>
               <div className="mb-4 flex gap-2 border-b pb-3">
-                <Button size="sm" variant={financeView === "history" ? "default" : "outline"} onClick={() => setFinanceView("history")}>Payment History</Button>
+                <Button size="sm" variant={financeView === "rent-due" ? "default" : "outline"} onClick={() => setFinanceView("rent-due")}>Rent Due</Button>
+                <Button size="sm" variant={financeView === "deductions" ? "default" : "outline"} onClick={() => setFinanceView("deductions")}>Deductions</Button>
                 <Button size="sm" variant={financeView === "transactions" ? "default" : "outline"} onClick={() => setFinanceView("transactions")}>Transactions</Button>
               </div>
-              {financeView === "history" ? (
-                <PaymentHistorySection propertyId={property.id} />
-              ) : (
-                <TransactionPage propertyId={property.id} property={property} />
-              )}
+              {financeView === "rent-due" && <RentDueSection propertyId={property.id} />}
+              {financeView === "deductions" && <DeductionsSection propertyId={property.id} />}
+              {financeView === "transactions" && <TransactionPage propertyId={property.id} property={property} />}
             </>
           ) : (
             <div className="surface p-10 text-center text-sm text-muted-foreground">Only finance staff can view this property's payment records.</div>

@@ -30,9 +30,17 @@ import {
   KeyRound,
   Landmark,
   ShieldCheck,
+  ClipboardList,
+  CalendarClock,
+  Mail,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import logo from "@/assets/logo.png";
+import { useMaintenanceSummary } from "@/components/maintenance/useMaintenanceSummary";
+
+// Maintenance pages that live under /maintenance/ but are not a single job
+// (/maintenance/:id). "Requests" stays highlighted only for the job pages.
+const MAINTENANCE_SUB_ROUTES = ["/maintenance/jobs", "/maintenance/chase-up", "/maintenance/landlord-communications"];
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -40,6 +48,8 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { isAuthenticated, logout, isAdmin, canAccess, canManageIncomingPayments, canViewCompliance } = useAuth();
+  const canSeeMaintenance = !!isAdmin || canAccess("/maintenance");
+  const { summary: maintenanceSummary } = useMaintenanceSummary(isAuthenticated && canSeeMaintenance);
   // Incoming payments go by role (Super User / Admin / Finance), every other
   // route by per-screen permission.
   const canSee = (path: string) =>
@@ -128,10 +138,23 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <SidebarMenu className="px-2 mt-4 space-y-0.5">
             {menuItems.map(({ label, path, icon: Icon }) => {
               if (label === "Maintenance") {
-                const maintenanceItems = [
-                  { label: "Jobs", path: "/maintenance" },
-                  { label: "Contractors", path: "/contractors" },
-                ].filter((item) => isAdmin || canAccess(item.path));
+                // Requests, Jobs, Chase Up and Landlord Communications share the
+                // /maintenance permission; Contractors has its own.
+                const maintenanceItems: { label: string; path: string; perm: string; icon: typeof ClipboardList; badge?: number }[] = [
+                  { label: "Requests", path: "/maintenance", perm: "/maintenance", icon: ClipboardList },
+                  { label: "Jobs", path: "/maintenance/jobs", perm: "/maintenance", icon: CalendarClock },
+                  { label: "Chase Up", path: "/maintenance/chase-up", perm: "/maintenance", icon: Wrench, badge: maintenanceSummary?.chaseUp ?? 0 },
+                  { label: "Landlord Communications", path: "/maintenance/landlord-communications", perm: "/maintenance", icon: Mail },
+                  { label: "Contractors", path: "/contractors", perm: "/contractors", icon: Users2 },
+                ].filter((item) => isAdmin || canAccess(item.perm));
+                const isMaintenanceChildActive = (itemPath: string) => {
+                  if (itemPath === "/maintenance") {
+                    if (location.pathname === "/maintenance") return true;
+                    return location.pathname.startsWith("/maintenance/") &&
+                      !MAINTENANCE_SUB_ROUTES.some((r) => location.pathname === r || location.pathname.startsWith(`${r}/`));
+                  }
+                  return location.pathname === itemPath || location.pathname.startsWith(`${itemPath}/`);
+                };
                 const maintenanceHome = maintenanceItems[0]?.path ?? path;
                 return (
                   <React.Fragment key={path}>
@@ -147,7 +170,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                     {maintenanceOpen && maintenanceItems.map((item) => {
-                      const childActive = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
+                      const childActive = isMaintenanceChildActive(item.path);
                       return (
                         <SidebarMenuItem key={item.path}>
                           <SidebarMenuButton
@@ -156,6 +179,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                             className={`ml-5 flex items-center rounded-lg px-3 py-2 text-xs ${childActive ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"}`}
                           >
                             <span>{item.label}</span>
+                            {!!item.badge && item.badge > 0 && (
+                              <span className="ml-auto rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white" aria-label={`${item.badge} to chase up`}>
+                                {item.badge}
+                              </span>
+                            )}
                           </SidebarMenuButton>
                         </SidebarMenuItem>
                       );

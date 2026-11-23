@@ -174,10 +174,13 @@ export const upsertTransaction = createAsyncThunk(
 
       if (transaction.id) {
         // Update
-        await patch("transaction", transaction, headers);
+        const res: any = await patch("transaction", transaction, headers);
+        if (res?.error) return rejectWithValue(res.error.message || "Failed to save transaction");
       } else {
         // Create
-        await post("transaction", transaction, headers);
+        // Surfaces server rejections such as "rent for this month is already recorded" (409).
+        const res: any = await post("transaction", transaction, headers);
+        if (res?.error) return rejectWithValue(res.error.message || "Failed to save transaction");
       }
 
       await (dispatch as AppDispatch)(
@@ -228,7 +231,8 @@ export const createDraftTransaction = createAsyncThunk(
 
       // Create as draft
       const draftTransaction = { ...transaction, status: StatusTransaction.DRAFT };
-      await post("transaction", draftTransaction, headers);
+      const res: any = await post("transaction", draftTransaction, headers);
+      if (res?.error) return rejectWithValue(res.error.message || "Failed to create draft transaction");
 
       await (dispatch as AppDispatch)(
         fetchTransaction({ propertyId: transaction.propertyId })

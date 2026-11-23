@@ -40,7 +40,10 @@ import {
 const jobTypeSchema = z.object({
   jobType: z.string().min(1, "Job type is required"),
   description: z.string().min(1, "Description is required"),
-  dueDate: z.string().min(1, "Due date is required"),
+  // Set automatically by the server from priority — only shown when editing.
+  dueDate: z.string().optional(),
+  responsibility: z.string().optional(),
+  reportedBy: z.string().optional(),
   schedule: z.string().optional(),
   time: z.string().optional(),
   thingsToDo: z.string().optional(),
@@ -49,9 +52,9 @@ const jobTypeSchema = z.object({
   }),
   employeeId: z.string().optional(),
   contractorId: z.string().optional(),
-  priority: z.string().optional(),
+  priority: z.string().min(1, "Priority is required"),
   dateDone: z.string().optional(),
-  status: z.enum(["QUOTING", "ASSIGNED", "IN_PROGRESS", "CONTRACTOR_DONE", "COMPLETED", "CANCELLED"]).default("QUOTING"),
+  status: z.enum(["OPEN", "WAITING_AUTHORIZATION", "QUOTING", "ASSIGNED", "IN_PROGRESS", "CONTRACTOR_DONE", "COMPLETED", "CANCELLED"]).default("OPEN"),
 });
 
 // Notes are stamped automatically with the local date and time they were
@@ -206,7 +209,9 @@ const Notes = ({ propertyId, property, view = "notes" }: NotesProps) => {
         propertyId,
         jobType: data.jobType,
         description: data.description,
-        dueDate: data.dueDate,
+        dueDate: editingJobType ? data.dueDate || editingJobType.dueDate : "",
+        responsibility: data.responsibility || undefined,
+        reportedBy: data.reportedBy || undefined,
         thingsToDo: data.thingsToDo,
         employeeId: data.assignedType === "employee" ? data.employeeId : undefined,
         contractorId: data.assignedType === "contractor" ? data.contractorId : undefined,
@@ -274,6 +279,8 @@ const Notes = ({ propertyId, property, view = "notes" }: NotesProps) => {
     setJobTypeValue("employeeId", jobType.employeeId || "");
     setJobTypeValue("contractorId", jobType.contractorId || "");
     setJobTypeValue("priority", jobType.priority || "");
+    setJobTypeValue("responsibility", (jobType as any).responsibility || "");
+    setJobTypeValue("reportedBy", (jobType as any).reportedBy || "");
     setJobTypeValue("dateDone", jobType.dateDone || "");
     setJobTypeValue("status", jobType.status);
     setIsJobTypeDialogOpen(true);
@@ -520,7 +527,34 @@ const Notes = ({ propertyId, property, view = "notes" }: NotesProps) => {
                       options={[
                         { value: "Low", label: "Low" },
                         { value: "Medium", label: "Medium" },
+                        { value: "High", label: "High" },
                         { value: "Critical", label: "Critical" }
+                      ]}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <SelectField
+                      label="Reported by"
+                      name="reportedBy"
+                      register={registerJobType}
+                      setValue={setJobTypeValue}
+                      watch={watchJobType}
+                      options={[
+                        { value: "TENANT", label: "Tenant" },
+                        { value: "LANDLORD", label: "Landlord" },
+                        { value: "INTERNAL", label: "Internal" }
+                      ]}
+                    />
+                    <SelectField
+                      label="Responsibility"
+                      name="responsibility"
+                      register={registerJobType}
+                      setValue={setJobTypeValue}
+                      watch={watchJobType}
+                      options={[
+                        { value: "LANDLORD", label: "Landlord" },
+                        { value: "INTERNAL", label: "Internal" }
                       ]}
                     />
                   </div>
@@ -533,6 +567,7 @@ const Notes = ({ propertyId, property, view = "notes" }: NotesProps) => {
                     placeholder="Describe the job type..."
                   />
 
+                  {editingJobType ? (
                   <div className="grid grid-cols-3 gap-4">
                     <DateField
                       label="Due Date"
@@ -541,6 +576,12 @@ const Notes = ({ propertyId, property, view = "notes" }: NotesProps) => {
                       error={errorsJobType.dueDate?.message}
                     />
                   </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      The due date and chase-up time are set automatically from the priority
+                      (Critical 4 hours, High 24 hours, Medium 10 days, Low 21 days).
+                    </p>
+                  )}
 
                   <div className="grid grid-cols-2 gap-4">
                     <SelectField

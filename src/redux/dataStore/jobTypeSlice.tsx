@@ -5,7 +5,29 @@ import getApi from "@/helper/getApi";
 import { AppDispatch } from "../store";
 import { post, patch, del } from "@/helper/api";
 
-export type ReportingStatus = "QUOTING" | "ASSIGNED" | "IN_PROGRESS" | "CONTRACTOR_DONE" | "COMPLETED" | "CANCELLED";
+export type ReportingStatus =
+  | "OPEN"
+  | "WAITING_AUTHORIZATION"
+  | "QUOTING"
+  | "ASSIGNED"
+  | "IN_PROGRESS"
+  | "CONTRACTOR_DONE"
+  | "COMPLETED"
+  | "CANCELLED";
+
+/** Status filter accepted by the list endpoint: every open status, or one status. */
+export type JobStatusFilter = ReportingStatus | "ACTIVE";
+
+export type JobResponsibility = "Landlord" | "Internal";
+export type JobReportedBy = "Tenant" | "Landlord" | "Internal";
+
+export interface JobNote {
+  id: string;
+  kind: "NOTE" | "CHASE_UP" | string;
+  note: string;
+  authorName?: string;
+  createdAt: string;
+}
 
 // Define JobType interface
 export interface JobType {
@@ -27,11 +49,25 @@ export interface JobType {
   mediaFileIds?: string[]; // StoredFile ids
   invoiceFileId?: string | null;
   totalCost?: number | null;
+  otherCost?: number | null;
   totalCharged?: number | null;
   marginPercent?: number | null;
   marginAmount?: number | null;
   deductible?: boolean;
   showOnLandlordPortal?: boolean;
+  responsibility?: JobResponsibility | string | null;
+  reportedBy?: JobReportedBy | string | null;
+  /** Server-computed SLA deadline (ISO). Use dueAt, falling back to dueDate. */
+  dueAt?: string | null;
+  chaseUpAt?: string | null;
+  /** Scheduled visit for the contractor (ISO date, or YYYY-MM-DD). */
+  visitDate?: string | null;
+  landlordInformedAt?: string | null;
+  landlordInvoiceFileId?: string | null;
+  landlordInvoiceGeneratedAt?: string | null;
+  isOverdue?: boolean;
+  /** Latest notes (server returns the most recent few). */
+  notes?: JobNote[];
   status: ReportingStatus;
   createdAt?: string;
   updatedAt?: string;
@@ -65,10 +101,24 @@ const initialState: JobTypeState = {
 };
 
 // Fetch JobTypes data from API
+export interface FetchJobTypesArgs {
+  propertyId?: string;
+  page: number;
+  limit?: number;
+  status?: JobStatusFilter;
+  contractorId?: string;
+  /** Only jobs that have a contractor assigned. */
+  assigned?: boolean;
+  /** YYYY-MM-DD: jobs visiting on this day. */
+  visitDate?: string;
+  priority?: string;
+  sort?: string;
+}
+
 export const fetchJobTypes = createAsyncThunk(
   "jobType/fetchJobTypes",
   async (
-    { propertyId, page, limit, status, contractorId }: { propertyId?: string; page: number; limit?: number; status?: ReportingStatus | "OPEN"; contractorId?: string },
+    { propertyId, page, limit, status, contractorId, assigned, visitDate, priority, sort }: FetchJobTypesArgs,
     { rejectWithValue }
   ) => {
     try {
@@ -79,6 +129,10 @@ export const fetchJobTypes = createAsyncThunk(
       if (propertyId) query.set("propertyId", propertyId);
       if (status) query.set("status", status);
       if (contractorId) query.set("contractorId", contractorId);
+      if (assigned) query.set("assigned", "true");
+      if (visitDate) query.set("visitDate", visitDate);
+      if (priority) query.set("priority", priority);
+      if (sort) query.set("sort", sort);
       const data = await getApi("property-management/job-type", `?${query.toString()}`, headers);
       return data;
     } catch (error: any) {

@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { get } from "@/helper/api";
 
 const STATUS_BADGE: Record<string, string> = {
+  OPEN: "bg-slate-100 text-slate-700",
+  WAITING_AUTHORIZATION: "bg-yellow-100 text-yellow-800",
   QUOTING: "bg-slate-100 text-slate-700",
   ASSIGNED: "bg-orange-100 text-orange-700",
   IN_PROGRESS: "bg-blue-100 text-blue-700",

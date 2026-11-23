@@ -15,6 +15,7 @@ import SelectField from "@/utils/SelectedField";
 import FileUploadField from "@/utils/FileUploadField";
 import AddressSearchField from "@/components/AddressSearchField";
 import { JOB_TYPE_OPTIONS } from "@/helper/jobTypeOptions";
+import ContractorJobHistory from "@/components/maintenance/ContractorJobHistory";
 
 const SPECIALTY_OPTIONS = JOB_TYPE_OPTIONS.map((s) => ({ label: s, value: s }));
 
@@ -174,6 +175,13 @@ const EditContractor = () => {
               </div>
             </form>
           </Card>
+
+          {contractor?.id && (
+            <div className="mt-8">
+              <h2 className="hero-stat text-2xl mb-4">Jobs</h2>
+              <ContractorJobHistory contractorId={contractor.id} />
+            </div>
+          )}
         </div>
       </div>
     </DashboardLayout>
