@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
+import { contractorLabel } from "@/utils/contractorLabel";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { InfoHint } from "@/components/ui/hint";
@@ -83,7 +84,7 @@ export default function PropertyContractorInvoices({ propertyId }: { propertyId:
                           <div className="font-medium">{job.jobType}</div>
                           {job.description && <div className="max-w-[260px] truncate text-xs text-muted-foreground" title={job.description}>{job.description}</div>}
                         </td>
-                        <td className="px-4 py-3">{job.contractorRef?.name || "-"}</td>
+                        <td className="px-4 py-3">{contractorLabel(job.contractorRef?.name) || "-"}</td>
                         <td className="px-4 py-3 text-right">{money(job.totalCost)}</td>
                         <td className="px-4 py-3 text-right">{money(otherCost)}</td>
                         <td className="px-4 py-3 text-right font-semibold">{job.totalCharged != null ? money(job.totalCharged) : <span className="font-normal text-muted-foreground">Not set</span>}</td>

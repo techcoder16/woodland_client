@@ -1,5 +1,6 @@
 ﻿// Jobs that need chasing: due soon, overdue, or past their chase-up time.
 // Same table as the Jobs list; click a row to open its assign box and notes.
+import { contractorLabel } from "@/utils/contractorLabel";
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -170,7 +171,7 @@ const ChaseUp = () => {
                               <div className="text-muted-foreground truncate">{job.description || "-"}</div>
                             </td>
                             <td className="px-4 py-3 text-sm"><DueCell job={job} /></td>
-                            <td className="px-4 py-3 text-sm">{job.contractorRef ? job.contractorRef.name : "-"}</td>
+                            <td className="px-4 py-3 text-sm">{job.contractorRef ? contractorLabel(job.contractorRef.name) : "-"}</td>
                             <td className="px-4 py-3 text-sm max-w-[16rem]">
                               {(job.notes ?? [])[0] ? (
                                 <div className="truncate text-muted-foreground" title={(job.notes ?? [])[0].note}>{(job.notes ?? [])[0].note}</div>
@@ -206,7 +207,7 @@ const ChaseUp = () => {
                                       </div>
                                     ) : (
                                       <p className="text-sm text-muted-foreground">
-                                        {job.contractorRef?.name || "A contractor"} is assigned. Reassigning opens once the job is overdue or the contractor marks it done.
+                                        {contractorLabel(job.contractorRef?.name) || "A contractor"} is assigned. Reassigning opens once the job is overdue or the contractor marks it done.
                                       </p>
                                     )}
                                   </div>
