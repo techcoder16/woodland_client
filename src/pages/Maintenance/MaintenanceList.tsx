@@ -549,6 +549,7 @@ const MaintenanceList = () => {
                   <tr className="border-b border-border/70">
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Date<InfoHint text="Date the job was logged." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Due<InfoHint text="When the work is due. Shown in red once it is overdue." /></th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Chase up at<InfoHint text="When this job should be chased. It then appears on the Chase Up page." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Address<InfoHint text="The property this job is for." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Description<InfoHint text="What needs doing." /></th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Resp.<InfoHint text="Who is responsible: L = Landlord, I = Internal (Woodland)." /></th>
@@ -561,13 +562,13 @@ const MaintenanceList = () => {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
+                      <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
                         Loading maintenance jobs...
                       </td>
                     </tr>
                   ) : filteredJobTypes.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
+                      <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
                         No maintenance jobs found
                       </td>
                     </tr>
@@ -580,6 +581,9 @@ const MaintenanceList = () => {
                           </td>
                           <td className="px-4 py-3 text-sm">
                             <DueCell job={job} />
+                          </td>
+                          <td className="px-4 py-3 text-sm whitespace-nowrap">
+                            {job.chaseUpAt ? formatLondonDateTime(job.chaseUpAt) : "-"}
                           </td>
                           <td className="px-4 py-3 text-sm">
                             <AddressCell property={job.property} />
