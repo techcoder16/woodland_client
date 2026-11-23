@@ -25,6 +25,7 @@ const PropertyFinancePage = lazyRetry(() => import("./pages/PropertyFinancePage"
 const EditVendor = lazyRetry(() => import("./pages/EditVendor"));
 const ContractorList = lazyRetry(() => import("./pages/ContractorList"));
 const AddContractor = lazyRetry(() => import("./pages/AddContractor"));
+const ContractorDetail = lazyRetry(() => import("./pages/Contractor/ContractorDetail"));
 const EditContractor = lazyRetry(() => import("./pages/EditContractor"));
 const MaintenanceList = lazyRetry(() => import("./pages/Maintenance/MaintenanceList"));
 const MaintenanceDetail = lazyRetry(() => import("./pages/Maintenance/MaintenanceDetail"));
@@ -253,6 +254,11 @@ function App() {
                   <Route path="/contractors/add" element={
                     <ProtectedRoute route="/contractors/add">
                       <AddContractor />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/contractors/:id" element={
+                    <ProtectedRoute route="/contractors">
+                      <ContractorDetail />
                     </ProtectedRoute>
                   } />
                   <Route path="/contractors/edit" element={

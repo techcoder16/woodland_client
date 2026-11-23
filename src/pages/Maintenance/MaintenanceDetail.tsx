@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect } from "react";
 import StoredFilePreview from "@/components/StoredFilePreview";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -23,11 +23,11 @@ import { useAuth } from "@/context/AuthContext";
 import { Department } from "@/types/permissions";
 import { formatLocalDate } from "@/helper/formatLocalDate";
 import { get } from "@/helper/api";
-import { uploadFiles } from "@/helper/fileUpload";
 import { Checkbox } from "@/components/ui/checkbox";
 import { InfoHint } from "@/components/ui/hint";
 import { JOB_TYPE_OPTIONS, JOB_LOCATION_OPTIONS } from "@/helper/jobTypeOptions";
 import JobLandlordEmails from "@/components/maintenance/JobLandlordEmails";
+import JobMediaPanel from "@/components/maintenance/JobMediaPanel";
 import JobPaymentsPanel from "@/components/maintenance/JobPaymentsPanel";
 import ContractorInvoicePanel from "@/components/maintenance/ContractorInvoicePanel";
 import { formatLondonDate, formatLondonDateTime, isJobOverdue, jobDueValue } from "@/utils/maintenanceSla";
@@ -89,6 +89,7 @@ const PRIORITY_OPTIONS = [
 const RESPONSIBILITY_OPTIONS = [
   { value: "LANDLORD", label: "Landlord" },
   { value: "INTERNAL", label: "Internal" },
+  { value: "TENANT", label: "Tenant" },
 ];
 
 const REPORTED_BY_OPTIONS = [
@@ -236,27 +237,6 @@ const MaintenanceDetail = () => {
     }
   };
 
-  // "Attach media": upload straight from the job page and save, no need to open Edit.
-  const mediaInputRef = useRef<HTMLInputElement>(null);
-  const [uploadingMedia, setUploadingMedia] = useState(false);
-  const attachMedia = async (files: FileList | null) => {
-    if (!job?.id || !files?.length) return;
-    setUploadingMedia(true);
-    try {
-      const stored = await uploadFiles(Array.from(files), { category: "job-media", entityType: "jobType", entityId: job.id, propertyId: job.propertyId });
-      await dispatch(
-        updateJobType({ id: job.id, jobTypeData: { propertyId: job.propertyId, mediaFileIds: [...(job.mediaFileIds || []), ...stored.map((f) => f.id)] } })
-      ).unwrap();
-      await dispatch(fetchJobTypeById(job.id));
-      toast.success("Media attached");
-    } catch (error) {
-      toast.error(typeof error === "string" ? error : error?.message || "Failed to attach media");
-    } finally {
-      setUploadingMedia(false);
-      if (mediaInputRef.current) mediaInputRef.current.value = "";
-    }
-  };
-
   const onSubmit = async (data: EditFormData) => {
     if (!job?.id) return;
     try {
@@ -301,11 +281,11 @@ const MaintenanceDetail = () => {
     }
   };
 
-  const handleAddNote = async () => {
+  const handleAddNote = async (kind: "NOTE" | "CHASE_UP" = "NOTE") => {
     if (!id || !newNote.trim()) return;
     setSavingNote(true);
     try {
-      await addJobNote(id, newNote.trim(), "NOTE");
+      await addJobNote(id, newNote.trim(), kind);
       setNewNote("");
       await loadNotes();
     } catch (error) {
@@ -354,12 +334,13 @@ const MaintenanceDetail = () => {
           defaultValue="details"
           onValueChange={(v) => {
             if (v === "history") loadHistory();
-            if (v === "notes") loadNotes();
+            if (v === "notes" || v === "chase-up") loadNotes();
           }}
         >
           <TabsList className="flex-wrap h-auto">
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="notes">Notes</TabsTrigger>
+            <TabsTrigger value="chase-up">Chase up</TabsTrigger>
             <TabsTrigger value="invoices">Invoices</TabsTrigger>
             <TabsTrigger value="adjustment">Payments</TabsTrigger>
             <TabsTrigger value="landlord-emails">Landlord emails</TabsTrigger>
@@ -373,7 +354,7 @@ const MaintenanceDetail = () => {
                 <div className="space-y-2">
                   <Textarea rows={3} placeholder="Add a note…" value={newNote} onChange={(e) => setNewNote(e.target.value)} />
                   <div className="flex justify-end">
-                    <Button type="button" size="sm" disabled={savingNote || !newNote.trim()} onClick={handleAddNote}>
+                    <Button type="button" size="sm" disabled={savingNote || !newNote.trim()} onClick={() => handleAddNote("NOTE")}>
                       {savingNote ? "Saving…" : "Add note"}
                     </Button>
                   </div>
@@ -393,6 +374,41 @@ const MaintenanceDetail = () => {
                         </Badge>
                         <span>{n.authorName || "Staff"} · {formatLondonDateTime(n.createdAt)}</span>
                       </div>
+                      <div className="mt-1 whitespace-pre-wrap text-sm">{n.note}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="chase-up" className="space-y-4">
+            <Card className="p-4 space-y-4">
+              <div className="font-semibold">Chase up<InfoHint text="When this job is chased and what was said each time. Only chase-up notes are listed here." /></div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                <div><span className="text-muted-foreground">Chase up at:</span> {job.chaseUpAt ? formatLondonDateTime(job.chaseUpAt) : "-"}</div>
+                <div><span className="text-muted-foreground">Due:</span> {job.dueAt ? formatLondonDateTime(job.dueAt) : "-"}</div>
+                <div><span className="text-muted-foreground">Contractor:</span> {job.contractorRef?.name || "Not assigned"}</div>
+              </div>
+              {canManageMaintenance && !isJobClosed && (
+                <div className="space-y-2">
+                  <Textarea rows={3} placeholder="What did you find out? e.g. contractor will attend Thursday" value={newNote} onChange={(e) => setNewNote(e.target.value)} />
+                  <div className="flex justify-end">
+                    <Button type="button" size="sm" disabled={savingNote || !newNote.trim()} onClick={() => handleAddNote("CHASE_UP")}>
+                      {savingNote ? "Saving…" : "Add chase-up note"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {notesLoading ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">Loading...</p>
+              ) : !notes || notes.filter((n) => n.kind === "CHASE_UP").length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">No chase-up notes yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {notes.filter((n) => n.kind === "CHASE_UP").map((n) => (
+                    <div key={n.id} className="border-l-2 border-red-300 pl-3 py-0.5">
+                      <div className="text-xs text-muted-foreground">{n.authorName || "Staff"} · {formatLondonDateTime(n.createdAt)}</div>
                       <div className="mt-1 whitespace-pre-wrap text-sm">{n.note}</div>
                     </div>
                   ))}
@@ -709,30 +725,7 @@ const MaintenanceDetail = () => {
               </Card>
             )}
 
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="font-semibold">Attached media</div>
-                  {canManageMaintenance && (
-                    <>
-                      <input ref={mediaInputRef} type="file" multiple accept="image/jpeg,image/png,image/webp,application/pdf" className="hidden" onChange={(e) => void attachMedia(e.target.files)} />
-                      <Button size="sm" disabled={uploadingMedia} onClick={() => mediaInputRef.current?.click()}>{uploadingMedia ? "Uploading…" : "Attach media"}</Button>
-                    </>
-                  )}
-                </div>
-                {job.mediaFileIds && job.mediaFileIds.length > 0 ? (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {job.mediaFileIds.map((fileId, index) => (
-                      <div key={fileId} className="relative group">
-                        <StoredFilePreview fileId={fileId} alt={`Attachment ${index + 1}`} className="object-cover rounded-md shadow-sm w-full h-32" clickToOpen />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No media attached. Press Attach media to add photos or PDFs.</p>
-                )}
-              </CardContent>
-            </Card>
+            <JobMediaPanel job={job} canManage={canManageMaintenance} />
           </>
         )}
           </TabsContent>
