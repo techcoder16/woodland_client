@@ -40,7 +40,7 @@ import {
   markJobNotComplete,
   markLandlordAuthorised,
 } from "./jobActions";
-import { NotePromptDialog, VisitTimeDialog } from "./JobDialogs";
+import { NotePromptDialog } from "./JobDialogs";
 
 interface HistoryEntry {
   id: string;
@@ -715,10 +715,6 @@ const MaintenanceDetail = () => {
                     </Button>
                   </div>
                 )}
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t pt-3 text-sm">
-                  <div><span className="text-muted-foreground">Visit:</span> {formatVisit(job)}</div>
-                  {!isJobClosed && <VisitTimeDialog job={job} onSaved={refresh} />}
-                </div>
               </Card>
             )}
 

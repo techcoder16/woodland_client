@@ -106,7 +106,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
     // The Finance parent row shows if the user has access to any child route
     if (item.label === "Finance") {
-      return financeRoutes.some(route => canSee(route)) || canAccess("/transaction");
+      return financeRoutes.some(route => canSee(route));
     }
 
     // Regular users can only see items they have permission for
@@ -193,9 +193,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 const financeItems = [
                   { label: "Incoming Payments", path: "/finance/incoming-payments" },
                   { label: "Landlord Transactions", path: "/finance/landlord-transactions" },
-                  { label: "Transactions", path: "/transaction" },
                   // { label: "Woodland OCR", path: "/finance/woodland-ocr" },
-                ].filter((item) => isAdmin || (item.path === "/transaction" ? canAccess(item.path) : canSee(item.path)));
+                ].filter((item) => isAdmin || canSee(item.path));
                 // Clicking "Finance" opens the first page this user can actually see.
                 const financeHome = financeItems[0]?.path ?? path;
                 return (

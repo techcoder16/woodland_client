@@ -39,7 +39,6 @@ const TenantList = lazyRetry(() => import("./pages/TenantList"));
 const TenantDetail = lazyRetry(() => import("./pages/Tenant/TenantDetail"));
 const VendorDetail = lazyRetry(() => import("./pages/Vendor/VendorDetail"));
 const PropertyManager = lazyRetry(() => import("./pages/PropertyManager"));
-const MainTransaction = lazyRetry(() => import("./pages/MainTransaction"));
 const NewLandlordPayment = lazyRetry(() => import("./pages/Finance/NewLandlordPayment"));
 const LandlordPayments = lazyRetry(() => import("./pages/Finance/LandlordPayments"));
 const WoodlandOcr = lazyRetry(() => import("./pages/Finance/WoodlandOcr"));
@@ -156,11 +155,7 @@ function App() {
                       <PropertyManager />
                     </ProtectedRoute>
                   } />
-                  <Route path="/transaction" element={
-                    <ProtectedRoute route="/transaction">
-                      <MainTransaction />
-                    </ProtectedRoute>
-                  } />
+                  <Route path="/transaction" element={<Navigate to="/finance/landlord-payments" replace />} />
                   <Route path="/finance/landlord-payments" element={
                     <ProtectedRoute route="/finance/landlord-payments">
                       <LandlordPayments />
