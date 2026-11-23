@@ -133,12 +133,12 @@ const ChaseUp = () => {
                 <thead className="bg-background">
                   <tr className="border-b border-border/70">
                     <th className={th}>Date<InfoHint text="Date the job was logged." /></th>
+                    <th className={th}>Due<InfoHint text="When the work is due. Shown in red once it is overdue." /></th>
                     <th className={th}>Address<InfoHint text="The property this job is for." /></th>
                     <th className={th}>Description<InfoHint text="What needs doing." /></th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Resp.<InfoHint text="Who is responsible: L = Landlord, I = Internal (Woodland)." /></th>
                     <th className={th}>Priority<InfoHint text="How urgent the job is: Critical (red), High (orange), Medium (yellow), Low (pink)." /></th>
                     <th className={th}>Contractor<InfoHint text="The contractor assigned to carry out the work." /></th>
-                    <th className={th}>Due<InfoHint text="When the work is due. Shown in red once it is overdue." /></th>
                     <th className={th}>Chase up at<InfoHint text="When this job was due to be chased." /></th>
                     <th className={th}>Status<InfoHint text="Where the job is." /></th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Actions</th>
@@ -167,6 +167,7 @@ const ChaseUp = () => {
                                 {job.createdAt ? new Date(job.createdAt).toLocaleDateString() : "-"}
                               </span>
                             </td>
+                            <td className="px-4 py-3 text-sm"><DueCell job={job} /></td>
                             <td className="px-4 py-3 text-sm"><AddressCell property={job.property} /></td>
                             <td className="px-4 py-3 text-sm max-w-xs">
                               <div className="font-medium">{job.jobType}</div>
@@ -183,7 +184,6 @@ const ChaseUp = () => {
                               {job.priority ? <Badge variant="outline" className={priorityBadgeClass(job.priority)}>{job.priority}</Badge> : "-"}
                             </td>
                             <td className="px-4 py-3 text-sm">{job.contractorRef ? job.contractorRef.name : "-"}</td>
-                            <td className="px-4 py-3 text-sm"><DueCell job={job} /></td>
                             <td className="px-4 py-3 text-sm whitespace-nowrap">{job.chaseUpAt ? formatLondonDateTime(job.chaseUpAt) : "-"}</td>
                             <td className="px-4 py-3 text-sm">
                               <Badge variant="outline" className={statusBadgeClass(job.status)}>{STATUS_LABELS[job.status] ?? job.status}</Badge>
