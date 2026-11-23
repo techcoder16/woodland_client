@@ -113,12 +113,13 @@ export interface FetchJobTypesArgs {
   visitDate?: string;
   priority?: string;
   sort?: string;
+  search?: string;
 }
 
 export const fetchJobTypes = createAsyncThunk(
   "jobType/fetchJobTypes",
   async (
-    { propertyId, page, limit, status, contractorId, assigned, visitDate, priority, sort }: FetchJobTypesArgs,
+    { propertyId, page, limit, status, contractorId, assigned, visitDate, priority, sort, search }: FetchJobTypesArgs,
     { rejectWithValue }
   ) => {
     try {
@@ -133,6 +134,7 @@ export const fetchJobTypes = createAsyncThunk(
       if (visitDate) query.set("visitDate", visitDate);
       if (priority) query.set("priority", priority);
       if (sort) query.set("sort", sort);
+      if (search) query.set("search", search);
       const data = await getApi("property-management/job-type", `?${query.toString()}`, headers);
       return data;
     } catch (error: any) {

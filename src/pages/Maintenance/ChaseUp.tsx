@@ -119,8 +119,8 @@ const ChaseUp = () => {
           <div>
             <h1 className="hero-stat text-[2rem]">Chase Up</h1>
             <p className="text-sm text-muted-foreground">
-              Jobs that are due soon or overdue, earliest deadline first.
-              <InfoHint text="A job appears here once it reaches its chase-up time, or when it is overdue. Click a row to assign a contractor or add a note." />
+              Assigned jobs that are due soon or overdue, earliest deadline first.
+              <InfoHint text="A job appears here once it reaches its chase-up time, or when it is overdue. Click a row to see the chase-up notes and add one." />
             </p>
           </div>
           <Badge variant="outline" className="border-red-300 bg-red-50 text-red-700">{total} to chase</Badge>
@@ -133,28 +133,25 @@ const ChaseUp = () => {
                 <thead className="bg-background">
                   <tr className="border-b border-border/70">
                     <th className={th}>Date<InfoHint text="Date the job was logged." /></th>
-                    <th className={th}>Due<InfoHint text="When the work is due. Shown in red once it is overdue." /></th>
                     <th className={th}>Address<InfoHint text="The property this job is for." /></th>
                     <th className={th}>Description<InfoHint text="What needs doing." /></th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Resp.<InfoHint text="Who is responsible: L = Landlord, I = Internal (Woodland)." /></th>
-                    <th className={th}>Priority<InfoHint text="How urgent the job is: Critical (red), High (orange), Medium (yellow), Low (pink)." /></th>
-                    <th className={th}>Contractor<InfoHint text="The contractor assigned to carry out the work." /></th>
-                    <th className={th}>Chase up at<InfoHint text="When this job was due to be chased." /></th>
-                    <th className={th}>Status<InfoHint text="Where the job is." /></th>
+                    <th className={th}>Due date<InfoHint text="When the work is due. Shown in red once it is overdue." /></th>
+                    <th className={th}>Contractor<InfoHint text="The contractor assigned to the job. Only assigned jobs are chased." /></th>
+                    <th className={th}>Note<InfoHint text="The latest note someone added. Open a row to see all the chase-up notes." /></th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
-                    <tr><td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">Loading...</td></tr>
+                    <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">Loading...</td></tr>
                   ) : sorted.length === 0 ? (
-                    <tr><td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">Nothing to chase up right now.</td></tr>
+                    <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">Nothing to chase up right now.</td></tr>
                   ) : (
                     sorted.map((job) => {
                       const id = job.id as string;
                       const isOpen = !!open[id];
                       const draft = drafts[id] ?? "";
-                      const notes = (job.notes ?? []).slice(0, 3);
+                      const notes = (job.notes ?? []).filter((n) => n.kind === "CHASE_UP");
                       return (
                         <Fragment key={id}>
                           <tr
@@ -167,34 +164,28 @@ const ChaseUp = () => {
                                 {job.createdAt ? new Date(job.createdAt).toLocaleDateString() : "-"}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-sm"><DueCell job={job} /></td>
                             <td className="px-4 py-3 text-sm"><AddressCell property={job.property} /></td>
                             <td className="px-4 py-3 text-sm max-w-xs">
                               <div className="font-medium">{job.jobType}</div>
                               <div className="text-muted-foreground truncate">{job.description || "-"}</div>
                             </td>
-                            <td className="px-4 py-3 text-sm text-center font-semibold">
-                              {job.responsibility ? (
-                                <Hint text={job.responsibility.toUpperCase() === "LANDLORD" ? "Landlord responsible" : "Internal (Woodland) responsible"}>
-                                  <span>{job.responsibility.toUpperCase() === "LANDLORD" ? "L" : "I"}</span>
-                                </Hint>
-                              ) : "-"}
-                            </td>
-                            <td className="px-4 py-3 text-sm">
-                              {job.priority ? <Badge variant="outline" className={priorityBadgeClass(job.priority)}>{job.priority}</Badge> : "-"}
-                            </td>
+                            <td className="px-4 py-3 text-sm"><DueCell job={job} /></td>
                             <td className="px-4 py-3 text-sm">{job.contractorRef ? job.contractorRef.name : "-"}</td>
-                            <td className="px-4 py-3 text-sm whitespace-nowrap">{job.chaseUpAt ? formatLondonDateTime(job.chaseUpAt) : "-"}</td>
-                            <td className="px-4 py-3 text-sm">
-                              <Badge variant="outline" className={statusBadgeClass(job.status)}>{STATUS_LABELS[job.status] ?? job.status}</Badge>
+                            <td className="px-4 py-3 text-sm max-w-[16rem]">
+                              {(job.notes ?? [])[0] ? (
+                                <div className="truncate text-muted-foreground" title={(job.notes ?? [])[0].note}>{(job.notes ?? [])[0].note}</div>
+                              ) : <span className="text-muted-foreground">No notes</span>}
                             </td>
                             <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
-                              <Button asChild size="sm" variant="outline"><Link to={`/maintenance/${id}`}>Open</Link></Button>
+                              <div className="flex justify-center gap-2">
+                                <Button size="sm" onClick={() => setOpen((o) => ({ ...o, [id]: !o[id] }))}>{isOpen ? "Close" : "Notes"}</Button>
+                                <Button asChild size="sm" variant="outline"><Link to={`/maintenance/${id}`}>Open</Link></Button>
+                              </div>
                             </td>
                           </tr>
                           {isOpen && (
                             <tr className="border-b border-border/50 bg-muted/20">
-                              <td colSpan={10} className="px-6 py-4 space-y-4">
+                              <td colSpan={7} className="px-6 py-4 space-y-4">
                                 {canManageMaintenance && (
                                   <div>
                                     <div className="text-sm font-medium mb-2">{job.contractorId ? "Reassign contractor" : "Assign contractor"}</div>
@@ -222,9 +213,9 @@ const ChaseUp = () => {
                                 )}
 
                                 <div className="space-y-3">
-                                  <div className="text-sm font-medium">Notes</div>
+                                  <div className="text-sm font-medium">Chase-up notes</div>
                                   {notes.length === 0 ? (
-                                    <p className="text-sm text-muted-foreground">No notes yet.</p>
+                                    <p className="text-sm text-muted-foreground">No chase-up notes yet.</p>
                                   ) : (
                                     <div className="space-y-2">
                                       {notes.map((n) => (

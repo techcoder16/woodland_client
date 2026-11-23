@@ -47,11 +47,11 @@ export async function setVisit(job: JobType, visitDate: string, time: string) {
   return patchJob(job, { visitDate, time });
 }
 
-export async function emailLandlord(jobId: string, invoicePdfBase64?: string) {
+export async function emailLandlord(jobId: string, invoicePdfBase64?: string, message?: string) {
   return unwrap<{ message?: string; to?: string; status?: string }>(
     await post<{ message?: string; to?: string; status?: string }>(
       `property-management/job-type/${jobId}/email-landlord`,
-      invoicePdfBase64 ? { invoicePdfBase64 } : {},
+      { ...(invoicePdfBase64 ? { invoicePdfBase64 } : {}), ...(message ? { message } : {}) },
     ),
   );
 }
