@@ -34,7 +34,6 @@ import { formatPropertyReference } from "@/utils/propertyReference";
 import { fetchProperties, deleteProperty } from "@/redux/dataStore/propertySlice";
 import { useToast } from "@/components/ui/use-toast";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import PropertyPdf from "./Property/PropertyPdf";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 const PropertyList = () => {
@@ -44,7 +43,6 @@ const PropertyList = () => {
   const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
-  const [viewProperty, setViewProperty] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { properties, totalPages, loading } = useAppSelector(
@@ -211,7 +209,7 @@ const PropertyList = () => {
              <SquareChartGantt className="mr-2 h-4 w-4" />
              Manage
            </DropdownMenuItem>
-           <DropdownMenuItem onClick={() => setTimeout(() => setViewProperty(property), 0)}>
+           <DropdownMenuItem onClick={() => navigate(`/properties/${property.id}`, { state: { property } })}>
              <Eye className="mr-2 h-4 w-4" />
              View PDF
            </DropdownMenuItem>
@@ -275,14 +273,6 @@ const PropertyList = () => {
     </div>
     </div>
 
-      {viewProperty && (
-        <PropertyPdf
-          property={viewProperty}
-          open={!!viewProperty}
-          onOpenChange={(next: boolean) => !next && setViewProperty(null)}
-          hideTrigger
-        />
-      )}
       </DashboardLayout>
   );
 };

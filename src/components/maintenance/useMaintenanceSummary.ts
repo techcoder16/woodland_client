@@ -9,7 +9,7 @@ export interface MaintenanceSummary {
   byPriority: { Critical: number; High: number; Medium: number; Low: number };
 }
 
-const REFRESH_MS = 5 * 60 * 1000;
+const REFRESH_MS = 60 * 1000;
 
 /** Counts for the maintenance summary strip and the side-menu badge. Quietly does nothing when disabled or on error. */
 export function useMaintenanceSummary(enabled: boolean) {

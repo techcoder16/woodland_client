@@ -25,7 +25,7 @@ import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import getApi from "@/helper/getApi";
 import { post, patch } from "@/helper/api";
 import { formatPropertyReference } from "@/utils/propertyReference";
-import { exportTransactionsToExcel, exportTransactionsToPdf } from "@/utils/transactionExport";
+import { exportPaymentReviewToPdf, exportTransactionsToExcel, exportTransactionsToPdf } from "@/utils/transactionExport";
 import { useTheme } from "@/context/ThemeContext";
 import { useToast } from "@/components/ui/use-toast";
 import { InfoHint } from "@/components/ui/hint";
@@ -287,6 +287,41 @@ export default function LandlordPayments() {
   };
 
   // Emails the landlord a statement for this payment. Nothing is sent automatically on payment.
+  // Landlord statement for the open payment: rent, each adjustment (maintenance
+  // recharges, deductions, fees) and the net amount paid.
+  const downloadStatement = () => {
+    if (!selected) return;
+    const property = propertyMap.get(selected.propertyId) as any;
+    const adjustments = (selected.adjustments || []).map((a: any) => ({
+      type: a.type || "Adjustment",
+      description: a.description || undefined,
+      relatedTo: a.relatedTo || a.jobType?.jobType || undefined,
+      amount: Number(a.amount || 0),
+    }));
+    const contractualRent = Number(selected.toLandlordRentReceived || 0);
+    const adjustmentTotal = adjustments.reduce((s: number, a: { amount: number }) => s + a.amount, 0);
+    const address = [property?.addressLine1, property?.town, property?.postCode].filter(Boolean).join(", ");
+    exportPaymentReviewToPdf(
+      {
+        details: [
+          ["Reference", selected.reference || selected.tranid || "-"],
+          ["Landlord", selected.toLandlordPaidBy || "-"],
+          ["Property", `${formatPropertyReference(property?.propertyNumber)} ${address}`.trim() || "-"],
+          ["Rent period", periodLabel(selected.accountingPeriod) || "-"],
+          ["Payment date", selected.toLandlordDate ? new Date(selected.toLandlordDate).toLocaleDateString("en-GB") : "-"],
+          ["Status", STATUS_LABEL[displayStatus(selected)]],
+        ],
+        adjustments,
+        contractualRent,
+        adjustmentTotal,
+        // Same figure the emailed statement uses.
+        netPayable: selected.toLandlordNetPaid != null ? Number(selected.toLandlordNetPaid) : contractualRent + adjustmentTotal,
+      },
+      `statement-${selected.reference || selected.id}.pdf`,
+      "Landlord Statement",
+    );
+  };
+
   const emailStatement = async () => {
     if (!selected) return;
     setEmailing(true);
@@ -622,6 +657,7 @@ export default function LandlordPayments() {
               ) : (
                 <Button className="w-full" disabled={actionBusy} onClick={() => void markPaid()}>{actionBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}Mark as paid</Button>
               )}
+              <Button className="w-full" variant="outline" onClick={downloadStatement}><Download className="mr-2 h-4 w-4" />Download statement PDF</Button>
               <Button className="w-full" variant="outline" disabled={emailing} onClick={() => void emailStatement()}>{emailing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}Email statement to landlord</Button>
               <div className="flex gap-2">
                 <Button className="flex-1" variant="outline" onClick={() => navigate("/finance/landlord-payments/new")}>Create another payment</Button>

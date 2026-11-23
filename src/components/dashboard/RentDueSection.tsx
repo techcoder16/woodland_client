@@ -36,11 +36,7 @@ function RentDueList({ entries, emptyLabel }: { entries: RentDueEntry[]; emptyLa
   }
 
   const goToTransaction = (entry: RentDueEntry) => {
-    const params = new URLSearchParams({
-      prefillRent: entry.rentPerMonth,
-      prefillDue: entry.dueDate,
-    });
-    navigate(`/properties/${entry.propertyId}/finance?${params.toString()}`, {
+    navigate(`/properties/${entry.propertyId}/finance`, {
       state: { property: { id: entry.propertyId, addressLine1: entry.address } },
     });
   };

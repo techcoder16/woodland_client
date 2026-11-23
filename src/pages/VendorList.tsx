@@ -19,8 +19,6 @@ import {
   MapPin,
   Eye,
 } from "lucide-react";
-import VendorPdf from "./Vendor/VendorPdf";
-import PropertyPdf from "./Property/PropertyPdf";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,8 +50,6 @@ const VendorList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
   const [currentPage, setCurrentPage] = useState(1);
-  const [viewVendor, setViewVendor] = useState<any>(null);
-  const [viewProperty, setViewProperty] = useState<any>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -133,7 +129,7 @@ const VendorList = () => {
                       <tr
                         key={vendor.id}
                         className="border-b border-border/50 hover:bg-muted/40 transition-colors cursor-pointer"
-                        onClick={() => setViewVendor(vendor)}
+                        onClick={() => navigate(`/vendors/${vendor.id}`)}
                       >
                         <td className="px-4 py-3">
                           <div className="font-medium">
@@ -159,7 +155,7 @@ const VendorList = () => {
                                   className="flex items-start gap-1 text-left hover:underline"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setViewProperty({ ...property, vendor });
+                                    navigate(`/properties/${property.id}`);
                                   }}
                                 >
                                   <MapPin className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
@@ -185,7 +181,7 @@ const VendorList = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => setTimeout(() => setViewVendor(vendor), 0)}>
+                              <DropdownMenuItem onClick={() => navigate(`/vendors/${vendor.id}`)}>
                                 <Eye className="mr-2 h-4 w-4" />
                                 View
                               </DropdownMenuItem>
@@ -248,7 +244,7 @@ const VendorList = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setViewVendor(vendor)}>
+                          <DropdownMenuItem onClick={() => navigate(`/vendors/${vendor.id}`)}>
                             <Eye className="mr-2 h-4 w-4" />
                             View
                           </DropdownMenuItem>
@@ -302,7 +298,7 @@ const VendorList = () => {
                               key={property.id}
                               type="button"
                               className="flex items-center gap-2 text-left hover:underline"
-                              onClick={() => setViewProperty({ ...property, vendor })}
+                              onClick={() => navigate(`/properties/${property.id}`)}
                             >
                               <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                               <span className="flex-1">{property.addressLine1}</span>
@@ -350,23 +346,7 @@ const VendorList = () => {
         </div>
       </div>
 
-      {viewVendor && (
-        <VendorPdf
-          vendor={viewVendor}
-          open={!!viewVendor}
-          onOpenChange={(next: boolean) => !next && setViewVendor(null)}
-          hideTrigger
-        />
-      )}
 
-      {viewProperty && (
-        <PropertyPdf
-          property={viewProperty}
-          open={!!viewProperty}
-          onOpenChange={(next: boolean) => !next && setViewProperty(null)}
-          hideTrigger
-        />
-      )}
     </DashboardLayout>
   );
 };

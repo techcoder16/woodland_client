@@ -22,8 +22,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import EditTenant from "./EditTenant";
-import TenantPdf from "./Tenant/TenantPdf";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import { Phone } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,7 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 const TenantList = ({ property }: any) => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
 
   // Redux selectors
   const { tenants, totalPages, loading, error } = useAppSelector((state) => state.tenants);
@@ -42,7 +43,6 @@ const TenantList = ({ property }: any) => {
   const [isEditTenantModalOpen, setIsEditTenantModalOpen] = useState(false);
   const [tenantEditSet, setTenantEdit] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [viewTenant, setViewTenant] = useState<any>(null);
 
 
   useEffect(() => {
@@ -152,7 +152,7 @@ const TenantList = ({ property }: any) => {
                         <tr
                           key={tenant.id}
                           className="border-b border-border/50 hover:bg-muted/40 transition-colors cursor-pointer"
-                          onClick={() => setViewTenant(tenant)}
+                          onClick={() => navigate(`/tenants/${tenant.id}`)}
                         >
                           <td className="px-4 py-3 text-sm">{tenant.title}</td>
                           <td className="px-4 py-3 text-sm">{[tenant.FirstName, tenant.SureName].filter(Boolean).join(" ")}</td>
@@ -183,7 +183,7 @@ const TenantList = ({ property }: any) => {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => setViewTenant(tenant)}>
+                                <DropdownMenuItem onClick={() => navigate(`/tenants/${tenant.id}`)}>
                                   <Eye className="mr-2 h-4 w-4" />
                                   View
                                 </DropdownMenuItem>
@@ -251,14 +251,6 @@ const TenantList = ({ property }: any) => {
 
       </div>
 
-      {viewTenant && (
-        <TenantPdf
-          tenant={viewTenant}
-          open={!!viewTenant}
-          onOpenChange={(next: boolean) => !next && setViewTenant(null)}
-          hideTrigger
-        />
-      )}
 
     </DashboardLayout>
   );

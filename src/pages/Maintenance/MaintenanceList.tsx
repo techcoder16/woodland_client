@@ -21,7 +21,7 @@ import {
 import TextAreaField from "@/utils/TextAreaField";
 import SelectField from "@/utils/SelectedField";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Trash2, Search, CheckCircle2, Send } from "lucide-react";
+import { Plus, Trash2, Search, CheckCircle2, Send, CalendarClock } from "lucide-react";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
 import { get } from "@/helper/api";
@@ -120,14 +120,14 @@ const STATUS_FILTERS: { value: JobStatusFilter | ""; label: string }[] = [
 ];
 
 const RESPONSIBILITY_OPTIONS = [
-  { value: "Landlord", label: "Landlord" },
-  { value: "Internal", label: "Internal" },
+  { value: "LANDLORD", label: "Landlord" },
+  { value: "INTERNAL", label: "Internal" },
 ];
 
 const REPORTED_BY_OPTIONS = [
-  { value: "Tenant", label: "Tenant" },
-  { value: "Landlord", label: "Landlord" },
-  { value: "Internal", label: "Internal" },
+  { value: "TENANT", label: "Tenant" },
+  { value: "LANDLORD", label: "Landlord" },
+  { value: "INTERNAL", label: "Internal" },
 ];
 
 const PRIORITY_OPTIONS = [
@@ -172,7 +172,7 @@ const DueCell = ({ job }: { job: JobType }) => {
 const SummaryTile = ({ label, value, className = "" }: { label: string; value?: number; className?: string }) => (
   <div className={`rounded-lg border p-3 ${className}`}>
     <div className="text-xs font-medium opacity-80">{label}</div>
-    <div className="text-2xl font-semibold leading-tight">{value ?? "â€“"}</div>
+    <div className="text-2xl font-semibold leading-tight">{value ?? "–"}</div>
   </div>
 );
 
@@ -192,7 +192,7 @@ const MaintenanceList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [isCreatingJob, setIsCreatingJob] = useState(false);
 
-  // Changing the status filter always resets to page 1 â€” combined into one
+  // Changing the status filter always resets to page 1 — combined into one
   // effect (rather than a separate "reset page" effect + "fetch" effect) so
   // there's no race between two effects dispatching fetchJobTypes with two
   // different page numbers for the same filter change, where the stale
@@ -279,7 +279,7 @@ const MaintenanceList = () => {
         status: "OPEN",
       } as Omit<JobType, "id">;
 
-      // .unwrap() is required â€” createAsyncThunk never throws on its own, so
+      // .unwrap() is required — createAsyncThunk never throws on its own, so
       // without it a rejected (rejectWithValue) result was silently treated
       // as success: no error toast shown, and the dialog closed as if the
       // job had actually been created.
@@ -354,7 +354,12 @@ const MaintenanceList = () => {
     <DashboardLayout>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h1 className="hero-stat text-[2rem]">Maintenance</h1>
+          <h1 className="hero-stat text-[2rem]">Jobs</h1>
+          <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => navigate("/maintenance/jobs")}>
+            <CalendarClock className="h-4 w-4 mr-2" />
+            Visits
+          </Button>
           <Dialog open={isDialogOpen} onOpenChange={(open) => (open ? setIsDialogOpen(true) : closeDialog())}>
             <DialogTrigger asChild>
               <Button>
@@ -473,14 +478,14 @@ const MaintenanceList = () => {
                       {slaPreview ? (
                         <div className="text-muted-foreground">
                           Due: <span className="text-foreground">{formatLondonDateTime(slaPreview.dueAt)}</span>
-                          {" Â· "}
+                          {" · "}
                           Chase up: <span className="text-foreground">{formatLondonDateTime(slaPreview.chaseUpAt)}</span>
                         </div>
                       ) : (
                         <div className="text-muted-foreground">Set a priority to see when it is due.</div>
                       )}
                       <div className="text-xs text-muted-foreground">
-                        Set automatically from priority. Critical and High count office hours (Monâ€“Fri 9:00â€“17:00).
+                        Set automatically from priority. Critical and High count office hours (Mon–Fri 9:00–17:00).
                       </div>
                     </div>
 
@@ -503,22 +508,23 @@ const MaintenanceList = () => {
                     Cancel
                   </Button>
                   <Button type="submit" variant="secondary" disabled={isCreatingJob}>
-                    {isCreatingJob ? "Savingâ€¦" : "Save"}
+                    {isCreatingJob ? "Saving…" : "Save"}
                   </Button>
-                  {responsibilityValue === "Landlord" && (
+                  {responsibilityValue === "LANDLORD" && (
                     <Button
                       type="button"
                       disabled={isCreatingJob}
                       onClick={handleSubmit((data) => submitJob(data, true))}
                     >
                       <Send className="h-4 w-4 mr-2" />
-                      {isCreatingJob ? "Savingâ€¦" : "Save & inform landlord"}
+                      {isCreatingJob ? "Saving…" : "Save & inform landlord"}
                     </Button>
                   )}
                 </div>
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
@@ -568,6 +574,7 @@ const MaintenanceList = () => {
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Date<InfoHint text="Date the job was logged." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Address<InfoHint text="The property this job is for." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Description<InfoHint text="What needs doing." /></th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Resp.<InfoHint text="Who is responsible: L = Landlord, I = Internal (Woodland)." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Priority<InfoHint text="How urgent the job is: Critical (red), High (orange), Medium (yellow), Low (pink)." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Contractor<InfoHint text="The contractor assigned to carry out the work." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Due<InfoHint text="When the work is due. Shown in red once it is overdue." /></th>
@@ -578,13 +585,13 @@ const MaintenanceList = () => {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                      <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
                         Loading maintenance jobs...
                       </td>
                     </tr>
                   ) : filteredJobTypes.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                      <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
                         No maintenance jobs found
                       </td>
                     </tr>
@@ -601,6 +608,13 @@ const MaintenanceList = () => {
                           <td className="px-4 py-3 text-sm max-w-xs">
                             <div className="font-medium">{job.jobType}</div>
                             <div className="text-muted-foreground truncate">{job.description || "-"}</div>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-center font-semibold">
+                            {job.responsibility ? (
+                              <Hint text={job.responsibility.toUpperCase() === "LANDLORD" ? "Landlord responsible" : "Internal (Woodland) responsible"}>
+                                <span>{job.responsibility.toUpperCase() === "LANDLORD" ? "L" : "I"}</span>
+                              </Hint>
+                            ) : "-"}
                           </td>
                           <td className="px-4 py-3 text-sm">
                             {job.priority ? <Hint text={`${job.priority} priority`}><Badge noHint variant="outline" className={priorityBadgeClass(job.priority)}>{job.priority}</Badge></Hint> : "-"}

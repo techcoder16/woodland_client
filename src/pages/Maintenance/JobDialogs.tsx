@@ -77,7 +77,7 @@ export function VisitTimeDialog({ job, disabled, size = "sm", onSaved }: VisitTi
             Cancel
           </Button>
           <Button type="button" onClick={save} disabled={saving}>
-            {saving ? "Savingâ€¦" : "Save visit"}
+            {saving ? "Saving…" : "Save visit"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -123,7 +123,7 @@ export function NotePromptDialog({ open, onOpenChange, title, description, submi
           rows={4}
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="Write a noteâ€¦"
+          placeholder="Write a note…"
           autoFocus
         />
         <DialogFooter>
@@ -131,7 +131,7 @@ export function NotePromptDialog({ open, onOpenChange, title, description, submi
             Cancel
           </Button>
           <Button type="button" onClick={submit} disabled={saving || !note.trim()}>
-            {saving ? "Savingâ€¦" : submitLabel}
+            {saving ? "Saving…" : submitLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

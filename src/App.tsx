@@ -30,13 +30,14 @@ const MaintenanceList = lazyRetry(() => import("./pages/Maintenance/MaintenanceL
 const MaintenanceDetail = lazyRetry(() => import("./pages/Maintenance/MaintenanceDetail"));
 const MaintenanceJobs = lazyRetry(() => import("./pages/Maintenance/MaintenanceJobs"));
 const ChaseUp = lazyRetry(() => import("./pages/Maintenance/ChaseUp"));
-const LandlordCommunications = lazyRetry(() => import("./pages/Maintenance/LandlordCommunications"));
 const AddProperty = lazyRetry(() => import("./pages/AddProperty"));
 const EditProperty = lazyRetry(() => import("./pages/EditProperty"));
 const Index = lazyRetry(() => import("./pages/Index"));
 const NotFound = lazyRetry(() => import("./pages/NotFound"));
 const Settings = lazyRetry(() => import("@/pages/Settings"));
 const TenantList = lazyRetry(() => import("./pages/TenantList"));
+const TenantDetail = lazyRetry(() => import("./pages/Tenant/TenantDetail"));
+const VendorDetail = lazyRetry(() => import("./pages/Vendor/VendorDetail"));
 const PropertyManager = lazyRetry(() => import("./pages/PropertyManager"));
 const MainTransaction = lazyRetry(() => import("./pages/MainTransaction"));
 const NewLandlordPayment = lazyRetry(() => import("./pages/Finance/NewLandlordPayment"));
@@ -212,6 +213,12 @@ function App() {
                     </ProtectedRoute>
                   } />
                   
+                  <Route path="/tenants/:id" element={
+                    <ProtectedRoute route="/tenants">
+                      <TenantDetail />
+                    </ProtectedRoute>
+                  } />
+
                   <Route path="/occupancy" element={
                     <ProtectedRoute route="/occupancy">
                       <OccupancyList />
@@ -233,6 +240,11 @@ function App() {
                     </ProtectedRoute>
                   } />
 
+                  <Route path="/vendors/:id" element={
+                    <ProtectedRoute route="/vendors">
+                      <VendorDetail />
+                    </ProtectedRoute>
+                  } />
                   <Route path="/vendors/edit" element={
                     <ProtectedRoute route="/vendors/edit">
                       <EditVendor />
@@ -266,11 +278,6 @@ function App() {
                   <Route path="/maintenance/chase-up" element={
                     <ProtectedRoute route="/maintenance">
                       <ChaseUp />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/maintenance/landlord-communications" element={
-                    <ProtectedRoute route="/maintenance">
-                      <LandlordCommunications />
                     </ProtectedRoute>
                   } />
                   <Route path="/maintenance/:id" element={
