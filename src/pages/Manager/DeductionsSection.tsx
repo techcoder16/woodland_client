@@ -3,7 +3,6 @@ import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { InfoHint } from "@/components/ui/hint";
 import { useToast } from "@/components/ui/use-toast";
 import { del, get, post } from "@/helper/api";
@@ -165,12 +164,12 @@ export default function DeductionsSection({ propertyId }: { propertyId: string }
             {dueDay ? `Each deduction falls in the rent period that ends on the due day (${dueDay}).` : "Rent periods show once the Management Agreement sets a due day."}
           </p>
         </div>
-        <Button onClick={() => setAddOpen(true)}><Plus className="mr-1.5 h-4 w-4" />Add deduction</Button>
+        <Button size="icon" title="Add deduction" aria-label="Add deduction" disabled={addOpen} onClick={() => setAddOpen(true)}><Plus className="h-4 w-4" /></Button>
       </div>
 
       {loading && !deductions.length ? (
         <p className="p-6 text-sm text-muted-foreground">Loading deductions…</p>
-      ) : !deductions.length ? (
+      ) : !deductions.length && !addOpen ? (
         <div className="surface p-8 text-center text-sm text-muted-foreground">No deductions recorded for this property.</div>
       ) : (
         <div className="surface overflow-hidden">
@@ -187,6 +186,26 @@ export default function DeductionsSection({ propertyId }: { propertyId: string }
                 </tr>
               </thead>
               <tbody>
+                {addOpen && (
+                  <tr className="border-t bg-primary/5 align-top">
+                    <td />
+                    <td className="px-4 py-2"><Input type="date" aria-label="Date" value={draft.date} onChange={(e) => setDraft((f) => ({ ...f, date: e.target.value }))} /></td>
+                    <td className="px-4 py-2">
+                      <Input autoFocus aria-label="Description" value={draft.description} onChange={(e) => setDraft((f) => ({ ...f, description: e.target.value }))} placeholder="e.g. Boiler repair, unpaid fee"
+                        onKeyDown={(e) => { if (e.key === "Enter") void addDeduction(); if (e.key === "Escape") setAddOpen(false); }} />
+                    </td>
+                    <td className="px-4 py-2">
+                      <Input type="number" min="0" step="0.01" aria-label="Amount" placeholder="£0.00" className="text-right" value={draft.amount} onChange={(e) => setDraft((f) => ({ ...f, amount: e.target.value }))}
+                        onKeyDown={(e) => { if (e.key === "Enter") void addDeduction(); if (e.key === "Escape") setAddOpen(false); }} />
+                    </td>
+                    <td className="px-4 py-2 text-right" colSpan={2}>
+                      <div className="flex justify-end gap-2">
+                        <Button size="sm" variant="outline" disabled={busy} onClick={() => { setAddOpen(false); setDraft({ date: today(), description: "", amount: "" }); }}>Cancel</Button>
+                        <Button size="sm" disabled={busy} onClick={() => void addDeduction()}>Save</Button>
+                      </div>
+                    </td>
+                  </tr>
+                )}
                 {deductions.map((d) => {
                   const isOpen = expanded.has(d.id);
                   return (
@@ -239,10 +258,25 @@ export default function DeductionsSection({ propertyId }: { propertyId: string }
                                 </tbody>
                               </table>
                             )}
+                            {recording?.deduction.id === d.id && (
+                              <div className="mt-3 flex flex-wrap items-end gap-2 border-t pt-3">
+                                <div className="space-y-1"><Label className="text-xs">Date</Label><Input type="date" className="w-40" value={recording.date} onChange={(e) => setRecording((r) => (r ? { ...r, date: e.target.value } : r))} /></div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs">Amount recovered (£) · {money(d.outstanding)} outstanding</Label>
+                                  <Input type="number" min="0" step="0.01" className="w-40" max={d.outstanding} value={recording.amount} onChange={(e) => setRecording((r) => (r ? { ...r, amount: e.target.value } : r))} />
+                                </div>
+                                <div className="space-y-1 flex-1 min-w-[10rem]"><Label className="text-xs">Note</Label><Input value={recording.note} onChange={(e) => setRecording((r) => (r ? { ...r, note: e.target.value } : r))} placeholder="Optional" /></div>
+                                <Button size="sm" variant="outline" disabled={busy} onClick={() => setRecording(null)}>Cancel</Button>
+                                <Button size="sm" disabled={busy || !!recordError} onClick={() => void recordRecovery()}>Save</Button>
+                                {recordError && <p className="w-full text-sm text-destructive">{recordError}</p>}
+                              </div>
+                            )}
                             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-3">
-                              <Button size="sm" variant="outline" disabled={d.outstanding <= 0} onClick={() => setRecording({ deduction: d, date: today(), amount: String(d.outstanding), note: "" })}>
-                                <Plus className="mr-1.5 h-3.5 w-3.5" />Record
-                              </Button>
+                              {recording?.deduction.id !== d.id ? (
+                                <Button size="sm" variant="outline" disabled={d.outstanding <= 0} onClick={(e) => { e.stopPropagation(); setRecording({ deduction: d, date: today(), amount: String(d.outstanding), note: "" }); }}>
+                                  <Plus className="mr-1.5 h-3.5 w-3.5" />Record recovery
+                                </Button>
+                              ) : <span />}
                               {!d.records.length && (
                                 <Button size="sm" variant="ghost" className="text-destructive" disabled={busy} onClick={() => void deleteDeduction(d.id)}>Delete deduction</Button>
                               )}
@@ -268,39 +302,6 @@ export default function DeductionsSection({ propertyId }: { propertyId: string }
         </div>
       )}
 
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Add deduction</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-1"><Label>Date</Label><Input type="date" value={draft.date} onChange={(e) => setDraft((f) => ({ ...f, date: e.target.value }))} /></div>
-            <div className="space-y-1"><Label>Description</Label><Input value={draft.description} onChange={(e) => setDraft((f) => ({ ...f, description: e.target.value }))} placeholder="e.g. Boiler repair, unpaid fee" /></div>
-            <div className="space-y-1"><Label>Amount (£)</Label><Input type="number" min="0" step="0.01" value={draft.amount} onChange={(e) => setDraft((f) => ({ ...f, amount: e.target.value }))} /></div>
-            <Button className="w-full" disabled={busy} onClick={() => void addDeduction()}>Add deduction</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!recording} onOpenChange={(open) => { if (!open) setRecording(null); }}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Record recovery</DialogTitle></DialogHeader>
-          {recording && (
-            <div className="space-y-3">
-              <div className="rounded-lg border bg-muted/30 p-3 text-sm">
-                <p className="font-medium">{recording.deduction.description}</p>
-                <p className="text-muted-foreground">Outstanding <span className="font-semibold text-foreground">{money(recording.deduction.outstanding)}</span> of {money(recording.deduction.amount)}</p>
-              </div>
-              <div className="space-y-1"><Label>Date</Label><Input type="date" value={recording.date} onChange={(e) => setRecording((r) => (r ? { ...r, date: e.target.value } : r))} /></div>
-              <div className="space-y-1">
-                <Label>Amount recovered (£)</Label>
-                <Input type="number" min="0" step="0.01" max={recording.deduction.outstanding} value={recording.amount} onChange={(e) => setRecording((r) => (r ? { ...r, amount: e.target.value } : r))} />
-              </div>
-              <div className="space-y-1"><Label>Note</Label><Input value={recording.note} onChange={(e) => setRecording((r) => (r ? { ...r, note: e.target.value } : r))} placeholder="Optional" /></div>
-              {recordError && <p className="text-sm text-destructive">{recordError}</p>}
-              <Button className="w-full" disabled={busy || !!recordError} onClick={() => void recordRecovery()}>Record recovery</Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

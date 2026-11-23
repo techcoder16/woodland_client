@@ -31,16 +31,14 @@ import {
   Landmark,
   ShieldCheck,
   ClipboardList,
-  CalendarClock,
-  Mail,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import logo from "@/assets/logo.png";
 import { useMaintenanceSummary } from "@/components/maintenance/useMaintenanceSummary";
 
 // Maintenance pages that live under /maintenance/ but are not a single job
-// (/maintenance/:id). "Requests" stays highlighted only for the job pages.
-const MAINTENANCE_SUB_ROUTES = ["/maintenance/jobs", "/maintenance/chase-up", "/maintenance/landlord-communications"];
+// (/maintenance/:id). "Jobs" stays highlighted for the job list, visits and job pages.
+const MAINTENANCE_SUB_ROUTES = ["/maintenance/chase-up"];
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -138,13 +136,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <SidebarMenu className="px-2 mt-4 space-y-0.5">
             {menuItems.map(({ label, path, icon: Icon }) => {
               if (label === "Maintenance") {
-                // Requests, Jobs, Chase Up and Landlord Communications share the
-                // /maintenance permission; Contractors has its own.
+                // Jobs and Chase Up share the /maintenance permission; Contractors has its own.
                 const maintenanceItems: { label: string; path: string; perm: string; icon: typeof ClipboardList; badge?: number }[] = [
-                  { label: "Requests", path: "/maintenance", perm: "/maintenance", icon: ClipboardList },
-                  { label: "Jobs", path: "/maintenance/jobs", perm: "/maintenance", icon: CalendarClock },
+                  { label: "Jobs", path: "/maintenance", perm: "/maintenance", icon: ClipboardList },
                   { label: "Chase Up", path: "/maintenance/chase-up", perm: "/maintenance", icon: Wrench, badge: maintenanceSummary?.chaseUp ?? 0 },
-                  { label: "Landlord Communications", path: "/maintenance/landlord-communications", perm: "/maintenance", icon: Mail },
                   { label: "Contractors", path: "/contractors", perm: "/contractors", icon: Users2 },
                 ].filter((item) => isAdmin || canAccess(item.perm));
                 const isMaintenanceChildActive = (itemPath: string) => {

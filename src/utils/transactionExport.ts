@@ -100,12 +100,12 @@ export type PaymentReview = {
   netPayable: number;
 };
 
-export function exportPaymentReviewToPdf(review: PaymentReview, filename = "woodland-landlord-payment.pdf") {
+export function exportPaymentReviewToPdf(review: PaymentReview, filename = "woodland-landlord-payment.pdf", title = "Landlord Payment — Review") {
   const doc = new jsPDF();
 
   doc.addImage(logo, "PNG", 14, 10, 40, 16);
   doc.setFontSize(14);
-  doc.text("Landlord Payment — Review", 60, 18);
+  doc.text(title, 60, 18);
   doc.setFontSize(9);
   doc.setTextColor(120);
   doc.text(`Generated ${new Date().toLocaleString("en-GB")}`, 60, 24);

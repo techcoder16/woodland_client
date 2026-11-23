@@ -148,11 +148,7 @@ export function Header() {
   const handleResultClick = (result: GlobalSearchResult) => {
     setSearchOpen(false);
     setSearchTerm("");
-    if (result.type === "property") {
-      navigate("/properties");
-    } else {
-      navigate("/vendors");
-    }
+    navigate(result.type === "property" ? `/properties/${result.id}` : `/vendors/${result.id}`);
   };
 
   return (

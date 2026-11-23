@@ -104,7 +104,7 @@ const MaintenanceJobs = () => {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="hero-stat text-[2rem]">Jobs</h1>
+            <h1 className="hero-stat text-[2rem]">Visits</h1>
             <p className="text-sm text-muted-foreground">Jobs with a contractor assigned, by visit day.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -160,7 +160,7 @@ const MaintenanceJobs = () => {
                           </td>
                           <td className="px-4 py-3 text-sm min-w-[12rem] max-w-[18rem]">{formatJobAddress(job.property)}</td>
                           <td className="px-4 py-3 text-sm max-w-xs">
-                            <div className="font-medium">{job.jobType}{job.location ? ` Â· ${job.location}` : ""}</div>
+                            <div className="font-medium">{job.jobType}{job.location ? ` · ${job.location}` : ""}</div>
                             <div className="text-muted-foreground truncate">{job.description || "-"}</div>
                           </td>
                           <td className="px-4 py-3 text-sm">

@@ -116,7 +116,7 @@ const ChaseUp = () => {
                         {overdue && <Badge variant="destructive">Overdue</Badge>}
                       </div>
                       <div className="font-semibold">
-                        {job.jobType}{job.location ? ` Â· ${job.location}` : ""}
+                        {job.jobType}{job.location ? ` · ${job.location}` : ""}
                       </div>
                       <div className="text-sm text-muted-foreground">{formatJobAddress(job.property)}</div>
                       {job.description && <div className="text-sm">{job.description}</div>}
@@ -164,7 +164,7 @@ const ChaseUp = () => {
                         {latestNotes.map((n) => (
                           <div key={n.id} className="rounded-md bg-background/70 border px-3 py-2 text-sm">
                             <div className="text-xs text-muted-foreground">
-                              {n.kind === "CHASE_UP" ? "Chase-up" : "Note"} Â· {n.authorName || "Staff"} Â· {formatLondonDateTime(n.createdAt)}
+                              {n.kind === "CHASE_UP" ? "Chase-up" : "Note"} · {n.authorName || "Staff"} · {formatLondonDateTime(n.createdAt)}
                             </div>
                             <div className="whitespace-pre-wrap">{n.note}</div>
                           </div>
@@ -181,7 +181,7 @@ const ChaseUp = () => {
                         />
                         <div className="flex justify-end">
                           <Button size="sm" disabled={savingId === job.id || !draft.trim()} onClick={() => handleAddNote(job)}>
-                            {savingId === job.id ? "Savingâ€¦" : "Add chase-up note"}
+                            {savingId === job.id ? "Saving…" : "Add chase-up note"}
                           </Button>
                         </div>
                       </div>

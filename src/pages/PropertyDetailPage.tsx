@@ -13,7 +13,6 @@ import PropertyFiles from "./Manager/PropertyFiles";
 import RentDueSection from "./Manager/RentDueSection";
 import DeductionsSection from "./Manager/DeductionsSection";
 import PropertyContractorInvoices from "./Manager/PropertyContractorInvoices";
-import TransactionPage from "./Manager/TransactionPage";
 import { useAuth } from "@/context/AuthContext";
 import { Hint } from "@/components/ui/hint";
 import { StaffRole } from "@/types/permissions";
@@ -52,7 +51,7 @@ export default function PropertyDetailPage() {
   // Only admins decide whether a draft property goes live.
   const canPublish = user?.role === StaffRole.SuperUser || user?.role === StaffRole.AdminUser;
   const [publishing, setPublishing] = useState(false);
-  const [financeView, setFinanceView] = useState<"rent-due" | "deductions" | "transactions">("rent-due");
+  const [financeView, setFinanceView] = useState<"rent-due" | "deductions">("rent-due");
   const requestedTab = searchParams.get("tab") || "overview";
   const tab = TABS.some((t) => t.key === requestedTab) ? requestedTab : "overview";
 
@@ -174,11 +173,9 @@ export default function PropertyDetailPage() {
               <div className="mb-4 flex gap-2 border-b pb-3">
                 <Button size="sm" variant={financeView === "rent-due" ? "default" : "outline"} onClick={() => setFinanceView("rent-due")}>Rent Due</Button>
                 <Button size="sm" variant={financeView === "deductions" ? "default" : "outline"} onClick={() => setFinanceView("deductions")}>Deductions</Button>
-                <Button size="sm" variant={financeView === "transactions" ? "default" : "outline"} onClick={() => setFinanceView("transactions")}>Transactions</Button>
               </div>
               {financeView === "rent-due" && <RentDueSection propertyId={property.id} />}
               {financeView === "deductions" && <DeductionsSection propertyId={property.id} />}
-              {financeView === "transactions" && <TransactionPage propertyId={property.id} property={property} />}
             </>
           ) : (
             <div className="surface p-10 text-center text-sm text-muted-foreground">Only finance staff can view this property's payment records.</div>

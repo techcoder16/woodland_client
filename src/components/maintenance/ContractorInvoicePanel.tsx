@@ -39,7 +39,7 @@ const toNumber = (value: string) => {
   return value === "" || isNaN(n) ? 0 : n;
 };
 
-const money = (n?: number | null) => `Â£${Number(n ?? 0).toFixed(2)}`;
+const money = (n?: number | null) => `£${Number(n ?? 0).toFixed(2)}`;
 
 const blobToBase64 = (blob: Blob) =>
   new Promise<string>((resolve, reject) => {
@@ -172,13 +172,13 @@ export default function ContractorInvoicePanel({ job, canManage, onChanged }: Co
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-muted-foreground" htmlFor="contractorCost">
-              Contractor cost (Â£)<InfoHint quiet text="What the contractor charges Woodland for the work." />
+              Contractor cost (£)<InfoHint quiet text="What the contractor charges Woodland for the work." />
             </label>
             <Input id="contractorCost" type="number" step="0.01" min="0" disabled={disabled} {...register("totalCost")} />
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-muted-foreground" htmlFor="otherCost">
-              Other cost (Â£)<InfoHint quiet text="Materials, parts or other costs on top of the contractor's labour." />
+              Other cost (£)<InfoHint quiet text="Materials, parts or other costs on top of the contractor's labour." />
             </label>
             <Input id="otherCost" type="number" step="0.01" min="0" disabled={disabled} {...register("otherCost")} />
           </div>
@@ -222,7 +222,7 @@ export default function ContractorInvoicePanel({ job, canManage, onChanged }: Co
               min="0"
               className="max-w-[12rem]"
               disabled={disabled}
-              placeholder={markupType === "percent" ? "e.g. 20 (%)" : "e.g. 15.00 (Â£)"}
+              placeholder={markupType === "percent" ? "e.g. 20 (%)" : "e.g. 15.00 (£)"}
               {...register("markupValue")}
             />
           </div>
@@ -262,7 +262,7 @@ export default function ContractorInvoicePanel({ job, canManage, onChanged }: Co
           {canManage && (
             <div className="flex justify-end">
               <Button type="button" disabled={saving || !isDirty} onClick={save}>
-                {saving ? "Savingâ€¦" : "Save"}
+                {saving ? "Saving…" : "Save"}
               </Button>
             </div>
           )}
@@ -279,7 +279,7 @@ export default function ContractorInvoicePanel({ job, canManage, onChanged }: Co
         {canManage && (
           <div className="flex flex-wrap gap-2">
             <Button type="button" disabled={generating || job.totalCharged == null} onClick={generateInvoice}>
-              <FileText className="h-4 w-4 mr-2" /> {generating ? "Generatingâ€¦" : "Generate invoice"}
+              <FileText className="h-4 w-4 mr-2" /> {generating ? "Generating…" : "Generate invoice"}
             </Button>
           </div>
         )}
@@ -293,7 +293,7 @@ export default function ContractorInvoicePanel({ job, canManage, onChanged }: Co
                   <div className="font-medium">{invoiceRef(job)}.pdf</div>
                   <div className="text-muted-foreground">
                     Generated {formatLondonDateTime(job.landlordInvoiceGeneratedAt)}
-                    {job.landlordInformedAt && ` Â· Emailed ${formatLondonDateTime(job.landlordInformedAt)}`}
+                    {job.landlordInformedAt && ` · Emailed ${formatLondonDateTime(job.landlordInformedAt)}`}
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -305,7 +305,7 @@ export default function ContractorInvoicePanel({ job, canManage, onChanged }: Co
                   </Button>
                   {canManage && (
                     <Button type="button" size="sm" disabled={emailing || !landlordEmail} onClick={emailInvoice}>
-                      <Mail className="h-4 w-4 mr-2" /> {emailing ? "Sendingâ€¦" : "Email invoice to landlord"}
+                      <Mail className="h-4 w-4 mr-2" /> {emailing ? "Sending…" : "Email invoice to landlord"}
                     </Button>
                   )}
                 </div>

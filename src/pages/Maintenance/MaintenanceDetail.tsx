@@ -26,6 +26,7 @@ import { get } from "@/helper/api";
 import { Checkbox } from "@/components/ui/checkbox";
 import { InfoHint } from "@/components/ui/hint";
 import { JOB_TYPE_OPTIONS, JOB_LOCATION_OPTIONS } from "@/helper/jobTypeOptions";
+import JobLandlordEmails from "@/components/maintenance/JobLandlordEmails";
 import ContractorInvoicePanel from "@/components/maintenance/ContractorInvoicePanel";
 import { formatLondonDate, formatLondonDateTime, isJobOverdue, jobDueValue } from "@/utils/maintenanceSla";
 import {
@@ -84,15 +85,19 @@ const PRIORITY_OPTIONS = [
 ];
 
 const RESPONSIBILITY_OPTIONS = [
-  { value: "Landlord", label: "Landlord" },
-  { value: "Internal", label: "Internal" },
+  { value: "LANDLORD", label: "Landlord" },
+  { value: "INTERNAL", label: "Internal" },
 ];
 
 const REPORTED_BY_OPTIONS = [
-  { value: "Tenant", label: "Tenant" },
-  { value: "Landlord", label: "Landlord" },
-  { value: "Internal", label: "Internal" },
+  { value: "TENANT", label: "Tenant" },
+  { value: "LANDLORD", label: "Landlord" },
+  { value: "INTERNAL", label: "Internal" },
 ];
+
+/** Stored values are upper case; show them as words. */
+const partyLabel = (value?: string | null) =>
+  value ? value.charAt(0).toUpperCase() + value.slice(1).toLowerCase() : "-";
 
 const formatAddress = (property?: JobType["property"]) => {
   if (!property) return "-";
@@ -101,7 +106,7 @@ const formatAddress = (property?: JobType["property"]) => {
     .join(", ");
 };
 
-const money = (n: number) => `Â£${n.toFixed(2)}`;
+const money = (n: number) => `£${n.toFixed(2)}`;
 
 const MaintenanceDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -113,9 +118,6 @@ const MaintenanceDetail = () => {
   const canManageMaintenance = isDepartmentAdmin(Department.Maintenance);
 
   const [isEditing, setIsEditing] = useState(false);
-  const [marginType, setMarginType] = useState<"percent" | "amount">("percent");
-  const [marginValue, setMarginValue] = useState("");
-  const [isSavingMargin, setIsSavingMargin] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[] | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [notes, setNotes] = useState<JobNote[] | null>(null);
@@ -180,8 +182,8 @@ const MaintenanceDetail = () => {
         location: job.location || "",
         description: job.description,
         priority: job.priority || "",
-        responsibility: job.responsibility || "",
-        reportedBy: job.reportedBy || "",
+        responsibility: (job.responsibility || "").toUpperCase(),
+        reportedBy: (job.reportedBy || "").toUpperCase(),
         schedule: job.schedule || "",
         time: job.time || "",
         thingsToDo: job.thingsToDo || "",
@@ -192,12 +194,12 @@ const MaintenanceDetail = () => {
   }, [job, reset]);
 
   // Once a contractor is assigned, reassigning is locked until the job is
-  // awaiting review/completed, or its due time has passed â€” mirrors the
+  // awaiting review/completed, or its due time has passed — mirrors the
   // backend rule in job-type-note.service.ts exactly.
   const isOverdue = !!job && isJobOverdue(job);
   const isAwaitingReviewOrDone = job?.status === "CONTRACTOR_DONE" || job?.status === "COMPLETED";
   const canReassignContractor = !job?.contractorId || isAwaitingReviewOrDone || isOverdue;
-  // COMPLETED/CANCELLED are terminal â€” mirrors the backend's hard lock in
+  // COMPLETED/CANCELLED are terminal — mirrors the backend's hard lock in
   // updateJobType, which now rejects any edit to a closed job outright.
   const isJobClosed = job?.status === "COMPLETED" || job?.status === "CANCELLED";
 
@@ -210,7 +212,7 @@ const MaintenanceDetail = () => {
     try {
       await dispatch(updateJobType({ id: job.id, jobTypeData: { propertyId: job.propertyId, deductible } })).unwrap();
       await dispatch(fetchJobTypeById(job.id));
-      toast.success(deductible ? "Marked as deductible from landlord" : "Marked as not deductible â€” hidden from landlord transactions");
+      toast.success(deductible ? "Marked as deductible from landlord" : "Marked as not deductible — hidden from landlord transactions");
     } catch (error) {
       toast.error(typeof error === "string" ? error : error?.message || "Failed to update");
     } finally {
@@ -235,7 +237,7 @@ const MaintenanceDetail = () => {
   const onSubmit = async (data: EditFormData) => {
     if (!job?.id) return;
     try {
-      // .unwrap() is required â€” createAsyncThunk never throws on its own,
+      // .unwrap() is required — createAsyncThunk never throws on its own,
       // so without it a rejected update (e.g. the backend's closed-job
       // lock) was silently treated as success here.
       await dispatch(
@@ -273,34 +275,6 @@ const MaintenanceDetail = () => {
       toast.error(error?.message || "Something went wrong");
     } finally {
       setIsActing(false);
-    }
-  };
-
-  const handleApplyMargin = async () => {
-    if (!job?.id) return;
-    const value = Number(marginValue);
-    if (!marginValue || isNaN(value) || value < 0) {
-      toast.error("Enter a valid margin value");
-      return;
-    }
-    setIsSavingMargin(true);
-    try {
-      await dispatch(
-        updateJobType({
-          id: job.id,
-          jobTypeData: {
-            propertyId: job.propertyId,
-            ...(marginType === "percent" ? { marginPercent: value } : { marginAmount: value }),
-          },
-        })
-      ).unwrap();
-      await dispatch(fetchJobTypeById(job.id));
-      toast.success("Landlord cost updated");
-      setMarginValue("");
-    } catch (error) {
-      toast.error(typeof error === "string" ? error : error?.message || "Failed to apply margin");
-    } finally {
-      setIsSavingMargin(false);
     }
   };
 
@@ -363,8 +337,9 @@ const MaintenanceDetail = () => {
           <TabsList className="flex-wrap h-auto">
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="notes">Notes</TabsTrigger>
-            <TabsTrigger value="payments">Payments</TabsTrigger>
             <TabsTrigger value="invoices">Invoices</TabsTrigger>
+            <TabsTrigger value="adjustment">Adjustment</TabsTrigger>
+            <TabsTrigger value="landlord-emails">Landlord emails</TabsTrigger>
             {canManageMaintenance && <TabsTrigger value="history">History</TabsTrigger>}
           </TabsList>
 
@@ -373,10 +348,10 @@ const MaintenanceDetail = () => {
               <div className="font-semibold">Notes<InfoHint text="Office notes and chase-up notes for this job, newest first." /></div>
               {canManageMaintenance && !isJobClosed && (
                 <div className="space-y-2">
-                  <Textarea rows={3} placeholder="Add a noteâ€¦" value={newNote} onChange={(e) => setNewNote(e.target.value)} />
+                  <Textarea rows={3} placeholder="Add a note…" value={newNote} onChange={(e) => setNewNote(e.target.value)} />
                   <div className="flex justify-end">
                     <Button type="button" size="sm" disabled={savingNote || !newNote.trim()} onClick={handleAddNote}>
-                      {savingNote ? "Savingâ€¦" : "Add note"}
+                      {savingNote ? "Saving…" : "Add note"}
                     </Button>
                   </div>
                 </div>
@@ -393,7 +368,7 @@ const MaintenanceDetail = () => {
                         <Badge variant="outline" className={n.kind === "CHASE_UP" ? "border-red-300 bg-red-50 text-red-700" : ""}>
                           {n.kind === "CHASE_UP" ? "Chase-up" : "Note"}
                         </Badge>
-                        <span>{n.authorName || "Staff"} Â· {formatLondonDateTime(n.createdAt)}</span>
+                        <span>{n.authorName || "Staff"} · {formatLondonDateTime(n.createdAt)}</span>
                       </div>
                       <div className="mt-1 whitespace-pre-wrap text-sm">{n.note}</div>
                     </div>
@@ -403,99 +378,61 @@ const MaintenanceDetail = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="payments" className="space-y-4">
-            <Card className="p-4">
-              <div className="font-semibold mb-3">Cost breakdown</div>
-              {job.totalCost == null ? (
-                <p className="text-sm text-muted-foreground">Waiting on the contractor to enter their cost.</p>
-              ) : (
-                <div className="text-sm">
-                  <table className="w-full">
-                    <tbody>
+          <TabsContent value="adjustment" className="space-y-4">
+            <Card className="p-4 space-y-3">
+              <div className="font-semibold">Landlord adjustment<InfoHint text="Nothing is paid from here. When this job is deductible, its chargeable total is taken off the landlord's rent payment as an adjustment. Costs and markup are set on the Invoices tab." /></div>
+              <label className="flex items-start gap-3">
+                <Checkbox
+                  checked={job.deductible !== false}
+                  disabled={!canManageMaintenance || isSavingDeductible}
+                  onCheckedChange={(v) => handleToggleDeductible(v === true)}
+                />
+                <span>
+                  <span className="font-medium block">Deductible from landlord</span>
+                  <span className="text-sm text-muted-foreground">
+                    {job.deductible !== false
+                      ? "The chargeable total is deducted from the landlord's rent payment as an adjustment."
+                      : "Not deductible: Woodland absorbs this cost and nothing is deducted from the landlord."}
+                  </span>
+                </span>
+              </label>
+              <div className="border-t pt-3 text-sm">
+                <table className="w-full">
+                  <tbody>
+                    <tr className="border-b">
+                      <td className="py-1.5 text-muted-foreground">Contractor cost</td>
+                      <td className="py-1.5 text-right font-medium">{job.totalCost != null ? money(job.totalCost) : "Not entered yet"}</td>
+                    </tr>
+                    {job.otherCost != null && (
                       <tr className="border-b">
-                        <td className="py-1.5 text-muted-foreground">Contractor cost</td>
-                        <td className="py-1.5 text-right font-medium">{money(job.totalCost)}</td>
+                        <td className="py-1.5 text-muted-foreground">Other cost</td>
+                        <td className="py-1.5 text-right font-medium">{money(job.otherCost)}</td>
                       </tr>
-                      {job.marginPercent != null && (
-                        <tr className="border-b">
-                          <td className="py-1.5 text-muted-foreground">
-                            Markup ({job.marginPercent}% of {money(job.totalCost)})
-                          </td>
-                          <td className="py-1.5 text-right font-medium">
-                            + {money(job.totalCost * (job.marginPercent / 100))}
-                          </td>
-                        </tr>
-                      )}
-                      {job.marginAmount != null && (
-                        <tr className="border-b">
-                          <td className="py-1.5 text-muted-foreground">Markup (flat amount)</td>
-                          <td className="py-1.5 text-right font-medium">+ {money(job.marginAmount)}</td>
-                        </tr>
-                      )}
-                      <tr>
-                        <td className="py-1.5 font-semibold">Landlord cost</td>
-                        <td className="py-1.5 text-right font-semibold">
-                          {job.totalCharged != null ? money(job.totalCharged) : "Not set yet"}
-                        </td>
+                    )}
+                    {job.marginPercent != null && (
+                      <tr className="border-b">
+                        <td className="py-1.5 text-muted-foreground">Markup ({job.marginPercent}%)</td>
+                        <td className="py-1.5 text-right font-medium">Included</td>
                       </tr>
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                    )}
+                    {job.marginAmount != null && (
+                      <tr className="border-b">
+                        <td className="py-1.5 text-muted-foreground">Markup (flat)</td>
+                        <td className="py-1.5 text-right font-medium">+ {money(job.marginAmount)}</td>
+                      </tr>
+                    )}
+                    <tr>
+                      <td className="py-1.5 font-semibold">{job.deductible !== false ? "Adjustment to landlord" : "Chargeable total"}</td>
+                      <td className="py-1.5 text-right font-semibold">{job.totalCharged != null ? money(job.totalCharged) : "Not set yet"}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </Card>
+          </TabsContent>
 
-            {canManageMaintenance && (
-              <Card className="p-4">
-                <div className="font-semibold mb-3">Set landlord markup</div>
-                {isJobClosed ? (
-                  <p className="text-sm text-muted-foreground">
-                    This job is {job.status === "COMPLETED" ? "completed" : "cancelled"} and can no longer be edited.
-                  </p>
-                ) : job.totalCost == null ? (
-                  <p className="text-sm text-muted-foreground">
-                    Waiting on the contractor to enter their cost before a markup can be applied.
-                  </p>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant={marginType === "percent" ? "default" : "outline"}
-                        onClick={() => setMarginType("percent")}
-                      >
-                        Percentage
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant={marginType === "amount" ? "default" : "outline"}
-                        onClick={() => setMarginType("amount")}
-                      >
-                        Flat amount
-                      </Button>
-                    </div>
-                    <div className="flex items-center gap-2 max-w-xs">
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
-                        placeholder={marginType === "percent" ? "e.g. 20 (%)" : "e.g. 15.00 (Â£)"}
-                        value={marginValue}
-                        onChange={(e) => setMarginValue(e.target.value)}
-                      />
-                      <Button type="button" size="sm" disabled={isSavingMargin} onClick={handleApplyMargin}>
-                        Apply
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Only one of percentage or flat amount can be active â€” applying one clears the other.
-                    </p>
-                  </div>
-                )}
-              </Card>
-            )}
+          <TabsContent value="landlord-emails" className="space-y-4">
+            <JobLandlordEmails jobId={job.id as string} reloadKey={job.landlordInformedAt} />
           </TabsContent>
 
           <TabsContent value="invoices" className="space-y-4">
@@ -516,7 +453,7 @@ const MaintenanceDetail = () => {
                       <div key={entry.id} className="border-l-2 border-border pl-3 py-0.5">
                         <div className="text-sm">{entry.description}</div>
                         <div className="text-xs text-muted-foreground">
-                          {entry.actorName ? `${entry.actorName} (${entry.actorKind})` : entry.actorKind} â€”{" "}
+                          {entry.actorName ? `${entry.actorName} (${entry.actorKind})` : entry.actorKind} —{" "}
                           {new Date(entry.createdAt).toLocaleString()}
                         </div>
                       </div>
@@ -528,24 +465,6 @@ const MaintenanceDetail = () => {
           )}
 
           <TabsContent value="details" className="space-y-6">
-            <Card className="p-4">
-              <label className="flex items-start gap-3">
-                <Checkbox
-                  checked={job.deductible !== false}
-                  disabled={!canManageMaintenance || isSavingDeductible}
-                  onCheckedChange={(v) => handleToggleDeductible(v === true)}
-                />
-                <span>
-                  <span className="font-semibold block">Deductible from landlord<InfoHint text="Ticked: the cost of this job can be charged back to the landlord on their payment transaction. Unticked: Woodland absorbs it and it never appears on the landlord's transactions." /></span>
-                  <span className="text-sm text-muted-foreground">
-                    {job.deductible !== false
-                      ? "This job's cost can be recharged on the landlord's transactions."
-                      : "Not deductible â€” this job won't appear in the landlord's transactions."}
-                  </span>
-                </span>
-              </label>
-            </Card>
-
         {isEditing ? (
           <Card className="p-6">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -665,7 +584,7 @@ const MaintenanceDetail = () => {
 
             {canManageMaintenance && !isJobClosed && (
               <Card className="p-4 space-y-3">
-                <div className="font-semibold">Landlord authorisation<InfoHint text="Inform the landlord about this job by email. They must authorise the work before it goes ahead. Nothing is sent automatically." /></div>
+                <div className="font-semibold">Landlord approval<InfoHint text="For jobs the landlord is responsible for: email the landlord about the job. The job then waits as Waiting Authorisation until the landlord says yes; press Landlord authorised when they do. Nothing is sent automatically." /></div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
                     type="button"
@@ -713,8 +632,8 @@ const MaintenanceDetail = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1 text-sm">
                 <div><span className="text-muted-foreground">Type:</span> {job.jobType}</div>
                 <div><span className="text-muted-foreground">Location:</span> {job.location || "-"}</div>
-                <div><span className="text-muted-foreground">Responsibility:</span> {job.responsibility || "-"}</div>
-                <div><span className="text-muted-foreground">Reported by:</span> {job.reportedBy || "-"}</div>
+                <div><span className="text-muted-foreground">Responsibility:</span> {partyLabel(job.responsibility)}</div>
+                <div><span className="text-muted-foreground">Reported by:</span> {partyLabel(job.reportedBy)}</div>
                 <div className="md:col-span-2"><span className="text-muted-foreground">Description:</span> {job.description}</div>
                 {job.thingsToDo && <div className="md:col-span-2"><span className="text-muted-foreground">Notes:</span> {job.thingsToDo}</div>}
                 <div><span className="text-muted-foreground">Due:</span> <span className={priorityTextClass(job.priority, isOverdue)}>{job.dueAt ? formatLondonDateTime(job.dueAt) : due ? formatLondonDate(due) : "-"}</span></div>
@@ -724,7 +643,7 @@ const MaintenanceDetail = () => {
                 {job.dateDone && <div><span className="text-muted-foreground">Done:</span> {job.dateDone}</div>}
               </div>
 
-              {/* Next-step hint row â€” read only, no edit needed to see what's pending */}
+              {/* Next-step hint row — read only, no edit needed to see what's pending */}
               <div className="mt-3 pt-3 border-t text-sm text-muted-foreground">
                 {job.status === "OPEN" && "Next step: inform the landlord (if they are responsible) or assign a contractor."}
                 {job.status === "WAITING_AUTHORIZATION" && "Next step: waiting for the landlord to authorise the work."}
@@ -835,11 +754,11 @@ const MaintenanceDetail = () => {
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <dt className="text-muted-foreground">Responsibility</dt>
-                  <dd className="font-medium">{job.responsibility || "-"}</dd>
+                  <dd className="font-medium">{partyLabel(job.responsibility)}</dd>
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <dt className="text-muted-foreground">Reported by</dt>
-                  <dd className="font-medium">{job.reportedBy || "-"}</dd>
+                  <dd className="font-medium">{partyLabel(job.reportedBy)}</dd>
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <dt className="text-muted-foreground">Priority</dt>
