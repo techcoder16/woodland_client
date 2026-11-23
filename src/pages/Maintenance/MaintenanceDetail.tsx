@@ -338,7 +338,7 @@ const MaintenanceDetail = () => {
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="notes">Notes</TabsTrigger>
             <TabsTrigger value="invoices">Invoices</TabsTrigger>
-            <TabsTrigger value="adjustment">Adjustment</TabsTrigger>
+            <TabsTrigger value="adjustment">Payments</TabsTrigger>
             <TabsTrigger value="landlord-emails">Landlord emails</TabsTrigger>
             {canManageMaintenance && <TabsTrigger value="history">History</TabsTrigger>}
           </TabsList>
@@ -380,7 +380,7 @@ const MaintenanceDetail = () => {
 
           <TabsContent value="adjustment" className="space-y-4">
             <Card className="p-4 space-y-3">
-              <div className="font-semibold">Landlord adjustment<InfoHint text="Nothing is paid from here. When this job is deductible, its chargeable total is taken off the landlord's rent payment as an adjustment. Costs and markup are set on the Invoices tab." /></div>
+              <div className="font-semibold">Payments<InfoHint text="Nothing is paid from here. When this job is deductible, its chargeable total is taken off the landlord's rent payment as an adjustment. Costs and markup are set on the Invoices tab." /></div>
               <label className="flex items-start gap-3">
                 <Checkbox
                   checked={job.deductible !== false}

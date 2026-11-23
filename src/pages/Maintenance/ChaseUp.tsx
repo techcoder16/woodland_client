@@ -17,6 +17,9 @@ import { Department } from "@/types/permissions";
 import { priorityBadgeClass, priorityRowClass, priorityTextClass, statusBadgeClass } from "@/utils/priorityStyle";
 import { formatLondonDateTime, isJobOverdue, jobDueValue } from "@/utils/maintenanceSla";
 import { addJobNote, formatJobAddress, formatVisit } from "./jobActions";
+import ContractorPicker from "@/utils/ContractorPicker";
+import { useAppDispatch } from "@/redux/reduxHooks";
+import { updateJobType } from "@/redux/dataStore/jobTypeSlice";
 
 const STATUS_LABELS: Partial<Record<ReportingStatus, string>> = {
   OPEN: "Open",
@@ -44,6 +47,9 @@ const ChaseUp = () => {
   const [loading, setLoading] = useState(true);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [pendingContractor, setPendingContractor] = useState<Record<string, string>>({});
+  const [assigningId, setAssigningId] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -79,6 +85,26 @@ const ChaseUp = () => {
       toast.error(error?.message || "Failed to add the note");
     } finally {
       setSavingId(null);
+    }
+  };
+
+  // Same rule as the job page and the server: a contractor can be (re)assigned when
+  // none is set, the contractor has finished, or the job is overdue.
+  const canAssign = (job: JobType) => !job.contractorId || job.status === "CONTRACTOR_DONE" || isJobOverdue(job);
+
+  const handleAssign = async (job: JobType) => {
+    const contractorId = pendingContractor[job.id as string];
+    if (!job.id || !contractorId) return;
+    setAssigningId(job.id);
+    try {
+      await dispatch(updateJobType({ id: job.id, jobTypeData: { propertyId: job.propertyId, contractorId } })).unwrap();
+      toast.success(job.contractorId ? "Contractor reassigned" : "Contractor assigned");
+      setPendingContractor((p) => ({ ...p, [job.id as string]: "" }));
+      await load();
+    } catch (error) {
+      toast.error(typeof error === "string" ? error : error?.message || "Failed to assign the contractor");
+    } finally {
+      setAssigningId(null);
     }
   };
 
@@ -127,11 +153,6 @@ const ChaseUp = () => {
                           Open job <ChevronRight className="h-4 w-4 ml-1" />
                         </Link>
                       </Button>
-                      {canManageMaintenance && (
-                        <Button asChild size="sm" variant="outline">
-                          <Link to={`/maintenance/${job.id}`} title="Assign a contractor on the job page">Assign</Link>
-                        </Button>
-                      )}
                     </div>
                   </div>
 
@@ -154,6 +175,32 @@ const ChaseUp = () => {
                       <div>{formatVisit(job)}</div>
                     </div>
                   </div>
+
+                  {canManageMaintenance && (
+                    <div className="border-t pt-3">
+                      <div className="text-sm font-medium mb-2">{job.contractorId ? "Reassign contractor" : "Assign contractor"}</div>
+                      {canAssign(job) ? (
+                        <div className="flex flex-wrap items-end gap-2">
+                          <div className="flex-1 min-w-[14rem] max-w-sm">
+                            <ContractorPicker
+                              label=""
+                              name={`_chase_${job.id}`}
+                              watch={() => pendingContractor[job.id as string] || ""}
+                              setValue={(_name: string, value: string) => setPendingContractor((p) => ({ ...p, [job.id as string]: value }))}
+                              clearErrors={() => undefined}
+                            />
+                          </div>
+                          <Button size="sm" disabled={assigningId === job.id || !pendingContractor[job.id as string]} onClick={() => handleAssign(job)}>
+                            {assigningId === job.id ? "Saving…" : job.contractorId ? "Reassign" : "Assign"}
+                          </Button>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          {job.contractorRef?.name || "A contractor"} is assigned. Reassigning opens once the job is overdue or the contractor marks it done.
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   <div className="border-t pt-3 space-y-3">
                     <div className="text-sm font-medium">Notes</div>

@@ -177,6 +177,7 @@ const AddProperty = () => {
                 docType: docData.docType,
                 label: docData.label || undefined,
                 licenceType: docData.licenceType || undefined,
+                epcGrade: docData.docType === 'EPC' ? docData.epcGrade || undefined : undefined,
                 borough: docData.borough || undefined,
                 startDate: docData.startDate ? new Date(docData.startDate).toISOString() : undefined,
                 expiryDate: docData.expiryDate ? new Date(docData.expiryDate).toISOString() : undefined,

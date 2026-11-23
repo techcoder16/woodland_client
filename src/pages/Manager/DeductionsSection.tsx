@@ -1,5 +1,8 @@
 import { Fragment, useEffect, useState } from "react";
-import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Download, Plus, Trash2 } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import logo from "@/assets/logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -150,6 +153,39 @@ export default function DeductionsSection({ propertyId }: { propertyId: string }
   const deleteRecord = (recordId: string) => run(() => del(`transaction/deductions/records/${recordId}`), "Recovery removed");
   const deleteDeduction = (id: string) => run(() => del(`transaction/deductions/${id}`), "Deduction deleted");
 
+  // Paid once nothing is outstanding; part paid once anything is recovered.
+  const paidStatus = (d: Deduction) => (d.outstanding <= 0.005 ? "Paid" : d.recovered > 0 ? "Part paid" : "Not paid");
+
+  const downloadPdf = () => {
+    const doc = new jsPDF();
+    doc.addImage(logo, "PNG", 14, 10, 40, 16);
+    doc.setFontSize(14);
+    doc.text("Deductions", 60, 18);
+    doc.setFontSize(9);
+    doc.setTextColor(120);
+    doc.text(`Generated ${new Date().toLocaleString("en-GB")}`, 60, 24);
+    doc.setTextColor(0);
+    autoTable(doc, {
+      startY: 32,
+      head: [["Date", "Period", "Description", "Amount", "Recovered", "Outstanding", "Status"]],
+      body: deductions.map((d) => [
+        dateLabel(d.date),
+        dueDay ? rentPeriodOf(d.date, dueDay) : "-",
+        d.description,
+        money(d.amount),
+        money(d.recovered),
+        money(d.outstanding),
+        paidStatus(d),
+      ]),
+      foot: [["Total", "", "", money(totals.amount), money(totals.recovered), money(totals.outstanding), ""]],
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [17, 24, 39] },
+      footStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: "bold" },
+      columnStyles: { 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" } },
+    });
+    doc.save(`deductions-${propertyId}.pdf`);
+  };
+
   const totals = deductions.reduce(
     (acc, d) => ({ amount: acc.amount + Number(d.amount || 0), recovered: acc.recovered + Number(d.recovered || 0), outstanding: acc.outstanding + Number(d.outstanding || 0) }),
     { amount: 0, recovered: 0, outstanding: 0 },
@@ -164,7 +200,10 @@ export default function DeductionsSection({ propertyId }: { propertyId: string }
             {dueDay ? `Each deduction falls in the rent period that ends on the due day (${dueDay}).` : "Rent periods show once the Management Agreement sets a due day."}
           </p>
         </div>
+        <div className="flex gap-2">
+        <Button variant="outline" disabled={!deductions.length} onClick={downloadPdf}><Download className="mr-1.5 h-4 w-4" />PDF</Button>
         <Button size="icon" title="Add deduction" aria-label="Add deduction" disabled={addOpen} onClick={() => setAddOpen(true)}><Plus className="h-4 w-4" /></Button>
+        </div>
       </div>
 
       {loading && !deductions.length ? (
@@ -183,6 +222,7 @@ export default function DeductionsSection({ propertyId }: { propertyId: string }
                   <th className="px-4 py-3 text-right font-medium">Amount</th>
                   <th className="px-4 py-3 text-right font-medium">Recovered</th>
                   <th className="px-4 py-3 text-right font-medium">Outstanding</th>
+                  <th className="px-4 py-3 font-medium">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -198,7 +238,7 @@ export default function DeductionsSection({ propertyId }: { propertyId: string }
                       <Input type="number" min="0" step="0.01" aria-label="Amount" placeholder="£0.00" className="text-right" value={draft.amount} onChange={(e) => setDraft((f) => ({ ...f, amount: e.target.value }))}
                         onKeyDown={(e) => { if (e.key === "Enter") void addDeduction(); if (e.key === "Escape") setAddOpen(false); }} />
                     </td>
-                    <td className="px-4 py-2 text-right" colSpan={2}>
+                    <td className="px-4 py-2 text-right" colSpan={3}>
                       <div className="flex justify-end gap-2">
                         <Button size="sm" variant="outline" disabled={busy} onClick={() => { setAddOpen(false); setDraft({ date: today(), description: "", amount: "" }); }}>Cancel</Button>
                         <Button size="sm" disabled={busy} onClick={() => void addDeduction()}>Save</Button>
@@ -220,10 +260,13 @@ export default function DeductionsSection({ propertyId }: { propertyId: string }
                         <td className="px-4 py-3 text-right">{money(d.amount)}</td>
                         <td className="px-4 py-3 text-right text-emerald-700">{d.recovered ? `−${money(d.recovered)}` : money(0)}</td>
                         <td className="px-4 py-3 text-right font-semibold">{money(d.outstanding)}</td>
+                        <td className="px-4 py-3">
+                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${paidStatus(d) === "Paid" ? "bg-emerald-100 text-emerald-700" : paidStatus(d) === "Part paid" ? "bg-amber-100 text-amber-800" : "bg-red-100 text-red-700"}`}>{paidStatus(d)}</span>
+                        </td>
                       </tr>
                       {isOpen && (
                         <tr className="border-t bg-muted/20">
-                          <td colSpan={6} className="px-6 py-4">
+                          <td colSpan={7} className="px-6 py-4">
                             {!d.records.length ? (
                               <p className="text-sm text-muted-foreground">Nothing recovered yet.</p>
                             ) : (
@@ -295,6 +338,7 @@ export default function DeductionsSection({ propertyId }: { propertyId: string }
                   <td className="px-4 py-3 text-right">{money(totals.amount)}</td>
                   <td className="px-4 py-3 text-right text-emerald-700">{totals.recovered ? `−${money(totals.recovered)}` : money(0)}</td>
                   <td className="px-4 py-3 text-right">{money(totals.outstanding)}</td>
+                  <td />
                 </tr>
               </tfoot>
             </table>

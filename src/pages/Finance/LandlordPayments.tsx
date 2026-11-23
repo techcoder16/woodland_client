@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { openStoredFile, uploadFile } from "@/helper/fileUpload";
 import { CalendarDays, CheckCircle2, ChevronRight, Download, FileSpreadsheet, FileText, Filter, Loader2, Mail, Paperclip, Pencil, Plus, RefreshCw, StickyNote, Upload, WalletCards, X } from "lucide-react";
 import type { DayContentProps } from "react-day-picker";
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +25,6 @@ import getApi from "@/helper/getApi";
 import { post, patch } from "@/helper/api";
 import { formatPropertyReference } from "@/utils/propertyReference";
 import { exportPaymentReviewToPdf, exportTransactionsToExcel, exportTransactionsToPdf } from "@/utils/transactionExport";
-import { useTheme } from "@/context/ThemeContext";
 import { useToast } from "@/components/ui/use-toast";
 import { InfoHint } from "@/components/ui/hint";
 
@@ -73,6 +71,31 @@ const displayStatus = (payment: Payment): DisplayStatus => {
   return due && new Date(due) < startOfToday() ? "OVERDUE" : "DUE";
 };
 
+// Clickable due-date windows over unpaid payments (Due / Overdue; Paid and Draft excluded).
+type DueWindow = "all" | "overdue" | "today" | "7" | "14" | "28";
+const DUE_WINDOWS: { key: DueWindow; label: string }[] = [
+  { key: "overdue", label: "Overdue" },
+  { key: "today", label: "Due today" },
+  { key: "7", label: "Next 7 days" },
+  { key: "14", label: "Next 14 days" },
+  { key: "28", label: "Next 28 days" },
+];
+const daysUntilDue = (payment: Payment) => {
+  const due = dueDateOf(payment);
+  if (!due) return null;
+  return Math.round((new Date(new Date(due).toDateString()).getTime() - startOfToday().getTime()) / 86400000);
+};
+const inDueWindow = (payment: Payment, window: DueWindow) => {
+  if (window === "all") return true;
+  const status = displayStatus(payment);
+  if (status !== "DUE" && status !== "OVERDUE") return false;
+  const days = daysUntilDue(payment);
+  if (days == null) return false;
+  if (window === "overdue") return days < 0;
+  if (window === "today") return days === 0;
+  return days >= 0 && days <= Number(window);
+};
+
 export default function LandlordPayments() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
@@ -81,8 +104,6 @@ export default function LandlordPayments() {
   const [uploading, setUploading] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
   const [emailing, setEmailing] = useState(false);
-  const { brandColors } = useTheme();
-  const hsl = (value: string) => `hsl(${value})`;
   const { properties } = useAppSelector((state) => state.properties);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [selected, setSelected] = useState<Payment | null>(null);
@@ -94,6 +115,7 @@ export default function LandlordPayments() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [landlordFilter, setLandlordFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("");
+  const [dueWindow, setDueWindow] = useState<DueWindow>("all");
   const [detailsTab, setDetailsTab] = useState("Overview");
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -146,7 +168,7 @@ export default function LandlordPayments() {
     const paymentDate = payment.toLandlordDate ? new Date(payment.toLandlordDate).toISOString().slice(0, 10) : "";
     const matchesStatus = statusFilter === "all" || displayStatus(payment) === statusFilter;
     const matchesLandlord = landlordFilter === "all" || property?.vendorId === landlordFilter || property?.vendor?.id === landlordFilter;
-    return text.includes(search.toLowerCase()) && matchesStatus && matchesLandlord && (!dateFilter || paymentDate === dateFilter);
+    return text.includes(search.toLowerCase()) && matchesStatus && matchesLandlord && (!dateFilter || paymentDate === dateFilter) && inDueWindow(payment, dueWindow);
   });
 
   const byStatus = (key: DisplayStatus) => payments.filter((payment) => displayStatus(payment) === key);
@@ -155,12 +177,6 @@ export default function LandlordPayments() {
   const paid = byStatus("PAID");
   const drafts = byStatus("DRAFT");
   const totalOf = (list: Payment[]) => list.reduce((sum, payment) => sum + paymentAmount(payment), 0);
-  const statusChart = [
-    { name: "Overdue", value: overdue.length, color: hsl(brandColors.destructive) },
-    { name: "Due", value: due.length, color: hsl(brandColors.warning) },
-    { name: "Paid", value: paid.length, color: hsl(brandColors.primary) },
-    { name: "Draft", value: drafts.length, color: "#94a3b8" },
-  ].filter((item) => item.value > 0);
 
   // Upcoming = expected/landlord date in the future, not yet paid.
   const upcoming = [...payments]
@@ -443,46 +459,32 @@ export default function LandlordPayments() {
           </div>
         )}
 
-        <div className="surface p-5 lg:max-w-md">
-          <h2 className="font-semibold">Breakdown by Status</h2>
-          <p className="text-xs text-muted-foreground">Distribution of landlord payments</p>
-          <div className="relative mt-3 h-52">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={statusChart} dataKey="value" nameKey="name" innerRadius={60} outerRadius={85} paddingAngle={2}>
-                  {statusChart.map((item) => <Cell key={item.name} fill={item.color} />)}
-                </Pie>
-                <Tooltip formatter={(value: any, name: any) => [`${value} payment(s)`, name]} />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-xl font-semibold">{payments.length}</span>
-              <span className="text-xs text-muted-foreground">Total</span>
-            </div>
-          </div>
-          <div className="space-y-1.5 text-xs">
-            {statusChart.map((item) => {
-              const pct = payments.length ? (item.value / payments.length) * 100 : 0;
-              return (
-                <div key={item.name} className="flex items-center justify-between">
-                  <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />{item.name}</span>
-                  <span className="text-muted-foreground">{pct.toFixed(1)}% ({item.value})</span>
-                </div>
-              );
-            })}
-            {!statusChart.length && <p className="text-center text-muted-foreground">No payments to chart yet.</p>}
-          </div>
-        </div>
 
         <div className="surface overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4">
             <div><h2 className="font-semibold">Payment Queue ({visible.length})</h2><p className="text-xs text-muted-foreground">Review payment status before paying landlords</p></div>
+            <div className="flex w-full flex-wrap gap-2 order-last">
+              {DUE_WINDOWS.map((w) => {
+                const count = payments.filter((p) => inDueWindow(p, w.key)).length;
+                const active = dueWindow === w.key;
+                return (
+                  <button
+                    key={w.key}
+                    type="button"
+                    onClick={() => setDueWindow(active ? "all" : w.key)}
+                    className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${active ? (w.key === "overdue" ? "border-red-600 bg-red-600 text-white" : "border-primary bg-primary text-primary-foreground") : w.key === "overdue" && count > 0 ? "border-red-300 bg-red-50 text-red-700 hover:bg-red-100" : "hover:bg-muted"}`}
+                  >
+                    {w.label} <span className="ml-1 opacity-80">{count}</span>
+                  </button>
+                );
+              })}
+            </div>
             <div className="flex flex-wrap items-end gap-2">
               <div className="relative"><Filter className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" /><Input className="w-64 pl-8" placeholder="Search landlord, property, or reference" value={search} onChange={(event) => setSearch(event.target.value)} /></div>
               <div><Label className="text-xs">Status</Label><Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-36"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All status</SelectItem><SelectItem value="DUE">Due</SelectItem><SelectItem value="OVERDUE">Overdue</SelectItem><SelectItem value="PAID">Paid</SelectItem><SelectItem value="DRAFT">Draft</SelectItem></SelectContent></Select></div>
               <div><Label className="text-xs">Landlord</Label><Select value={landlordFilter} onValueChange={setLandlordFilter}><SelectTrigger className="w-40"><SelectValue placeholder="All landlords" /></SelectTrigger><SelectContent><SelectItem value="all">All landlords</SelectItem>{landlords.map(([id, name]) => <SelectItem key={id} value={id}>{name}</SelectItem>)}</SelectContent></Select></div>
               <div><Label className="text-xs">Due date</Label><Input className="w-36" type="date" value={dateFilter} onChange={(event) => setDateFilter(event.target.value)} /></div>
-              <Button variant="ghost" onClick={() => { setSearch(""); setStatusFilter("all"); setLandlordFilter("all"); setDateFilter(""); }}>Clear</Button>
+              <Button variant="ghost" onClick={() => { setSearch(""); setStatusFilter("all"); setLandlordFilter("all"); setDateFilter(""); setDueWindow("all"); }}>Clear</Button>
             </div>
           </div>
 

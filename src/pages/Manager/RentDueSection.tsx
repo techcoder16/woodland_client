@@ -27,6 +27,7 @@ type RentSchedule = {
     vendor: { id: string; firstName?: string; lastName?: string; email?: string } | null;
   };
   rent: number;
+  timing?: "advance" | "arrears";
   dueDay: number | null;
   rows: RentRow[];
 };
@@ -87,7 +88,7 @@ export default function RentDueSection({ propertyId }: { propertyId: string }) {
   if (loading) return <p className="p-6 text-sm text-muted-foreground">Loading rent schedule…</p>;
   if (failed || !schedule) return <div className="surface p-8 text-center text-sm text-muted-foreground">Could not load the rent schedule for this property.</div>;
 
-  const { property, rent, dueDay, rows } = schedule;
+  const { property, rent, dueDay, rows, timing } = schedule;
   const landlord = property.vendor ? `${property.vendor.firstName || ""} ${property.vendor.lastName || ""}`.trim() || property.vendor.email || "Landlord" : "No landlord";
   const address = [property.addressLine1, property.addressLine2, property.town, property.postCode].filter(Boolean).join(", ");
 
@@ -101,6 +102,7 @@ export default function RentDueSection({ propertyId }: { propertyId: string }) {
         <div className="flex flex-wrap gap-6 text-sm">
           <div><p className="text-xs text-muted-foreground">Rent per month</p><p className="font-semibold">{money(rent)}</p></div>
           <div><p className="text-xs text-muted-foreground">Due day</p><p className="font-semibold">{dueDay ? `${dueDay}${dueDay === 1 ? "st" : dueDay === 2 ? "nd" : dueDay === 3 ? "rd" : "th"} of each month` : "-"}</p></div>
+          <div><p className="text-xs text-muted-foreground">Rent paid<InfoHint text="From the Management Agreement. In advance: each month's rent is due on the due day of that month. In arrears: it is due on the due day of the following month." /></p><p className="font-semibold">{timing === "arrears" ? "In arrears" : "In advance"}</p></div>
           <div><p className="text-xs text-muted-foreground">Landlord</p><p className="font-semibold">{landlord}</p></div>
         </div>
       </div>

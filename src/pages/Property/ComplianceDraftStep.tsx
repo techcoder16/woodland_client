@@ -22,16 +22,18 @@ const DOC_TYPES = [
 ];
 
 const LICENCE_TYPES = [
+  { value: "COUNCIL", label: "Council Licence" },
   { value: "SELECTIVE", label: "Selective Licence" },
-  { value: "ADDITIONAL", label: "Additional Licence" },
   { value: "HMO", label: "HMO Licence" },
 ];
+const EPC_GRADES = ["A", "B", "C", "D", "E", "F", "G"];
 
 export interface DraftComplianceDoc {
   localId: string;
   docType: string;
   label?: string;
   licenceType?: string;
+  epcGrade?: string;
   borough?: string;
   startDate?: string;
   expiryDate?: string;
@@ -60,13 +62,13 @@ interface ComplianceDraftStepProps {
 export default function ComplianceDraftStep({ drafts, onDraftsChange }: ComplianceDraftStepProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingLocalId, setEditingLocalId] = useState<string | null>(null);
-  const [form, setForm] = useState({ docType: "GAS_SAFETY", label: "", licenceType: "", borough: "", startDate: "", expiryDate: "", notes: "" });
+  const [form, setForm] = useState({ docType: "GAS_SAFETY", label: "", licenceType: "", epcGrade: "", borough: "", startDate: "", expiryDate: "", notes: "" });
   const [file, setFile] = useState<File | undefined>(undefined);
   const [extracting, setExtracting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const resetForm = () => {
-    setForm({ docType: "GAS_SAFETY", label: "", licenceType: "", borough: "", startDate: "", expiryDate: "", notes: "" });
+    setForm({ docType: "GAS_SAFETY", label: "", licenceType: "", epcGrade: "", borough: "", startDate: "", expiryDate: "", notes: "" });
     setFile(undefined);
     setEditingLocalId(null);
   };
@@ -78,7 +80,7 @@ export default function ComplianceDraftStep({ drafts, onDraftsChange }: Complian
 
   const openEdit = (doc: DraftComplianceDoc) => {
     setEditingLocalId(doc.localId);
-    setForm({ docType: doc.docType, label: doc.label || "", licenceType: doc.licenceType || "", borough: doc.borough || "", startDate: doc.startDate || "", expiryDate: doc.expiryDate || "", notes: doc.notes || "" });
+    setForm({ docType: doc.docType, label: doc.label || "", licenceType: doc.licenceType || "", epcGrade: doc.epcGrade || "", borough: doc.borough || "", startDate: doc.startDate || "", expiryDate: doc.expiryDate || "", notes: doc.notes || "" });
     setFile(doc.file);
     setModalOpen(true);
   };
@@ -130,6 +132,7 @@ export default function ComplianceDraftStep({ drafts, onDraftsChange }: Complian
       docType: form.docType,
       label: form.label || undefined,
       licenceType: form.docType === "PROPERTY_LICENSE" ? form.licenceType || undefined : undefined,
+      epcGrade: form.docType === "EPC" ? form.epcGrade || undefined : undefined,
       borough: form.docType === "PROPERTY_LICENSE" ? form.borough.trim() || undefined : undefined,
       startDate: form.startDate || undefined,
       expiryDate: form.expiryDate || undefined,
@@ -173,9 +176,9 @@ export default function ComplianceDraftStep({ drafts, onDraftsChange }: Complian
                 <TableRow key={doc.localId}>
                   <TableCell>
                     {doc.label || typeLabel}
-                    {(doc.licenceType || doc.borough) && (
+                    {(doc.licenceType || doc.borough || doc.epcGrade) && (
                       <span className="block text-xs text-muted-foreground">
-                        {[LICENCE_TYPES.find((t) => t.value === doc.licenceType)?.label, doc.borough].filter(Boolean).join(" · ")}
+                        {[LICENCE_TYPES.find((t) => t.value === doc.licenceType)?.label, doc.epcGrade ? `EPC grade ${doc.epcGrade}` : undefined, doc.borough].filter(Boolean).join(" · ")}
                       </span>
                     )}
                   </TableCell>
@@ -215,6 +218,15 @@ export default function ComplianceDraftStep({ drafts, onDraftsChange }: Complian
             {form.docType === "OTHER" && (
               <div className="space-y-1"><Label>Label</Label><Input value={form.label} onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))} placeholder="e.g. HMO License" /></div>
             )}
+            {form.docType === "EPC" && (
+              <div className="space-y-1">
+                <Label>EPC grade</Label>
+                <Select value={form.epcGrade || undefined} onValueChange={(value) => setForm((f) => ({ ...f, epcGrade: value }))}>
+                  <SelectTrigger><SelectValue placeholder="Select grade (A is best)" /></SelectTrigger>
+                  <SelectContent>{EPC_GRADES.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            )}
             {form.docType === "PROPERTY_LICENSE" && (
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
@@ -225,8 +237,8 @@ export default function ComplianceDraftStep({ drafts, onDraftsChange }: Complian
                   </Select>
                 </div>
                 <div className="space-y-1">
-                  <Label>Borough</Label>
-                  <Input value={form.borough} onChange={(e) => setForm((f) => ({ ...f, borough: e.target.value }))} placeholder="Filled from the scan" />
+                  <Label>Council / Borough</Label>
+                  <Input value={form.borough} onChange={(e) => setForm((f) => ({ ...f, borough: e.target.value }))} placeholder="Council that issued it" />
                 </div>
               </div>
             )}
