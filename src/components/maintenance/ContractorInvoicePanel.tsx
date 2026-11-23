@@ -95,7 +95,6 @@ export default function ContractorInvoicePanel({ job, canManage, onChanged }: Co
     try {
       const body: Record<string, unknown> = { showOnLandlordPortal: values.showOnLandlordPortal };
       if (values.totalCost !== "") body.totalCost = Number(values.totalCost);
-      if (values.otherCost !== "") body.otherCost = Number(values.otherCost);
       if (values.newInvoiceFileId) body.invoiceFileId = values.newInvoiceFileId;
       if (values.markupValue !== "") {
         // One markup at a time: the server clears the other.
@@ -118,7 +117,7 @@ export default function ContractorInvoicePanel({ job, canManage, onChanged }: Co
       return;
     }
     if (job.totalCharged == null) {
-      toast.error("Enter the contractor cost first");
+      toast.error("Add a payment on the Payments tab, or enter a contractor cost, first");
       return;
     }
     setGenerating(true);
@@ -168,7 +167,7 @@ export default function ContractorInvoicePanel({ job, canManage, onChanged }: Co
   return (
     <div className="space-y-4">
       <Card className="p-4 space-y-5">
-        <div className="font-semibold">Contractor cost</div>
+        <div className="font-semibold">Costs<InfoHint text="Contractor cost is optional. Jobs without a contractor are costed from the Payments tab." /></div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-muted-foreground" htmlFor="contractorCost">
@@ -178,9 +177,9 @@ export default function ContractorInvoicePanel({ job, canManage, onChanged }: Co
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-muted-foreground" htmlFor="otherCost">
-              Other cost (£)<InfoHint quiet text="Materials, parts or other costs on top of the contractor's labour." />
+              Payments total (£)<InfoHint quiet text="The total of the lines on the Payments tab (materials, labour, parts...). Add or remove them there." />
             </label>
-            <Input id="otherCost" type="number" step="0.01" min="0" disabled={disabled} {...register("otherCost")} />
+            <Input id="otherCost" type="number" readOnly disabled {...register("otherCost")} />
           </div>
         </div>
 

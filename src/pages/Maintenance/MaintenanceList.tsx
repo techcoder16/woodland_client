@@ -43,6 +43,7 @@ import { formatLocalDate } from "@/helper/formatLocalDate";
 import { useMaintenanceSummary } from "@/components/maintenance/useMaintenanceSummary";
 import { computeSla, formatLondonDate, formatLondonDateTime, isJobOverdue, jobDueValue } from "@/utils/maintenanceSla";
 import { emailLandlord } from "./jobActions";
+import { AddressCell, DueCell } from "./jobCells";
 
 // Matches what CreateJobTypeDto persists on create. The server forces the
 // status and sets dueAt/chaseUpAt from the priority; the form only previews them.
@@ -142,31 +143,6 @@ const formatAddress = (property?: JobType["property"]) => {
   return [property.addressLine1, property.addressLine2, property.town, property.postCode]
     .filter(Boolean)
     .join(", ");
-};
-
-const AddressCell = ({ property }: { property?: JobType["property"] }) => {
-  if (!property) return <span className="text-muted-foreground">-</span>;
-  const line2 = [property.town, property.postCode].filter(Boolean).join(", ");
-  return (
-    <div className="min-w-[10rem] max-w-[16rem]">
-      <div className="font-medium leading-snug">
-        {[property.addressLine1, property.addressLine2].filter(Boolean).join(", ") || "-"}
-      </div>
-      {line2 && <div className="text-xs text-muted-foreground leading-snug">{line2}</div>}
-    </div>
-  );
-};
-
-const DueCell = ({ job }: { job: JobType }) => {
-  const due = jobDueValue(job);
-  if (!due) return <span className="text-muted-foreground">-</span>;
-  const overdue = isJobOverdue(job);
-  return (
-    <div className={`whitespace-nowrap text-sm ${priorityTextClass(job.priority, overdue)}`}>
-      {job.dueAt ? formatLondonDateTime(job.dueAt) : formatLondonDate(due)}
-      {overdue && <div className="text-xs font-semibold text-red-600">Overdue</div>}
-    </div>
-  );
 };
 
 const SummaryTile = ({ label, value, className = "" }: { label: string; value?: number; className?: string }) => (
@@ -572,12 +548,13 @@ const MaintenanceList = () => {
                 <thead className="bg-background">
                   <tr className="border-b border-border/70">
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Date<InfoHint text="Date the job was logged." /></th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Due<InfoHint text="When the work is due. Shown in red once it is overdue." /></th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Chase up at<InfoHint text="When this job should be chased. It then appears on the Chase Up page." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Address<InfoHint text="The property this job is for." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Description<InfoHint text="What needs doing." /></th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Resp.<InfoHint text="Who is responsible: L = Landlord, I = Internal (Woodland)." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Priority<InfoHint text="How urgent the job is: Critical (red), High (orange), Medium (yellow), Low (pink)." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Contractor<InfoHint text="The contractor assigned to carry out the work." /></th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Due<InfoHint text="When the work is due. Shown in red once it is overdue." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Status<InfoHint text="Where the job is: Open, Waiting Authorisation, Quoting, Assigned, In Progress, Pending (contractor finished, awaiting sign-off), Completed or Cancelled." /></th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Actions<InfoHint text="Click any row to open the job." /></th>
                   </tr>
@@ -585,13 +562,13 @@ const MaintenanceList = () => {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
+                      <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
                         Loading maintenance jobs...
                       </td>
                     </tr>
                   ) : filteredJobTypes.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
+                      <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
                         No maintenance jobs found
                       </td>
                     </tr>
@@ -601,6 +578,12 @@ const MaintenanceList = () => {
                         <tr key={job.id} className={`border-b border-border/50 hover:brightness-95 transition-colors align-top cursor-pointer ${statusRowClass(job.status)}`} onClick={() => navigate(`/maintenance/${job.id}`)}>
                           <td className="px-4 py-3 text-sm whitespace-nowrap">
                             {job.createdAt ? new Date(job.createdAt).toLocaleDateString() : "-"}
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            <DueCell job={job} />
+                          </td>
+                          <td className="px-4 py-3 text-sm whitespace-nowrap">
+                            {job.chaseUpAt ? formatLondonDateTime(job.chaseUpAt) : "-"}
                           </td>
                           <td className="px-4 py-3 text-sm">
                             <AddressCell property={job.property} />
@@ -621,9 +604,6 @@ const MaintenanceList = () => {
                           </td>
                           <td className="px-4 py-3 text-sm">
                             {job.contractorRef ? job.contractorRef.name : job.employeeId ? getEmployeeName(job.employeeId) : "-"}
-                          </td>
-                          <td className="px-4 py-3 text-sm">
-                            <DueCell job={job} />
                           </td>
                           <td className="px-4 py-3 text-sm">
                             <Hint text={STATUS_HINTS[job.status] ?? job.status}><Badge noHint variant="outline" className={statusBadgeClass(job.status)}>{STATUS_LABELS[job.status] ?? job.status}</Badge></Hint>
