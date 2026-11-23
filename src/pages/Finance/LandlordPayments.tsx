@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { openStoredFile, uploadFile } from "@/helper/fileUpload";
 import { CalendarDays, CheckCircle2, ChevronRight, Download, FileSpreadsheet, FileText, Filter, Loader2, Mail, Paperclip, Pencil, Plus, RefreshCw, StickyNote, Upload, WalletCards, X } from "lucide-react";
 import type { DayContentProps } from "react-day-picker";
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +25,6 @@ import getApi from "@/helper/getApi";
 import { post, patch } from "@/helper/api";
 import { formatPropertyReference } from "@/utils/propertyReference";
 import { exportPaymentReviewToPdf, exportTransactionsToExcel, exportTransactionsToPdf } from "@/utils/transactionExport";
-import { useTheme } from "@/context/ThemeContext";
 import { useToast } from "@/components/ui/use-toast";
 import { InfoHint } from "@/components/ui/hint";
 
@@ -106,8 +104,6 @@ export default function LandlordPayments() {
   const [uploading, setUploading] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
   const [emailing, setEmailing] = useState(false);
-  const { brandColors } = useTheme();
-  const hsl = (value: string) => `hsl(${value})`;
   const { properties } = useAppSelector((state) => state.properties);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [selected, setSelected] = useState<Payment | null>(null);
@@ -181,12 +177,6 @@ export default function LandlordPayments() {
   const paid = byStatus("PAID");
   const drafts = byStatus("DRAFT");
   const totalOf = (list: Payment[]) => list.reduce((sum, payment) => sum + paymentAmount(payment), 0);
-  const statusChart = [
-    { name: "Overdue", value: overdue.length, color: hsl(brandColors.destructive) },
-    { name: "Due", value: due.length, color: hsl(brandColors.warning) },
-    { name: "Paid", value: paid.length, color: hsl(brandColors.primary) },
-    { name: "Draft", value: drafts.length, color: "#94a3b8" },
-  ].filter((item) => item.value > 0);
 
   // Upcoming = expected/landlord date in the future, not yet paid.
   const upcoming = [...payments]
@@ -469,36 +459,6 @@ export default function LandlordPayments() {
           </div>
         )}
 
-        <div className="surface p-5 lg:max-w-md">
-          <h2 className="font-semibold">Breakdown by Status</h2>
-          <p className="text-xs text-muted-foreground">Distribution of landlord payments</p>
-          <div className="relative mt-3 h-52">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={statusChart} dataKey="value" nameKey="name" innerRadius={60} outerRadius={85} paddingAngle={2}>
-                  {statusChart.map((item) => <Cell key={item.name} fill={item.color} />)}
-                </Pie>
-                <Tooltip formatter={(value: any, name: any) => [`${value} payment(s)`, name]} />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-xl font-semibold">{payments.length}</span>
-              <span className="text-xs text-muted-foreground">Total</span>
-            </div>
-          </div>
-          <div className="space-y-1.5 text-xs">
-            {statusChart.map((item) => {
-              const pct = payments.length ? (item.value / payments.length) * 100 : 0;
-              return (
-                <div key={item.name} className="flex items-center justify-between">
-                  <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />{item.name}</span>
-                  <span className="text-muted-foreground">{pct.toFixed(1)}% ({item.value})</span>
-                </div>
-              );
-            })}
-            {!statusChart.length && <p className="text-center text-muted-foreground">No payments to chart yet.</p>}
-          </div>
-        </div>
 
         <div className="surface overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4">
