@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/pagination";
 import TextAreaField from "@/utils/TextAreaField";
 import SelectField from "@/utils/SelectedField";
+import PropertyPicker from "@/utils/PropertyPicker";
 import { Link, useNavigate } from "react-router-dom";
 import { Plus, Trash2, Search, CheckCircle2, Send, CalendarClock } from "lucide-react";
 import { toast } from "sonner";
@@ -356,14 +357,11 @@ const MaintenanceList = () => {
               <form onSubmit={handleSubmit((data) => submitJob(data, false))} className="flex flex-col flex-1 min-h-0">
                 <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_18rem] gap-6 overflow-y-auto pr-1 flex-1 min-h-0">
                   <div className="space-y-4">
-                    <SelectField
-                      label="Property"
-                      name="propertyId"
-                      register={register}
-                      setValue={setValue}
-                      watch={watch}
+                    <PropertyPicker
+                      label="Property *"
+                      value={watch("propertyId") || ""}
+                      onChange={(id) => setValue("propertyId", id, { shouldValidate: true, shouldDirty: true })}
                       error={errors.propertyId?.message}
-                      options={propertyOptions}
                     />
 
                     <div className="grid grid-cols-2 gap-4">
