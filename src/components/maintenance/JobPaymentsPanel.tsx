@@ -4,13 +4,14 @@
 // that gives what the landlord is charged.
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Paperclip, Plus, Trash2 } from "lucide-react";
+import { Eye, Mail, Paperclip, Plus, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { InfoHint } from "@/components/ui/hint";
 import { del, get, post } from "@/helper/api";
-import { openStoredFile, uploadFile } from "@/helper/fileUpload";
+import { fetchFileUrls, openStoredFile, uploadFile } from "@/helper/fileUpload";
+import { emailLandlord } from "@/pages/Maintenance/jobActions";
 import type { JobType } from "@/redux/dataStore/jobTypeSlice";
 
 interface JobPayment {
@@ -18,6 +19,7 @@ interface JobPayment {
   date: string;
   description: string;
   amount: number;
+  markupPercent?: number | null;
   fileId?: string | null;
   createdByName?: string | null;
 }
@@ -38,7 +40,7 @@ interface Props {
 export default function JobPaymentsPanel({ job, canManage, onChanged }: Props) {
   const [payments, setPayments] = useState<JobPayment[] | null>(null);
   const [adding, setAdding] = useState(false);
-  const [draft, setDraft] = useState({ date: today(), description: "", amount: "" });
+  const [draft, setDraft] = useState({ date: today(), description: "", amount: "", markup: "" });
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -59,7 +61,7 @@ export default function JobPaymentsPanel({ job, canManage, onChanged }: Props) {
   }, [job.id]);
 
   const reset = () => {
-    setDraft({ date: today(), description: "", amount: "" });
+    setDraft({ date: today(), description: "", amount: "", markup: "" });
     setFile(null);
     setAdding(false);
   };
@@ -79,10 +81,11 @@ export default function JobPaymentsPanel({ job, canManage, onChanged }: Props) {
         date: draft.date,
         description: draft.description.trim(),
         amount,
+        markupPercent: draft.markup === "" ? undefined : Number(draft.markup),
         fileId,
       });
       if (error) throw new Error(error.message);
-      toast.success("Payment added");
+      toast.success("Invoice added");
       reset();
       await load();
       onChanged();
@@ -98,9 +101,37 @@ export default function JobPaymentsPanel({ job, canManage, onChanged }: Props) {
     const { error } = await del(`property-management/job-type/${job.id}/payments/${p.id}`);
     setBusy(false);
     if (error) return toast.error(error.message || "Failed to remove the payment");
-    toast.success("Payment removed");
+    toast.success("Invoice removed");
     await load();
     onChanged();
+  };
+
+  const blobToBase64 = (blob: Blob) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(",")[1] ?? "");
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+
+  // Emails the PDF attached to one row to the landlord. Do it again for each invoice.
+  const emailRow = async (p: JobPayment) => {
+    if (!p.fileId) return;
+    setBusy(true);
+    try {
+      const urls = await fetchFileUrls([p.fileId]);
+      const signed = urls[p.fileId];
+      if (!signed) throw new Error("The PDF could not be loaded");
+      const res = await fetch(signed.url);
+      if (!res.ok) throw new Error("The PDF could not be loaded");
+      const result = await emailLandlord(job.id as string, await blobToBase64(await res.blob()), `Invoice: ${p.description}`);
+      toast.success(result?.message || "Invoice emailed to the landlord");
+      onChanged();
+    } catch (error) {
+      toast.error(error?.message || "Failed to email the invoice");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const linesTotal = (payments ?? []).reduce((s, p) => s + Number(p.amount || 0), 0);
@@ -110,11 +141,11 @@ export default function JobPaymentsPanel({ job, canManage, onChanged }: Props) {
     <Card className="p-4 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div className="font-semibold">
-          Payments
-          <InfoHint text="Everything spent on this job: materials, labour, parts, call-out or a contractor's bill. No contractor is needed. The total, plus any contractor cost and markup on the Invoices tab, is what the landlord is charged." />
+          Invoices and costs
+          <InfoHint text="Everything spent on this job, one row per invoice: materials, labour, parts, call-out or a contractor's bill. No contractor is needed. The total, plus any contractor cost and markup on the Invoices tab, is what the landlord is charged." />
         </div>
         {canManage && !closed && (
-          <Button size="icon" title="Add payment" aria-label="Add payment" disabled={adding} onClick={() => setAdding(true)}>
+          <Button size="icon" title="Add invoice" aria-label="Add invoice" disabled={adding} onClick={() => setAdding(true)}>
             <Plus className="h-4 w-4" />
           </Button>
         )}
@@ -127,7 +158,9 @@ export default function JobPaymentsPanel({ job, canManage, onChanged }: Props) {
               <th className="py-2 pr-3 font-medium">Date</th>
               <th className="py-2 pr-3 font-medium">Description</th>
               <th className="py-2 pr-3 text-right font-medium">Amount</th>
-              <th className="py-2 pr-3 font-medium">Receipt</th>
+              <th className="py-2 pr-3 text-right font-medium">Markup %</th>
+              <th className="py-2 pr-3 text-right font-medium">To landlord</th>
+              <th className="py-2 pr-3 font-medium">PDF</th>
               <th className="py-2 pr-3 font-medium">Added by</th>
               <th className="py-2" />
             </tr>
@@ -155,6 +188,10 @@ export default function JobPaymentsPanel({ job, canManage, onChanged }: Props) {
                   />
                 </td>
                 <td className="py-2 pr-2">
+                  <Input type="number" min="0" step="0.01" aria-label="Markup %" placeholder="0" className="w-20 text-right" value={draft.markup} onChange={(e) => setDraft((d) => ({ ...d, markup: e.target.value }))} />
+                </td>
+                <td className="py-2 pr-2 text-right text-muted-foreground">{money(Number(draft.amount || 0) * (1 + Number(draft.markup || 0) / 100))}</td>
+                <td className="py-2 pr-2">
                   <input ref={fileRef} type="file" accept="application/pdf,image/*" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
                   <Button type="button" size="sm" variant="outline" onClick={() => fileRef.current?.click()} title={file?.name}>
                     <Paperclip className="h-3.5 w-3.5 mr-1" />{file ? "Attached" : "Attach"}
@@ -169,18 +206,23 @@ export default function JobPaymentsPanel({ job, canManage, onChanged }: Props) {
               </tr>
             )}
             {payments === null ? (
-              <tr><td colSpan={6} className="py-6 text-center text-muted-foreground">Loading...</td></tr>
+              <tr><td colSpan={8} className="py-6 text-center text-muted-foreground">Loading...</td></tr>
             ) : payments.length === 0 && !adding ? (
-              <tr><td colSpan={6} className="py-6 text-center text-muted-foreground">No payments yet. Press + to add what was spent on this job.</td></tr>
+              <tr><td colSpan={8} className="py-6 text-center text-muted-foreground">No invoices yet. Press + to add one.</td></tr>
             ) : (
               payments.map((p) => (
                 <tr key={p.id} className="border-b last:border-0">
                   <td className="py-2 pr-3 whitespace-nowrap">{dateLabel(p.date)}</td>
                   <td className="py-2 pr-3">{p.description}</td>
                   <td className="py-2 pr-3 text-right font-medium">{money(p.amount)}</td>
+                  <td className="py-2 pr-3 text-right">{p.markupPercent ? `${p.markupPercent}%` : "-"}</td>
+                  <td className="py-2 pr-3 text-right font-medium">{money(p.amount * (1 + (p.markupPercent ?? 0) / 100))}</td>
                   <td className="py-2 pr-3">
                     {p.fileId ? (
-                      <button type="button" className="text-primary underline" onClick={() => openStoredFile(p.fileId as string).catch(() => toast.error("This file is no longer available"))}>View</button>
+                      <span className="inline-flex items-center gap-1">
+                        <Button size="icon" variant="ghost" className="h-7 w-7" title="View the PDF" onClick={() => openStoredFile(p.fileId as string).catch(() => toast.error("This file is no longer available"))}><Eye className="h-3.5 w-3.5" /></Button>
+                        {canManage && <Button size="icon" variant="ghost" className="h-7 w-7" title="Email this invoice to the landlord" disabled={busy} onClick={() => void emailRow(p)}><Mail className="h-3.5 w-3.5" /></Button>}
+                      </span>
                     ) : <span className="text-muted-foreground">-</span>}
                   </td>
                   <td className="py-2 pr-3 text-muted-foreground">{p.createdByName || "-"}</td>
@@ -199,7 +241,7 @@ export default function JobPaymentsPanel({ job, canManage, onChanged }: Props) {
       </div>
 
       <div className="border-t pt-3 text-sm space-y-1">
-        <div className="flex justify-between"><span className="text-muted-foreground">Payments total</span><span className="font-medium">{money(linesTotal)}</span></div>
+        <div className="flex justify-between"><span className="text-muted-foreground">Costs total</span><span className="font-medium">{money(linesTotal)}</span></div>
         {job.totalCost != null && (
           <div className="flex justify-between"><span className="text-muted-foreground">Contractor cost</span><span className="font-medium">{money(job.totalCost)}</span></div>
         )}
