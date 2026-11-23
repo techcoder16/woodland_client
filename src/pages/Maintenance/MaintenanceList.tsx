@@ -163,6 +163,11 @@ const MaintenanceList = () => {
   const [properties, setProperties] = useState<Property[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchTerm.trim()), 300);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
   const [statusFilter, setStatusFilter] = useState<JobStatusFilter | "">("ACTIVE"); // default hides completed/cancelled
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -175,13 +180,13 @@ const MaintenanceList = () => {
   // request could resolve after the correct one and overwrite it.
   useEffect(() => {
     setCurrentPage(1);
-    dispatch(fetchJobTypes({ page: 1, limit: 20, status: statusFilter || undefined }));
+    dispatch(fetchJobTypes({ page: 1, limit: 20, status: statusFilter || undefined, search: debouncedSearch || undefined }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch, statusFilter]);
+  }, [dispatch, statusFilter, debouncedSearch]);
 
   useEffect(() => {
     if (currentPage === 1) return; // already fetched by the effect above
-    dispatch(fetchJobTypes({ page: currentPage, limit: 20, status: statusFilter || undefined }));
+    dispatch(fetchJobTypes({ page: currentPage, limit: 20, status: statusFilter || undefined, search: debouncedSearch || undefined }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, currentPage]);
 
@@ -227,7 +232,7 @@ const MaintenanceList = () => {
   };
 
   const refreshList = () => {
-    dispatch(fetchJobTypes({ page: currentPage, limit: 20, status: statusFilter || undefined }));
+    dispatch(fetchJobTypes({ page: currentPage, limit: 20, status: statusFilter || undefined, search: debouncedSearch || undefined }));
     reloadSummary();
   };
 
@@ -278,7 +283,7 @@ const MaintenanceList = () => {
       }
 
       setCurrentPage(1);
-      dispatch(fetchJobTypes({ page: 1, limit: 20, status: statusFilter || undefined }));
+      dispatch(fetchJobTypes({ page: 1, limit: 20, status: statusFilter || undefined, search: debouncedSearch || undefined }));
       reloadSummary();
       closeDialog();
     } catch (error) {
@@ -321,9 +326,8 @@ const MaintenanceList = () => {
   }));
 
   const filteredJobTypes = jobTypes.filter((job) => {
-    if (!searchTerm) return true;
-    const haystack = `${job.jobType} ${job.description} ${formatAddress(job.property)}`.toLowerCase();
-    return haystack.includes(searchTerm.toLowerCase());
+    void job; // the search runs on the server (address, description, job type)
+    return true;
   });
 
   return (
@@ -549,13 +553,13 @@ const MaintenanceList = () => {
                   <tr className="border-b border-border/70">
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Date<InfoHint text="Date the job was logged." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Due<InfoHint text="When the work is due. Shown in red once it is overdue." /></th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Chase up at<InfoHint text="When this job should be chased. It then appears on the Chase Up page." /></th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Address<InfoHint text="The property this job is for." /></th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Address<InfoHint text="The property this job is for." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Description<InfoHint text="What needs doing." /></th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Resp.<InfoHint text="Who is responsible: L = Landlord, I = Internal (Woodland)." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Priority<InfoHint text="How urgent the job is: Critical (red), High (orange), Medium (yellow), Low (pink)." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Contractor<InfoHint text="The contractor assigned to carry out the work." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Status<InfoHint text="Where the job is: Open, Waiting Authorisation, Quoting, Assigned, In Progress, Pending (contractor finished, awaiting sign-off), Completed or Cancelled." /></th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Notes<InfoHint text="The latest note someone added to the job." /></th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Actions<InfoHint text="Click any row to open the job." /></th>
                   </tr>
                 </thead>
@@ -582,9 +586,6 @@ const MaintenanceList = () => {
                           <td className="px-4 py-3 text-sm">
                             <DueCell job={job} />
                           </td>
-                          <td className="px-4 py-3 text-sm whitespace-nowrap">
-                            {job.chaseUpAt ? formatLondonDateTime(job.chaseUpAt) : "-"}
-                          </td>
                           <td className="px-4 py-3 text-sm">
                             <AddressCell property={job.property} />
                           </td>
@@ -607,6 +608,11 @@ const MaintenanceList = () => {
                           </td>
                           <td className="px-4 py-3 text-sm">
                             <Hint text={STATUS_HINTS[job.status] ?? job.status}><Badge noHint variant="outline" className={statusBadgeClass(job.status)}>{STATUS_LABELS[job.status] ?? job.status}</Badge></Hint>
+                          </td>
+                          <td className="px-4 py-3 text-sm max-w-[14rem]">
+                            {(job.notes ?? [])[0] ? (
+                              <div className="truncate text-muted-foreground" title={(job.notes ?? [])[0].note}>{(job.notes ?? [])[0].note}</div>
+                            ) : <span className="text-muted-foreground">-</span>}
                           </td>
                           <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                             <div className="flex justify-center space-x-2">

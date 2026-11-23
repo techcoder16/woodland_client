@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import StoredFilePreview from "@/components/StoredFilePreview";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -23,6 +23,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Department } from "@/types/permissions";
 import { formatLocalDate } from "@/helper/formatLocalDate";
 import { get } from "@/helper/api";
+import { uploadFiles } from "@/helper/fileUpload";
 import { Checkbox } from "@/components/ui/checkbox";
 import { InfoHint } from "@/components/ui/hint";
 import { JOB_TYPE_OPTIONS, JOB_LOCATION_OPTIONS } from "@/helper/jobTypeOptions";
@@ -235,6 +236,27 @@ const MaintenanceDetail = () => {
     }
   };
 
+  // "Attach media": upload straight from the job page and save, no need to open Edit.
+  const mediaInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const attachMedia = async (files: FileList | null) => {
+    if (!job?.id || !files?.length) return;
+    setUploadingMedia(true);
+    try {
+      const stored = await uploadFiles(Array.from(files), { category: "job-media", entityType: "jobType", entityId: job.id, propertyId: job.propertyId });
+      await dispatch(
+        updateJobType({ id: job.id, jobTypeData: { propertyId: job.propertyId, mediaFileIds: [...(job.mediaFileIds || []), ...stored.map((f) => f.id)] } })
+      ).unwrap();
+      await dispatch(fetchJobTypeById(job.id));
+      toast.success("Media attached");
+    } catch (error) {
+      toast.error(typeof error === "string" ? error : error?.message || "Failed to attach media");
+    } finally {
+      setUploadingMedia(false);
+      if (mediaInputRef.current) mediaInputRef.current.value = "";
+    }
+  };
+
   const onSubmit = async (data: EditFormData) => {
     if (!job?.id) return;
     try {
@@ -401,7 +423,7 @@ const MaintenanceDetail = () => {
           </TabsContent>
 
           <TabsContent value="landlord-emails" className="space-y-4">
-            <JobLandlordEmails jobId={job.id as string} reloadKey={job.landlordInformedAt} />
+            <JobLandlordEmails jobId={job.id as string} reloadKey={job.landlordInformedAt} canManage={canManageMaintenance} onSent={refresh} />
           </TabsContent>
 
           <TabsContent value="invoices" className="space-y-4">
@@ -689,7 +711,15 @@ const MaintenanceDetail = () => {
 
             <Card>
               <CardContent className="p-4">
-                <div className="font-semibold mb-3">Attached media</div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="font-semibold">Attached media</div>
+                  {canManageMaintenance && (
+                    <>
+                      <input ref={mediaInputRef} type="file" multiple accept="image/jpeg,image/png,image/webp,application/pdf" className="hidden" onChange={(e) => void attachMedia(e.target.files)} />
+                      <Button size="sm" disabled={uploadingMedia} onClick={() => mediaInputRef.current?.click()}>{uploadingMedia ? "Uploading…" : "Attach media"}</Button>
+                    </>
+                  )}
+                </div>
                 {job.mediaFileIds && job.mediaFileIds.length > 0 ? (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                     {job.mediaFileIds.map((fileId, index) => (
@@ -699,7 +729,7 @@ const MaintenanceDetail = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No media attached. Use Edit to attach files.</p>
+                  <p className="text-sm text-muted-foreground">No media attached. Press Attach media to add photos or PDFs.</p>
                 )}
               </CardContent>
             </Card>
