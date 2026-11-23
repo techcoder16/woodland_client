@@ -27,6 +27,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { InfoHint } from "@/components/ui/hint";
 import { JOB_TYPE_OPTIONS, JOB_LOCATION_OPTIONS } from "@/helper/jobTypeOptions";
 import JobLandlordEmails from "@/components/maintenance/JobLandlordEmails";
+import JobPaymentsPanel from "@/components/maintenance/JobPaymentsPanel";
 import ContractorInvoicePanel from "@/components/maintenance/ContractorInvoicePanel";
 import { formatLondonDate, formatLondonDateTime, isJobOverdue, jobDueValue } from "@/utils/maintenanceSla";
 import {
@@ -379,8 +380,8 @@ const MaintenanceDetail = () => {
           </TabsContent>
 
           <TabsContent value="adjustment" className="space-y-4">
-            <Card className="p-4 space-y-3">
-              <div className="font-semibold">Payments<InfoHint text="Nothing is paid from here. When this job is deductible, its chargeable total is taken off the landlord's rent payment as an adjustment. Costs and markup are set on the Invoices tab." /></div>
+            <JobPaymentsPanel job={job} canManage={canManageMaintenance} onChanged={refresh} />
+            <Card className="p-4">
               <label className="flex items-start gap-3">
                 <Checkbox
                   checked={job.deductible !== false}
@@ -388,46 +389,14 @@ const MaintenanceDetail = () => {
                   onCheckedChange={(v) => handleToggleDeductible(v === true)}
                 />
                 <span>
-                  <span className="font-medium block">Deductible from landlord</span>
+                  <span className="font-medium block">Deductible from landlord<InfoHint text="Ticked: once the job is completed, its total is offered on the landlord's next payment and taken off their rent as an adjustment. Unticked: Woodland absorbs the cost." /></span>
                   <span className="text-sm text-muted-foreground">
                     {job.deductible !== false
-                      ? "The chargeable total is deducted from the landlord's rent payment as an adjustment."
+                      ? "The total is deducted from the landlord's rent payment as an adjustment once the job is completed."
                       : "Not deductible: Woodland absorbs this cost and nothing is deducted from the landlord."}
                   </span>
                 </span>
               </label>
-              <div className="border-t pt-3 text-sm">
-                <table className="w-full">
-                  <tbody>
-                    <tr className="border-b">
-                      <td className="py-1.5 text-muted-foreground">Contractor cost</td>
-                      <td className="py-1.5 text-right font-medium">{job.totalCost != null ? money(job.totalCost) : "Not entered yet"}</td>
-                    </tr>
-                    {job.otherCost != null && (
-                      <tr className="border-b">
-                        <td className="py-1.5 text-muted-foreground">Other cost</td>
-                        <td className="py-1.5 text-right font-medium">{money(job.otherCost)}</td>
-                      </tr>
-                    )}
-                    {job.marginPercent != null && (
-                      <tr className="border-b">
-                        <td className="py-1.5 text-muted-foreground">Markup ({job.marginPercent}%)</td>
-                        <td className="py-1.5 text-right font-medium">Included</td>
-                      </tr>
-                    )}
-                    {job.marginAmount != null && (
-                      <tr className="border-b">
-                        <td className="py-1.5 text-muted-foreground">Markup (flat)</td>
-                        <td className="py-1.5 text-right font-medium">+ {money(job.marginAmount)}</td>
-                      </tr>
-                    )}
-                    <tr>
-                      <td className="py-1.5 font-semibold">{job.deductible !== false ? "Adjustment to landlord" : "Chargeable total"}</td>
-                      <td className="py-1.5 text-right font-semibold">{job.totalCharged != null ? money(job.totalCharged) : "Not set yet"}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
             </Card>
           </TabsContent>
 
