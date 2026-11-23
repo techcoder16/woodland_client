@@ -54,8 +54,8 @@ const maintenanceSchema = z.object({
   description: z.string().optional(),
   thingsToDo: z.string().optional(),
   priority: z.string().min(1, "Priority is required"),
-  responsibility: z.string().optional(),
-  reportedBy: z.string().optional(),
+  responsibility: z.string().min(1, "Responsibility is required"),
+  reportedBy: z.string().min(1, "Reported by is required"),
   deductible: z.boolean().optional(),
   mediaFileIds: z.array(z.string()).optional(),
 });
@@ -123,6 +123,7 @@ const STATUS_FILTERS: { value: JobStatusFilter | ""; label: string }[] = [
 const RESPONSIBILITY_OPTIONS = [
   { value: "LANDLORD", label: "Landlord" },
   { value: "INTERNAL", label: "Internal" },
+  { value: "TENANT", label: "Tenant" },
 ];
 
 const REPORTED_BY_OPTIONS = [
@@ -416,7 +417,7 @@ const MaintenanceList = () => {
 
                   <div className="space-y-4 rounded-lg border bg-muted/30 p-4 h-fit">
                     <SelectField
-                      label="Responsibility"
+                      label="Responsibility *"
                       name="responsibility"
                       register={register}
                       setValue={setValue}
@@ -428,13 +429,16 @@ const MaintenanceList = () => {
                     <div className="space-y-1.5">
                       <div className="text-muted-foreground text-sm font-medium">Job status</div>
                       <div className="flex h-10 items-center rounded-md border bg-background px-3 text-sm">
-                        <Badge variant="outline" className={statusBadgeClass("OPEN")}>Open</Badge>
-                        <span className="ml-2 text-xs text-muted-foreground">set on create</span>
+                        {responsibilityValue === "LANDLORD" ? (
+                          <><Badge variant="outline" className={statusBadgeClass("WAITING_AUTHORIZATION")}>Waiting Authorisation</Badge><span className="ml-2 text-xs text-muted-foreground">Open once the landlord authorises</span></>
+                        ) : (
+                          <><Badge variant="outline" className={statusBadgeClass("OPEN")}>Open</Badge><span className="ml-2 text-xs text-muted-foreground">set on create</span></>
+                        )}
                       </div>
                     </div>
 
                     <SelectField
-                      label="Reported by"
+                      label="Reported by *"
                       name="reportedBy"
                       register={register}
                       setValue={setValue}
@@ -555,7 +559,7 @@ const MaintenanceList = () => {
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Due<InfoHint text="When the work is due. Shown in red once it is overdue." /></th>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Address<InfoHint text="The property this job is for." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Description<InfoHint text="What needs doing." /></th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Resp.<InfoHint text="Who is responsible: L = Landlord, I = Internal (Woodland)." /></th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Resp.<InfoHint text="Who is responsible: L = Landlord, T = Tenant, I = Internal (Woodland)." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Priority<InfoHint text="How urgent the job is: Critical (red), High (orange), Medium (yellow), Low (pink)." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Contractor<InfoHint text="The contractor assigned to carry out the work." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Status<InfoHint text="Where the job is: Open, Waiting Authorisation, Quoting, Assigned, In Progress, Pending (contractor finished, awaiting sign-off), Completed or Cancelled." /></th>
@@ -595,8 +599,8 @@ const MaintenanceList = () => {
                           </td>
                           <td className="px-4 py-3 text-sm text-center font-semibold">
                             {job.responsibility ? (
-                              <Hint text={job.responsibility.toUpperCase() === "LANDLORD" ? "Landlord responsible" : "Internal (Woodland) responsible"}>
-                                <span>{job.responsibility.toUpperCase() === "LANDLORD" ? "L" : "I"}</span>
+                              <Hint text={({ LANDLORD: "Landlord responsible", TENANT: "Tenant responsible" } as Record<string, string>)[job.responsibility.toUpperCase()] ?? "Internal (Woodland) responsible"}>
+                                <span>{({ LANDLORD: "L", TENANT: "T" } as Record<string, string>)[job.responsibility.toUpperCase()] ?? "I"}</span>
                               </Hint>
                             ) : "-"}
                           </td>
