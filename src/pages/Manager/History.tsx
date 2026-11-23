@@ -16,6 +16,7 @@ import {
   HistoryEntry,
   Termination,
 } from "@/redux/dataStore/historySlice";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const EVENT_OPTIONS = [
   "Move In",
@@ -214,16 +215,14 @@ const History = ({ propertyId, property }: HistoryProps) => {
               {/* Row 0: Event */}
               <div className="mb-3">
                 <Label className="text-xs text-muted-foreground mb-1 block">Event</Label>
-                <select
-                  value={entry.event || ""}
-                  onChange={(e) => updateLocal(index, "event", e.target.value)}
-                  className="w-full h-9 text-sm border border-input rounded-md px-2 bg-background"
-                >
-                  <option value="">Select event...</option>
-                  {EVENT_OPTIONS.map((opt) => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ))}
-                </select>
+                <Select value={entry.event || undefined} onValueChange={(v) => updateLocal(index, "event", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select event..." /></SelectTrigger>
+                  <SelectContent>
+                    {EVENT_OPTIONS.map((opt) => (
+                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Row 1: Date, Days Ago, Job Done */}
@@ -259,16 +258,14 @@ const History = ({ propertyId, property }: HistoryProps) => {
               {/* Row 2: Subject */}
               <div className="mb-3">
                 <Label className="text-xs text-muted-foreground mb-1 block">Subject</Label>
-                <select
-                  value={entry.subject || ""}
-                  onChange={(e) => updateLocal(index, "subject", e.target.value)}
-                  className="w-full h-9 text-sm border border-input rounded-md px-2 bg-background"
-                >
-                  <option value="">Select subject...</option>
-                  {SUBJECT_OPTIONS.map((opt) => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ))}
-                </select>
+                <Select value={entry.subject || undefined} onValueChange={(v) => updateLocal(index, "subject", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select subject..." /></SelectTrigger>
+                  <SelectContent>
+                    {SUBJECT_OPTIONS.map((opt) => (
+                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Row 3: Letter content */}
