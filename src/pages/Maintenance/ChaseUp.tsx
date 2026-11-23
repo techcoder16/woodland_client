@@ -141,14 +141,15 @@ const ChaseUp = () => {
                     <th className={th}>Contractor<InfoHint text="The contractor assigned to carry out the work." /></th>
                     <th className={th}>Chase up at<InfoHint text="When this job was due to be chased." /></th>
                     <th className={th}>Status<InfoHint text="Where the job is." /></th>
+                    <th className={th}>Notes<InfoHint text="Latest note on the job. Click Notes / Assign to see them all and add a chase-up note." /></th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
-                    <tr><td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">Loading...</td></tr>
+                    <tr><td colSpan={11} className="px-4 py-8 text-center text-muted-foreground">Loading...</td></tr>
                   ) : sorted.length === 0 ? (
-                    <tr><td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">Nothing to chase up right now.</td></tr>
+                    <tr><td colSpan={11} className="px-4 py-8 text-center text-muted-foreground">Nothing to chase up right now.</td></tr>
                   ) : (
                     sorted.map((job) => {
                       const id = job.id as string;
@@ -188,13 +189,24 @@ const ChaseUp = () => {
                             <td className="px-4 py-3 text-sm">
                               <Badge variant="outline" className={statusBadgeClass(job.status)}>{STATUS_LABELS[job.status] ?? job.status}</Badge>
                             </td>
+                            <td className="px-4 py-3 text-sm max-w-[14rem]">
+                              {(job.notes ?? [])[0] ? (
+                                <div className="truncate text-muted-foreground" title={(job.notes ?? [])[0].note}>
+                                  {(job.notes ?? []).length > 1 && <span className="mr-1 font-medium text-foreground">({(job.notes ?? []).length})</span>}
+                                  {(job.notes ?? [])[0].note}
+                                </div>
+                              ) : <span className="text-muted-foreground">No notes</span>}
+                            </td>
                             <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
-                              <Button asChild size="sm" variant="outline"><Link to={`/maintenance/${id}`}>Open</Link></Button>
+                              <div className="flex justify-center gap-2">
+                                <Button size="sm" onClick={() => setOpen((o) => ({ ...o, [id]: !o[id] }))}>{isOpen ? "Close" : "Notes / Assign"}</Button>
+                                <Button asChild size="sm" variant="outline"><Link to={`/maintenance/${id}`}>Open</Link></Button>
+                              </div>
                             </td>
                           </tr>
                           {isOpen && (
                             <tr className="border-b border-border/50 bg-muted/20">
-                              <td colSpan={10} className="px-6 py-4 space-y-4">
+                              <td colSpan={11} className="px-6 py-4 space-y-4">
                                 {canManageMaintenance && (
                                   <div>
                                     <div className="text-sm font-medium mb-2">{job.contractorId ? "Reassign contractor" : "Assign contractor"}</div>
