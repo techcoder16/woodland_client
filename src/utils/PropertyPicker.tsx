@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { fetchProperties } from "@/redux/dataStore/propertySlice";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
 import { formatPropertyReference } from "./propertyReference";
+import { get } from "@/helper/api";
 
 interface PropertyPickerProps {
   label?: string;
@@ -46,8 +47,28 @@ const PropertyPicker: React.FC<PropertyPickerProps> = ({
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const { properties, loading } = useAppSelector((state) => state.properties);
 
+  // With a landlord chosen the list is that landlord's own properties (all of them, not
+  // just the first page of the whole portfolio), narrowed by whatever is typed.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [vendorProperties, setVendorProperties] = useState<any[] | null>(null);
   useEffect(() => {
-    if (!open) return;
+    if (!vendorId) {
+      setVendorProperties(null);
+      return;
+    }
+    let cancelled = false;
+    setVendorProperties(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    get<any>(`vendor/getVendorById/${vendorId}`).then(({ data }) => {
+      if (!cancelled) setVendorProperties(data?.property ?? []);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [vendorId]);
+
+  useEffect(() => {
+    if (!open || vendorId) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       dispatch(fetchProperties({ page: 1, search: searchTerm, propertyStatus: "PUBLISHED" }));
@@ -55,10 +76,15 @@ const PropertyPicker: React.FC<PropertyPickerProps> = ({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [open, searchTerm, dispatch]);
+  }, [open, searchTerm, dispatch, vendorId]);
 
-  const options = (properties || [])
-    .filter((property: any) => !vendorId || property.vendorId === vendorId || property.vendor?.id === vendorId)
+  const term = searchTerm.trim().toLowerCase();
+  const source = vendorId
+    ? (vendorProperties ?? []).filter((p: any) =>
+        !term || `${formatPropertyReference(p.propertyNumber)} ${p.addressLine1 ?? ""} ${p.town ?? ""} ${p.postCode ?? ""}`.toLowerCase().includes(term))
+    : properties || [];
+  const isLoading = vendorId ? vendorProperties === null : loading;
+  const options = source
     .map((property: any) => ({
       value: property.id,
       label: `${formatPropertyReference(property.propertyNumber)} - ${property.addressLine1 || "Address unavailable"}${property.town ? `, ${property.town}` : ""}`,
@@ -93,13 +119,13 @@ const PropertyPicker: React.FC<PropertyPickerProps> = ({
           <Command shouldFilter={false}>
             <CommandInput placeholder="Search by address or reference..." value={searchTerm} onValueChange={setSearchTerm} />
             <CommandList>
-              {loading ? (
+              {isLoading ? (
                 <div className="flex items-center justify-center py-6">
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                 </div>
               ) : (
                 <>
-                  <CommandEmpty>No matching properties.</CommandEmpty>
+                  <CommandEmpty>{vendorId ? "This landlord has no matching properties." : "No matching properties."}</CommandEmpty>
                   <CommandGroup>
                     {options.map((option) => (
                       <CommandItem key={option.value} value={option.value} onSelect={() => handleSelect(option.value)}>
