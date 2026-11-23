@@ -89,7 +89,7 @@ export default function PropertyOverview({ property }: PropertyOverviewProps) {
   // the card reads empty for every wizard-created property.
   const landlord = party?.vendor || property?.vendor;
   const urgent = jobTypes.filter((j) => j.priority === "Critical" && j.status !== "COMPLETED" && j.status !== "CANCELLED").length;
-  const open = jobTypes.filter((j) => j.status === "QUOTING" || j.status === "ASSIGNED").length;
+  const open = jobTypes.filter((j) => ["OPEN", "WAITING_AUTHORIZATION", "QUOTING", "ASSIGNED"].includes(j.status)).length;
   const inProgress = jobTypes.filter((j) => j.status === "IN_PROGRESS" || j.status === "CONTRACTOR_DONE").length;
   const completed = jobTypes.filter((j) => j.status === "COMPLETED").length;
 

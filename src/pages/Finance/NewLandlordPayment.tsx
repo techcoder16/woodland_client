@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { AutoHint } from "@/components/ui/hint";
 import { uploadFileOnce } from "@/helper/fileUpload";
 import { ArrowLeft, ArrowRight, Check, Download, FileText, Loader2, Plus, Trash2, Upload, Wand2, Wrench, X } from "lucide-react";
@@ -32,13 +33,33 @@ const STEPS = ["Payment Details", "Review & Confirm", "Complete"] as const;
 // jobTypeId is set when the line came from a completed maintenance job, so
 // the server can track how much of that job has been recharged — a job can
 // be recharged in parts, and keeps being offered until nothing is left.
-type Adjustment = { id: string; type: string; description?: string; relatedTo?: string; amount: number; jobTypeId?: string };
+// deductionId is set when the line recovers part or all of a property deduction.
+type Adjustment = { id: string; type: string; description?: string; relatedTo?: string; amount: number; jobTypeId?: string; deductionId?: string };
+// A deduction still owed to the landlord-side ledger, offered on payments due on or after its date.
+type BillableDeduction = { id: string; description: string; date: string; amount: number; outstanding: number };
+type PeriodCheck = { exists: boolean; transaction: { id: string; reference?: string; status?: string; toLandlordNetPaid?: number; paidAt?: string } | null };
 // total = landlord charge for the job, charged = recharged on earlier
 // payments, amount = what's left to recharge.
 type BillableJob = { id: string; jobType: string; description?: string; dateDone?: string; total: number; charged: number; amount: number };
 type RechargeMode = "FULL" | "PERCENT" | "FIXED";
 
 const ADJUSTMENT_TYPES = ["Maintenance Recharge", "Management Fee", "VAT", "Other"];
+
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+// The accounting period picker works in "November 2026"; the API uses "2026-11".
+const periodLabel = (ym: string) => {
+  const match = /^(\d{4})-(\d{2})$/.exec(ym);
+  return match ? `${MONTH_NAMES[Number(match[2]) - 1]} ${match[1]}` : ym;
+};
+const labelToPeriod = (label: string) => {
+  const [month, year] = label.split(" ");
+  const index = MONTH_NAMES.indexOf(month);
+  return index >= 0 && /^\d{4}$/.test(year || "") ? `${year}-${String(index + 1).padStart(2, "0")}` : "";
+};
+const dmy = (iso: string) => {
+  const [y, m, d] = iso.slice(0, 10).split("-");
+  return `${d}/${m}/${y}`;
+};
 
 export default function NewLandlordPayment() {
   const dispatch = useAppDispatch();
@@ -118,6 +139,88 @@ export default function NewLandlordPayment() {
   }, [propertyId]);
   const unaddedJobs = billableJobs.filter((job) => !adjustments.some((a) => a.jobTypeId === job.id));
 
+  // Opened from a property's Rent Due row: landlord, property, accounting period
+  // and expected payment date (the rent due date) arrive prefilled.
+  const [searchParams] = useSearchParams();
+  const prefilled = useRef(false);
+  useEffect(() => {
+    if (prefilled.current) return;
+    prefilled.current = true;
+    const qVendor = searchParams.get("vendorId");
+    const qProperty = searchParams.get("propertyId");
+    const qPeriod = searchParams.get("period") || "";
+    const qDue = searchParams.get("due") || "";
+    if (qVendor) setVendorId(qVendor);
+    if (qProperty) setPropertyId(qProperty);
+    setPayment((current) => ({
+      ...current,
+      ...(/^\d{4}-\d{2}$/.test(qPeriod) ? { accountingPeriod: periodLabel(qPeriod) } : {}),
+      ...(/^\d{4}-\d{2}-\d{2}$/.test(qDue) ? { expectedPaymentDate: qDue } : {}),
+    }));
+  }, [searchParams]);
+
+  // Rent is paid once per property per accounting period. Check the period
+  // whenever the property or period changes; the server also rejects a duplicate with 409.
+  const periodKey = labelToPeriod(payment.accountingPeriod);
+  const periodScope = propertyId && periodKey ? `${propertyId}|${periodKey}` : "";
+  const [periodRefresh, setPeriodRefresh] = useState(0);
+  const [periodCheck, setPeriodCheck] = useState<{ scope: string; result: PeriodCheck | null } | null>(null);
+  useEffect(() => {
+    if (!periodScope) return;
+    let cancelled = false;
+    get<PeriodCheck>(`transaction/period-status?propertyId=${propertyId}&period=${periodKey}`).then(({ data }) => {
+      if (!cancelled) setPeriodCheck({ scope: periodScope, result: data ?? null });
+    });
+    return () => { cancelled = true; };
+  }, [periodScope, propertyId, periodKey, periodRefresh]);
+  // undefined while the check for the current property + period is still in flight.
+  const periodCurrent = periodCheck?.scope === periodScope ? periodCheck.result : undefined;
+  const periodChecking = !!periodScope && periodCurrent === undefined;
+  const periodTaken = !!periodCurrent?.exists;
+  const periodTransaction = periodCurrent?.transaction;
+  const saveBlocked = saving || periodChecking || periodTaken;
+
+  // Outstanding property deductions dated up to the payment's due date (the rent
+  // period ends on the due date), offered the same way as billable maintenance jobs.
+  const [billableDeductions, setBillableDeductions] = useState<BillableDeduction[]>([]);
+  useEffect(() => {
+    setBillableDeductions([]);
+    if (!propertyId || !payment.expectedPaymentDate) return;
+    let cancelled = false;
+    get<BillableDeduction[]>(`transaction/billable-deductions?propertyId=${propertyId}&upTo=${payment.expectedPaymentDate}`).then(({ data }) => {
+      if (!cancelled && Array.isArray(data)) setBillableDeductions(data);
+    });
+    return () => { cancelled = true; };
+  }, [propertyId, payment.expectedPaymentDate]);
+  const unaddedDeductions = billableDeductions.filter((d) => !adjustments.some((a) => a.deductionId === d.id));
+
+  // Deduction popup: recover all that is outstanding, or a lower amount (part recovery).
+  const [deductionDraft, setDeductionDraft] = useState<{ deduction: BillableDeduction; adjId: string | null; value: string } | null>(null);
+  const deductionAmount = Number(deductionDraft?.value || 0);
+  const deductionError = !deductionDraft ? ""
+    : deductionAmount <= 0 ? "Enter an amount above £0"
+    : deductionAmount > deductionDraft.deduction.outstanding + 0.005 ? `Only ${money(deductionDraft.deduction.outstanding)} is outstanding`
+    : "";
+  const openDeduction = (deduction: BillableDeduction, adj?: Adjustment) => {
+    setDeductionDraft({ deduction, adjId: adj?.id ?? null, value: String(adj ? Math.abs(adj.amount) : deduction.outstanding) });
+  };
+  const saveDeduction = () => {
+    if (!deductionDraft || deductionError) return;
+    const { deduction, adjId } = deductionDraft;
+    const entry: Adjustment = {
+      id: adjId || crypto.randomUUID(),
+      type: "Deduction",
+      description: deduction.description,
+      relatedTo: deduction.date
+        ? `Deduction added ${dmy(deduction.date)}`
+        : adjustments.find((a) => a.id === adjId)?.relatedTo,
+      amount: -Math.round(deductionAmount * 100) / 100,
+      deductionId: deduction.id,
+    };
+    setAdjustments((prev) => (adjId ? prev.map((a) => (a.id === adjId ? entry : a)) : [...prev, entry]));
+    setDeductionDraft(null);
+  };
+
   // Recharge popup: charge all of what's left on a job, a % of the job's
   // total, or a fixed amount — anything left over is offered again on the
   // next landlord payment for this property.
@@ -196,6 +299,11 @@ export default function NewLandlordPayment() {
   const openEditAdjustment = (adj: Adjustment) => {
     const job = adj.jobTypeId && billableJobs.find((j) => j.id === adj.jobTypeId);
     if (job) { openRecharge(job, adj); return; }
+    if (adj.deductionId) {
+      const deduction = billableDeductions.find((d) => d.id === adj.deductionId);
+      openDeduction(deduction ?? { id: adj.deductionId, description: adj.description || "", date: "", amount: Math.abs(adj.amount), outstanding: Math.abs(adj.amount) }, adj);
+      return;
+    }
     setEditingAdjId(adj.id);
     setAdjForm({ type: adj.type, description: adj.description || "", relatedTo: adj.relatedTo || "", amount: String(Math.abs(adj.amount)) });
     setAdjFile(null);
@@ -293,6 +401,14 @@ export default function NewLandlordPayment() {
       toast({ title: "Select a property", description: "Choose a property before continuing.", variant: "destructive" });
       return;
     }
+    if (!periodKey) {
+      toast({ title: "Select the accounting period", description: "Choose the month this rent covers.", variant: "destructive" });
+      return;
+    }
+    if (periodTaken) {
+      toast({ title: "Rent already recorded", description: `Rent for ${payment.accountingPeriod} is already recorded for this property.`, variant: "destructive" });
+      return;
+    }
     if (!payment.contractualRent) {
       toast({ title: "Enter the contractual rent", description: "Contractual rent is required to calculate the net payable amount.", variant: "destructive" });
       return;
@@ -303,12 +419,13 @@ export default function NewLandlordPayment() {
   // Step 2 -> creates the transaction, then uploads any supporting
   // documents against it. helper/api.ts's post() attaches a fresh
   // Idempotency-Key per call, so double-submits don't create duplicates.
-  const confirmAndCreate = async (status: "DRAFT" | "ACTIVE" | "APPROVAL_REQUIRED") => {
+  const confirmAndCreate = async (status: "DRAFT" | "ACTIVE") => {
     setSaving(true);
     try {
       const { data, error } = await post<any>("transaction", {
         propertyId,
         status,
+        accountingPeriod: periodKey || undefined,
         toLandlordDate: payment.paymentDate,
         toLandlordRentReceived: Number(payment.contractualRent) || 0,
         toLandlordNetPaid: netPayable,
@@ -353,6 +470,8 @@ export default function NewLandlordPayment() {
       setCreatedTransaction(transaction);
       setStep(2);
     } catch (error: any) {
+      // A 409 means the period was recorded elsewhere; re-check so the banner explains it.
+      setPeriodRefresh((n) => n + 1);
       toast({ title: "Could not save payment", description: error.message || "Please try again.", variant: "destructive" });
     } finally {
       setSaving(false);
@@ -423,6 +542,18 @@ export default function NewLandlordPayment() {
                 </div>
 
                 {propertyId && <>
+                  {periodTaken && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+                      <p className="font-medium">
+                        Rent for {payment.accountingPeriod} has already been {periodTransaction?.status === "PAID" ? "paid" : periodTransaction?.status === "DRAFT" ? "recorded (Draft)" : "recorded"}
+                        {periodTransaction?.reference ? ` (${periodTransaction.reference})` : ""}.
+                      </p>
+                      {periodTransaction?.id && (
+                        <Link className="mt-1 inline-block font-medium underline" to={`/finance/landlord-payments?payment=${periodTransaction.id}`}>Open the existing payment</Link>
+                      )}
+                      <p className="mt-1 text-xs">Each rent period can only be paid once. Choose a different accounting period to record a payment.</p>
+                    </div>
+                  )}
                   <div className="grid gap-4 sm:grid-cols-2 border-t pt-5">
                     <div className="space-y-2"><Label>Payment date *</Label><Input type="date" value={payment.paymentDate} onChange={(event) => updatePayment("paymentDate", event.target.value)} /></div>
                     <div className="space-y-2"><Label>Accounting period *</Label><MonthYearPicker value={payment.accountingPeriod} onChange={(value) => updatePayment("accountingPeriod", value)} /></div>
@@ -471,6 +602,26 @@ export default function NewLandlordPayment() {
                                   {job.charged > 0 && <span className="block text-xs text-muted-foreground">left of {money(job.total)}</span>}
                                 </span>
                                 <Button size="sm" variant="outline" className="h-7" onClick={() => openRecharge(job)}><Plus className="mr-1 h-3 w-3" />Add</Button>
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {unaddedDeductions.length > 0 && (
+                        <div className="space-y-1.5 border-b bg-sky-50/60 p-3">
+                          <p className="text-xs font-medium text-sky-800">Deductions outstanding up to {dmy(payment.expectedPaymentDate)}</p>
+                          {unaddedDeductions.map((d) => (
+                            <div key={d.id} className="flex items-center justify-between gap-2 text-sm">
+                              <span className="min-w-0 truncate">
+                                {d.description}
+                                <span className="text-xs text-muted-foreground"> · {d.date ? dmy(d.date) : "-"}</span>
+                              </span>
+                              <span className="flex shrink-0 items-center gap-2">
+                                <span className="text-right">
+                                  <span className="font-medium">{money(d.outstanding)}</span>
+                                  {d.amount !== d.outstanding && <span className="block text-xs text-muted-foreground">of {money(d.amount)}</span>}
+                                </span>
+                                <Button size="sm" variant="outline" className="h-7" onClick={() => openDeduction(d)}><Plus className="mr-1 h-3 w-3" />Add</Button>
                               </span>
                             </div>
                           ))}
@@ -548,7 +699,7 @@ export default function NewLandlordPayment() {
                 </>}
 
                 <div className="flex justify-end gap-2 border-t pt-5">
-                  <Button onClick={goToReview}>Review &amp; Confirm <ArrowRight className="ml-2 h-4 w-4" /></Button>
+                  <Button onClick={goToReview} disabled={periodChecking || periodTaken}>Review &amp; Confirm <ArrowRight className="ml-2 h-4 w-4" /></Button>
                 </div>
               </section>
             )}
@@ -572,8 +723,8 @@ export default function NewLandlordPayment() {
                   <Button variant="outline" onClick={() => setStep(0)} disabled={saving}><ArrowLeft className="mr-2 h-4 w-4" />Back</Button>
                   <div className="flex flex-wrap justify-end gap-2">
                     <Button variant="outline" onClick={downloadReviewPdf} disabled={saving}><Download className="mr-2 h-4 w-4" />Download PDF</Button>
-                    <Button variant="outline" onClick={() => void confirmAndCreate("DRAFT")} disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save as draft</Button>
-                    <Button onClick={() => void confirmAndCreate("APPROVAL_REQUIRED")} disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Submit for approval</Button>
+                    <Button variant="outline" onClick={() => void confirmAndCreate("DRAFT")} disabled={saveBlocked}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save as draft</Button>
+                    <Button onClick={() => void confirmAndCreate("ACTIVE")} disabled={saveBlocked}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save</Button>
                   </div>
                 </div>
               </section>
@@ -582,7 +733,7 @@ export default function NewLandlordPayment() {
             {step === 2 && (
               <section className="surface space-y-5 p-6 text-center">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600"><Check className="h-6 w-6" /></div>
-                <h2 className="text-lg font-semibold">Payment {createdTransaction?.status === "DRAFT" ? "saved as draft" : "submitted"}</h2>
+                <h2 className="text-lg font-semibold">Payment {createdTransaction?.status === "DRAFT" ? "saved as draft" : "saved"}</h2>
                 <p className="text-sm text-muted-foreground">Reference No. <span className="font-medium text-foreground">{createdTransaction?.reference || createdTransaction?.tranid || "-"}</span></p>
                 <p className="text-sm text-muted-foreground">Bank payment reference <span className="font-mono font-medium text-foreground">{createdTransaction?.paymentReference || createdTransaction?.reference || "-"}</span></p>
                 <p className="text-sm text-muted-foreground">Net payable {money(netPayable)} to {selectedVendor ? `${selectedVendor.firstName} ${selectedVendor.lastName}` : "the landlord"}</p>
@@ -716,6 +867,34 @@ export default function NewLandlordPayment() {
               </div>
               {rechargeError && rechargeMode !== "FULL" && rechargeValue && <p className="text-sm text-destructive">{rechargeError}</p>}
               <Button className="w-full" disabled={!!rechargeError} onClick={saveRecharge}>{rechargeAdjId ? "Save changes" : "Add recharge"}</Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+      {/* Deduction popup: recover all of what is outstanding, or part of it */}
+      <Dialog open={!!deductionDraft} onOpenChange={(open) => { if (!open) setDeductionDraft(null); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{deductionDraft?.adjId ? "Edit deduction" : "Add deduction"}</DialogTitle></DialogHeader>
+          {deductionDraft && (
+            <div className="space-y-3">
+              <div className="rounded-lg border bg-muted/30 p-3 text-sm">
+                <p className="font-medium">{deductionDraft.deduction.description}</p>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <div><p className="text-xs text-muted-foreground">Deducted on</p><p className="font-medium">{deductionDraft.deduction.date ? dmy(deductionDraft.deduction.date) : "-"}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Outstanding</p><p className="font-medium text-sky-700">{money(deductionDraft.deduction.outstanding)}</p></div>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label>Recover on this payment (£)</Label>
+                <Input type="number" min="0" max={deductionDraft.deduction.outstanding} value={deductionDraft.value} onChange={(e) => setDeductionDraft((d) => (d ? { ...d, value: e.target.value } : d))} autoFocus />
+                <p className="text-xs text-muted-foreground">Lower this to recover part now. The rest stays outstanding.</p>
+              </div>
+              <div className="flex justify-between rounded-md bg-emerald-50 p-3 text-sm">
+                <span>Recover now <span className="font-semibold">{money(deductionAmount)}</span></span>
+                <span className="text-muted-foreground">Left after {money(Math.max(deductionDraft.deduction.outstanding - deductionAmount, 0))}</span>
+              </div>
+              {deductionError && deductionDraft.value && <p className="text-sm text-destructive">{deductionError}</p>}
+              <Button className="w-full" disabled={!!deductionError} onClick={saveDeduction}>{deductionDraft.adjId ? "Save changes" : "Add deduction"}</Button>
             </div>
           )}
         </DialogContent>

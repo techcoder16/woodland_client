@@ -23,9 +23,19 @@ import { formatLocalDate } from "@/helper/formatLocalDate";
 import { renderLabel } from "@/utils/FieldLabel";
 import FileUploadField from "@/utils/FileUploadField";
 
-type ReportingStatus = "QUOTING" | "ASSIGNED" | "IN_PROGRESS" | "CONTRACTOR_DONE" | "COMPLETED" | "CANCELLED";
+type ReportingStatus =
+  | "OPEN"
+  | "WAITING_AUTHORIZATION"
+  | "QUOTING"
+  | "ASSIGNED"
+  | "IN_PROGRESS"
+  | "CONTRACTOR_DONE"
+  | "COMPLETED"
+  | "CANCELLED";
 
 const STATUS_LABELS: Record<ReportingStatus, string> = {
+  OPEN: "Open",
+  WAITING_AUTHORIZATION: "Waiting Authorisation",
   QUOTING: "Quoting",
   ASSIGNED: "Assigned",
   IN_PROGRESS: "In Progress",

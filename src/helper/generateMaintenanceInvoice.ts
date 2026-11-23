@@ -63,7 +63,8 @@ export function generateMaintenanceInvoicePdf(data: MaintenanceInvoiceData) {
         </table>
 
         <div class="section">
-          Managed by Woodland Properties Management Ltd.
+          Managed by Woodland Properties Management Ltd.<br />
+          Please do not reply to this invoice.
         </div>
       </body>
     </html>

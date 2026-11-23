@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { openStoredFile, uploadFile } from "@/helper/fileUpload";
-import { CalendarDays, Check, CheckCircle2, ChevronRight, Clock3, Download, FileSpreadsheet, FileText, Filter, Loader2, Paperclip, Pencil, Plus, RefreshCw, Send, Trash2, Upload, WalletCards, X } from "lucide-react";
+import { CalendarDays, CheckCircle2, ChevronRight, Download, FileSpreadsheet, FileText, Filter, Loader2, Mail, Paperclip, Pencil, Plus, RefreshCw, StickyNote, Upload, WalletCards, X } from "lucide-react";
 import type { DayContentProps } from "react-day-picker";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,43 +28,59 @@ import { formatPropertyReference } from "@/utils/propertyReference";
 import { exportTransactionsToExcel, exportTransactionsToPdf } from "@/utils/transactionExport";
 import { useTheme } from "@/context/ThemeContext";
 import { useToast } from "@/components/ui/use-toast";
-import { Hint, InfoHint } from "@/components/ui/hint";
-import { useAuth } from "@/context/AuthContext";
+import { InfoHint } from "@/components/ui/hint";
 
 const API_URL = import.meta.env.VITE_API_URL;
 type Payment = any;
 
 const money = (value: unknown) => `£${Number(value || 0).toLocaleString("en-GB", { minimumFractionDigits: 2 })}`;
 const paymentAmount = (payment: Payment) => Number(payment.toLandlordNetPaid ?? payment.toLandlordNetReceived ?? payment.toLandlordRentReceived ?? 0);
-const HEADING_HINTS: Record<string, string> = {"Reference": "Unique payment number, e.g. LLP-1126-001 (month/year + counter).", "Landlord": "Who is being paid.", "Property": "The property this payment is for.", "Type": "What kind of payment this is.", "Period": "The rental period this payment covers.", "Due date": "The date the landlord should be paid by.", "Contractual": "Rent due to the landlord under the agreement, before deductions.", "Adjustments": "Deductions or additions: management fee, VAT, maintenance recharges.", "Payable": "Final amount to pay the landlord after adjustments.", "Docs": "Attached files, e.g. statements and invoices.", "Status": "Draft, Approval (needs an admin sign-off), Ready (approved, can be paid), Hold (paused), Paid (locked)."};
-const CARD_HINTS: Record<string, string> = {"All payments": "Every landlord payment, whatever its status.", "Approval required": "Payments waiting for an admin to approve before they can be paid.", "Ready to pay": "Approved payments that can be paid now.", "On hold": "Payments paused. Release them before paying.", "Paid": "Completed payments. These are locked and cannot be changed."};
-const STATUS_LABEL: Record<string, string> = { ACTIVE: "Ready", DRAFT: "Draft", PENDING: "Hold", APPROVAL_REQUIRED: "Approval", PAID: "Paid" };
-const STATUS_BADGE: Record<string, string> = {
+const HEADING_HINTS: Record<string, string> = {"Reference": "Unique payment number, e.g. LLP-1126-001 (month/year + counter).", "Landlord": "Who is being paid.", "Property": "The property this payment is for.", "Type": "What kind of payment this is.", "Period": "The rental month this payment covers.", "Due date": "The date the landlord should be paid by.", "Contractual": "Rent due to the landlord under the agreement, before deductions.", "Adjustments": "Deductions or additions: management fee, VAT, maintenance recharges.", "Payable": "Final amount to pay the landlord after adjustments.", "Docs": "Attached files, e.g. statements and invoices.", "Status": "Paid, Overdue (due date has passed), Due, or Draft."};
+const CARD_HINTS: Record<string, string> = {"All payments": "Every landlord payment, whatever its status.", "Overdue": "Unpaid payments whose due date has passed.", "Due": "Unpaid payments whose due date has not passed yet.", "Paid": "Completed payments. These are locked and cannot be changed."};
+
+// What the list shows. Paid and Draft are fixed; any other unpaid payment is
+// Overdue once its due date has passed, and Due until then.
+type DisplayStatus = "OVERDUE" | "DUE" | "PAID" | "DRAFT";
+const STATUS_LABEL: Record<DisplayStatus, string> = { OVERDUE: "Overdue", DUE: "Due", PAID: "Paid", DRAFT: "Draft" };
+const STATUS_BADGE: Record<DisplayStatus, string> = {
+  OVERDUE: "bg-red-100 text-red-700",
+  DUE: "bg-amber-100 text-amber-800",
   PAID: "bg-violet-100 text-violet-700",
-  ACTIVE: "bg-emerald-100 text-emerald-700",
-  PENDING: "bg-orange-100 text-orange-700",
-  APPROVAL_REQUIRED: "bg-red-100 text-red-700",
   DRAFT: "bg-slate-100 text-slate-700",
 };
 // Solid colour per status for the calendar bars — same hues as the badges.
-const STATUS_BAR: Record<string, string> = {
+const STATUS_BAR: Record<DisplayStatus, string> = {
+  OVERDUE: "bg-red-500",
+  DUE: "bg-amber-500",
   PAID: "bg-violet-500",
-  ACTIVE: "bg-emerald-500",
-  PENDING: "bg-orange-500",
-  APPROVAL_REQUIRED: "bg-red-500",
   DRAFT: "bg-slate-400",
 };
-const STATUS_ORDER = ["APPROVAL_REQUIRED", "ACTIVE", "PENDING", "PAID", "DRAFT"];
+const STATUS_ORDER: DisplayStatus[] = ["OVERDUE", "DUE", "PAID", "DRAFT"];
+
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+// Accounting period comes back as "2026-11"; show it as "November 2026".
+const periodLabel = (value?: string) => {
+  const match = /^(\d{4})-(\d{2})$/.exec(value || "");
+  return match ? `${MONTH_NAMES[Number(match[2]) - 1]} ${match[1]}` : value || "";
+};
+
+const startOfToday = () => new Date(new Date().toDateString());
+const dueDateOf = (payment: Payment) => payment.expectedPaymentDate || payment.toLandlordDate;
+const displayStatus = (payment: Payment): DisplayStatus => {
+  if (payment.status === "PAID") return "PAID";
+  if (payment.status === "DRAFT") return "DRAFT";
+  const due = dueDateOf(payment);
+  return due && new Date(due) < startOfToday() ? "OVERDUE" : "DUE";
+};
 
 export default function LandlordPayments() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const queueRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const { canApproveTransactions } = useAuth();
   const docUploadRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
+  const [emailing, setEmailing] = useState(false);
   const { brandColors } = useTheme();
   const hsl = (value: string) => `hsl(${value})`;
   const { properties } = useAppSelector((state) => state.properties);
@@ -84,6 +100,7 @@ export default function LandlordPayments() {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [calendarSelectedDate, setCalendarSelectedDate] = useState<Date | undefined>(undefined);
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const load = async () => {
     setLoading(true);
@@ -101,6 +118,19 @@ export default function LandlordPayments() {
     void load();
   }, [dispatch]);
 
+  // ?payment=<id> opens that payment's drawer (used by the property Rent Due rows).
+  useEffect(() => {
+    const id = searchParams.get("payment");
+    if (!id || loading) return;
+    const found = payments.find((p) => p.id === id);
+    if (found) {
+      setSelected(found);
+      setDetailsTab("Overview");
+      setEditing(false);
+    }
+    setSearchParams({}, { replace: true });
+  }, [searchParams, payments, loading, setSearchParams]);
+
   const propertyMap = useMemo(() => new Map(properties.map((property: any) => [property.id, property])), [properties]);
   const landlords = useMemo(() => {
     const values = new Map<string, string>();
@@ -114,30 +144,23 @@ export default function LandlordPayments() {
     const property = propertyMap.get(payment.propertyId) as any;
     const text = `${property?.addressLine1 || ""} ${property?.town || ""} ${payment.toLandlordPaidBy || ""} ${payment.toLandlordExpenditureDescription || ""} ${payment.reference || ""}`.toLowerCase();
     const paymentDate = payment.toLandlordDate ? new Date(payment.toLandlordDate).toISOString().slice(0, 10) : "";
-    const matchesStatus = statusFilter === "all" || payment.status === statusFilter;
+    const matchesStatus = statusFilter === "all" || displayStatus(payment) === statusFilter;
     const matchesLandlord = landlordFilter === "all" || property?.vendorId === landlordFilter || property?.vendor?.id === landlordFilter;
     return text.includes(search.toLowerCase()) && matchesStatus && matchesLandlord && (!dateFilter || paymentDate === dateFilter);
   });
 
-  const paid = payments.filter((payment) => payment.status === "PAID");
-  const approval = payments.filter((payment) => payment.status === "APPROVAL_REQUIRED");
-  const ready = payments.filter((payment) => payment.status === "ACTIVE");
-  const onHold = payments.filter((payment) => payment.status === "PENDING");
-  const totals = {
-    paid: paid.reduce((sum, payment) => sum + paymentAmount(payment), 0),
-    approval: approval.reduce((sum, payment) => sum + paymentAmount(payment), 0),
-    ready: ready.reduce((sum, payment) => sum + paymentAmount(payment), 0),
-    hold: onHold.reduce((sum, payment) => sum + paymentAmount(payment), 0),
-  };
+  const byStatus = (key: DisplayStatus) => payments.filter((payment) => displayStatus(payment) === key);
+  const overdue = byStatus("OVERDUE");
+  const due = byStatus("DUE");
+  const paid = byStatus("PAID");
+  const drafts = byStatus("DRAFT");
+  const totalOf = (list: Payment[]) => list.reduce((sum, payment) => sum + paymentAmount(payment), 0);
   const statusChart = [
-    { name: "Ready", value: ready.length, color: hsl(brandColors.success) },
-    { name: "Approval", value: approval.length, color: hsl(brandColors.destructive) },
-    { name: "On hold", value: onHold.length, color: hsl(brandColors.warning) },
+    { name: "Overdue", value: overdue.length, color: hsl(brandColors.destructive) },
+    { name: "Due", value: due.length, color: hsl(brandColors.warning) },
     { name: "Paid", value: paid.length, color: hsl(brandColors.primary) },
+    { name: "Draft", value: drafts.length, color: "#94a3b8" },
   ].filter((item) => item.value > 0);
-  // Only real payment history is shown — skipped entirely when there is none,
-  // rather than padding the panel with placeholder rows.
-  const history = [...payments].sort((a, b) => new Date(b.toLandlordDate || b.createdAt || 0).getTime() - new Date(a.toLandlordDate || a.createdAt || 0).getTime()).slice(0, 8);
 
   // Upcoming = expected/landlord date in the future, not yet paid.
   const upcoming = [...payments]
@@ -169,9 +192,9 @@ export default function LandlordPayments() {
   // payments.
   const CalendarDay = ({ date }: DayContentProps) => {
     const list = paymentsByDateKey.get(date.toDateString()) || [];
-    const counts = STATUS_ORDER.map((s) => [s, list.filter((p) => (p.status || "ACTIVE") === s).length] as const).filter(([, n]) => n > 0);
+    const counts = STATUS_ORDER.map((s) => [s, list.filter((p) => displayStatus(p) === s).length] as const).filter(([, n]) => n > 0);
     return (
-      <span className="flex h-full w-full flex-col items-center justify-center gap-1" title={counts.map(([s, n]) => `${n} ${STATUS_LABEL[s] || s}`).join(" · ")}>
+      <span className="flex h-full w-full flex-col items-center justify-center gap-1" title={counts.map(([s, n]) => `${n} ${STATUS_LABEL[s]}`).join(" · ")}>
         <span className="leading-none">{date.getDate()}</span>
         {counts.length > 0 && (
           <span className="flex h-1.5 w-7 gap-px overflow-hidden rounded-full">
@@ -196,9 +219,9 @@ export default function LandlordPayments() {
     return { data };
   };
 
-  const openView = (payment: Payment) => {
+  const openView = (payment: Payment, tab = "Overview") => {
     setSelected(payment);
-    setDetailsTab("Overview");
+    setDetailsTab(tab);
     setEditing(false);
   };
 
@@ -245,28 +268,15 @@ export default function LandlordPayments() {
     await refreshOne(selected.id);
   };
 
-  const submitForApproval = async (payment: Payment) => {
-    const { error } = await post(`transaction/${payment.id}/request-approval`, {});
-    if (error) {
-      toast({ title: "Could not submit for approval", description: error.message, variant: "destructive" });
-      return;
-    }
-    toast({ title: "Submitted for approval" });
-    await load();
-    if (selected?.id === payment.id) await refreshOne(payment.id);
-  };
-
-  // One-record lifecycle actions from the details drawer. The server
-  // enforces the same rules (paid is final, approval is admin-only); the
-  // buttons are only shown when the action can succeed.
-  const runAction = async (path: string, successTitle: string) => {
+  // Marks any unpaid payment (draft, due or overdue) as paid. Paid is final.
+  const markPaid = async () => {
     if (!selected) return;
     setActionBusy(true);
     try {
-      const { data, error } = await post<any>(`transaction/${selected.id}/${path}`, {});
+      const { data, error } = await post<any>(`transaction/${selected.id}/mark-paid`, {});
       if (error) throw new Error(error.message);
-      if (data?.skipped?.length) throw new Error("This payment is no longer awaiting approval — refresh and try again.");
-      toast({ title: successTitle });
+      if (data?.skipped?.length) throw new Error("This payment could not be marked as paid. Refresh and try again.");
+      toast({ title: "Payment marked as paid" });
       await load();
       await refreshOne(selected.id);
     } catch (error: any) {
@@ -274,6 +284,19 @@ export default function LandlordPayments() {
     } finally {
       setActionBusy(false);
     }
+  };
+
+  // Emails the landlord a statement for this payment. Nothing is sent automatically on payment.
+  const emailStatement = async () => {
+    if (!selected) return;
+    setEmailing(true);
+    const { data, error } = await post<any>(`transaction/${selected.id}/email-statement`, {});
+    setEmailing(false);
+    if (error) {
+      toast({ title: "Could not email statement", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Statement emailed", description: data?.message || (data?.to ? `Sent to ${data.to}` : undefined) });
   };
 
   const uploadDocuments = async (files: FileList | null) => {
@@ -311,30 +334,6 @@ export default function LandlordPayments() {
     setSelectedIds((prev) => (prev.size === visible.length ? new Set() : new Set(visible.map((p) => p.id))));
   };
 
-  const bulkApprove = async () => {
-    if (!selectedIds.size) return;
-    setBulkBusy(true);
-    try {
-      const { data, error } = await post<any>("transaction/bulk-approve", { ids: [...selectedIds] });
-      if (error) throw new Error(error.message);
-      toast({ title: "Bulk approval complete", description: data?.message });
-      setSelectedIds(new Set());
-      await load();
-    } catch (error: any) {
-      toast({ title: "Bulk approval failed", description: error.message, variant: "destructive" });
-    } finally {
-      setBulkBusy(false);
-    }
-  };
-
-  const viewAllPayments = () => {
-    setSearch("");
-    setStatusFilter("all");
-    setLandlordFilter("all");
-    setDateFilter("");
-    queueRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
   const bulkChangeStatus = async (status: string) => {
     if (!selectedIds.size) return;
     setBulkBusy(true);
@@ -358,7 +357,7 @@ export default function LandlordPayments() {
           <div>
             <p className="text-sm text-muted-foreground">Finance / Landlord Payments</p>
             <h1 className="text-2xl font-semibold tracking-tight">Landlord Transactions</h1>
-            <p className="text-sm text-muted-foreground">Manage, approve and make payments to landlords</p>
+            <p className="text-sm text-muted-foreground">Record and track payments to landlords</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => void load()}><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button>
@@ -381,19 +380,17 @@ export default function LandlordPayments() {
           </div>
         </div>
 
-        {/* Only statuses that actually have payments — once everything is
-            paid, empty "Approval" / "On hold" cards are just noise. */}
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        {/* Only statuses that actually have payments — empty cards are hidden. */}
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {([
-            ["All payments", payments, money(payments.reduce((sum, payment) => sum + paymentAmount(payment), 0)), "text-blue-600"],
-            ["Approval required", approval, money(totals.approval), "text-red-600"],
-            ["Ready to pay", ready, money(totals.ready), "text-emerald-600"],
-            ["On hold", onHold, money(totals.hold), "text-orange-600"],
-            ["Paid", paid, money(totals.paid), "text-violet-600"],
-          ] as [string, Payment[], string, string][]).filter(([, records]) => records.length > 0).map(([label, records, total, color]) => (
+            ["All payments", payments, totalOf(payments), "text-blue-600"],
+            ["Overdue", overdue, totalOf(overdue), "text-red-600"],
+            ["Due", due, totalOf(due), "text-amber-600"],
+            ["Paid", paid, totalOf(paid), "text-violet-600"],
+          ] as [string, Payment[], number, string][]).filter(([, records]) => records.length > 0).map(([label, records, total, color]) => (
             <div key={label} className="surface p-4">
               <div className={`mb-2 flex items-center gap-2 text-xs font-semibold uppercase ${color}`}><WalletCards className="h-4 w-4" />{label}<InfoHint text={CARD_HINTS[label] ?? label} /></div>
-              <div className="text-xl font-semibold">{total}</div>
+              <div className="text-xl font-semibold">{money(total)}</div>
               <div className="text-xs text-muted-foreground">{records.length} payment{records.length === 1 ? "" : "s"}</div>
             </div>
           ))}
@@ -411,58 +408,43 @@ export default function LandlordPayments() {
           </div>
         )}
 
-        <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
-              <div className="surface p-5">
-                <div className="mb-4 flex items-center justify-between"><div><h2 className="font-semibold">Payment history</h2><p className="text-xs text-muted-foreground">Latest landlord payment activity</p></div><Button variant="link" size="sm" className="h-auto p-0" onClick={viewAllPayments}>View all</Button></div>
-                <div className="space-y-3">
-                  {history.map((payment) => {
-                    const property = propertyMap.get(payment.propertyId) as any;
-                    return <button key={payment.id} className="flex w-full items-center justify-between border-b pb-3 text-left last:border-0" onClick={() => openView(payment)}>
-                      <span><span className="block text-sm font-medium">{payment.toLandlordPaidBy || "Landlord payment"}</span><span className="text-xs text-muted-foreground">{formatPropertyReference(property?.propertyNumber)} · {payment.toLandlordDate ? new Date(payment.toLandlordDate).toLocaleDateString("en-GB") : "No date"}</span></span>
-                      <span className="text-right"><span className="block text-sm font-semibold">{money(paymentAmount(payment))}</span><span className="text-xs text-muted-foreground">{STATUS_LABEL[payment.status] || payment.status}</span></span>
-                    </button>;
-                  })}
-                  {!history.length && <p className="py-6 text-center text-sm text-muted-foreground">No payment history yet.</p>}
+        <div className="surface p-5 lg:max-w-md">
+          <h2 className="font-semibold">Breakdown by Status</h2>
+          <p className="text-xs text-muted-foreground">Distribution of landlord payments</p>
+          <div className="relative mt-3 h-52">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={statusChart} dataKey="value" nameKey="name" innerRadius={60} outerRadius={85} paddingAngle={2}>
+                  {statusChart.map((item) => <Cell key={item.name} fill={item.color} />)}
+                </Pie>
+                <Tooltip formatter={(value: any, name: any) => [`${value} payment(s)`, name]} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-xl font-semibold">{payments.length}</span>
+              <span className="text-xs text-muted-foreground">Total</span>
+            </div>
+          </div>
+          <div className="space-y-1.5 text-xs">
+            {statusChart.map((item) => {
+              const pct = payments.length ? (item.value / payments.length) * 100 : 0;
+              return (
+                <div key={item.name} className="flex items-center justify-between">
+                  <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />{item.name}</span>
+                  <span className="text-muted-foreground">{pct.toFixed(1)}% ({item.value})</span>
                 </div>
-              </div>
-              <div className="surface p-5">
-                <h2 className="font-semibold">Breakdown by Type</h2>
-                <p className="text-xs text-muted-foreground">Distribution of landlord transactions</p>
-                <div className="relative h-52">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={statusChart} dataKey="value" nameKey="name" innerRadius={60} outerRadius={85} paddingAngle={2}>
-                        {statusChart.map((item) => <Cell key={item.name} fill={item.color} />)}
-                      </Pie>
-                      <Tooltip formatter={(value: any, name: any) => [`${value} payment(s)`, name]} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-xl font-semibold">{payments.length}</span>
-                    <span className="text-xs text-muted-foreground">Total</span>
-                  </div>
-                </div>
-                <div className="space-y-1.5 text-xs">
-                  {statusChart.map((item) => {
-                    const pct = payments.length ? (item.value / payments.length) * 100 : 0;
-                    return (
-                      <div key={item.name} className="flex items-center justify-between">
-                        <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />{item.name}</span>
-                        <span className="text-muted-foreground">{pct.toFixed(1)}% ({item.value})</span>
-                      </div>
-                    );
-                  })}
-                  {!statusChart.length && <p className="text-center text-muted-foreground">No payments to chart yet.</p>}
-                </div>
-              </div>
+              );
+            })}
+            {!statusChart.length && <p className="text-center text-muted-foreground">No payments to chart yet.</p>}
+          </div>
         </div>
 
-        <div ref={queueRef} className="surface overflow-hidden">
+        <div className="surface overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4">
-            <div><h2 className="font-semibold">Today&apos;s Payment Queue ({visible.length})</h2><p className="text-xs text-muted-foreground">Review payment status before creating a batch</p></div>
+            <div><h2 className="font-semibold">Payment Queue ({visible.length})</h2><p className="text-xs text-muted-foreground">Review payment status before paying landlords</p></div>
             <div className="flex flex-wrap items-end gap-2">
               <div className="relative"><Filter className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" /><Input className="w-64 pl-8" placeholder="Search landlord, property, or reference" value={search} onChange={(event) => setSearch(event.target.value)} /></div>
-              <div><Label className="text-xs">Status</Label><Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-36"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All status</SelectItem><SelectItem value="ACTIVE">Ready</SelectItem><SelectItem value="APPROVAL_REQUIRED">Approval</SelectItem><SelectItem value="PENDING">On hold</SelectItem><SelectItem value="PAID">Paid</SelectItem><SelectItem value="DRAFT">Draft</SelectItem></SelectContent></Select></div>
+              <div><Label className="text-xs">Status</Label><Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-36"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All status</SelectItem><SelectItem value="DUE">Due</SelectItem><SelectItem value="OVERDUE">Overdue</SelectItem><SelectItem value="PAID">Paid</SelectItem><SelectItem value="DRAFT">Draft</SelectItem></SelectContent></Select></div>
               <div><Label className="text-xs">Landlord</Label><Select value={landlordFilter} onValueChange={setLandlordFilter}><SelectTrigger className="w-40"><SelectValue placeholder="All landlords" /></SelectTrigger><SelectContent><SelectItem value="all">All landlords</SelectItem>{landlords.map(([id, name]) => <SelectItem key={id} value={id}>{name}</SelectItem>)}</SelectContent></Select></div>
               <div><Label className="text-xs">Due date</Label><Input className="w-36" type="date" value={dateFilter} onChange={(event) => setDateFilter(event.target.value)} /></div>
               <Button variant="ghost" onClick={() => { setSearch(""); setStatusFilter("all"); setLandlordFilter("all"); setDateFilter(""); }}>Clear</Button>
@@ -472,17 +454,14 @@ export default function LandlordPayments() {
           {selectedIds.size > 0 && (
             <div className="flex items-center gap-3 border-b bg-primary/5 px-4 py-2.5 text-sm">
               <span className="font-medium">{selectedIds.size} selected</span>
-              {canApproveTransactions && selectedPayments.some((p) => p.status === "APPROVAL_REQUIRED") && <Button size="sm" onClick={bulkApprove} disabled={bulkBusy}>{bulkBusy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Check className="mr-1.5 h-3.5 w-3.5" />}Approve</Button>}
               {selectedPayments.every((p) => p.status === "PAID") ? (
                 <span className="text-xs text-muted-foreground">Paid payments are locked — no status changes.</span>
               ) : (
-              <Select onValueChange={bulkChangeStatus}>
+              <Select onValueChange={bulkChangeStatus} disabled={bulkBusy}>
                 <SelectTrigger className="h-8 w-44"><SelectValue placeholder="Change status to..." /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="PENDING">On hold</SelectItem>
-                  <SelectItem value="ACTIVE">Ready</SelectItem>
-                  <SelectItem value="APPROVAL_REQUIRED">Approval required</SelectItem>
-                  <SelectItem value="PAID">Paid</SelectItem>
+                  <SelectItem value="ACTIVE">Set to due</SelectItem>
+                  <SelectItem value="PAID">Mark as paid</SelectItem>
                 </SelectContent>
               </Select>
               )}
@@ -505,14 +484,14 @@ export default function LandlordPayments() {
                   const adjustment = Array.isArray(payment.adjustments) && payment.adjustments.length
                     ? payment.adjustments.reduce((sum: number, a: any) => sum + Number(a.amount || 0), 0)
                     : -(Number(payment.toLandlordLessBuildingExpenditure || 0) + Number(payment.toLandlordLessVAT || 0) + Number(payment.toLandlordLessManagementFees || 0));
-                  const status = payment.status || "ACTIVE";
+                  const status = displayStatus(payment);
                   return <tr key={payment.id} className="border-t hover:bg-muted/30">
                     <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={selectedIds.has(payment.id)} onChange={() => toggleSelect(payment.id)} /></td>
                     <td className="px-4 py-3 cursor-pointer font-mono text-xs" onClick={() => openView(payment)}>{payment.reference || payment.tranid}</td>
                     <td className="px-4 py-3 cursor-pointer font-medium" onClick={() => openView(payment)}>{payment.toLandlordPaidBy || "Landlord"}</td>
                     <td className="px-4 py-3 cursor-pointer" onClick={() => openView(payment)}>{formatPropertyReference(property?.propertyNumber)}<div className="text-xs text-muted-foreground">{property?.addressLine1 || "Property"}</div></td>
                     <td className="px-4 py-3"><Badge variant="outline">{property?.category || "Lease"}</Badge></td>
-                    <td className="px-4 py-3">{payment.toLandlordDate ? new Date(payment.toLandlordDate).toLocaleDateString("en-GB", { month: "short", year: "numeric" }) : "Current"}</td>
+                    <td className="px-4 py-3">{payment.accountingPeriod ? periodLabel(payment.accountingPeriod) : payment.toLandlordDate ? new Date(payment.toLandlordDate).toLocaleDateString("en-GB", { month: "short", year: "numeric" }) : "Current"}</td>
                     <td className="px-4 py-3">{payment.toLandlordDate ? new Date(payment.toLandlordDate).toLocaleDateString("en-GB") : "-"}</td>
                     <td className="px-4 py-3">{money(payment.toLandlordRentReceived)}</td>
                     <td className="px-4 py-3 text-red-600">{adjustment ? money(adjustment) : money(0)}</td>
@@ -522,16 +501,16 @@ export default function LandlordPayments() {
                         <button
                           className="flex items-center gap-1 text-xs font-medium text-blue-700 hover:underline"
                           title={payment.documents.map((d: any) => d.fileName || d.fileUrl).join("\n")}
-                          onClick={() => { openView(payment); setDetailsTab("Documents"); }}
+                          onClick={() => { openView(payment, "Documents"); }}
                         >
                           <Paperclip className="h-3.5 w-3.5" />{payment.documents.length}
                         </button>
                       ) : <span className="text-xs text-muted-foreground/60">–</span>}
                     </td>
-                    <td className="px-4 py-3"><Badge className={STATUS_BADGE[status] || "bg-slate-100 text-slate-700"}>{STATUS_LABEL[status] || status}</Badge></td>
+                    <td className="px-4 py-3"><Badge className={STATUS_BADGE[status]}>{STATUS_LABEL[status]}</Badge></td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        {status === "DRAFT" && <Button size="icon" variant="ghost" className="h-7 w-7" title="Submit for approval" onClick={() => void submitForApproval(payment)}><Send className="h-3.5 w-3.5" /></Button>}
+                        <Button size="icon" variant="ghost" className="h-7 w-7" title="Open notes" onClick={() => openView(payment, "Notes")}><StickyNote className="h-3.5 w-3.5" /></Button>
                         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openView(payment)}><ChevronRight className="h-4 w-4 text-muted-foreground" /></Button>
                       </div>
                     </td>
@@ -574,14 +553,15 @@ export default function LandlordPayments() {
             <div className="space-y-4">
               {detailsTab === "Overview" && <div className="grid grid-cols-2 gap-3 rounded-lg border p-4 text-sm">
                 <div><p className="text-muted-foreground">Property</p><p className="font-medium">{formatPropertyReference((propertyMap.get(selected.propertyId) as any)?.propertyNumber)}</p></div>
-                <div><p className="text-muted-foreground">Status</p><p className="font-medium">{STATUS_LABEL[selected.status] || selected.status || "ACTIVE"}</p></div>
+                <div><p className="text-muted-foreground">Status</p><p className="font-medium">{STATUS_LABEL[displayStatus(selected)]}</p></div>
+                <div><p className="text-muted-foreground">Rent period</p><p className="font-medium">{periodLabel(selected.accountingPeriod) || "-"}</p></div>
+                <div><p className="text-muted-foreground">Due date</p><p className="font-medium">{dueDateOf(selected) ? new Date(dueDateOf(selected)).toLocaleDateString("en-GB") : "-"}</p></div>
                 <div><p className="text-muted-foreground">Contractual amount</p><p className="font-medium">{money(selected.toLandlordRentReceived)}</p></div>
                 <div><p className="text-muted-foreground">Net payable</p><p className="font-semibold text-emerald-600">{money(paymentAmount(selected))}</p></div>
                 <div><p className="text-muted-foreground">Payment method</p><p className="font-medium">{selected.toLandLordMode || "-"}</p></div>
                 <div><p className="text-muted-foreground">Bank account</p><p className="font-medium">{selected.bankAccountLabel || "-"}</p></div>
                 <div><p className="text-muted-foreground">Payment reference</p><p className="font-mono text-xs font-medium">{selected.paymentReference || selected.reference || "-"}</p></div>
                 <div><p className="text-muted-foreground">Created by</p><p className="font-medium">{selected.createdByName || "-"}</p></div>
-                {selected.approvedByName && <div className="col-span-2"><p className="text-muted-foreground">Approved by</p><p className="font-medium">{selected.approvedByName} · {selected.approvedAt ? new Date(selected.approvedAt).toLocaleString("en-GB") : ""}</p></div>}
                 {selected.status === "PAID" && <div className="col-span-2"><p className="text-muted-foreground">Paid</p><p className="font-medium">{selected.paidByName || "-"}{selected.paidAt ? ` · ${new Date(selected.paidAt).toLocaleString("en-GB")}` : ""}</p></div>}
               </div>}
               {detailsTab === "Adjustments" && <div className="rounded-lg border p-4 text-sm">
@@ -632,31 +612,17 @@ export default function LandlordPayments() {
               {detailsTab === "History" && <div className="rounded-lg border p-4 text-sm">
                 <p className="font-medium">Payment activity</p>
                 <p className="mt-3 text-muted-foreground">Created: {selected.createdAt ? new Date(selected.createdAt).toLocaleString("en-GB") : "Not available"}{selected.createdByName ? ` by ${selected.createdByName}` : ""}</p>
-                {selected.approvalRequestedAt && <p className="text-muted-foreground">Approval requested: {new Date(selected.approvalRequestedAt).toLocaleString("en-GB")}</p>}
-                {selected.approvedAt && <p className="text-muted-foreground">Approved: {new Date(selected.approvedAt).toLocaleString("en-GB")} by {selected.approvedByName}</p>}
                 {selected.paidAt && <p className="text-muted-foreground">Paid: {new Date(selected.paidAt).toLocaleString("en-GB")}{selected.paidByName ? ` by ${selected.paidByName}` : ""}</p>}
-                <p className="text-muted-foreground">Status: {STATUS_LABEL[selected.status] || selected.status}</p>
+                <p className="text-muted-foreground">Status: {STATUS_LABEL[displayStatus(selected)]}</p>
               </div>}
               {/* No per-payment PDF: window.print() printed the whole page,
                   not the payment. Bulk export lives in the toolbar menu. */}
-              {/* Next step for this payment. Paid is final — no actions. */}
               {selected.status === "PAID" ? (
-                <p className="rounded-lg bg-violet-50 p-3 text-center text-sm text-violet-700">This payment is paid and locked. It can no longer be edited, approved or changed.</p>
+                <p className="rounded-lg bg-violet-50 p-3 text-center text-sm text-violet-700">This payment is paid and locked. It can no longer be edited or changed.</p>
               ) : (
-                <div className="flex flex-wrap gap-2">
-                  {(selected.status === "DRAFT" || selected.status === "PENDING") && (
-                    <Button className="flex-1" variant="outline" disabled={actionBusy} onClick={() => void submitForApproval(selected)}><Send className="mr-2 h-4 w-4" />Submit for approval</Button>
-                  )}
-                  {selected.status === "APPROVAL_REQUIRED" && (canApproveTransactions ? (
-                    <Button className="flex-1" disabled={actionBusy} onClick={() => void runAction("approve", "Payment approved")}>{actionBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}Approve</Button>
-                  ) : (
-                    <p className="w-full rounded-lg bg-red-50 p-3 text-center text-sm text-red-700">Waiting for an Admin or Super User to approve.</p>
-                  ))}
-                  {selected.status === "ACTIVE" && (
-                    <Button className="flex-1" disabled={actionBusy} onClick={() => void runAction("mark-paid", "Payment marked as paid")}>{actionBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}Mark as paid</Button>
-                  )}
-                </div>
+                <Button className="w-full" disabled={actionBusy} onClick={() => void markPaid()}>{actionBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}Mark as paid</Button>
               )}
+              <Button className="w-full" variant="outline" disabled={emailing} onClick={() => void emailStatement()}>{emailing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}Email statement to landlord</Button>
               <div className="flex gap-2">
                 <Button className="flex-1" variant="outline" onClick={() => navigate("/finance/landlord-payments/new")}>Create another payment</Button>
               </div>
@@ -694,6 +660,7 @@ export default function LandlordPayments() {
                 <div className="max-h-72 space-y-2 overflow-y-auto">
                   {paymentsOnSelectedDate.map((payment) => {
                     const property = propertyMap.get(payment.propertyId) as any;
+                    const status = displayStatus(payment);
                     return (
                       <button key={payment.id} className="flex w-full items-center justify-between rounded-lg border p-3 text-left text-sm hover:bg-muted/40" onClick={() => { setCalendarOpen(false); openView(payment); }}>
                         <div>
@@ -702,7 +669,7 @@ export default function LandlordPayments() {
                         </div>
                         <span className="text-right">
                           <span className="block font-semibold">{money(paymentAmount(payment))}</span>
-                          <Badge className={`text-[10px] ${STATUS_BADGE[payment.status] || ""}`}>{STATUS_LABEL[payment.status] || payment.status}</Badge>
+                          <Badge className={`text-[10px] ${STATUS_BADGE[status]}`}>{STATUS_LABEL[status]}</Badge>
                         </span>
                       </button>
                     );

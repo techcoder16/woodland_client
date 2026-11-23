@@ -4,13 +4,16 @@
 import { useEffect, useState } from "react";
 import { useLocation, useParams, useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import PaymentHistorySection from "./Manager/PaymentHistorySection";
+import RentDueSection from "./Manager/RentDueSection";
+import DeductionsSection from "./Manager/DeductionsSection";
 import TransactionPage from "./Manager/TransactionPage";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { get } from "@/helper/api";
 import { useAuth } from "@/context/AuthContext";
 import { formatPropertyReference } from "@/utils/propertyReference";
+
+type FinanceView = "rent-due" | "deductions" | "transactions";
 
 export default function PropertyFinancePage() {
   const location = useLocation();
@@ -23,8 +26,8 @@ export default function PropertyFinancePage() {
   const prefillRent = searchParams.get("prefillRent") || undefined;
   const prefillDue = searchParams.get("prefillDue") || undefined;
   // A prefilled rent/date means the user came here to record a payment, so
-  // open straight on the transaction editor rather than the read-only log.
-  const [view, setView] = useState<"history" | "transactions">(prefillRent || prefillDue ? "transactions" : "history");
+  // open straight on the transaction editor rather than the rent schedule.
+  const [view, setView] = useState<FinanceView>(prefillRent || prefillDue ? "transactions" : "rent-due");
 
   useEffect(() => {
     if (!location.state?.property && params.id) {
@@ -61,14 +64,13 @@ export default function PropertyFinancePage() {
       ) : (
         <>
           <div className="mb-4 flex gap-2 border-b pb-3">
-            <Button size="sm" variant={view === "history" ? "default" : "outline"} onClick={() => setView("history")}>Payment History</Button>
+            <Button size="sm" variant={view === "rent-due" ? "default" : "outline"} onClick={() => setView("rent-due")}>Rent Due</Button>
+            <Button size="sm" variant={view === "deductions" ? "default" : "outline"} onClick={() => setView("deductions")}>Deductions</Button>
             <Button size="sm" variant={view === "transactions" ? "default" : "outline"} onClick={() => setView("transactions")}>Transactions</Button>
           </div>
-          {view === "history" ? (
-            <PaymentHistorySection propertyId={property.id} />
-          ) : (
-            <TransactionPage propertyId={property.id} property={property} prefillRent={prefillRent} prefillDue={prefillDue} />
-          )}
+          {view === "rent-due" && <RentDueSection propertyId={property.id} />}
+          {view === "deductions" && <DeductionsSection propertyId={property.id} />}
+          {view === "transactions" && <TransactionPage propertyId={property.id} property={property} prefillRent={prefillRent} prefillDue={prefillDue} />}
         </>
       )}
     </DashboardLayout>
