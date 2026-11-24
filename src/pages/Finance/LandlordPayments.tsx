@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { openStoredFile, uploadFile } from "@/helper/fileUpload";
-import { CalendarDays, CheckCircle2, ChevronRight, Download, FileSpreadsheet, FileText, Filter, Loader2, Mail, Paperclip, Pencil, Plus, RefreshCw, StickyNote, Upload, WalletCards, X } from "lucide-react";
+import { CalendarDays, CheckCircle2, ChevronRight, Download, FileSpreadsheet, FileText, Filter, Loader2, Mail, Paperclip, Pencil, Plus, RefreshCw, StickyNote, Trash2, Upload, WalletCards, X } from "lucide-react";
 import type { DayContentProps } from "react-day-picker";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -22,7 +22,8 @@ import { fetchProperties } from "@/redux/dataStore/propertySlice";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import getApi from "@/helper/getApi";
-import { post, patch } from "@/helper/api";
+import { post, patch, del } from "@/helper/api";
+import { useAuth } from "@/context/AuthContext";
 import { formatPropertyReference } from "@/utils/propertyReference";
 import { exportPaymentReviewToPdf, exportTransactionsToExcel, exportTransactionsToPdf } from "@/utils/transactionExport";
 import { useToast } from "@/components/ui/use-toast";
@@ -105,6 +106,8 @@ export default function LandlordPayments() {
   const [actionBusy, setActionBusy] = useState(false);
   const [emailing, setEmailing] = useState(false);
   const { properties } = useAppSelector((state) => state.properties);
+  const { user: authUser } = useAuth();
+  const isSuperAdmin = String((authUser as any)?.role || "") === "SUPER_USER";
   const [payments, setPayments] = useState<Payment[]>([]);
   const [selected, setSelected] = useState<Payment | null>(null);
   const [editing, setEditing] = useState(false);
@@ -221,6 +224,14 @@ export default function LandlordPayments() {
     );
   };
   const paymentsOnSelectedDate = calendarSelectedDate ? paymentsByDateKey.get(calendarSelectedDate.toDateString()) || [] : [];
+
+  const deleteAdjustmentLine = async (paymentId: string, adjustmentId: string) => {
+    if (!window.confirm("Delete this adjustment? Any deduction or job it took is released so it can be taken again on another payment.")) return;
+    const { error } = await del(`transaction/${paymentId}/adjustments/${adjustmentId}`);
+    if (error) { toast({ title: "Could not delete adjustment", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Adjustment deleted" });
+    await refreshOne(paymentId);
+  };
 
   const refreshOne = async (id: string) => {
     const { data } = await getApiGetOne(id);
@@ -608,7 +619,10 @@ export default function LandlordPayments() {
                     {selected.adjustments.map((a: any) => (
                       <div key={a.id} className="flex justify-between border-b pb-1.5 last:border-0">
                         <span>{a.type}{a.description ? ` — ${a.description}` : ""}</span>
-                        <span className="text-red-600">{money(a.amount)}</span>
+                        <span className="flex items-center gap-2">
+                          <span className="text-red-600">{money(a.amount)}</span>
+                          {isSuperAdmin && <Button size="icon" variant="ghost" className="h-6 w-6" title="Delete adjustment (super admin)" onClick={() => deleteAdjustmentLine(selected.id, a.id)}><Trash2 className="h-3.5 w-3.5" /></Button>}
+                        </span>
                       </div>
                     ))}
                     <p className="border-t pt-2 font-semibold">Total: {money(selected.adjustments.reduce((s: number, a: any) => s + Number(a.amount || 0), 0))}</p>

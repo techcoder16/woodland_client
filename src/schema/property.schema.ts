@@ -26,6 +26,7 @@ z.object({
   communal: z.boolean().nullable().default(false).describe("Communal areas."),
   fireRiskAssessmentFileId: z.string().nullable().optional(),
   councilId: z.string().nullable().optional(),
+  councilName: z.string().nullable().optional(),
   wheelchairAccess: z.boolean().nullable().default(false).describe("Wheelchair access."),
   hasGarden: z.boolean().nullable().default(false).describe("Garden."),
   lift: z.boolean().nullable().default(false).describe("Lift."),

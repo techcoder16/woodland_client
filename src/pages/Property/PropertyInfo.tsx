@@ -167,6 +167,7 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
               const norm = (v: string) => v.toLowerCase().replace(/^(london borough of|royal borough of|city of|borough of)\s+/, '').replace(/\s+(london borough|borough|city|council)$/, '').replace(/\s+council$/, '').trim();
               const match = councilOptions.find((c) => address.council && norm(c.label) === norm(address.council));
               if (match) setValue('councilId', match.value, { shouldValidate: true });
+              if (address.council) setValue('councilName', address.council);
               // Ideal Postcodes returns England/Wales/Scotland/Northern Ireland;
               // the country field only offers "GB" as an option, so normalize.
               if (!isCountryUnlocked()) setValue('country', 'GB', { shouldValidate: true });
@@ -239,16 +240,7 @@ const PropertyInfo = ({ register, watch, clearErrors, setValue, errors, type, pr
           disabled={!isCountryUnlocked()}
         />
 
-        <SelectField
-          label="Council"
-          name="councilId"
-          watch={watch}
-          setValue={setValue}
-          options={councilOptions}
-          register={register}
-          error={errors.councilId?.message?.toString()}
-          onChange={(value) => handleSelectChange('councilId', value)}
-        />
+        <InputField setValue={setValue} label="Council" name="councilName" register={register} error={errors.councilName?.message?.toString()} />
         </div>
       </div>
 
