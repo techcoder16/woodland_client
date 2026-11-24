@@ -343,7 +343,6 @@ const MaintenanceDetail = () => {
             <TabsTrigger value="notes">Notes</TabsTrigger>
             <TabsTrigger value="chase-up">Chase up</TabsTrigger>
             <TabsTrigger value="invoices">Invoices</TabsTrigger>
-            <TabsTrigger value="adjustment">Payments</TabsTrigger>
             <TabsTrigger value="landlord-emails">Landlord emails</TabsTrigger>
             {canManageMaintenance && <TabsTrigger value="history">History</TabsTrigger>}
           </TabsList>
@@ -418,8 +417,15 @@ const MaintenanceDetail = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="adjustment" className="space-y-4">
-            <JobPaymentsPanel job={job} canManage={canManageMaintenance} onChanged={refresh} />
+
+
+          <TabsContent value="landlord-emails" className="space-y-4">
+            <JobLandlordEmails jobId={job.id as string} reloadKey={job.landlordInformedAt} canManage={canManageMaintenance} onSent={refresh} />
+          </TabsContent>
+
+          <TabsContent value="invoices" className="space-y-4">
+            <ContractorInvoicePanel job={job} canManage={canManageMaintenance} onChanged={refresh} />
+                      <JobPaymentsPanel job={job} canManage={canManageMaintenance} onChanged={refresh} />
             <Card className="p-4">
               <label className="flex items-start gap-3">
                 <Checkbox
@@ -437,14 +443,6 @@ const MaintenanceDetail = () => {
                 </span>
               </label>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="landlord-emails" className="space-y-4">
-            <JobLandlordEmails jobId={job.id as string} reloadKey={job.landlordInformedAt} canManage={canManageMaintenance} onSent={refresh} />
-          </TabsContent>
-
-          <TabsContent value="invoices" className="space-y-4">
-            <ContractorInvoicePanel job={job} canManage={canManageMaintenance} onChanged={refresh} />
           </TabsContent>
 
           {canManageMaintenance && (

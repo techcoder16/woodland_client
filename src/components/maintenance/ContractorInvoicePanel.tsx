@@ -167,7 +167,7 @@ export default function ContractorInvoicePanel({ job, canManage, onChanged }: Co
   return (
     <div className="space-y-4">
       <Card className="p-4 space-y-5">
-        <div className="font-semibold">Costs<InfoHint text="Contractor cost is optional. Jobs without a contractor are costed from the Payments tab." /></div>
+        <div className="font-semibold">Costs<InfoHint text="Contractor cost is optional. Jobs without a contractor are costed from the invoice rows below." /></div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-muted-foreground" htmlFor="contractorCost">
@@ -177,7 +177,7 @@ export default function ContractorInvoicePanel({ job, canManage, onChanged }: Co
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-muted-foreground" htmlFor="otherCost">
-              Payments total (£)<InfoHint quiet text="The total of the lines on the Payments tab (materials, labour, parts...). Add or remove them there." />
+              Costs total (£)<InfoHint quiet text="The total of the invoice rows below (materials, labour, parts...). Add or remove them there." />
             </label>
             <Input id="otherCost" type="number" readOnly disabled {...register("otherCost")} />
           </div>

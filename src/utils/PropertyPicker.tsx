@@ -91,9 +91,13 @@ const PropertyPicker: React.FC<PropertyPickerProps> = ({
       raw: property,
     }));
 
-  const selected = options.find((o) => o.value === value);
+  // Remember the picked label so it stays visible after the search text changes the list.
+  const [pickedLabel, setPickedLabel] = useState<{ id: string; label: string } | null>(null);
+  const selected = options.find((o) => o.value === value) ?? (pickedLabel?.id === value ? { label: pickedLabel.label } : undefined);
 
   const handleSelect = (propertyId: string) => {
+    const picked = options.find((o) => o.value === propertyId);
+    if (picked) setPickedLabel({ id: propertyId, label: picked.label });
     onChange(propertyId);
     setOpen(false);
   };
