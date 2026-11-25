@@ -35,7 +35,7 @@ type ReportingStatus =
 
 const STATUS_LABELS: Record<ReportingStatus, string> = {
   OPEN: "Open",
-  WAITING_AUTHORIZATION: "Waiting Authorisation",
+  WAITING_AUTHORIZATION: "Awaiting Authorisation",
   QUOTING: "Quoting",
   ASSIGNED: "Assigned",
   IN_PROGRESS: "In Progress",

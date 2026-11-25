@@ -56,8 +56,18 @@ export async function emailLandlord(jobId: string, invoicePdfBase64?: string, me
   );
 }
 
-export async function markLandlordAuthorised(jobId: string, note?: string) {
-  return unwrap(await post(`property-management/job-type/${jobId}/landlord-authorised`, note ? { note } : {}));
+/** Records the landlord's answer: Yes (default) or No. */
+export async function markLandlordAuthorised(jobId: string, authorised = true, note?: string) {
+  return unwrap(await post(`property-management/job-type/${jobId}/landlord-authorised`, { authorised, ...(note ? { note } : {}) }));
+}
+
+/** Logs a reply the landlord sent; the job shows a red marker until it is read. */
+export async function logLandlordReply(jobId: string, body: string, subject?: string) {
+  return unwrap(await post(`property-management/job-type/${jobId}/landlord-reply`, { body, ...(subject ? { subject } : {}) }));
+}
+
+export async function markLandlordReplyRead(jobId: string) {
+  return unwrap(await post(`property-management/job-type/${jobId}/landlord-reply/read`, {}));
 }
 
 /** "Tue 24 Nov 2026 at 10:00", or "Not scheduled". */

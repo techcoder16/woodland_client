@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect } from "react";
-import { contractorLabel, jobStatusLabel } from "@/utils/contractorLabel";
+import { contractorLabel, jobRef, jobStatusLabel } from "@/utils/contractorLabel";
 import StoredFilePreview from "@/components/StoredFilePreview";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -12,7 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ChevronLeft, CheckCircle2, Mail, Phone, RotateCcw, Send, ShieldCheck, XCircle } from "lucide-react";
+import { CalendarPlus, ChevronLeft, CheckCircle2, Mail, Phone, RotateCcw, Send, ShieldCheck, ShieldX, XCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import TextAreaField from "@/utils/TextAreaField";
 import SelectField from "@/utils/SelectedField";
 import ContractorPicker from "@/utils/ContractorPicker";
@@ -42,6 +43,8 @@ import {
   markJobDone,
   markJobNotComplete,
   markLandlordAuthorised,
+  markLandlordReplyRead,
+  setVisit,
 } from "./jobActions";
 import { NotePromptDialog } from "./JobDialogs";
 
@@ -71,7 +74,7 @@ type EditFormData = z.infer<typeof editSchema>;
 
 const STATUS_LABELS: Record<ReportingStatus, string> = {
   OPEN: "Open",
-  WAITING_AUTHORIZATION: "Waiting Authorisation",
+  WAITING_AUTHORIZATION: "Awaiting Authorisation",
   QUOTING: "Quoting",
   ASSIGNED: "Assigned",
   IN_PROGRESS: "In Progress",
@@ -210,6 +213,20 @@ const MaintenanceDetail = () => {
   const landlord = job?.property?.vendor;
   const landlordName = landlord ? [landlord.firstName, landlord.lastName].filter(Boolean).join(" ") || "Landlord" : "";
 
+  // Occupant visit: booked once the landlord has authorised (or the landlord is not responsible).
+  const [visitFormOpen, setVisitFormOpen] = useState(false);
+  const [visitDay, setVisitDay] = useState("");
+  const [visitTime, setVisitTime] = useState("");
+  const needsLandlordOk = (job?.responsibility || "").toUpperCase() === "LANDLORD";
+  const canScheduleVisit = !needsLandlordOk || job?.landlordAuthorised === true;
+  const authorisedLabel = job?.landlordAuthorised === true ? "Yes" : job?.landlordAuthorised === false ? "No" : "";
+
+  const openLandlordEmails = () => {
+    if (job?.id && job.landlordReplyUnread) {
+      markLandlordReplyRead(job.id).then(() => refresh()).catch(() => undefined);
+    }
+  };
+
   const handleToggleDeductible = async (deductible: boolean) => {
     if (!job?.id) return;
     setIsSavingDeductible(true);
@@ -327,6 +344,12 @@ const MaintenanceDetail = () => {
             {" > "}
             {formatAddress(job.property)}
           </div>
+          {job.landlordReplyUnread && (
+            <div className="mt-3 flex items-center gap-3 rounded-md border-2 border-red-500 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+              <span className="inline-block h-4 w-4 rounded-sm bg-red-600" />
+              The landlord has replied. Open the Landlord emails tab to read it.
+            </div>
+          )}
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] items-start">
@@ -336,6 +359,7 @@ const MaintenanceDetail = () => {
           onValueChange={(v) => {
             if (v === "history") loadHistory();
             if (v === "notes" || v === "chase-up") loadNotes();
+            if (v === "landlord-emails") openLandlordEmails();
           }}
         >
           <TabsList className="flex-wrap h-auto">
@@ -343,7 +367,10 @@ const MaintenanceDetail = () => {
             <TabsTrigger value="notes">Notes</TabsTrigger>
             <TabsTrigger value="chase-up">Chase up</TabsTrigger>
             <TabsTrigger value="invoices">Invoices</TabsTrigger>
-            <TabsTrigger value="landlord-emails">Landlord emails</TabsTrigger>
+            <TabsTrigger value="landlord-emails" className="gap-1.5">
+              {job.landlordReplyUnread && <span className="inline-block h-3 w-3 rounded-sm bg-red-600" aria-label="Unread landlord reply" />}
+              Landlord emails
+            </TabsTrigger>
             {canManageMaintenance && <TabsTrigger value="history">History</TabsTrigger>}
           </TabsList>
 
@@ -590,7 +617,7 @@ const MaintenanceDetail = () => {
 
             {canManageMaintenance && !isJobClosed && (
               <Card className="p-4 space-y-3">
-                <div className="font-semibold">Landlord approval<InfoHint text="For jobs the landlord is responsible for: email the landlord about the job. The job then waits as Waiting Authorisation until the landlord says yes; press Landlord authorised when they do. Nothing is sent automatically." /></div>
+                <div className="font-semibold">Landlord approval<InfoHint text="For jobs the landlord is responsible for: email the landlord about the job. The job then waits as Awaiting Authorisation until the landlord says yes; press Landlord authorised when they do. Nothing is sent automatically." /></div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
                     type="button"
@@ -604,22 +631,75 @@ const MaintenanceDetail = () => {
                   >
                     <Send className="h-4 w-4 mr-2" /> {job.landlordInformedAt ? "Inform landlord again" : "Inform landlord"}
                   </Button>
-                  {job.status === "WAITING_AUTHORIZATION" && (
-                    <Button
-                      type="button"
-                      disabled={isActing}
-                      onClick={() => runAction(() => markLandlordAuthorised(job.id as string), "Landlord authorised")}
-                    >
-                      <ShieldCheck className="h-4 w-4 mr-2" /> Landlord authorised
-                    </Button>
-                  )}
+                  <Button
+                    type="button"
+                    variant={job.landlordAuthorised === true ? "default" : "outline"}
+                    disabled={isActing}
+                    onClick={() => runAction(() => markLandlordAuthorised(job.id as string, true), "Landlord authorised: Yes")}
+                  >
+                    <ShieldCheck className="h-4 w-4 mr-2" /> Landlord authorised: Yes
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={job.landlordAuthorised === false ? "destructive" : "outline"}
+                    disabled={isActing}
+                    onClick={() => runAction(() => markLandlordAuthorised(job.id as string, false), "Landlord authorised: No")}
+                  >
+                    <ShieldX className="h-4 w-4 mr-2" /> No
+                  </Button>
                 </div>
                 <div className="text-xs text-muted-foreground">
                   {job.landlordInformedAt
                     ? `Landlord informed ${formatLondonDateTime(job.landlordInformedAt)}.`
                     : "The landlord has not been informed yet."}
                   {!landlord?.email && " This property's landlord has no email on file."}
+                  {authorisedLabel && ` Landlord authorised: ${authorisedLabel}${job.landlordAuthorisedAt ? ` (${formatLondonDateTime(job.landlordAuthorisedAt)})` : ""}.`}
                 </div>
+              </Card>
+            )}
+
+            {canScheduleVisit && (
+              <Card className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="font-semibold">Occupant visit schedule<InfoHint text="When the contractor visits the occupant. For landlord jobs this opens once the landlord has authorised the work." /></div>
+                  {canManageMaintenance && !isJobClosed && !visitFormOpen && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setVisitDay(job.visitDate ? String(job.visitDate).slice(0, 10) : "");
+                        setVisitTime(job.time || "");
+                        setVisitFormOpen(true);
+                      }}
+                    >
+                      <CalendarPlus className="h-4 w-4 mr-2" /> {job.visitDate ? "Change" : "Add visit"}
+                    </Button>
+                  )}
+                </div>
+                {visitFormOpen ? (
+                  <div className="flex flex-wrap items-end gap-2">
+                    <label className="text-sm">
+                      <span className="block text-xs text-muted-foreground mb-1">Date</span>
+                      <Input type="date" value={visitDay} onChange={(e) => setVisitDay(e.target.value)} className="w-44" />
+                    </label>
+                    <label className="text-sm">
+                      <span className="block text-xs text-muted-foreground mb-1">Time</span>
+                      <Input type="time" value={visitTime} onChange={(e) => setVisitTime(e.target.value)} className="w-32" />
+                    </label>
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={isActing || !visitDay}
+                      onClick={() => runAction(async () => { await setVisit(job, visitDay, visitTime); setVisitFormOpen(false); }, "Visit scheduled")}
+                    >
+                      Save
+                    </Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => setVisitFormOpen(false)}>Cancel</Button>
+                  </div>
+                ) : (
+                  <p className="text-sm">{job.visitDate ? <>Visit scheduled at <span className="font-medium">{formatVisit(job)}</span></> : <span className="text-muted-foreground">No visit scheduled yet.</span>}</p>
+                )}
               </Card>
             )}
 
@@ -646,7 +726,7 @@ const MaintenanceDetail = () => {
                 <div><span className="text-muted-foreground">Visit:</span> {formatVisit(job)}</div>
                 {job.startDate && <div><span className="text-muted-foreground">Start date (set by contractor):</span> {job.startDate}</div>}
                 {job.endDate && <div><span className="text-muted-foreground">End date (set by contractor):</span> {job.endDate}</div>}
-                {job.dateDone && <div><span className="text-muted-foreground">Done:</span> {job.dateDone}</div>}
+                {job.dateDone && <div><span className="text-muted-foreground">Completed:</span> {job.dateDone}</div>}
               </div>
 
               {/* Next-step hint row — read only, no edit needed to see what's pending */}
@@ -656,7 +736,7 @@ const MaintenanceDetail = () => {
                 {job.status === "QUOTING" && "Next step: assign a contractor."}
                 {job.status === "ASSIGNED" && "Next step: waiting on the contractor to set a start date."}
                 {job.status === "IN_PROGRESS" && "Next step: waiting on the contractor to submit as done."}
-                {job.status === "CONTRACTOR_DONE" && "Next step: review the contractor's cost, set a markup, and mark the job done."}
+                {job.status === "CONTRACTOR_DONE" && "Next step: review the contractor's cost, set a markup, and complete the job."}
                 {job.status === "COMPLETED" && "This job is complete."}
                 {job.status === "CANCELLED" && "This job was cancelled."}
               </div>
@@ -674,9 +754,9 @@ const MaintenanceDetail = () => {
                     <Button
                       type="button"
                       disabled={isActing}
-                      onClick={() => runAction(() => markJobDone(job), "Maintenance job marked as done")}
+                      onClick={() => runAction(() => markJobDone(job), "Maintenance job completed")}
                     >
-                      <CheckCircle2 className="h-4 w-4 mr-2" /> Done
+                      <CheckCircle2 className="h-4 w-4 mr-2" /> Complete
                     </Button>
                     <Button type="button" variant="outline" disabled={isActing} onClick={() => setNotCompleteOpen(true)}>
                       <RotateCcw className="h-4 w-4 mr-2" /> Not complete
@@ -736,6 +816,14 @@ const MaintenanceDetail = () => {
               <div className="font-semibold">Summary</div>
               <dl className="space-y-2.5 text-sm">
                 <div className="flex items-center justify-between gap-3">
+                  <dt className="text-muted-foreground">Job ID</dt>
+                  <dd className="font-mono text-xs">{jobRef(job.id)}</dd>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <dt className="text-muted-foreground">Created</dt>
+                  <dd className="text-right">{job.createdAt ? formatLondonDateTime(job.createdAt) : "-"}</dd>
+                </div>
+                <div className="flex items-center justify-between gap-3">
                   <dt className="text-muted-foreground">Status</dt>
                   <dd><Badge variant="outline" className={statusBadgeClass(job.status)}>{jobStatusLabel(job.status, STATUS_LABELS[job.status] ?? job.status, job.contractorRef?.name)}</Badge></dd>
                 </div>
@@ -773,7 +861,11 @@ const MaintenanceDetail = () => {
                   <dd className="text-right">{job.landlordInformedAt ? formatLondonDateTime(job.landlordInformedAt) : "Not yet"}</dd>
                 </div>
                 <div className="flex items-start justify-between gap-3">
-                  <dt className="text-muted-foreground">Visit</dt>
+                  <dt className="text-muted-foreground">Landlord authorised</dt>
+                  <dd className={`text-right font-medium ${job.landlordAuthorised === false ? "text-red-600" : job.landlordAuthorised ? "text-green-700" : ""}`}>{authorisedLabel || "-"}</dd>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <dt className="text-muted-foreground">Occupant visit</dt>
                   <dd className="text-right">{formatVisit(job)}</dd>
                 </div>
               </dl>

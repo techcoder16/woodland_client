@@ -63,6 +63,11 @@ export interface JobType {
   /** Scheduled visit for the contractor (ISO date, or YYYY-MM-DD). */
   visitDate?: string | null;
   landlordInformedAt?: string | null;
+  /** null = not answered yet, true = Yes, false = No. */
+  landlordAuthorised?: boolean | null;
+  landlordAuthorisedAt?: string | null;
+  /** A logged landlord reply nobody has opened yet (red marker). */
+  landlordReplyUnread?: boolean;
   landlordInvoiceFileId?: string | null;
   landlordInvoiceGeneratedAt?: string | null;
   isOverdue?: boolean;

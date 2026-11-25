@@ -6,6 +6,7 @@ import { z } from "zod";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { priorityBadgeClass, priorityTextClass, PRIORITY_BADGE, statusBadgeClass, statusRowClass } from "@/utils/priorityStyle";
+import LandlordReplyMarker from "./LandlordReplyMarker";
 import { Badge } from "@/components/ui/badge";
 import { Hint, InfoHint } from "@/components/ui/hint";
 import { Input } from "@/components/ui/input";
@@ -87,7 +88,7 @@ interface CreatedJobResponse {
 
 const STATUS_LABELS: Record<ReportingStatus, string> = {
   OPEN: "Open",
-  WAITING_AUTHORIZATION: "Waiting Authorisation",
+  WAITING_AUTHORIZATION: "Awaiting Authorisation",
   QUOTING: "Quoting",
   ASSIGNED: "Assigned",
   IN_PROGRESS: "In Progress",
@@ -111,7 +112,7 @@ const STATUS_HINTS: Record<ReportingStatus, string> = {
 const STATUS_FILTERS: { value: JobStatusFilter | ""; label: string }[] = [
   { value: "ACTIVE", label: "Active" },
   { value: "OPEN", label: "Open" },
-  { value: "WAITING_AUTHORIZATION", label: "Waiting Authorisation" },
+  { value: "WAITING_AUTHORIZATION", label: "Awaiting Authorisation" },
   { value: "QUOTING", label: "Quoting" },
   { value: "ASSIGNED", label: "Assigned" },
   { value: "IN_PROGRESS", label: "In Progress" },
@@ -448,7 +449,7 @@ const MaintenanceList = () => {
                         <div className="text-muted-foreground">Set a priority to see when it is due.</div>
                       )}
                       <div className="text-xs text-muted-foreground">
-                        Set automatically from priority. Critical and High count office hours (Mon–Fri 9:00–17:00).
+                        Set automatically from priority. Critical: before 2pm due in 4 hours, from 2pm due 5:30pm the same day. High counts office hours (Mon–Fri 9:00–18:00).
                       </div>
                     </div>
 
@@ -531,7 +532,7 @@ const MaintenanceList = () => {
                     <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Resp.<InfoHint text="Who is responsible: L = Landlord, T = Tenant, I = Internal (Woodland)." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Priority<InfoHint text="How urgent the job is: Critical (red), High (orange), Medium (yellow), Low (pink)." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Contractor<InfoHint text="The contractor assigned to carry out the work." /></th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Status<InfoHint text="Where the job is: Open, Waiting Authorisation, Quoting, Assigned, In Progress, Pending (contractor finished, awaiting sign-off), Completed or Cancelled." /></th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Status<InfoHint text="Where the job is: Open, Awaiting Authorisation, Quoting, Assigned, In Progress, Pending (contractor finished, awaiting sign-off), Completed or Cancelled." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Notes<InfoHint text="The latest note someone added to the job." /></th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Actions<InfoHint text="Click any row to open the job." /></th>
                   </tr>
@@ -554,7 +555,10 @@ const MaintenanceList = () => {
                       return (
                         <tr key={job.id} className={`border-b border-border/50 hover:brightness-95 transition-colors align-top cursor-pointer ${statusRowClass(job.status)}`} onClick={() => navigate(`/maintenance/${job.id}`)}>
                           <td className="px-4 py-3 text-sm whitespace-nowrap">
-                            {job.createdAt ? new Date(job.createdAt).toLocaleDateString() : "-"}
+                            <span className="inline-flex items-center gap-2">
+                              <LandlordReplyMarker job={job} />
+                              {job.createdAt ? new Date(job.createdAt).toLocaleDateString() : "-"}
+                            </span>
                           </td>
                           <td className="px-4 py-3 text-sm">
                             <DueCell job={job} />

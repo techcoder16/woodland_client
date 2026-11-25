@@ -2,12 +2,12 @@
 // for dueAt / chaseUpAt; these rules mirror it so the Add Maintenance form can
 // show the expected times before saving.
 //
-//   Critical  due 4 office hours   chase up 2 office hours
+//   Critical  before 14:00 due +4h; from 14:00 due 17:30 the same day (never next day)
 //   High      due 24 office hours  chase up 12 office hours
 //   Medium    due 10 calendar days chase up 5 calendar days
 //   Low       due 21 calendar days chase up 10 calendar days
 //
-// Office hours = 09:00-17:00 Monday-Friday, London time.
+// Office hours = 09:00-18:00 Monday-Friday, London time.
 
 const LONDON = "Europe/London";
 const MINUTE = 60 * 1000;
@@ -53,10 +53,10 @@ const isOfficeMinute = (date: Date) => {
   const { weekday, hour, minute } = londonParts(date);
   if (weekday === "Sat" || weekday === "Sun") return false;
   const mins = hour * 60 + minute;
-  return mins >= 9 * 60 && mins < 17 * 60;
+  return mins >= 9 * 60 && mins < 18 * 60;
 };
 
-/** Adds `hours` of office time (09:00-17:00 London, Mon-Fri) to `start`. */
+/** Adds `hours` of office time (09:00-18:00 London, Mon-Fri) to `start`. */
 export function addOfficeHours(start: Date, hours: number): Date {
   let remaining = hours * 60;
   let cursor = start.getTime();
@@ -80,6 +80,16 @@ export interface SlaTimes {
 export function computeSla(priority: string | null | undefined, from: Date = new Date()): SlaTimes | null {
   const rule = priority ? PRIORITY_SLA[priority] : undefined;
   if (!rule) return null;
+  if (priority === "Critical") {
+    // First office minute at or after `from`, then the same-day rule.
+    let start = from.getTime();
+    for (let i = 0; i < 200_000 && !isOfficeMinute(new Date(start)); i++) start += MINUTE;
+    const { hour, minute } = londonParts(new Date(start));
+    const minsNow = hour * 60 + minute;
+    const toClose = (18 * 60 - minsNow) * MINUTE;
+    const dueMs = minsNow < 14 * 60 ? start + Math.min(4 * 60 * MINUTE, toClose) : minsNow < 17 * 60 + 30 ? start + (17 * 60 + 30 - minsNow) * MINUTE : start + toClose;
+    return { dueAt: new Date(dueMs), chaseUpAt: new Date(start + (dueMs - start) / 2) };
+  }
   if (rule.unit === "days") {
     return {
       dueAt: new Date(from.getTime() + rule.due * DAY),
