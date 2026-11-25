@@ -1,7 +1,7 @@
 ﻿// Contractor cost, contractor invoice, Woodland markup and the landlord invoice
 // for one maintenance job. Shared by the job page (Invoices tab) and the
 // property's Contractor Invoices tab.
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -73,10 +73,13 @@ export default function ContractorInvoicePanel({ job, canManage, onChanged }: Co
   const [generating, setGenerating] = useState(false);
   const [emailing, setEmailing] = useState(false);
   const [invoices, setInvoices] = useState<LandlordInvoice[]>([]);
+  const [invoicesLoaded, setInvoicesLoaded] = useState(false);
+  const autoTried = useRef(false);
   const loadInvoices = async () => {
     if (!job.id) return;
     const { data } = await get<{ invoices?: LandlordInvoice[] }>(`property-management/job-type/${job.id}/landlord-invoices`);
     setInvoices(data?.invoices ?? []);
+    setInvoicesLoaded(true);
   };
   useEffect(() => {
     void loadInvoices();
@@ -131,13 +134,13 @@ export default function ContractorInvoicePanel({ job, canManage, onChanged }: Co
     }
   });
 
-  const generateInvoice = async () => {
+  const generateInvoice = async (auto = false) => {
     if (isDirty) {
-      toast.error("Save your changes first so the invoice matches them");
+      if (!auto) toast.error("Save your changes first so the invoice matches them");
       return;
     }
     if (job.totalCharged == null) {
-      toast.error("Add a payment on the Payments tab, or enter a contractor cost, first");
+      if (!auto) toast.error("Add an invoice row below, or enter a contractor cost, first");
       return;
     }
     setGenerating(true);
@@ -184,6 +187,16 @@ export default function ContractorInvoicePanel({ job, canManage, onChanged }: Co
       setEmailing(false);
     }
   };
+
+  // First invoice is made automatically once the job has an amount to charge.
+  useEffect(() => {
+    if (autoTried.current || !canManage || !invoicesLoaded || generating || isDirty) return;
+    if (invoices.length === 0 && (job.totalCharged ?? 0) > 0) {
+      autoTried.current = true;
+      void generateInvoice(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invoicesLoaded, invoices.length, job.totalCharged, canManage, isDirty]);
 
   const removeInvoice = async (inv: LandlordInvoice) => {
     if (!window.confirm(`Delete invoice ${inv.reference || ""}?`)) return;
@@ -309,7 +322,7 @@ export default function ContractorInvoicePanel({ job, canManage, onChanged }: Co
         </div>
         {canManage && (
           <div className="flex flex-wrap gap-2">
-            <Button type="button" disabled={generating || job.totalCharged == null} onClick={generateInvoice}>
+            <Button type="button" disabled={generating || job.totalCharged == null} onClick={() => generateInvoice()}>
               <FileText className="h-4 w-4 mr-2" /> {generating ? "Generating…" : "Generate invoice"}
             </Button>
           </div>
