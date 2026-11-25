@@ -34,27 +34,27 @@ type Payment = any;
 
 const money = (value: unknown) => `£${Number(value || 0).toLocaleString("en-GB", { minimumFractionDigits: 2 })}`;
 const paymentAmount = (payment: Payment) => Number(payment.toLandlordNetPaid ?? payment.toLandlordNetReceived ?? payment.toLandlordRentReceived ?? 0);
-const HEADING_HINTS: Record<string, string> = {"Reference": "Unique payment number, e.g. LLP-1126-001 (month/year + counter).", "Landlord": "Who is being paid.", "Property": "The property this payment is for.", "Type": "What kind of payment this is.", "Period": "The rental month this payment covers.", "Due date": "The date the landlord should be paid by.", "Contractual": "Rent due to the landlord under the agreement, before deductions.", "Adjustments": "Deductions or additions: management fee, VAT, maintenance recharges.", "Payable": "Final amount to pay the landlord after adjustments.", "Docs": "Attached files, e.g. statements and invoices.", "Status": "Paid, Overdue (due date has passed), Due, or Draft."};
-const CARD_HINTS: Record<string, string> = {"All payments": "Every landlord payment, whatever its status.", "Overdue": "Unpaid payments whose due date has passed.", "Due": "Unpaid payments whose due date has not passed yet.", "Paid": "Completed payments. These are locked and cannot be changed."};
+const HEADING_HINTS: Record<string, string> = {"Reference": "Unique payment number, e.g. LLP-1126-001 (month/year + counter).", "Landlord": "Who is being paid.", "Property": "The property this payment is for.", "Type": "What kind of payment this is.", "Period": "The rental month this payment covers.", "Due date": "The date the landlord should be paid by.", "Contractual": "Rent due to the landlord under the agreement, before deductions.", "Adjustments": "Deductions or additions: management fee, VAT, maintenance recharges.", "Payable": "Final amount to pay the landlord after adjustments.", "Docs": "Attached files, e.g. statements and invoices.", "Status": "Approved (saved, ready to pay), Awaiting approval, Paid, or Draft. Due and Overdue rent is in the Rent due section."};
+const CARD_HINTS: Record<string, string> = {"All payments": "Every landlord payment, whatever its status.", "Approved": "Saved payments ready to be paid.", "Awaiting approval": "Payments waiting for an admin to approve them.", "Paid": "Completed payments. These are locked and cannot be changed."};
 
 // What the list shows. Paid and Draft are fixed; any other unpaid payment is
 // Overdue once its due date has passed, and Due until then.
-type DisplayStatus = "OVERDUE" | "DUE" | "PAID" | "DRAFT";
-const STATUS_LABEL: Record<DisplayStatus, string> = { OVERDUE: "Overdue", DUE: "Due", PAID: "Paid", DRAFT: "Draft" };
+type DisplayStatus = "APPROVED" | "AWAITING" | "PAID" | "DRAFT";
+const STATUS_LABEL: Record<DisplayStatus, string> = { APPROVED: "Approved", AWAITING: "Awaiting approval", PAID: "Paid", DRAFT: "Draft" };
 const STATUS_BADGE: Record<DisplayStatus, string> = {
-  OVERDUE: "bg-red-100 text-red-700",
-  DUE: "bg-amber-100 text-amber-800",
+  APPROVED: "bg-emerald-100 text-emerald-700",
+  AWAITING: "bg-amber-100 text-amber-800",
   PAID: "bg-violet-100 text-violet-700",
   DRAFT: "bg-slate-100 text-slate-700",
 };
 // Solid colour per status for the calendar bars — same hues as the badges.
 const STATUS_BAR: Record<DisplayStatus, string> = {
-  OVERDUE: "bg-red-500",
-  DUE: "bg-amber-500",
+  APPROVED: "bg-emerald-500",
+  AWAITING: "bg-amber-500",
   PAID: "bg-violet-500",
   DRAFT: "bg-slate-400",
 };
-const STATUS_ORDER: DisplayStatus[] = ["OVERDUE", "DUE", "PAID", "DRAFT"];
+const STATUS_ORDER: DisplayStatus[] = ["AWAITING", "APPROVED", "PAID", "DRAFT"];
 
 const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 // Accounting period comes back as "2026-11"; show it as "November 2026".
@@ -68,8 +68,9 @@ const dueDateOf = (payment: Payment) => payment.expectedPaymentDate || payment.t
 const displayStatus = (payment: Payment): DisplayStatus => {
   if (payment.status === "PAID") return "PAID";
   if (payment.status === "DRAFT") return "DRAFT";
-  const due = dueDateOf(payment);
-  return due && new Date(due) < startOfToday() ? "OVERDUE" : "DUE";
+  if (payment.status === "APPROVAL_REQUIRED") return "AWAITING";
+  // Saved payments are approved; Due / Overdue rent lives in the Rent due section.
+  return "APPROVED";
 };
 
 // Clickable due-date windows over unpaid payments (Due / Overdue; Paid and Draft excluded).
@@ -89,7 +90,7 @@ const daysUntilDue = (payment: Payment) => {
 const inDueWindow = (payment: Payment, window: DueWindow) => {
   if (window === "all") return true;
   const status = displayStatus(payment);
-  if (status !== "DUE" && status !== "OVERDUE") return false;
+  if (status !== "APPROVED" && status !== "AWAITING") return false;
   const days = daysUntilDue(payment);
   if (days == null) return false;
   if (window === "overdue") return days < 0;
@@ -185,8 +186,8 @@ export default function LandlordPayments() {
   });
 
   const byStatus = (key: DisplayStatus) => payments.filter((payment) => displayStatus(payment) === key);
-  const overdue = byStatus("OVERDUE");
-  const due = byStatus("DUE");
+  const approved = byStatus("APPROVED");
+  const awaiting = byStatus("AWAITING");
   const paid = byStatus("PAID");
   const drafts = byStatus("DRAFT");
   const totalOf = (list: Payment[]) => list.reduce((sum, payment) => sum + paymentAmount(payment), 0);
@@ -465,8 +466,8 @@ export default function LandlordPayments() {
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {([
             ["All payments", payments, totalOf(payments), "text-blue-600"],
-            ["Overdue", overdue, totalOf(overdue), "text-red-600"],
-            ["Due", due, totalOf(due), "text-amber-600"],
+            ["Approved", approved, totalOf(approved), "text-emerald-600"],
+            ["Awaiting approval", awaiting, totalOf(awaiting), "text-amber-600"],
             ["Paid", paid, totalOf(paid), "text-violet-600"],
           ] as [string, Payment[], number, string][]).filter(([, records]) => records.length > 0).map(([label, records, total, color]) => (
             <div key={label} className="surface p-4">
@@ -477,17 +478,6 @@ export default function LandlordPayments() {
           ))}
         </div>
 
-        {/* Unpaid payments by real due date; empty buckets are hidden. */}
-        {upcomingBuckets.length > 0 && (
-          <div className="grid gap-3 md:grid-cols-4">
-            {upcomingBuckets.map(({ label, items }) => (
-              <div key={label} className="surface flex items-center justify-between p-4">
-                <div><p className="text-sm font-medium">{label}</p><p className="text-lg font-semibold">{money(items.reduce((sum, p) => sum + paymentAmount(p), 0))}</p><p className="text-xs text-muted-foreground">{items.length} payment{items.length === 1 ? "" : "s"}</p></div>
-                <CalendarDays className="h-5 w-5 text-muted-foreground" />
-              </div>
-            ))}
-          </div>
-        )}
 
 
         <div className="surface overflow-hidden">
@@ -501,7 +491,7 @@ export default function LandlordPayments() {
             <div className="divide-y">
               {rentDue.map((row) => (
                 <div key={`${row.propertyId}:${row.period}`} className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm">
-                  <Badge variant="outline" className={row.status === "OVERDUE" ? STATUS_BADGE.OVERDUE : STATUS_BADGE.DUE}>{row.status === "OVERDUE" ? "Overdue" : "Due"}</Badge>
+                  <Badge variant="outline" className={row.status === "OVERDUE" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-800"}>{row.status === "OVERDUE" ? "Overdue" : "Due"}</Badge>
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-medium">{row.address || "Property"}</div>
                     <div className="text-xs text-muted-foreground">{row.landlordName || "No landlord"} · {periodLabel(row.period)} · due {new Date(row.dueDate).toLocaleDateString("en-GB")}</div>
@@ -517,25 +507,9 @@ export default function LandlordPayments() {
         <div className="surface overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4">
             <div><h2 className="font-semibold">Payment Queue ({visible.length})</h2><p className="text-xs text-muted-foreground">Review payment status before paying landlords</p></div>
-            <div className="flex w-full flex-wrap gap-2 order-last">
-              {DUE_WINDOWS.map((w) => {
-                const count = payments.filter((p) => inDueWindow(p, w.key)).length;
-                const active = dueWindow === w.key;
-                return (
-                  <button
-                    key={w.key}
-                    type="button"
-                    onClick={() => setDueWindow(active ? "all" : w.key)}
-                    className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${active ? (w.key === "overdue" ? "border-red-600 bg-red-600 text-white" : "border-primary bg-primary text-primary-foreground") : w.key === "overdue" && count > 0 ? "border-red-300 bg-red-50 text-red-700 hover:bg-red-100" : "hover:bg-muted"}`}
-                  >
-                    {w.label} <span className="ml-1 opacity-80">{count}</span>
-                  </button>
-                );
-              })}
-            </div>
             <div className="flex flex-wrap items-end gap-2">
               <div className="relative"><Filter className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" /><Input className="w-64 pl-8" placeholder="Search landlord, property, or reference" value={search} onChange={(event) => setSearch(event.target.value)} /></div>
-              <div><Label className="text-xs">Status</Label><Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-36"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All status</SelectItem><SelectItem value="DUE">Due</SelectItem><SelectItem value="OVERDUE">Overdue</SelectItem><SelectItem value="PAID">Paid</SelectItem><SelectItem value="DRAFT">Draft</SelectItem></SelectContent></Select></div>
+              <div><Label className="text-xs">Status</Label><Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-36"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All status</SelectItem><SelectItem value="APPROVED">Approved</SelectItem><SelectItem value="AWAITING">Awaiting approval</SelectItem><SelectItem value="PAID">Paid</SelectItem><SelectItem value="DRAFT">Draft</SelectItem></SelectContent></Select></div>
               <div><Label className="text-xs">Landlord</Label><Select value={landlordFilter} onValueChange={setLandlordFilter}><SelectTrigger className="w-40"><SelectValue placeholder="All landlords" /></SelectTrigger><SelectContent><SelectItem value="all">All landlords</SelectItem>{landlords.map(([id, name]) => <SelectItem key={id} value={id}>{name}</SelectItem>)}</SelectContent></Select></div>
               <div><Label className="text-xs">Due date</Label><Input className="w-36" type="date" value={dateFilter} onChange={(event) => setDateFilter(event.target.value)} /></div>
               <Button variant="ghost" onClick={() => { setSearch(""); setStatusFilter("all"); setLandlordFilter("all"); setDateFilter(""); setDueWindow("all"); }}>Clear</Button>
@@ -551,7 +525,7 @@ export default function LandlordPayments() {
               <Select onValueChange={bulkChangeStatus} disabled={bulkBusy}>
                 <SelectTrigger className="h-8 w-44"><SelectValue placeholder="Change status to..." /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ACTIVE">Set to due</SelectItem>
+                  <SelectItem value="ACTIVE">Set to approved</SelectItem>
                   <SelectItem value="PAID">Mark as paid</SelectItem>
                 </SelectContent>
               </Select>
