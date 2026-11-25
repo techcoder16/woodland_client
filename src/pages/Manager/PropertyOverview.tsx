@@ -47,7 +47,12 @@ interface PropertyOverviewProps {
 export default function PropertyOverview({ property }: PropertyOverviewProps) {
   const navigate = useNavigate();
   const onNavigateTab = (tab: string) => navigate(`/properties/${property.id}?tab=${tab}`, { state: { property } });
+  const [rentDueDay, setRentDueDay] = useState<number | null>(null);
   const [party, setParty] = useState<any>(null);
+  useEffect(() => {
+    if (!property?.id) return;
+    get<{ dueDay: number | null }>(`transaction/rent-schedule?propertyId=${property.id}`).then(({ data }) => setRentDueDay(data?.dueDay ?? null));
+  }, [property?.id]);
   const [summary, setSummary] = useState<any>(null);
   const [jobTypes, setJobTypes] = useState<any[]>([]);
   const [notes, setNotes] = useState<any[]>([]);
@@ -120,7 +125,8 @@ export default function PropertyOverview({ property }: PropertyOverviewProps) {
             <div className="flex justify-between"><dt className="text-muted-foreground">Garden</dt><dd className="font-medium">{property.hasGarden ? "Yes" : "No"}</dd></div>
             <div className="flex justify-between"><dt className="text-muted-foreground">Lift</dt><dd className="font-medium">{property.lift ? "Yes" : "No"}</dd></div>
             <div className="flex justify-between"><dt className="text-muted-foreground">Wheelchair Access</dt><dd className="font-medium">{property.wheelchairAccess ? "Yes" : "No"}</dd></div>
-            {property.managementDate ? <div className="flex justify-between"><dt className="text-muted-foreground">Management Date</dt><dd className="font-medium">{property.managementDate}</dd></div> : null}
+            {property.managementDate ? <div className="flex justify-between"><dt className="text-muted-foreground">Management Date</dt><dd className="font-medium">{ukDate(property.managementDate)}</dd></div> : null}
+            <div className="flex justify-between"><dt className="text-muted-foreground">Rent due date</dt><dd className="font-medium">{rentDueDay ? `Day ${rentDueDay} of each month` : "-"}</dd></div>
             <div className="flex justify-between"><dt className="text-muted-foreground">Status</dt><dd><Badge variant="outline">{property.propertyStatus || "-"}</Badge></dd></div>
           </dl>
         </div>

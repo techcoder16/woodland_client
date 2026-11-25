@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect, useMemo } from "react";
-import { contractorLabel } from "@/utils/contractorLabel";
+import { contractorLabel, jobStatusLabel } from "@/utils/contractorLabel";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -23,7 +23,7 @@ import TextAreaField from "@/utils/TextAreaField";
 import SelectField from "@/utils/SelectedField";
 import PropertyPicker from "@/utils/PropertyPicker";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Trash2, Search, CheckCircle2, Send, CalendarClock } from "lucide-react";
+import { Plus, Trash2, Search, CheckCircle2, CalendarClock } from "lucide-react";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
 import { get } from "@/helper/api";
@@ -44,7 +44,6 @@ import { JOB_TYPE_OPTIONS, JOB_LOCATION_OPTIONS } from "@/helper/jobTypeOptions"
 import { formatLocalDate } from "@/helper/formatLocalDate";
 import { useMaintenanceSummary } from "@/components/maintenance/useMaintenanceSummary";
 import { computeSla, formatLondonDate, formatLondonDateTime, isJobOverdue, jobDueValue } from "@/utils/maintenanceSla";
-import { emailLandlord } from "./jobActions";
 import { AddressCell, DueCell } from "./jobCells";
 
 // Matches what CreateJobTypeDto persists on create. The server forces the
@@ -239,7 +238,7 @@ const MaintenanceList = () => {
     reloadSummary();
   };
 
-  const submitJob = async (data: MaintenanceFormData, informLandlord: boolean) => {
+  const submitJob = async (data: MaintenanceFormData) => {
     // Guards against duplicate jobs from a double-click/slow-network resubmit:
     // each dispatch generates its own fresh Idempotency-Key (idempotency only
     // catches identical retries of the SAME request, not two distinct clicks),
@@ -267,23 +266,8 @@ const MaintenanceList = () => {
       // without it a rejected (rejectWithValue) result was silently treated
       // as success: no error toast shown, and the dialog closed as if the
       // job had actually been created.
-      const created = (await dispatch(createJobType(payload)).unwrap()) as CreatedJobResponse;
+      await dispatch(createJobType(payload)).unwrap();
       toast.success("Maintenance job created successfully");
-
-      if (informLandlord) {
-        const jobId: string | undefined = created?.id ?? created?.jobType?.id ?? created?.data?.id ?? created?.data?.jobType?.id;
-        if (!jobId) {
-          toast.error("Job saved, but the landlord could not be informed from here. Open the job to inform them.");
-        } else {
-          try {
-            const result = await emailLandlord(jobId);
-            toast.success(result?.message || "Landlord informed. Waiting for authorisation.");
-          } catch (error) {
-            // The job is kept; the landlord can be informed later from the job page.
-            toast.error(error?.message || "Could not inform the landlord. The job has been saved.");
-          }
-        }
-      }
 
       setCurrentPage(1);
       dispatch(fetchJobTypes({ page: 1, limit: 20, status: statusFilter || undefined, search: debouncedSearch || undefined }));
@@ -354,7 +338,7 @@ const MaintenanceList = () => {
               <DialogHeader>
                 <DialogTitle>Add New Maintenance</DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit((data) => submitJob(data, false))} className="flex flex-col flex-1 min-h-0">
+              <form onSubmit={handleSubmit((data) => submitJob(data))} className="flex flex-col flex-1 min-h-0">
                 <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_18rem] gap-6 overflow-y-auto pr-1 flex-1 min-h-0">
                   <div className="space-y-4">
                     <PropertyPicker
@@ -428,11 +412,7 @@ const MaintenanceList = () => {
                     <div className="space-y-1.5">
                       <div className="text-muted-foreground text-sm font-medium">Job status</div>
                       <div className="flex h-10 items-center rounded-md border bg-background px-3 text-sm">
-                        {responsibilityValue === "LANDLORD" ? (
-                          <><Badge variant="outline" className={statusBadgeClass("WAITING_AUTHORIZATION")}>Waiting Authorisation</Badge><span className="ml-2 text-xs text-muted-foreground">Open once the landlord authorises</span></>
-                        ) : (
-                          <><Badge variant="outline" className={statusBadgeClass("OPEN")}>Open</Badge><span className="ml-2 text-xs text-muted-foreground">set on create</span></>
-                        )}
+                        <><Badge variant="outline" className={statusBadgeClass("OPEN")}>Open</Badge><span className="ml-2 text-xs text-muted-foreground">set on create</span></>
                       </div>
                     </div>
 
@@ -493,16 +473,6 @@ const MaintenanceList = () => {
                   <Button type="submit" variant="secondary" disabled={isCreatingJob}>
                     {isCreatingJob ? "Saving…" : "Save"}
                   </Button>
-                  {responsibilityValue === "LANDLORD" && (
-                    <Button
-                      type="button"
-                      disabled={isCreatingJob}
-                      onClick={handleSubmit((data) => submitJob(data, true))}
-                    >
-                      <Send className="h-4 w-4 mr-2" />
-                      {isCreatingJob ? "Saving…" : "Save & inform landlord"}
-                    </Button>
-                  )}
                 </div>
               </form>
             </DialogContent>
@@ -610,7 +580,7 @@ const MaintenanceList = () => {
                             {job.contractorRef ? contractorLabel(job.contractorRef.name) : job.employeeId ? getEmployeeName(job.employeeId) : "-"}
                           </td>
                           <td className="px-4 py-3 text-sm">
-                            <Hint text={STATUS_HINTS[job.status] ?? job.status}><Badge noHint variant="outline" className={statusBadgeClass(job.status)}>{STATUS_LABELS[job.status] ?? job.status}</Badge></Hint>
+                            <Hint text={STATUS_HINTS[job.status] ?? job.status}><Badge noHint variant="outline" className={statusBadgeClass(job.status)}>{jobStatusLabel(job.status, STATUS_LABELS[job.status] ?? job.status, job.contractorRef?.name)}</Badge></Hint>
                           </td>
                           <td className="px-4 py-3 text-sm max-w-[14rem]">
                             {(job.notes ?? [])[0] ? (
