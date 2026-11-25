@@ -48,6 +48,7 @@ z.object({
   floorPlanFileIds: z.array(z.string()).optional().default([]),
   managementDate: z.string().nullable().optional(),
   rentEffectiveDate: z.string().nullable().optional(),
+  rentDueDate: z.string().nullable().optional(),
   rentPerMonth: z.string().nullable().optional(),
   rentPayableInAdvance: z.string().nullable().optional(),
   rentPayableTiming: z.string().nullable().optional(),

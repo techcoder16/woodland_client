@@ -53,7 +53,7 @@ export default function PropertyActivityLog({ propertyId }: { propertyId: string
               </div>
               <div className="shrink-0 text-right text-xs text-muted-foreground">
                 <p>{new Date(a.createdAt).toLocaleDateString("en-GB")} {new Date(a.createdAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</p>
-                {a.userName && <p>{a.userName}</p>}
+                <p className="font-medium text-foreground">By {a.userName || "System / not recorded"}</p>
               </div>
             </li>
           ))}
