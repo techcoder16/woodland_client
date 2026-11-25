@@ -14,6 +14,7 @@ import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import { patch } from "@/helper/api";
 import { Switch } from "@/components/ui/switch";
 import { isCountryUnlocked, setCountryUnlocked } from "@/lib/countrySetting";
+import MaintenanceSettingsCard from "@/components/settings/MaintenanceSettingsCard";
 
 // Converts between the "H S% L%" strings the CSS custom properties use and
 // the hex format a native <input type="color"> swatch needs.
@@ -161,6 +162,7 @@ const user = await DEFAULT_COOKIE_GETTER("user");
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
             {isAdmin && <TabsTrigger value="general">General</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="maintenance">Maintenance</TabsTrigger>}
             {isAdmin && <TabsTrigger value="appearance">Appearance</TabsTrigger>}
           </TabsList>
 
@@ -299,6 +301,12 @@ const user = await DEFAULT_COOKIE_GETTER("user");
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+          )}
+
+          {isAdmin && (
+            <TabsContent value="maintenance">
+              <MaintenanceSettingsCard />
             </TabsContent>
           )}
 

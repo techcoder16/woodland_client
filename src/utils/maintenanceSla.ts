@@ -2,14 +2,69 @@
 // for dueAt / chaseUpAt; these rules mirror it so the Add Maintenance form can
 // show the expected times before saving.
 //
-//   Critical  before 14:00 due +4h; from 14:00 due 17:30 the same day (never next day)
+//   Critical  before 14:00 due +4h; from 14:00 due 17:30, chased 18:00 the same day (never next day)
 //   High      due 24 office hours  chase up 12 office hours
 //   Medium    due 10 calendar days chase up 5 calendar days
 //   Low       due 21 calendar days chase up 10 calendar days
+//   Any job logged from 14:00 to close is chased at 18:00 that day.
 //
-// Office hours = 09:00-18:00 Monday-Friday, London time.
+// Office hours default to 09:00-18:00 Monday-Friday, London time. These times are
+// editable in Settings > Maintenance; loadSlaSettings() pulls the saved ones.
+
+import { get } from "@/helper/api";
 
 const LONDON = "Europe/London";
+
+export interface SlaSettings {
+  officeOpen: string;
+  officeClose: string;
+  criticalCutoff: string;
+  criticalHours: number;
+  lateDue: string;
+  lateChaseUp: string;
+}
+
+export const DEFAULT_SLA_SETTINGS: SlaSettings = {
+  officeOpen: "09:00",
+  officeClose: "18:00",
+  criticalCutoff: "14:00",
+  criticalHours: 4,
+  lateDue: "17:30",
+  lateChaseUp: "18:00",
+};
+
+let slaSettings: SlaSettings = { ...DEFAULT_SLA_SETTINGS };
+export const getSlaSettings = (): SlaSettings => ({ ...slaSettings });
+export const setSlaSettingsLocal = (s: Partial<SlaSettings>) => {
+  slaSettings = { ...DEFAULT_SLA_SETTINGS, ...s };
+};
+
+/** Fetches the saved office hours / critical times. Keeps the defaults if the call fails. */
+export async function loadSlaSettings(): Promise<SlaSettings> {
+  const { data } = await get<SlaSettings>("property-management/maintenance-settings");
+  if (data && typeof data === "object" && "officeOpen" in data) setSlaSettingsLocal(data);
+  return getSlaSettings();
+}
+
+const toMin = (t: string) => {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + (m || 0);
+};
+
+/** "9:00", "17:30" -> "9am", "5:30pm" */
+export function friendlyTime(t: string): string {
+  const mins = toMin(t);
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}${m ? `:${String(m).padStart(2, "0")}` : ""}${h < 12 ? "am" : "pm"}`;
+}
+
+/** One-line summary of the rules, for hints next to the due date. */
+export function slaHintText(): string {
+  const s = slaSettings;
+  return `Critical: before ${friendlyTime(s.criticalCutoff)} due in ${s.criticalHours} hours; from ${friendlyTime(s.criticalCutoff)} due ${friendlyTime(s.lateDue)} and chased at ${friendlyTime(s.lateChaseUp)} the same day. High counts office hours (Mon–Fri ${s.officeOpen}–${s.officeClose}).`;
+}
 const MINUTE = 60 * 1000;
 const DAY = 24 * 60 * MINUTE;
 
@@ -53,10 +108,10 @@ const isOfficeMinute = (date: Date) => {
   const { weekday, hour, minute } = londonParts(date);
   if (weekday === "Sat" || weekday === "Sun") return false;
   const mins = hour * 60 + minute;
-  return mins >= 9 * 60 && mins < 18 * 60;
+  return mins >= toMin(slaSettings.officeOpen) && mins < toMin(slaSettings.officeClose);
 };
 
-/** Adds `hours` of office time (09:00-18:00 London, Mon-Fri) to `start`. */
+/** Adds `hours` of office time (London, Mon-Fri) to `start`. */
 export function addOfficeHours(start: Date, hours: number): Date {
   let remaining = hours * 60;
   let cursor = start.getTime();
@@ -86,19 +141,32 @@ export function computeSla(priority: string | null | undefined, from: Date = new
     for (let i = 0; i < 200_000 && !isOfficeMinute(new Date(start)); i++) start += MINUTE;
     const { hour, minute } = londonParts(new Date(start));
     const minsNow = hour * 60 + minute;
-    const toClose = (18 * 60 - minsNow) * MINUTE;
-    const dueMs = minsNow < 14 * 60 ? start + Math.min(4 * 60 * MINUTE, toClose) : minsNow < 17 * 60 + 30 ? start + (17 * 60 + 30 - minsNow) * MINUTE : start + toClose;
-    return { dueAt: new Date(dueMs), chaseUpAt: new Date(start + (dueMs - start) / 2) };
+    const s = slaSettings;
+    const at = (t: string) => start + (toMin(t) - minsNow) * MINUTE;
+    const closeMs = at(s.officeClose);
+    if (minsNow < toMin(s.criticalCutoff)) {
+      const dueMs = Math.min(start + s.criticalHours * 60 * MINUTE, closeMs);
+      return { dueAt: new Date(dueMs), chaseUpAt: new Date(start + (dueMs - start) / 2) };
+    }
+    const dueMs = minsNow < toMin(s.lateDue) ? at(s.lateDue) : closeMs;
+    return { dueAt: new Date(dueMs), chaseUpAt: new Date(Math.max(start, at(s.lateChaseUp))) };
   }
+  // Logged on a working day from the cutoff to close: chased at the late chase-up time.
+  const nowParts = londonParts(from);
+  const nowMins = nowParts.hour * 60 + nowParts.minute;
+  const lateChase =
+    isOfficeMinute(from) && nowMins >= toMin(slaSettings.criticalCutoff)
+      ? new Date(Math.max(from.getTime(), from.getTime() + (toMin(slaSettings.lateChaseUp) - nowMins) * MINUTE))
+      : null;
   if (rule.unit === "days") {
     return {
       dueAt: new Date(from.getTime() + rule.due * DAY),
-      chaseUpAt: new Date(from.getTime() + rule.chase * DAY),
+      chaseUpAt: lateChase ?? new Date(from.getTime() + rule.chase * DAY),
     };
   }
   return {
     dueAt: addOfficeHours(from, rule.due),
-    chaseUpAt: addOfficeHours(from, rule.chase),
+    chaseUpAt: lateChase ?? addOfficeHours(from, rule.chase),
   };
 }
 
