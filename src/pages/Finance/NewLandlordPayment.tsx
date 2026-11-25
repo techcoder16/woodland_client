@@ -65,7 +65,10 @@ const dmy = (iso: string) => {
 export default function NewLandlordPayment() {
   const dispatch = useAppDispatch();
   const { toast } = useToast();
-  const { properties } = useAppSelector((state) => state.properties);
+  // Every published property (the shared store only holds one page of 10).
+  const { properties: pagedProperties } = useAppSelector((state) => state.properties);
+  const [allProperties, setAllProperties] = useState<any[] | null>(null);
+  const properties = allProperties ?? pagedProperties;
   const { vendors } = useAppSelector((state) => state.vendors);
 
   const [step, setStep] = useState(0);
@@ -98,6 +101,9 @@ export default function NewLandlordPayment() {
 
   useEffect(() => {
     dispatch(fetchProperties({ page: 1, search: "", propertyStatus: "PUBLISHED" }));
+    void get<{ items?: any[] }>("properties?page=1&limit=5000&search=&propertyStatus=PUBLISHED").then(({ data }) => {
+      if (data?.items) setAllProperties(data.items);
+    });
     dispatch(fetchVendors({ page: 1, search: "" }));
   }, [dispatch]);
 
@@ -668,6 +674,15 @@ export default function NewLandlordPayment() {
                               </tr>
                             ))}
                           </tbody>
+                          <tfoot>
+                            <tr className="border-t-2 bg-muted/30 font-semibold">
+                              <td className="px-3 py-2" colSpan={3}>Total deductions</td>
+                              <td className="px-3 py-2 text-right">{money(adjustments.reduce((s, a) => s + lineBalance(a).total, 0))}</td>
+                              <td className="px-3 py-2 text-right text-red-600">{adjustmentTotal < 0 ? "-" : ""}{money(Math.abs(adjustmentTotal))}</td>
+                              <td className="px-3 py-2 text-right text-amber-700">{money(adjustments.reduce((s, a) => s + lineBalance(a).remaining, 0))}</td>
+                              <td />
+                            </tr>
+                          </tfoot>
                         </table>
                       )}
                     </div>

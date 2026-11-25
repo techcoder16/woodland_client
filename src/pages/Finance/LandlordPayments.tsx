@@ -108,10 +108,15 @@ export default function LandlordPayments() {
   const [uploading, setUploading] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
   const [emailing, setEmailing] = useState(false);
-  const { properties } = useAppSelector((state) => state.properties);
+  // Every property (the shared store only holds one page of 10), so each payment finds its address.
+  const { properties: pagedProperties } = useAppSelector((state) => state.properties);
+  const [allProperties, setAllProperties] = useState<any[] | null>(null);
+  const properties = allProperties ?? pagedProperties;
   const { user: authUser } = useAuth();
   const isSuperAdmin = String((authUser as any)?.role || "") === "SUPER_USER";
   const [rentDue, setRentDue] = useState<any[]>([]);
+  // Properties with a rent that can't be listed yet, and what each one is missing.
+  const [rentIncomplete, setRentIncomplete] = useState<{ propertyId: string; address: string; missing: string[] }[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [selected, setSelected] = useState<Payment | null>(null);
   // Per adjustment line: full amount, this payment, what is left; job lines carry their invoice PDF.
@@ -174,11 +179,15 @@ export default function LandlordPayments() {
   const loadRentDue = async () => {
     const { data } = await get<{ rows?: any[] }>("transaction/rent-due");
     setRentDue(data?.rows ?? []);
+    setRentIncomplete((data as any)?.incomplete ?? []);
   };
 
   useEffect(() => {
     void loadRentDue();
     dispatch(fetchProperties({ page: 1, search: "" }));
+    void get<{ items?: any[] }>("properties?page=1&limit=5000&search=").then(({ data }) => {
+      if (data?.items) setAllProperties(data.items);
+    });
     void load();
   }, [dispatch]);
 
@@ -514,7 +523,7 @@ export default function LandlordPayments() {
             <p className="text-xs text-muted-foreground">Due date · property · rent. Red = overdue. Click a row to create the payment.</p>
           </div>
           {rentDue.length === 0 ? (
-            <p className="p-4 text-sm text-muted-foreground">No rent is due. Set a Rent Due Date on a property's Management Agreement to see it here.</p>
+            <p className="p-4 text-sm text-muted-foreground">No rent is due in the next 28 days that doesn't already have a landlord payment.</p>
           ) : (
             <div className="divide-y">
               {rentDue.map((row) => (
@@ -531,6 +540,27 @@ export default function LandlordPayments() {
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </button>
               ))}
+            </div>
+          )}
+          {rentIncomplete.length > 0 && (
+            <div className="border-t bg-amber-50/60 p-4 text-sm">
+              <p className="mb-2 font-medium text-amber-800">Not shown: {rentIncomplete.length} {rentIncomplete.length === 1 ? "property has" : "properties have"} a rent but can't be listed yet</p>
+              <ul className="space-y-1">
+                {rentIncomplete.map((p) => {
+                  const property = propertyMap.get(p.propertyId);
+                  return (
+                    <li key={p.propertyId} className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium">{p.address || "Property"}</span>
+                      <span className="text-xs text-amber-800">missing: {p.missing.join(", ")}</span>
+                      {property && (
+                        <button type="button" className="text-xs font-medium text-primary underline" onClick={() => navigate("/property/edit", { state: { property } })}>
+                          Edit property
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           )}
         </div>
