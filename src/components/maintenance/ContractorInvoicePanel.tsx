@@ -8,7 +8,8 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { InfoHint } from "@/components/ui/hint";
 import { Input } from "@/components/ui/input";
-import { Download, Eye, FileText, Mail } from "lucide-react";
+import { Download, Eye, FileText, Mail, Trash2 } from "lucide-react";
+import { del, get, post } from "@/helper/api";
 import { toast } from "sonner";
 import StoredFilePreview from "@/components/StoredFilePreview";
 import FileUploadField from "@/utils/FileUploadField";
@@ -17,6 +18,15 @@ import { buildMaintenanceInvoice, invoiceRef, invoiceToBlob } from "@/utils/main
 import { formatLondonDateTime } from "@/utils/maintenanceSla";
 import type { JobType } from "@/redux/dataStore/jobTypeSlice";
 import { emailLandlord, patchJob } from "@/pages/Maintenance/jobActions";
+
+interface LandlordInvoice {
+  id: string;
+  fileId: string;
+  reference?: string | null;
+  amount?: number | null;
+  createdByName?: string | null;
+  createdAt: string;
+}
 
 export interface ContractorInvoicePanelProps {
   job: JobType;
@@ -62,6 +72,16 @@ export default function ContractorInvoicePanel({ job, canManage, onChanged }: Co
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [emailing, setEmailing] = useState(false);
+  const [invoices, setInvoices] = useState<LandlordInvoice[]>([]);
+  const loadInvoices = async () => {
+    if (!job.id) return;
+    const { data } = await get<{ invoices?: LandlordInvoice[] }>(`property-management/job-type/${job.id}/landlord-invoices`);
+    setInvoices(data?.invoices ?? []);
+  };
+  useEffect(() => {
+    void loadInvoices();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [job.id]);
 
   const {
     register,
@@ -124,15 +144,18 @@ export default function ContractorInvoicePanel({ job, canManage, onChanged }: Co
     try {
       // Landlord-facing PDF: chargeable total only (no contractor cost, invoice or markup).
       const doc = buildMaintenanceInvoice(job);
-      const file = new File([invoiceToBlob(doc)], `${invoiceRef(job)}.pdf`, { type: "application/pdf" });
+      const reference = invoices.length ? `${invoiceRef(job)}-${invoices.length + 1}` : invoiceRef(job);
+      const file = new File([invoiceToBlob(doc)], `${reference}.pdf`, { type: "application/pdf" });
       const stored = await uploadFile(file, {
         category: "job-invoice",
         entityType: "jobType",
         entityId: job.id,
         propertyId: job.propertyId,
       });
-      await patchJob(job, { landlordInvoiceFileId: stored.id });
-      toast.success("Landlord invoice generated");
+      const { error } = await post(`property-management/job-type/${job.id}/landlord-invoices`, { fileId: stored.id, reference, amount: job.totalCharged ?? undefined });
+      if (error) throw new Error(error.message);
+      toast.success("Landlord invoice generated and saved");
+      await loadInvoices();
       onChanged();
     } catch (error) {
       toast.error(error?.message || "Failed to generate the invoice");
@@ -141,13 +164,13 @@ export default function ContractorInvoicePanel({ job, canManage, onChanged }: Co
     }
   };
 
-  const emailInvoice = async () => {
-    if (!job.id || !job.landlordInvoiceFileId) return;
+  const emailInvoice = async (fileId: string) => {
+    if (!job.id || !fileId) return;
     setEmailing(true);
     try {
       // Send the saved PDF itself, so the landlord gets exactly what was generated.
-      const urls = await fetchFileUrls([job.landlordInvoiceFileId]);
-      const signed = urls[job.landlordInvoiceFileId];
+      const urls = await fetchFileUrls([fileId]);
+      const signed = urls[fileId];
       if (!signed) throw new Error("The saved invoice could not be loaded. Generate a new one and try again.");
       const res = await fetch(signed.url);
       if (!res.ok) throw new Error("The saved invoice could not be loaded. Generate a new one and try again.");
@@ -160,6 +183,15 @@ export default function ContractorInvoicePanel({ job, canManage, onChanged }: Co
     } finally {
       setEmailing(false);
     }
+  };
+
+  const removeInvoice = async (inv: LandlordInvoice) => {
+    if (!window.confirm(`Delete invoice ${inv.reference || ""}?`)) return;
+    const { error } = await del(`property-management/job-type/${job.id}/landlord-invoices/${inv.id}`);
+    if (error) return toast.error(error.message || "Failed to delete the invoice");
+    toast.success("Invoice deleted");
+    await loadInvoices();
+    onChanged();
   };
 
   const disabled = !canManage;
@@ -284,41 +316,48 @@ export default function ContractorInvoicePanel({ job, canManage, onChanged }: Co
         )}
 
         <div className="border-t pt-4 space-y-3">
-          <div className="font-semibold">Generated invoice</div>
-          {job.landlordInvoiceFileId ? (
-            <>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="text-sm">
-                  <div className="font-medium">{invoiceRef(job)}.pdf</div>
-                  <div className="text-muted-foreground">
-                    Generated {formatLondonDateTime(job.landlordInvoiceGeneratedAt)}
-                    {job.landlordInformedAt && ` · Emailed ${formatLondonDateTime(job.landlordInformedAt)}`}
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button type="button" variant="outline" size="sm" onClick={() => openStoredFile(job.landlordInvoiceFileId as string).catch((e) => toast.error(e.message))}>
-                    <Eye className="h-4 w-4 mr-2" /> View
-                  </Button>
-                  <Button type="button" variant="outline" size="sm" onClick={() => openStoredFile(job.landlordInvoiceFileId as string, { download: true }).catch((e) => toast.error(e.message))}>
-                    <Download className="h-4 w-4 mr-2" /> Download
-                  </Button>
-                  {canManage && (
-                    <Button type="button" size="sm" disabled={emailing || !landlordEmail} onClick={emailInvoice}>
-                      <Mail className="h-4 w-4 mr-2" /> {emailing ? "Sending…" : "Email invoice to landlord"}
-                    </Button>
-                  )}
-                </div>
-              </div>
-              {canManage && (
-                <p className="text-xs text-muted-foreground">
-                  {landlordEmail
-                    ? `Sends to ${landlordName} (${landlordEmail}). The landlord is never emailed automatically.`
-                    : "This property's landlord has no email on file."}
-                </p>
-              )}
-            </>
-          ) : (
+          <div className="font-semibold">Generated invoices</div>
+          {invoices.length === 0 ? (
             <p className="text-sm text-muted-foreground">No landlord invoice has been generated yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-xs text-muted-foreground">
+                    <th className="py-2 pr-3 font-medium">Invoice</th>
+                    <th className="py-2 pr-3 font-medium">Generated</th>
+                    <th className="py-2 pr-3 text-right font-medium">Amount</th>
+                    <th className="py-2 pr-3 font-medium">By</th>
+                    <th className="py-2 text-right font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {invoices.map((inv) => (
+                    <tr key={inv.id} className="border-b last:border-0">
+                      <td className="py-2 pr-3 font-medium">{inv.reference || "Invoice"}.pdf</td>
+                      <td className="py-2 pr-3">{formatLondonDateTime(inv.createdAt)}</td>
+                      <td className="py-2 pr-3 text-right">{inv.amount != null ? money(inv.amount) : "-"}</td>
+                      <td className="py-2 pr-3">{inv.createdByName || "-"}</td>
+                      <td className="py-2">
+                        <div className="flex justify-end gap-1">
+                          <Button type="button" variant="ghost" size="icon" className="h-8 w-8" title="View" onClick={() => openStoredFile(inv.fileId).catch((e) => toast.error(e.message))}><Eye className="h-4 w-4" /></Button>
+                          <Button type="button" variant="ghost" size="icon" className="h-8 w-8" title="Download" onClick={() => openStoredFile(inv.fileId, { download: true }).catch((e) => toast.error(e.message))}><Download className="h-4 w-4" /></Button>
+                          {canManage && <Button type="button" variant="ghost" size="icon" className="h-8 w-8" title={landlordEmail ? "Email to landlord" : "Landlord has no email on file"} disabled={emailing || !landlordEmail} onClick={() => emailInvoice(inv.fileId)}><Mail className="h-4 w-4" /></Button>}
+                          {canManage && <Button type="button" variant="ghost" size="icon" className="h-8 w-8" title="Delete" onClick={() => removeInvoice(inv)}><Trash2 className="h-4 w-4" /></Button>}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {canManage && invoices.length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {landlordEmail
+                ? `Email sends to ${landlordName} (${landlordEmail}). The landlord is never emailed automatically.`
+                : "This property's landlord has no email on file."}
+            </p>
           )}
         </div>
       </Card>
