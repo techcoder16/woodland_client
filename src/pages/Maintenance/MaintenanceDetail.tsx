@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect } from "react";
-import { contractorLabel } from "@/utils/contractorLabel";
+import { contractorLabel, jobStatusLabel } from "@/utils/contractorLabel";
 import StoredFilePreview from "@/components/StoredFilePreview";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -632,7 +632,7 @@ const MaintenanceDetail = () => {
               </div>
               <div className="flex flex-wrap gap-2 mb-3">
                 {job.priority && <Badge variant="outline" className={priorityBadgeClass(job.priority)}>Priority: {job.priority}</Badge>}
-                <Badge variant="outline" className={statusBadgeClass(job.status)}>Status: {STATUS_LABELS[job.status] ?? job.status}</Badge>
+                <Badge variant="outline" className={statusBadgeClass(job.status)}>Status: {jobStatusLabel(job.status, STATUS_LABELS[job.status] ?? job.status, job.contractorRef?.name)}</Badge>
                 {isOverdue && <Badge variant="destructive">Overdue</Badge>}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1 text-sm">
@@ -737,7 +737,7 @@ const MaintenanceDetail = () => {
               <dl className="space-y-2.5 text-sm">
                 <div className="flex items-center justify-between gap-3">
                   <dt className="text-muted-foreground">Status</dt>
-                  <dd><Badge variant="outline" className={statusBadgeClass(job.status)}>{STATUS_LABELS[job.status] ?? job.status}</Badge></dd>
+                  <dd><Badge variant="outline" className={statusBadgeClass(job.status)}>{jobStatusLabel(job.status, STATUS_LABELS[job.status] ?? job.status, job.contractorRef?.name)}</Badge></dd>
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <dt className="text-muted-foreground">Responsibility</dt>

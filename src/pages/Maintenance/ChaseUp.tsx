@@ -180,7 +180,7 @@ const ChaseUp = () => {
                             <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                               <div className="flex justify-center gap-2">
                                 <Button size="sm" onClick={() => setOpen((o) => ({ ...o, [id]: !o[id] }))}>{isOpen ? "Close" : "Notes"}</Button>
-                                <Button asChild size="sm" variant="outline"><Link to={`/maintenance/${id}`}>Open</Link></Button>
+                                <Button asChild size="sm" variant="outline"><Link to={`/maintenance/${id}`}>Open Job</Link></Button>
                               </div>
                             </td>
                           </tr>

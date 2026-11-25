@@ -1,6 +1,6 @@
 ﻿// Assigned contractor jobs, filtered by visit day. Staff use this to check
 // tomorrow's visits, message contractors, and close jobs off.
-import { contractorLabel } from "@/utils/contractorLabel";
+import { contractorLabel, jobStatusLabel } from "@/utils/contractorLabel";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -182,8 +182,8 @@ const MaintenanceJobs = () => {
                             {overdue && <div className="text-xs font-semibold text-red-600">Overdue</div>}
                           </td>
                           <td className="px-4 py-3 text-sm">
-                            <Hint text={STATUS_LABELS[job.status] ?? job.status}>
-                              <Badge variant="outline" className={statusBadgeClass(job.status)}>{STATUS_LABELS[job.status] ?? job.status}</Badge>
+                            <Hint text={jobStatusLabel(job.status, STATUS_LABELS[job.status] ?? job.status, job.contractorRef?.name)}>
+                              <Badge variant="outline" className={statusBadgeClass(job.status)}>{jobStatusLabel(job.status, STATUS_LABELS[job.status] ?? job.status, job.contractorRef?.name)}</Badge>
                             </Hint>
                           </td>
                           <td className="px-4 py-3 text-sm" onClick={(e) => e.stopPropagation()}>

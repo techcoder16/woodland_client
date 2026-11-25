@@ -132,7 +132,10 @@ export default function LandlordPayments() {
     try {
       const token = await DEFAULT_COOKIE_GETTER("access_token");
       const data: any = await getApi("transaction", "?skip=0&take=1000", { Authorization: `Bearer ${token}` });
-      setPayments(Array.isArray(data) ? data : data?.transactions || data?.data || []);
+      const list: Payment[] = Array.isArray(data) ? data : data?.transactions || data?.data || [];
+      setPayments(list);
+      // Keep an open drawer in step with the fresh list so it never shows an old status.
+      setSelected((prev: Payment | null) => (prev ? list.find((p) => p.id === prev.id) ?? prev : prev));
     } finally {
       setLoading(false);
     }
@@ -231,6 +234,15 @@ export default function LandlordPayments() {
     if (error) { toast({ title: "Could not delete adjustment", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Adjustment deleted" });
     await refreshOne(paymentId);
+  };
+
+  const deletePayment = async (payment: Payment) => {
+    if (!window.confirm("Delete this payment? Deductions and jobs it took are released so they can be taken again.")) return;
+    const { error } = await del(`transaction/${payment.id}`);
+    if (error) { toast({ title: "Could not delete payment", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Payment deleted" });
+    setSelected(null);
+    await load();
   };
 
   const refreshOne = async (id: string) => {
@@ -678,6 +690,7 @@ export default function LandlordPayments() {
               <div className="flex gap-2">
                 <Button className="flex-1" variant="outline" onClick={() => navigate("/finance/landlord-payments/new")}>Create another payment</Button>
               </div>
+              {isSuperAdmin && <Button className="w-full" variant="destructive" onClick={() => void deletePayment(selected)}><Trash2 className="mr-2 h-4 w-4" />Delete payment (super admin)</Button>}
             </div>
           </>}
         </div>}
