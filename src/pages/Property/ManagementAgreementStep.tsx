@@ -121,6 +121,16 @@ const ManagementAgreementStep = ({ register, watch, setValue, clearErrors, error
             }}
             error={errors?.rentEffectiveDate?.message?.toString()}
           />
+
+          <DateField
+            label="Rent Due Date"
+            value={watch("rentDueDate") || ""}
+            onChange={(date) => {
+              setValue("rentDueDate", date.toISOString());
+              clearErrors("rentDueDate");
+            }}
+            error={errors?.rentDueDate?.message?.toString()}
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
