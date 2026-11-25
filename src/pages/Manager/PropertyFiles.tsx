@@ -106,10 +106,10 @@ export default function PropertyFiles({ property }: Props) {
               The files could not be opened: {error}. They are saved, but the file service did not answer. Reload, or tell an admin if it keeps happening.
             </div>
           )}
+          <Group title="Attachments" ids={others} hint="Management agreement, landlord ID and other uploaded files." />
+          <Group title="Fire risk assessment" ids={fire} hint="Only needed for communal properties." />
           <Group title="Photographs" ids={photos} hint="The first photograph is the cover image shown in the page header." />
           <Group title="Floor plans" ids={plans} hint="Plans of the property layout." />
-          <Group title="Fire risk assessment" ids={fire} hint="Only needed for communal properties." />
-          <Group title="Other attachments" ids={others} hint="Management agreement, landlord ID and other uploaded files." />
         </>
       )}
     </div>
