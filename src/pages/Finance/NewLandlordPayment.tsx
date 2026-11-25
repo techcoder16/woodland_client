@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { jobRef } from "@/utils/contractorLabel";
 import { Link, useSearchParams } from "react-router-dom";
 import { AutoHint } from "@/components/ui/hint";
 import { uploadFileOnce } from "@/helper/fileUpload";
@@ -281,6 +282,16 @@ export default function NewLandlordPayment() {
     ? `${selectedVendor.bankName} (${selectedVendor.bankSortCode || ""} | ${selectedVendor.bankAccountNo || ""})`
     : "";
 
+  // Total of the source, and what is left after this payment (carried to the next payment).
+  const lineBalance = (a: Adjustment) => {
+    const taken = Math.abs(a.amount);
+    const job = a.jobTypeId ? billableJobs.find((j) => j.id === a.jobTypeId) : undefined;
+    if (job) return { total: job.total, remaining: Math.max(0, Math.round((job.amount - taken) * 100) / 100) };
+    const d = a.deductionId ? billableDeductions.find((x) => x.id === a.deductionId) : undefined;
+    if (d) return { total: d.amount, remaining: Math.max(0, Math.round((d.outstanding - taken) * 100) / 100) };
+    return { total: taken, remaining: 0 };
+  };
+
   const adjustmentTotal = adjustments.reduce((sum, a) => sum + Number(a.amount || 0), 0);
   const netPayable = Number(payment.contractualRent || 0) + adjustmentTotal;
 
@@ -501,6 +512,9 @@ export default function NewLandlordPayment() {
     <DashboardLayout>
       <div className="mx-auto max-w-[1500px] space-y-6">
         <div>
+          <Button asChild variant="ghost" size="sm" className="mb-1 -ml-2">
+            <Link to="/finance/landlord-payments"><ArrowLeft className="mr-1 h-4 w-4" />Back to Landlord Payments</Link>
+          </Button>
           <p className="text-sm text-muted-foreground">Finance / Landlord Payments</p>
           <h1 className="text-2xl font-semibold">New Landlord Payment Transaction</h1>
           <p className="text-sm text-muted-foreground">Select a property, enter payment details, then review and confirm.</p>
@@ -595,6 +609,7 @@ export default function NewLandlordPayment() {
                               <span className="flex min-w-0 items-center gap-2">
                                 <Wrench className="h-3.5 w-3.5 shrink-0 text-amber-700" />
                                 <span className="truncate">{job.jobType}{job.description ? ` — ${job.description}` : ""}</span>
+                                <Link to={`/maintenance/${job.id}`} target="_blank" className="shrink-0 font-mono text-xs text-primary underline">{jobRef(job.id)}</Link>
                               </span>
                               <span className="flex shrink-0 items-center gap-2">
                                 <span className="text-right">
@@ -609,7 +624,7 @@ export default function NewLandlordPayment() {
                       )}
                       {unaddedDeductions.length > 0 && (
                         <div className="space-y-1.5 border-b bg-sky-50/60 p-3">
-                          <p className="text-xs font-medium text-sky-800">Deductions outstanding up to {dmy(payment.expectedPaymentDate)}</p>
+                          <p className="text-xs font-medium text-sky-800">Property deductions (Property › Finance › Deductions) outstanding up to {dmy(payment.expectedPaymentDate)}</p>
                           {unaddedDeductions.map((d) => (
                             <div key={d.id} className="flex items-center justify-between gap-2 text-sm">
                               <span className="min-w-0 truncate">
@@ -631,14 +646,19 @@ export default function NewLandlordPayment() {
                         <p className="p-4 text-sm text-muted-foreground">No adjustments added.</p>
                       ) : (
                         <table className="w-full text-sm">
-                          <thead className="bg-muted/40 text-left text-xs text-muted-foreground"><tr><th className="px-3 py-2 font-medium">Type<AutoHint for="Type" /></th><th className="px-3 py-2 font-medium">Description<AutoHint for="Description" /></th><th className="px-3 py-2 font-medium">Related To</th><th className="px-3 py-2 text-right font-medium">Amount (£)</th><th className="px-3 py-2 font-medium"></th></tr></thead>
+                          <thead className="bg-muted/40 text-left text-xs text-muted-foreground"><tr><th className="px-3 py-2 font-medium">Type<AutoHint for="Type" /></th><th className="px-3 py-2 font-medium">Description<AutoHint for="Description" /></th><th className="px-3 py-2 font-medium">Related To</th><th className="px-3 py-2 text-right font-medium">Total</th><th className="px-3 py-2 text-right font-medium">This payment (£)</th><th className="px-3 py-2 text-right font-medium">Remaining</th><th className="px-3 py-2 font-medium"></th></tr></thead>
                           <tbody>
                             {adjustments.map((a) => (
                               <tr key={a.id} className="border-t">
                                 <td className="px-3 py-2">{a.type}</td>
-                                <td className="px-3 py-2 text-muted-foreground">{a.description || "-"}</td>
+                                <td className="px-3 py-2 text-muted-foreground">
+                                  {a.description || "-"}
+                                  {a.jobTypeId && <Link to={`/maintenance/${a.jobTypeId}`} target="_blank" className="ml-2 font-mono text-xs text-primary underline">{jobRef(a.jobTypeId)}</Link>}
+                                </td>
                                 <td className="px-3 py-2 text-muted-foreground">{a.relatedTo || "-"}</td>
+                                <td className="px-3 py-2 text-right">{money(lineBalance(a).total)}</td>
                                 <td className="px-3 py-2 text-right text-red-600">-{money(Math.abs(a.amount))}</td>
+                                <td className={`px-3 py-2 text-right font-medium ${lineBalance(a).remaining > 0 ? "text-amber-700" : "text-emerald-700"}`}>{money(lineBalance(a).remaining)}</td>
                                 <td className="px-3 py-2">
                                   <div className="flex justify-end gap-1">
                                     <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEditAdjustment(a)}><FileText className="h-3.5 w-3.5" /></Button>
