@@ -22,7 +22,7 @@ import { fetchProperties } from "@/redux/dataStore/propertySlice";
 import { useAppDispatch, useAppSelector } from "@/redux/reduxHooks";
 import { DEFAULT_COOKIE_GETTER } from "@/helper/Cookie";
 import getApi from "@/helper/getApi";
-import { post, patch, del } from "@/helper/api";
+import { get, post, patch, del } from "@/helper/api";
 import { useAuth } from "@/context/AuthContext";
 import { formatPropertyReference } from "@/utils/propertyReference";
 import { exportPaymentReviewToPdf, exportTransactionsToExcel, exportTransactionsToPdf } from "@/utils/transactionExport";
@@ -108,6 +108,7 @@ export default function LandlordPayments() {
   const { properties } = useAppSelector((state) => state.properties);
   const { user: authUser } = useAuth();
   const isSuperAdmin = String((authUser as any)?.role || "") === "SUPER_USER";
+  const [rentDue, setRentDue] = useState<any[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [selected, setSelected] = useState<Payment | null>(null);
   const [editing, setEditing] = useState(false);
@@ -141,7 +142,13 @@ export default function LandlordPayments() {
     }
   };
 
+  const loadRentDue = async () => {
+    const { data } = await get<{ rows?: any[] }>("transaction/rent-due");
+    setRentDue(data?.rows ?? []);
+  };
+
   useEffect(() => {
+    void loadRentDue();
     dispatch(fetchProperties({ page: 1, search: "" }));
     void load();
   }, [dispatch]);
@@ -482,6 +489,30 @@ export default function LandlordPayments() {
           </div>
         )}
 
+
+        <div className="surface overflow-hidden">
+          <div className="border-b p-4">
+            <h2 className="font-semibold">Rent due ({rentDue.length})<InfoHint text="Rent that falls due on each property's Rent Due Date and has no landlord payment yet. Overdue once the due date has passed." /></h2>
+            <p className="text-xs text-muted-foreground">Pay according to the rent due date</p>
+          </div>
+          {rentDue.length === 0 ? (
+            <p className="p-4 text-sm text-muted-foreground">No rent is due. Set a Rent Due Date on a property's Management Agreement to see it here.</p>
+          ) : (
+            <div className="divide-y">
+              {rentDue.map((row) => (
+                <div key={`${row.propertyId}:${row.period}`} className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm">
+                  <Badge variant="outline" className={row.status === "OVERDUE" ? STATUS_BADGE.OVERDUE : STATUS_BADGE.DUE}>{row.status === "OVERDUE" ? "Overdue" : "Due"}</Badge>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-medium">{row.address || "Property"}</div>
+                    <div className="text-xs text-muted-foreground">{row.landlordName || "No landlord"} · {periodLabel(row.period)} · due {new Date(row.dueDate).toLocaleDateString("en-GB")}</div>
+                  </div>
+                  <div className="font-mono">{money(row.rent)}</div>
+                  <Button size="sm" onClick={() => navigate(`/finance/landlord-payments/new?vendorId=${row.vendorId}&propertyId=${row.propertyId}&period=${row.period}&due=${row.dueDate}`)}>Create payment</Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="surface overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4">

@@ -35,3 +35,21 @@ playwright.config.ts
 *.tsbuildinfo
 .env.test.*
 test-results/
+
+# Generated notes, kept out of git
+DASHBOARD_TESTING_GUIDE.md
+
+# Generated notes, kept out of git
+QA-SUMMARY.md
+
+# Generated notes, kept out of git
+tests/FIX_SUMMARY.md
+
+# Generated notes, kept out of git
+tests/README.md
+
+# Generated notes, kept out of git
+tests/TEST_SUMMARY.md
+
+# Generated notes, kept out of git
+tests/e2e/README.md

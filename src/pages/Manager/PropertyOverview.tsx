@@ -126,7 +126,7 @@ export default function PropertyOverview({ property }: PropertyOverviewProps) {
             <div className="flex justify-between"><dt className="text-muted-foreground">Lift</dt><dd className="font-medium">{property.lift ? "Yes" : "No"}</dd></div>
             <div className="flex justify-between"><dt className="text-muted-foreground">Wheelchair Access</dt><dd className="font-medium">{property.wheelchairAccess ? "Yes" : "No"}</dd></div>
             {property.managementDate ? <div className="flex justify-between"><dt className="text-muted-foreground">Management Date</dt><dd className="font-medium">{ukDate(property.managementDate)}</dd></div> : null}
-            <div className="flex justify-between"><dt className="text-muted-foreground">Rent due date</dt><dd className="font-medium">{rentDueDay ? `Day ${rentDueDay} of each month` : "-"}</dd></div>
+            <div className="flex justify-between"><dt className="text-muted-foreground">Rent due date</dt><dd className="font-medium">{(() => { const m = /^\d{4}-\d{2}-(\d{2})/.exec(String(property.rentDueDate || "")); const day = m ? Number(m[1]) : rentDueDay; return day ? `Day ${day} of each month` : "-"; })()}</dd></div>
             <div className="flex justify-between"><dt className="text-muted-foreground">Status</dt><dd><Badge variant="outline">{property.propertyStatus || "-"}</Badge></dd></div>
           </dl>
         </div>

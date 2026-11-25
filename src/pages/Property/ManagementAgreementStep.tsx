@@ -126,7 +126,9 @@ const ManagementAgreementStep = ({ register, watch, setValue, clearErrors, error
             label="Rent Due Date"
             value={watch("rentDueDate") || ""}
             onChange={(date) => {
-              setValue("rentDueDate", date.toISOString());
+              // Plain calendar date (no time zone), so the chosen day is the due day everywhere.
+              const pad = (n: number) => String(n).padStart(2, "0");
+              setValue("rentDueDate", `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`, { shouldDirty: true });
               clearErrors("rentDueDate");
             }}
             error={errors?.rentDueDate?.message?.toString()}
