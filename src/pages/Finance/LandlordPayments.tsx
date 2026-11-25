@@ -28,6 +28,8 @@ import { formatPropertyReference } from "@/utils/propertyReference";
 import { exportPaymentReviewToPdf, exportTransactionsToExcel, exportTransactionsToPdf } from "@/utils/transactionExport";
 import { useToast } from "@/components/ui/use-toast";
 import { InfoHint } from "@/components/ui/hint";
+import { downloadMergedInvoices } from "@/utils/mergeInvoices";
+import { jobRef } from "@/utils/contractorLabel";
 
 const API_URL = import.meta.env.VITE_API_URL;
 type Payment = any;
@@ -112,6 +114,32 @@ export default function LandlordPayments() {
   const [rentDue, setRentDue] = useState<any[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [selected, setSelected] = useState<Payment | null>(null);
+  // Per adjustment line: full amount, this payment, what is left; job lines carry their invoice PDF.
+  const [balances, setBalances] = useState<Record<string, any>>({});
+  const [mergingInvoices, setMergingInvoices] = useState(false);
+  useEffect(() => {
+    setBalances({});
+    if (!selected?.id || !selected.adjustments?.length) return;
+    let cancelled = false;
+    get<{ lines?: any[] }>(`transaction/${selected.id}/adjustment-balances`).then(({ data }) => {
+      if (cancelled) return;
+      setBalances(Object.fromEntries((data?.lines ?? []).map((l) => [l.adjustmentId, l])));
+    });
+    return () => { cancelled = true; };
+  }, [selected?.id, selected?.adjustments?.length]);
+  const invoiceFileIds = Object.values(balances).map((b: any) => b.invoiceFileId).filter(Boolean) as string[];
+  const downloadAllInvoices = async () => {
+    if (!selected) return;
+    setMergingInvoices(true);
+    try {
+      const n = await downloadMergedInvoices(invoiceFileIds, `${selected.reference || "landlord-payment"}-invoices`);
+      if (!n) toast({ title: "No invoices could be loaded for this payment", variant: "destructive" });
+    } catch (e: any) {
+      toast({ title: e?.message || "Could not download the invoices", variant: "destructive" });
+    } finally {
+      setMergingInvoices(false);
+    }
+  };
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
   const [saving, setSaving] = useState(false);
@@ -483,22 +511,25 @@ export default function LandlordPayments() {
         <div className="surface overflow-hidden">
           <div className="border-b p-4">
             <h2 className="font-semibold">Rent due ({rentDue.length})<InfoHint text="Rent that falls due on each property's Rent Due Date and has no landlord payment yet. Overdue once the due date has passed." /></h2>
-            <p className="text-xs text-muted-foreground">Pay according to the rent due date</p>
+            <p className="text-xs text-muted-foreground">Due date · property · rent. Red = overdue. Click a row to create the payment.</p>
           </div>
           {rentDue.length === 0 ? (
             <p className="p-4 text-sm text-muted-foreground">No rent is due. Set a Rent Due Date on a property's Management Agreement to see it here.</p>
           ) : (
             <div className="divide-y">
               {rentDue.map((row) => (
-                <div key={`${row.propertyId}:${row.period}`} className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm">
-                  <Badge variant="outline" className={row.status === "OVERDUE" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-800"}>{row.status === "OVERDUE" ? "Overdue" : "Due"}</Badge>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate font-medium">{row.address || "Property"}</div>
-                    <div className="text-xs text-muted-foreground">{row.landlordName || "No landlord"} · {periodLabel(row.period)} · due {new Date(row.dueDate).toLocaleDateString("en-GB")}</div>
-                  </div>
-                  <div className="font-mono">{money(row.rent)}</div>
-                  <Button size="sm" onClick={() => navigate(`/finance/landlord-payments/new?vendorId=${row.vendorId}&propertyId=${row.propertyId}&period=${row.period}&due=${row.dueDate}`)}>Create payment</Button>
-                </div>
+                <button
+                  type="button"
+                  key={`${row.propertyId}:${row.period}`}
+                  title="Create the landlord payment for this rent"
+                  onClick={() => navigate(`/finance/landlord-payments/new?vendorId=${row.vendorId}&propertyId=${row.propertyId}&period=${row.period}&due=${row.dueDate}`)}
+                  className="grid w-full grid-cols-[8rem_minmax(0,1fr)_7rem_1rem] items-center gap-3 px-4 py-3 text-left text-sm hover:bg-muted/40"
+                >
+                  <span className={`font-medium ${row.status === "OVERDUE" ? "text-red-600" : "text-amber-700"}`}>{new Date(row.dueDate).toLocaleDateString("en-GB")}</span>
+                  <span className="truncate font-medium">{row.address || "Property"}</span>
+                  <span className="text-right font-mono">{money(row.rent)}</span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </button>
               ))}
             </div>
           )}
@@ -554,7 +585,7 @@ export default function LandlordPayments() {
                     <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={selectedIds.has(payment.id)} onChange={() => toggleSelect(payment.id)} /></td>
                     <td className="px-4 py-3 cursor-pointer font-mono text-xs" onClick={() => openView(payment)}>{payment.reference || payment.tranid}</td>
                     <td className="px-4 py-3 cursor-pointer font-medium" onClick={() => openView(payment)}>{payment.toLandlordPaidBy || "Landlord"}</td>
-                    <td className="px-4 py-3 cursor-pointer" onClick={() => openView(payment)}>{formatPropertyReference(property?.propertyNumber)}<div className="text-xs text-muted-foreground">{property?.addressLine1 || "Property"}</div></td>
+                    <td className="px-4 py-3 cursor-pointer" onClick={() => openView(payment)}><div className="font-medium">{property?.addressLine1 || "Property"}</div><div className="text-xs text-muted-foreground">{formatPropertyReference(property?.propertyNumber)}</div></td>
                     <td className="px-4 py-3"><Badge variant="outline">{property?.category || "Lease"}</Badge></td>
                     <td className="px-4 py-3">{payment.accountingPeriod ? periodLabel(payment.accountingPeriod) : payment.toLandlordDate ? new Date(payment.toLandlordDate).toLocaleDateString("en-GB", { month: "short", year: "numeric" }) : "Current"}</td>
                     <td className="px-4 py-3">{payment.toLandlordDate ? new Date(payment.toLandlordDate).toLocaleDateString("en-GB") : "-"}</td>
@@ -592,7 +623,7 @@ export default function LandlordPayments() {
             <div>
               <Badge variant="outline" className="mb-2">{selected.reference || selected.tranid}</Badge>
               <h2 className="text-xl font-semibold">{selected.toLandlordPaidBy || "Landlord payment"}</h2>
-              <p className="text-sm text-muted-foreground">{(propertyMap.get(selected.propertyId) as any)?.addressLine1}</p>
+              <p className="text-sm text-muted-foreground">{(propertyMap.get(selected.propertyId) as any)?.addressLine1}{selected.accountingPeriod ? ` · ${periodLabel(selected.accountingPeriod)}` : ""}</p>
             </div>
             <div className="flex gap-1">
               {selected.status !== "PAID" && !editing && <Button size="icon" variant="ghost" onClick={startEdit}><Pencil className="h-4 w-4" /></Button>}
@@ -617,7 +648,7 @@ export default function LandlordPayments() {
             <div className="mb-4 flex border-b text-xs">{["Overview", "Adjustments", "Documents", "Notes", "History"].map((tab) => <button key={tab} className={`mr-5 border-b-2 px-1 pb-2 ${detailsTab === tab ? "border-primary font-semibold text-primary" : "border-transparent text-muted-foreground"}`} onClick={() => setDetailsTab(tab)}>{tab}</button>)}</div>
             <div className="space-y-4">
               {detailsTab === "Overview" && <div className="grid grid-cols-2 gap-3 rounded-lg border p-4 text-sm">
-                <div><p className="text-muted-foreground">Property</p><p className="font-medium">{formatPropertyReference((propertyMap.get(selected.propertyId) as any)?.propertyNumber)}</p></div>
+                <div><p className="text-muted-foreground">Property</p><p className="font-medium">{(propertyMap.get(selected.propertyId) as any)?.addressLine1 || formatPropertyReference((propertyMap.get(selected.propertyId) as any)?.propertyNumber)}</p></div>
                 <div><p className="text-muted-foreground">Status</p><p className="font-medium">{STATUS_LABEL[displayStatus(selected)]}</p></div>
                 <div><p className="text-muted-foreground">Rent period</p><p className="font-medium">{periodLabel(selected.accountingPeriod) || "-"}</p></div>
                 <div><p className="text-muted-foreground">Due date</p><p className="font-medium">{dueDateOf(selected) ? new Date(dueDateOf(selected)).toLocaleDateString("en-GB") : "-"}</p></div>
@@ -632,16 +663,38 @@ export default function LandlordPayments() {
               {detailsTab === "Adjustments" && <div className="rounded-lg border p-4 text-sm">
                 <p className="font-medium">Adjustment breakdown</p>
                 {!selected.adjustments?.length ? <p className="mt-2 text-muted-foreground">No adjustments on this payment.</p> : (
-                  <div className="mt-3 space-y-2">
-                    {selected.adjustments.map((a: any) => (
-                      <div key={a.id} className="flex justify-between border-b pb-1.5 last:border-0">
-                        <span>{a.type}{a.description ? ` — ${a.description}` : ""}</span>
-                        <span className="flex items-center gap-2">
-                          <span className="text-red-600">{money(a.amount)}</span>
-                          {isSuperAdmin && <Button size="icon" variant="ghost" className="h-6 w-6" title="Delete adjustment (super admin)" onClick={() => deleteAdjustmentLine(selected.id, a.id)}><Trash2 className="h-3.5 w-3.5" /></Button>}
-                        </span>
-                      </div>
-                    ))}
+                  <div className="mt-3 space-y-3">
+                    {invoiceFileIds.length > 0 && (
+                      <Button size="sm" variant="outline" className="w-full" disabled={mergingInvoices} onClick={() => void downloadAllInvoices()}>
+                        {mergingInvoices ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                        Download all invoices ({invoiceFileIds.length}) as one PDF
+                      </Button>
+                    )}
+                    {selected.adjustments.map((a: any) => {
+                      const b = balances[a.id];
+                      return (
+                        <div key={a.id} className="rounded-md border p-2.5">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="font-medium">{a.type}</div>
+                              <div className="text-xs text-muted-foreground">{a.description || b?.jobLabel || "-"}</div>
+                              {a.jobTypeId && (
+                                <button type="button" className="mt-0.5 text-xs font-medium text-primary underline" onClick={() => navigate(`/maintenance/${a.jobTypeId}`)}>
+                                  Open job {jobRef(a.jobTypeId)}
+                                </button>
+                              )}
+                              {a.deductionId && <div className="mt-0.5 text-xs text-sky-700">Property deduction</div>}
+                            </div>
+                            {isSuperAdmin && <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" title="Delete adjustment (super admin)" onClick={() => deleteAdjustmentLine(selected.id, a.id)}><Trash2 className="h-3.5 w-3.5" /></Button>}
+                          </div>
+                          <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                            <div><p className="text-muted-foreground">Total</p><p className="font-medium">{money(b?.total ?? Math.abs(a.amount))}</p></div>
+                            <div><p className="text-muted-foreground">This payment</p><p className="font-medium text-red-600">{money(Math.abs(a.amount))}</p></div>
+                            <div><p className="text-muted-foreground">Remaining</p><p className={`font-semibold ${b?.remaining > 0 ? "text-amber-700" : "text-emerald-700"}`}>{b ? money(b.remaining) : "…"}</p></div>
+                          </div>
+                        </div>
+                      );
+                    })}
                     <p className="border-t pt-2 font-semibold">Total: {money(selected.adjustments.reduce((s: number, a: any) => s + Number(a.amount || 0), 0))}</p>
                   </div>
                 )}

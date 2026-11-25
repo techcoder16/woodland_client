@@ -9,13 +9,18 @@ import type { JobType } from "@/redux/dataStore/jobTypeSlice";
 
 const money = (n?: number | null) => `£${Number(n ?? 0).toFixed(2)}`;
 
+export interface InvoiceLine {
+  description: string;
+  amount: number;
+}
+
 export const invoiceRef = (job: JobType) => `INV-${String(job.id || "").slice(-8).toUpperCase()}`;
 
 // jspdf-autotable records the bottom of the last table it drew on the doc.
 type DocWithTable = jsPDF & { lastAutoTable?: { finalY?: number } };
 const lastTableY = (doc: jsPDF) => (doc as DocWithTable).lastAutoTable?.finalY;
 
-export function buildMaintenanceInvoice(job: JobType): jsPDF {
+export function buildMaintenanceInvoice(job: JobType, lines: InvoiceLine[] = []): jsPDF {
   const doc = new jsPDF();
   const vendor = job.property?.vendor;
   const address = [job.property?.addressLine1, job.property?.addressLine2, job.property?.town, job.property?.postCode]
@@ -48,7 +53,7 @@ export function buildMaintenanceInvoice(job: JobType): jsPDF {
     body: [
       ["Property", address || "-"],
       ["Job", job.jobType || "-"],
-      ["Description", job.description || "-"],
+      ["Job description", job.description || "-"],
       ["Contractor", job.contractorRef?.name || "-"],
       ["Completed", job.dateDone || "-"],
     ],
@@ -58,10 +63,16 @@ export function buildMaintenanceInvoice(job: JobType): jsPDF {
   });
 
   const startY = (lastTableY(doc) || 90) + 6;
+  // One line per invoice row, using its own description (e.g. "Boiler repair").
+  // Any job-level markup is spread as its own line so the lines add up to the total.
+  const body = lines.map((l) => [l.description || job.jobType || "Maintenance", money(l.amount)]);
+  const linesSum = lines.reduce((s, l) => s + l.amount, 0);
+  if (lines.length === 0) body.push([job.jobType || "Maintenance", money(chargeable)]);
+  else if (chargeable - linesSum > 0.005) body.push(["Management fee", money(chargeable - linesSum)]);
   autoTable(doc, {
     startY,
-    head: [["Item", "Amount"]],
-    body: [[`${job.jobType || "Maintenance"}${job.description ? ` — ${job.description}` : ""}`, money(chargeable)]],
+    head: [["Description", "Amount"]],
+    body,
     foot: [["Total due", money(chargeable)]],
     styles: { fontSize: 9 },
     headStyles: { fillColor: [17, 24, 39] },
