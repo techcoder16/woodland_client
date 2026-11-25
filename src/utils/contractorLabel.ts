@@ -8,3 +8,6 @@ export const contractorLabel = (name?: string | null): string => {
 // A job the landlord's own contractor is on reads "Landlord assigned" instead of "Assigned".
 export const jobStatusLabel = (status: string, label: string, contractorName?: string | null): string =>
   status === "ASSIGNED" && contractorLabel(contractorName) === "Landlord assigned" ? "Landlord assigned" : label;
+
+// Short job ID shown on lists and the job page (matches the INV- reference suffix).
+export const jobRef = (id?: string | null): string => (id ? `JOB-${String(id).slice(-8).toUpperCase()}` : "-");

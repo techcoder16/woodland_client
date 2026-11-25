@@ -12,7 +12,7 @@ import { formatJobAddress, formatVisit } from "@/pages/Maintenance/jobActions";
 
 const STATUS_LABELS: Partial<Record<ReportingStatus, string>> = {
   OPEN: "Open",
-  WAITING_AUTHORIZATION: "Waiting Authorisation",
+  WAITING_AUTHORIZATION: "Awaiting Authorisation",
   QUOTING: "Quoting",
   ASSIGNED: "Assigned",
   IN_PROGRESS: "In Progress",

@@ -37,7 +37,7 @@ const FILTERS: { value: JobsFilter; label: string }[] = [
 
 const STATUS_LABELS: Partial<Record<ReportingStatus, string>> = {
   OPEN: "Open",
-  WAITING_AUTHORIZATION: "Waiting Authorisation",
+  WAITING_AUTHORIZATION: "Awaiting Authorisation",
   QUOTING: "Quoting",
   ASSIGNED: "Assigned",
   IN_PROGRESS: "In Progress",
@@ -191,8 +191,8 @@ const MaintenanceJobs = () => {
                               {canManageMaintenance && !closed && (
                                 <>
                                   <VisitTimeDialog job={job} disabled={busy} onSaved={reload} />
-                                  <Button size="sm" disabled={busy} onClick={() => runRowAction(job, () => markJobDone(job), "Marked as done")}>
-                                    <CheckCircle2 className="h-4 w-4 mr-1" /> Done
+                                  <Button size="sm" disabled={busy} onClick={() => runRowAction(job, () => markJobDone(job), "Marked as complete")}>
+                                    <CheckCircle2 className="h-4 w-4 mr-1" /> Complete
                                   </Button>
                                   <Button size="sm" variant="outline" disabled={busy} onClick={() => setNotCompleteJob(job)}>
                                     <RotateCcw className="h-4 w-4 mr-1" /> Not complete
