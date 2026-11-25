@@ -4,7 +4,7 @@
 // that gives what the landlord is charged.
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Eye, Mail, Paperclip, Plus, Trash2 } from "lucide-react";
+import { Download, Eye, Mail, Paperclip, Plus, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,11 +20,16 @@ interface JobPayment {
   description: string;
   amount: number;
   markupPercent?: number | null;
+  markupAmount?: number | null;
   fileId?: string | null;
   createdByName?: string | null;
 }
 
 const money = (n?: number | null) => `£${Number(n ?? 0).toFixed(2)}`;
+const toLandlord = (p: Pick<JobPayment, "amount" | "markupPercent" | "markupAmount">) =>
+  p.markupAmount != null ? p.amount + p.markupAmount : p.amount * (1 + (p.markupPercent ?? 0) / 100);
+const markupText = (p: Pick<JobPayment, "markupPercent" | "markupAmount">) =>
+  p.markupAmount != null ? `+ ${money(p.markupAmount)}` : p.markupPercent ? `${p.markupPercent}%` : "-";
 const today = () => new Date().toLocaleDateString("en-CA", { timeZone: "Europe/London" });
 const dateLabel = (iso: string) => {
   const d = new Date(`${iso}T12:00:00`);
@@ -40,7 +45,7 @@ interface Props {
 export default function JobPaymentsPanel({ job, canManage, onChanged }: Props) {
   const [payments, setPayments] = useState<JobPayment[] | null>(null);
   const [adding, setAdding] = useState(false);
-  const [draft, setDraft] = useState({ date: today(), description: "", amount: "", markup: "" });
+  const [draft, setDraft] = useState({ date: today(), description: "", amount: "", markup: "", markupType: "percent" as "percent" | "amount" });
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -61,14 +66,14 @@ export default function JobPaymentsPanel({ job, canManage, onChanged }: Props) {
   }, [job.id]);
 
   const reset = () => {
-    setDraft({ date: today(), description: "", amount: "", markup: "" });
+    setDraft({ date: today(), description: "", amount: "", markup: "", markupType: "percent" });
     setFile(null);
     setAdding(false);
   };
 
   const save = async () => {
     const amount = Number(draft.amount);
-    if (!draft.description.trim()) return toast.error("Say what the payment was for");
+    if (!draft.description.trim()) return toast.error("Add a description, e.g. Boiler repair");
     if (!(amount > 0)) return toast.error("Enter an amount above £0");
     setBusy(true);
     try {
@@ -81,7 +86,7 @@ export default function JobPaymentsPanel({ job, canManage, onChanged }: Props) {
         date: draft.date,
         description: draft.description.trim(),
         amount,
-        markupPercent: draft.markup === "" ? undefined : Number(draft.markup),
+        ...(draft.markup === "" ? {} : draft.markupType === "percent" ? { markupPercent: Number(draft.markup) } : { markupAmount: Number(draft.markup) }),
         fileId,
       });
       if (error) throw new Error(error.message);
@@ -142,7 +147,7 @@ export default function JobPaymentsPanel({ job, canManage, onChanged }: Props) {
       <div className="flex items-center justify-between gap-3">
         <div className="font-semibold">
           Invoices and costs
-          <InfoHint text="Everything spent on this job, one row per invoice: materials, labour, parts, call-out or a contractor's bill. No contractor is needed. The total, plus any contractor cost and markup on the Invoices tab, is what the landlord is charged." />
+          <InfoHint text="One row per invoice: a description (e.g. Boiler repair), the amount, an optional markup (% or flat £) and the invoice PDF. The rows plus the job markup below are what the landlord is charged." />
         </div>
         {canManage && !closed && (
           <Button size="icon" title="Add invoice" aria-label="Add invoice" disabled={adding} onClick={() => setAdding(true)}>
@@ -158,7 +163,7 @@ export default function JobPaymentsPanel({ job, canManage, onChanged }: Props) {
               <th className="py-2 pr-3 font-medium">Date</th>
               <th className="py-2 pr-3 font-medium">Description</th>
               <th className="py-2 pr-3 text-right font-medium">Amount</th>
-              <th className="py-2 pr-3 text-right font-medium">Markup %</th>
+              <th className="py-2 pr-3 text-right font-medium">Markup</th>
               <th className="py-2 pr-3 text-right font-medium">To landlord</th>
               <th className="py-2 pr-3 font-medium">PDF</th>
               <th className="py-2 pr-3 font-medium">Added by</th>
@@ -188,9 +193,17 @@ export default function JobPaymentsPanel({ job, canManage, onChanged }: Props) {
                   />
                 </td>
                 <td className="py-2 pr-2">
-                  <Input type="number" min="0" step="0.01" aria-label="Markup %" placeholder="0" className="w-20 text-right" value={draft.markup} onChange={(e) => setDraft((d) => ({ ...d, markup: e.target.value }))} />
+                  <div className="flex items-center justify-end gap-1">
+                    <div className="inline-flex rounded-md border p-0.5">
+                      <button type="button" className={`rounded px-1.5 text-xs ${draft.markupType === "percent" ? "bg-primary text-primary-foreground" : ""}`} onClick={() => setDraft((d) => ({ ...d, markupType: "percent" }))}>%</button>
+                      <button type="button" className={`rounded px-1.5 text-xs ${draft.markupType === "amount" ? "bg-primary text-primary-foreground" : ""}`} onClick={() => setDraft((d) => ({ ...d, markupType: "amount" }))}>£</button>
+                    </div>
+                    <Input type="number" min="0" step="0.01" aria-label="Markup" placeholder="0" className="w-20 text-right" value={draft.markup} onChange={(e) => setDraft((d) => ({ ...d, markup: e.target.value }))} />
+                  </div>
                 </td>
-                <td className="py-2 pr-2 text-right text-muted-foreground">{money(Number(draft.amount || 0) * (1 + Number(draft.markup || 0) / 100))}</td>
+                <td className="py-2 pr-2 text-right text-muted-foreground">
+                  {money(toLandlord({ amount: Number(draft.amount || 0), ...(draft.markupType === "percent" ? { markupPercent: Number(draft.markup || 0) } : { markupAmount: Number(draft.markup || 0) }) }))}
+                </td>
                 <td className="py-2 pr-2">
                   <input ref={fileRef} type="file" accept="application/pdf,image/*" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
                   <Button type="button" size="sm" variant="outline" onClick={() => fileRef.current?.click()} title={file?.name}>
@@ -215,12 +228,13 @@ export default function JobPaymentsPanel({ job, canManage, onChanged }: Props) {
                   <td className="py-2 pr-3 whitespace-nowrap">{dateLabel(p.date)}</td>
                   <td className="py-2 pr-3">{p.description}</td>
                   <td className="py-2 pr-3 text-right font-medium">{money(p.amount)}</td>
-                  <td className="py-2 pr-3 text-right">{p.markupPercent ? `${p.markupPercent}%` : "-"}</td>
-                  <td className="py-2 pr-3 text-right font-medium">{money(p.amount * (1 + (p.markupPercent ?? 0) / 100))}</td>
+                  <td className="py-2 pr-3 text-right">{markupText(p)}</td>
+                  <td className="py-2 pr-3 text-right font-medium">{money(toLandlord(p))}</td>
                   <td className="py-2 pr-3">
                     {p.fileId ? (
                       <span className="inline-flex items-center gap-1">
-                        <Button size="icon" variant="ghost" className="h-7 w-7" title="View the PDF" onClick={() => openStoredFile(p.fileId as string).catch(() => toast.error("This file is no longer available"))}><Eye className="h-3.5 w-3.5" /></Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" title="View the uploaded PDF" onClick={() => openStoredFile(p.fileId as string).catch(() => toast.error("This file is no longer available"))}><Eye className="h-3.5 w-3.5" /></Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" title="Download the uploaded PDF" onClick={() => openStoredFile(p.fileId as string, { download: true }).catch(() => toast.error("This file is no longer available"))}><Download className="h-3.5 w-3.5" /></Button>
                         {canManage && <Button size="icon" variant="ghost" className="h-7 w-7" title="Email this invoice to the landlord" disabled={busy} onClick={() => void emailRow(p)}><Mail className="h-3.5 w-3.5" /></Button>}
                       </span>
                     ) : <span className="text-muted-foreground">-</span>}

@@ -25,12 +25,10 @@ import { useAuth } from "@/context/AuthContext";
 import { Department } from "@/types/permissions";
 import { formatLocalDate } from "@/helper/formatLocalDate";
 import { get } from "@/helper/api";
-import { Checkbox } from "@/components/ui/checkbox";
 import { InfoHint } from "@/components/ui/hint";
 import { JOB_TYPE_OPTIONS, JOB_LOCATION_OPTIONS } from "@/helper/jobTypeOptions";
 import JobLandlordEmails from "@/components/maintenance/JobLandlordEmails";
 import JobMediaPanel from "@/components/maintenance/JobMediaPanel";
-import JobPaymentsPanel from "@/components/maintenance/JobPaymentsPanel";
 import ContractorInvoicePanel from "@/components/maintenance/ContractorInvoicePanel";
 import { formatLondonDate, formatLondonDateTime, isJobOverdue, jobDueValue } from "@/utils/maintenanceSla";
 import {
@@ -133,7 +131,6 @@ const MaintenanceDetail = () => {
   const [savingNote, setSavingNote] = useState(false);
   const [pendingContractorId, setPendingContractorId] = useState("");
   const [isAssigning, setIsAssigning] = useState(false);
-  const [isSavingDeductible, setIsSavingDeductible] = useState(false);
   const [isActing, setIsActing] = useState(false);
   const [notCompleteOpen, setNotCompleteOpen] = useState(false);
 
@@ -224,20 +221,6 @@ const MaintenanceDetail = () => {
   const openLandlordEmails = () => {
     if (job?.id && job.landlordReplyUnread) {
       markLandlordReplyRead(job.id).then(() => refresh()).catch(() => undefined);
-    }
-  };
-
-  const handleToggleDeductible = async (deductible: boolean) => {
-    if (!job?.id) return;
-    setIsSavingDeductible(true);
-    try {
-      await dispatch(updateJobType({ id: job.id, jobTypeData: { propertyId: job.propertyId, deductible } })).unwrap();
-      await dispatch(fetchJobTypeById(job.id));
-      toast.success(deductible ? "Marked as deductible from landlord" : "Marked as not deductible — hidden from landlord transactions");
-    } catch (error) {
-      toast.error(typeof error === "string" ? error : error?.message || "Failed to update");
-    } finally {
-      setIsSavingDeductible(false);
     }
   };
 
@@ -452,24 +435,6 @@ const MaintenanceDetail = () => {
 
           <TabsContent value="invoices" className="space-y-4">
             <ContractorInvoicePanel job={job} canManage={canManageMaintenance} onChanged={refresh} />
-                      <JobPaymentsPanel job={job} canManage={canManageMaintenance} onChanged={refresh} />
-            <Card className="p-4">
-              <label className="flex items-start gap-3">
-                <Checkbox
-                  checked={job.deductible !== false}
-                  disabled={!canManageMaintenance || isSavingDeductible}
-                  onCheckedChange={(v) => handleToggleDeductible(v === true)}
-                />
-                <span>
-                  <span className="font-medium block">Deductible from landlord<InfoHint text="Ticked: once the job is completed, its total is offered on the landlord's next payment and taken off their rent as an adjustment. Unticked: Woodland absorbs the cost." /></span>
-                  <span className="text-sm text-muted-foreground">
-                    {job.deductible !== false
-                      ? "The total is deducted from the landlord's rent payment as an adjustment once the job is completed."
-                      : "Not deductible: Woodland absorbs this cost and nothing is deducted from the landlord."}
-                  </span>
-                </span>
-              </label>
-            </Card>
           </TabsContent>
 
           {canManageMaintenance && (
