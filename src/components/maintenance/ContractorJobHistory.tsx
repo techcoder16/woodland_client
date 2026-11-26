@@ -41,6 +41,7 @@ function JobTable({ jobs, empty }: { jobs: JobType[]; empty: string }) {
       <table className="min-w-full border-collapse table-auto text-sm">
         <thead className="bg-background">
           <tr className="border-b border-border/70">
+            <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Created</th>
             <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Job</th>
             <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Property</th>
             <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Visit</th>
@@ -54,6 +55,7 @@ function JobTable({ jobs, empty }: { jobs: JobType[]; empty: string }) {
             const overdue = isJobOverdue(job);
             return (
               <tr key={job.id} className="border-b border-border/50 align-top hover:bg-muted/40">
+                <td className="px-3 py-2 whitespace-nowrap">{formatLondonDate(job.createdAt)}</td>
                 <td className="px-3 py-2">
                   <Link to={`/maintenance/${job.id}`} className="font-medium text-primary hover:underline">
                     {job.jobType}
