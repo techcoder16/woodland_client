@@ -564,7 +564,7 @@ const MaintenanceList = () => {
                         <tr key={job.id} className={`border-b border-border/50 hover:brightness-95 transition-colors align-top cursor-pointer ${statusRowClass(job.status)}`} onClick={() => navigate(`/maintenance/${job.id}`)}>
                           <LandlordReplyCell job={job} />
                           <td className="px-4 py-3 text-sm whitespace-nowrap">
-                            {job.createdAt ? new Date(job.createdAt).toLocaleDateString() : "-"}
+                            {formatLondonDate(job.createdAt)}
                           </td>
                           <td className="px-4 py-3 text-sm">
                             <DueCell job={job} />

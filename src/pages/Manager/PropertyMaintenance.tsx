@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { get } from "@/helper/api";
+import { formatLondonDate } from "@/utils/maintenanceSla";
 
 const STATUS_BADGE: Record<string, string> = {
   OPEN: "bg-slate-100 text-slate-700",
@@ -52,11 +53,12 @@ export default function PropertyMaintenance({ propertyId }: { propertyId: string
         <div className="overflow-hidden rounded-lg border">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
-              <tr><th className="px-4 py-2.5">Job</th><th className="px-4 py-2.5">Priority<AutoHint for="Priority" /></th><th className="px-4 py-2.5">Due date<AutoHint for="Due date" /></th><th className="px-4 py-2.5">Status<AutoHint for="Status" /></th></tr>
+              <tr><th className="px-4 py-2.5">Created</th><th className="px-4 py-2.5">Job</th><th className="px-4 py-2.5">Priority<AutoHint for="Priority" /></th><th className="px-4 py-2.5">Due date<AutoHint for="Due date" /></th><th className="px-4 py-2.5">Status<AutoHint for="Status" /></th></tr>
             </thead>
             <tbody>
               {jobTypes.map((j: any) => (
                 <tr key={j.id} className="border-t">
+                  <td className="px-4 py-2.5 whitespace-nowrap">{formatLondonDate(j.createdAt)}</td>
                   <td className="px-4 py-2.5">
                     <p className="font-medium">{j.jobType}</p>
                     <p className="text-xs text-muted-foreground">{j.location || j.description}</p>

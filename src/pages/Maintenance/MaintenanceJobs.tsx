@@ -124,6 +124,7 @@ const MaintenanceJobs = () => {
                 <thead className="bg-background">
                   <tr className="border-b border-border/70">
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Visit<InfoHint text="When the contractor is due at the property." /></th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Created<InfoHint text="Date the job was logged." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Property<InfoHint text="Full property address." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Job<InfoHint text="What needs doing." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Priority</th>
@@ -136,11 +137,11 @@ const MaintenanceJobs = () => {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">Loading jobs...</td>
+                      <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">Loading jobs...</td>
                     </tr>
                   ) : sorted.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                      <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
                         {filter === "tomorrow" ? "No jobs visiting tomorrow." : filter === "today" ? "No jobs visiting today." : "No assigned jobs or booked visits."}
                       </td>
                     </tr>
@@ -159,6 +160,7 @@ const MaintenanceJobs = () => {
                           <td className="px-4 py-3 text-sm whitespace-nowrap">
                             {job.visitDate ? formatVisit(job) : <span className="text-muted-foreground">Not scheduled</span>}
                           </td>
+                          <td className="px-4 py-3 text-sm whitespace-nowrap">{formatLondonDate(job.createdAt)}</td>
                           <td className="px-4 py-3 text-sm min-w-[12rem] max-w-[18rem]">{formatJobAddress(job.property)}</td>
                           <td className="px-4 py-3 text-sm max-w-xs">
                             <div className="font-medium">{job.jobType}{job.location ? ` · ${job.location}` : ""}</div>
