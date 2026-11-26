@@ -30,6 +30,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "./ThemeToggle";
+import { TextSizeToggle } from "./TextSizeToggle";
 import { useAuth } from "@/context/AuthContext";
 import logo from '@/assets/logo.png'
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -228,6 +229,7 @@ export function Header() {
           <span className="hidden sm:inline">Logout</span>
         </Button>
         
+        <TextSizeToggle />
         <ThemeToggle />
 
         <DropdownMenu onOpenChange={(open) => open && handleMarkAllRead()}>

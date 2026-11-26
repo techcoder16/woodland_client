@@ -651,7 +651,8 @@ export default function NewLandlordPayment() {
                       {!adjustments.length ? (
                         <p className="p-4 text-sm text-muted-foreground">No adjustments added.</p>
                       ) : (
-                        <table className="w-full text-sm">
+                        <div className="overflow-x-auto">
+                        <table className="w-full min-w-[720px] text-sm">
                           <thead className="bg-muted/40 text-left text-xs text-muted-foreground"><tr><th className="px-3 py-2 font-medium">Type<AutoHint for="Type" /></th><th className="px-3 py-2 font-medium">Description<AutoHint for="Description" /></th><th className="px-3 py-2 font-medium">Related To</th><th className="px-3 py-2 text-right font-medium">Total</th><th className="px-3 py-2 text-right font-medium">This payment (£)</th><th className="px-3 py-2 text-right font-medium">Remaining</th><th className="px-3 py-2 font-medium"></th></tr></thead>
                           <tbody>
                             {adjustments.map((a) => (
@@ -684,6 +685,7 @@ export default function NewLandlordPayment() {
                             </tr>
                           </tfoot>
                         </table>
+                        </div>
                       )}
                     </div>
 

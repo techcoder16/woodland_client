@@ -14,6 +14,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { ThemeToggle } from "./ThemeToggle";
+import { TextSizeToggle } from "./TextSizeToggle";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import {
@@ -160,7 +161,7 @@ export default function PartyDashboardLayout({ kind, children }: PartyDashboardL
         </SidebarContent>
 
         <SidebarFooter className="p-3 space-y-2 border-t border-border/70">
-          <ThemeToggle />
+          <div className="flex gap-1"><ThemeToggle /><TextSizeToggle /></div>
           <Button variant="outline" className="w-full justify-start text-sm" onClick={handleLogout}>
             <LogOut className="w-4 h-4 mr-2" />
             Logout

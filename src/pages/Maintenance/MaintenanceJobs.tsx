@@ -106,7 +106,7 @@ const MaintenanceJobs = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="hero-stat text-[2rem]">Visits</h1>
-            <p className="text-sm text-muted-foreground">Jobs with a contractor assigned, by visit day.</p>
+            <p className="text-sm text-muted-foreground">Jobs with a contractor assigned or a visit booked, by visit day. Use All to see every date.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {FILTERS.map(({ value, label }) => (
@@ -141,7 +141,7 @@ const MaintenanceJobs = () => {
                   ) : sorted.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
-                        {filter === "tomorrow" ? "No jobs visiting tomorrow." : filter === "today" ? "No jobs visiting today." : "No assigned jobs."}
+                        {filter === "tomorrow" ? "No jobs visiting tomorrow." : filter === "today" ? "No jobs visiting today." : "No assigned jobs or booked visits."}
                       </td>
                     </tr>
                   ) : (
