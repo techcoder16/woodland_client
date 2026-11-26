@@ -2,20 +2,17 @@ import type { JobType } from "@/redux/dataStore/jobTypeSlice";
 
 type ReplyFields = Pick<JobType, "landlordReplyUnread" | "landlordInformedAt">;
 
-// "Landlord" column on the Jobs list. The whole cell turns red while a landlord reply
-// is unread; once someone opens the job's Landlord emails tab it goes back to plain
-// "Emailed". Empty when the landlord hasn't been emailed.
+// "Landlord" column on the Jobs list, colour only:
+//   red   = the landlord replied and nobody has opened it yet;
+//   black = landlord emailed (or their reply has been read);
+//   empty = landlord not emailed.
+// Opening the job's Landlord emails tab turns red back to black.
 export function LandlordReplyCell({ job }: { job: ReplyFields }) {
-  if (job.landlordReplyUnread) {
-    return (
-      <td className="whitespace-nowrap bg-red-600 px-3 py-3 text-center text-xs font-bold uppercase tracking-wide text-white" title="Landlord replied: not read yet">
-        Reply
-      </td>
-    );
-  }
+  const colour = job.landlordReplyUnread ? "bg-red-600" : job.landlordInformedAt ? "bg-black" : "";
+  const label = job.landlordReplyUnread ? "Landlord replied: not read yet" : job.landlordInformedAt ? "Landlord emailed" : undefined;
   return (
-    <td className="whitespace-nowrap px-3 py-3 text-center text-xs text-muted-foreground" title={job.landlordInformedAt ? "Landlord emailed: no unread reply" : undefined}>
-      {job.landlordInformedAt ? "Emailed" : "-"}
+    <td className={`w-20 min-w-[5rem] p-0 ${colour}`} title={label} aria-label={label}>
+      <span className="sr-only">{label}</span>
     </td>
   );
 }

@@ -532,7 +532,7 @@ const MaintenanceList = () => {
               <table className="min-w-full border-collapse table-auto">
                 <thead className="bg-background">
                   <tr className="border-b border-border/70">
-                    <th className="px-3 py-3 text-center text-xs font-medium text-muted-foreground">Landlord<InfoHint text="Red = the landlord replied and nobody has read it yet. Opening the job's Landlord emails tab clears it. Emailed = landlord emailed, no unread reply." /></th>
+                    <th className="px-3 py-3 text-center text-xs font-medium text-muted-foreground">Landlord<InfoHint text="Red = the landlord replied and nobody has read it yet. Black = landlord emailed (reply read). Opening the job's Landlord emails tab turns red to black." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Date<InfoHint text="Date the job was logged." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Due<InfoHint text="When the work is due. Shown in red once it is overdue." /></th>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Address<InfoHint text="The property this job is for." /></th>
