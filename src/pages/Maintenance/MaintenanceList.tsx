@@ -6,7 +6,7 @@ import { z } from "zod";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { priorityBadgeClass, priorityTextClass, PRIORITY_BADGE, statusBadgeClass, statusRowClass } from "@/utils/priorityStyle";
-import LandlordReplyMarker from "./LandlordReplyMarker";
+import { LandlordReplyCell } from "./LandlordReplyMarker";
 import { Badge } from "@/components/ui/badge";
 import { Hint, InfoHint } from "@/components/ui/hint";
 import { Input } from "@/components/ui/input";
@@ -532,6 +532,7 @@ const MaintenanceList = () => {
               <table className="min-w-full border-collapse table-auto">
                 <thead className="bg-background">
                   <tr className="border-b border-border/70">
+                    <th className="px-3 py-3 text-center text-xs font-medium text-muted-foreground">Landlord<InfoHint text="Red = the landlord replied and nobody has read it yet. Opening the job's Landlord emails tab clears it. Emailed = landlord emailed, no unread reply." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Date<InfoHint text="Date the job was logged." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Due<InfoHint text="When the work is due. Shown in red once it is overdue." /></th>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Address<InfoHint text="The property this job is for." /></th>
@@ -547,13 +548,13 @@ const MaintenanceList = () => {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
+                      <td colSpan={11} className="px-4 py-8 text-center text-muted-foreground">
                         Loading maintenance jobs...
                       </td>
                     </tr>
                   ) : filteredJobTypes.length === 0 ? (
                     <tr>
-                      <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
+                      <td colSpan={11} className="px-4 py-8 text-center text-muted-foreground">
                         No maintenance jobs found
                       </td>
                     </tr>
@@ -561,11 +562,9 @@ const MaintenanceList = () => {
                     filteredJobTypes.map((job) => {
                       return (
                         <tr key={job.id} className={`border-b border-border/50 hover:brightness-95 transition-colors align-top cursor-pointer ${statusRowClass(job.status)}`} onClick={() => navigate(`/maintenance/${job.id}`)}>
+                          <LandlordReplyCell job={job} />
                           <td className="px-4 py-3 text-sm whitespace-nowrap">
-                            <span className="inline-flex items-center gap-2">
-                              <LandlordReplyMarker job={job} />
-                              {job.createdAt ? new Date(job.createdAt).toLocaleDateString() : "-"}
-                            </span>
+                            {job.createdAt ? new Date(job.createdAt).toLocaleDateString() : "-"}
                           </td>
                           <td className="px-4 py-3 text-sm">
                             <DueCell job={job} />
