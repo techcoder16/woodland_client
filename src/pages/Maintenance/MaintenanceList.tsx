@@ -44,7 +44,7 @@ import FileUploadField from "@/utils/FileUploadField";
 import { JOB_TYPE_OPTIONS, JOB_LOCATION_OPTIONS } from "@/helper/jobTypeOptions";
 import { formatLocalDate } from "@/helper/formatLocalDate";
 import { useMaintenanceSummary } from "@/components/maintenance/useMaintenanceSummary";
-import { computeSla, formatLondonDate, formatLondonDateTime, isJobOverdue, jobDueValue } from "@/utils/maintenanceSla";
+import { computeSla, formatLondonDate, formatLondonDateTime, isJobOverdue, jobDueValue, loadSlaSettings, slaHintText } from "@/utils/maintenanceSla";
 import { AddressCell, DueCell } from "./jobCells";
 
 // Matches what CreateJobTypeDto persists on create. The server forces the
@@ -193,6 +193,12 @@ const MaintenanceList = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, currentPage]);
 
+  // Saved office hours / critical times (Settings > Maintenance) for the due-date preview.
+  const [slaLoaded, setSlaLoaded] = useState(0);
+  useEffect(() => {
+    loadSlaSettings().finally(() => setSlaLoaded((n) => n + 1));
+  }, []);
+
   useEffect(() => {
     (async () => {
       const { data } = await get<{ items?: Property[] }>("properties?page=1&limit=200&search=");
@@ -227,7 +233,8 @@ const MaintenanceList = () => {
   const responsibilityValue = watch("responsibility");
   const deductibleValue = watch("deductible");
   // Live preview only: the server computes the real dueAt / chaseUpAt on save.
-  const slaPreview = useMemo(() => computeSla(priorityValue), [priorityValue]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const slaPreview = useMemo(() => computeSla(priorityValue), [priorityValue, slaLoaded]);
 
   const closeDialog = () => {
     setIsDialogOpen(false);
@@ -449,7 +456,7 @@ const MaintenanceList = () => {
                         <div className="text-muted-foreground">Set a priority to see when it is due.</div>
                       )}
                       <div className="text-xs text-muted-foreground">
-                        Set automatically from priority. Critical: before 2pm due in 4 hours, from 2pm due 5:30pm the same day. High counts office hours (Mon–Fri 9:00–18:00).
+                        Set automatically from priority. {slaHintText()}
                       </div>
                     </div>
 

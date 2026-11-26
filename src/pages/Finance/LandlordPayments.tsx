@@ -108,10 +108,15 @@ export default function LandlordPayments() {
   const [uploading, setUploading] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
   const [emailing, setEmailing] = useState(false);
-  const { properties } = useAppSelector((state) => state.properties);
+  // Every property (the shared store only holds one page of 10), so each payment finds its address.
+  const { properties: pagedProperties } = useAppSelector((state) => state.properties);
+  const [allProperties, setAllProperties] = useState<any[] | null>(null);
+  const properties = allProperties ?? pagedProperties;
   const { user: authUser } = useAuth();
   const isSuperAdmin = String((authUser as any)?.role || "") === "SUPER_USER";
   const [rentDue, setRentDue] = useState<any[]>([]);
+  // Properties with a rent that can't be listed yet, and what each one is missing.
+  const [rentIncomplete, setRentIncomplete] = useState<{ propertyId: string; address: string; missing: string[] }[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [selected, setSelected] = useState<Payment | null>(null);
   // Per adjustment line: full amount, this payment, what is left; job lines carry their invoice PDF.
@@ -174,11 +179,15 @@ export default function LandlordPayments() {
   const loadRentDue = async () => {
     const { data } = await get<{ rows?: any[] }>("transaction/rent-due");
     setRentDue(data?.rows ?? []);
+    setRentIncomplete((data as any)?.incomplete ?? []);
   };
 
   useEffect(() => {
     void loadRentDue();
     dispatch(fetchProperties({ page: 1, search: "" }));
+    void get<{ items?: any[] }>("properties?page=1&limit=5000&search=").then(({ data }) => {
+      if (data?.items) setAllProperties(data.items);
+    });
     void load();
   }, [dispatch]);
 
@@ -205,7 +214,7 @@ export default function LandlordPayments() {
     return [...values.entries()];
   }, [properties]);
   const visible = payments.filter((payment) => {
-    const property = propertyMap.get(payment.propertyId) as any;
+    const property = (propertyMap.get(payment.propertyId) ?? (payment as any).property) as any;
     const text = `${property?.addressLine1 || ""} ${property?.town || ""} ${payment.toLandlordPaidBy || ""} ${payment.toLandlordExpenditureDescription || ""} ${payment.reference || ""}`.toLowerCase();
     const paymentDate = payment.toLandlordDate ? new Date(payment.toLandlordDate).toISOString().slice(0, 10) : "";
     const matchesStatus = statusFilter === "all" || displayStatus(payment) === statusFilter;
@@ -366,7 +375,7 @@ export default function LandlordPayments() {
   // recharges, deductions, fees) and the net amount paid.
   const downloadStatement = () => {
     if (!selected) return;
-    const property = propertyMap.get(selected.propertyId) as any;
+    const property = (propertyMap.get(selected.propertyId) ?? (selected as any).property) as any;
     const adjustments = (selected.adjustments || []).map((a: any) => ({
       type: a.type || "Adjustment",
       description: a.description || undefined,
@@ -514,7 +523,7 @@ export default function LandlordPayments() {
             <p className="text-xs text-muted-foreground">Due date · property · rent. Red = overdue. Click a row to create the payment.</p>
           </div>
           {rentDue.length === 0 ? (
-            <p className="p-4 text-sm text-muted-foreground">No rent is due. Set a Rent Due Date on a property's Management Agreement to see it here.</p>
+            <p className="p-4 text-sm text-muted-foreground">No rent is due in the next 28 days that doesn't already have a landlord payment.</p>
           ) : (
             <div className="divide-y">
               {rentDue.map((row) => (
@@ -531,6 +540,27 @@ export default function LandlordPayments() {
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </button>
               ))}
+            </div>
+          )}
+          {rentIncomplete.length > 0 && (
+            <div className="border-t bg-amber-50/60 p-4 text-sm">
+              <p className="mb-2 font-medium text-amber-800">Not shown: {rentIncomplete.length} {rentIncomplete.length === 1 ? "property has" : "properties have"} a rent but can't be listed yet</p>
+              <ul className="space-y-1">
+                {rentIncomplete.map((p) => {
+                  const property = propertyMap.get(p.propertyId);
+                  return (
+                    <li key={p.propertyId} className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium">{p.address || "Property"}</span>
+                      <span className="text-xs text-amber-800">missing: {p.missing.join(", ")}</span>
+                      {property && (
+                        <button type="button" className="text-xs font-medium text-primary underline" onClick={() => navigate("/property/edit", { state: { property } })}>
+                          Edit property
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           )}
         </div>
@@ -576,7 +606,7 @@ export default function LandlordPayments() {
               <tbody>
                 {loading && <tr><td colSpan={13} className="p-8 text-center text-muted-foreground">Loading payments…</td></tr>}
                 {!loading && visible.map((payment) => {
-                  const property = propertyMap.get(payment.propertyId) as any;
+                  const property = (propertyMap.get(payment.propertyId) ?? (payment as any).property) as any;
                   const adjustment = Array.isArray(payment.adjustments) && payment.adjustments.length
                     ? payment.adjustments.reduce((sum: number, a: any) => sum + Number(a.amount || 0), 0)
                     : -(Number(payment.toLandlordLessBuildingExpenditure || 0) + Number(payment.toLandlordLessVAT || 0) + Number(payment.toLandlordLessManagementFees || 0));
@@ -623,7 +653,7 @@ export default function LandlordPayments() {
             <div>
               <Badge variant="outline" className="mb-2">{selected.reference || selected.tranid}</Badge>
               <h2 className="text-xl font-semibold">{selected.toLandlordPaidBy || "Landlord payment"}</h2>
-              <p className="text-sm text-muted-foreground">{(propertyMap.get(selected.propertyId) as any)?.addressLine1}{selected.accountingPeriod ? ` · ${periodLabel(selected.accountingPeriod)}` : ""}</p>
+              <p className="text-sm text-muted-foreground">{((propertyMap.get(selected.propertyId) ?? (selected as any).property) as any)?.addressLine1}{selected.accountingPeriod ? ` · ${periodLabel(selected.accountingPeriod)}` : ""}</p>
             </div>
             <div className="flex gap-1">
               {selected.status !== "PAID" && !editing && <Button size="icon" variant="ghost" onClick={startEdit}><Pencil className="h-4 w-4" /></Button>}
@@ -648,7 +678,7 @@ export default function LandlordPayments() {
             <div className="mb-4 flex border-b text-xs">{["Overview", "Adjustments", "Documents", "Notes", "History"].map((tab) => <button key={tab} className={`mr-5 border-b-2 px-1 pb-2 ${detailsTab === tab ? "border-primary font-semibold text-primary" : "border-transparent text-muted-foreground"}`} onClick={() => setDetailsTab(tab)}>{tab}</button>)}</div>
             <div className="space-y-4">
               {detailsTab === "Overview" && <div className="grid grid-cols-2 gap-3 rounded-lg border p-4 text-sm">
-                <div><p className="text-muted-foreground">Property</p><p className="font-medium">{(propertyMap.get(selected.propertyId) as any)?.addressLine1 || formatPropertyReference((propertyMap.get(selected.propertyId) as any)?.propertyNumber)}</p></div>
+                <div><p className="text-muted-foreground">Property</p><p className="font-medium">{((propertyMap.get(selected.propertyId) ?? (selected as any).property) as any)?.addressLine1 || formatPropertyReference(((propertyMap.get(selected.propertyId) ?? (selected as any).property) as any)?.propertyNumber)}</p></div>
                 <div><p className="text-muted-foreground">Status</p><p className="font-medium">{STATUS_LABEL[displayStatus(selected)]}</p></div>
                 <div><p className="text-muted-foreground">Rent period</p><p className="font-medium">{periodLabel(selected.accountingPeriod) || "-"}</p></div>
                 <div><p className="text-muted-foreground">Due date</p><p className="font-medium">{dueDateOf(selected) ? new Date(dueDateOf(selected)).toLocaleDateString("en-GB") : "-"}</p></div>
@@ -695,7 +725,14 @@ export default function LandlordPayments() {
                         </div>
                       );
                     })}
-                    <p className="border-t pt-2 font-semibold">Total: {money(selected.adjustments.reduce((s: number, a: any) => s + Number(a.amount || 0), 0))}</p>
+                    <div className="rounded-md border-2 bg-muted/30 p-2.5">
+                      <div className="font-semibold">Total deductions</div>
+                      <div className="mt-1 grid grid-cols-3 gap-2 text-xs">
+                        <div><p className="text-muted-foreground">Total</p><p className="font-semibold">{money(selected.adjustments.reduce((s: number, a: any) => s + Number(balances[a.id]?.total ?? Math.abs(a.amount || 0)), 0))}</p></div>
+                        <div><p className="text-muted-foreground">This payment</p><p className="font-semibold text-red-600">{money(selected.adjustments.reduce((s: number, a: any) => s + Number(a.amount || 0), 0))}</p></div>
+                        <div><p className="text-muted-foreground">Remaining</p><p className="font-semibold text-amber-700">{money(selected.adjustments.reduce((s: number, a: any) => s + Number(balances[a.id]?.remaining ?? 0), 0))}</p></div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>}
@@ -782,7 +819,7 @@ export default function LandlordPayments() {
               ) : (
                 <div className="max-h-72 space-y-2 overflow-y-auto">
                   {paymentsOnSelectedDate.map((payment) => {
-                    const property = propertyMap.get(payment.propertyId) as any;
+                    const property = (propertyMap.get(payment.propertyId) ?? (payment as any).property) as any;
                     const status = displayStatus(payment);
                     return (
                       <button key={payment.id} className="flex w-full items-center justify-between rounded-lg border p-3 text-left text-sm hover:bg-muted/40" onClick={() => { setCalendarOpen(false); openView(payment); }}>
