@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useParams, useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import RentDueSection from "./Manager/RentDueSection";
+import RentReceivedSection from "./Manager/RentReceivedSection";
 import DeductionsSection from "./Manager/DeductionsSection";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -12,7 +13,7 @@ import { get } from "@/helper/api";
 import { useAuth } from "@/context/AuthContext";
 import { formatPropertyReference } from "@/utils/propertyReference";
 
-type FinanceView = "rent-due" | "deductions";
+type FinanceView = "rent-due" | "rent-received" | "deductions";
 
 export default function PropertyFinancePage() {
   const location = useLocation();
@@ -59,9 +60,11 @@ export default function PropertyFinancePage() {
         <>
           <div className="mb-4 flex gap-2 border-b pb-3">
             <Button size="sm" variant={view === "rent-due" ? "default" : "outline"} onClick={() => setView("rent-due")}>Rent Due</Button>
+            <Button size="sm" variant={view === "rent-received" ? "default" : "outline"} onClick={() => setView("rent-received")}>Rent Received</Button>
             <Button size="sm" variant={view === "deductions" ? "default" : "outline"} onClick={() => setView("deductions")}>Deductions</Button>
           </div>
           {view === "rent-due" && <RentDueSection propertyId={property.id} />}
+          {view === "rent-received" && <RentReceivedSection propertyId={property.id} />}
           {view === "deductions" && <DeductionsSection propertyId={property.id} />}
         </>
       )}

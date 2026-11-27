@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { InfoHint } from "@/components/ui/hint";
 import { get } from "@/helper/api";
@@ -93,9 +94,9 @@ export default function ContractorJobHistory({ contractorId }: { contractorId: s
     (async () => {
       try {
         const [active, completed, cancelledJobs] = await Promise.all([
-          listJobs(`contractorId=${contractorId}&status=ACTIVE`),
-          listJobs(`contractorId=${contractorId}&status=COMPLETED`),
-          listJobs(`contractorId=${contractorId}&status=CANCELLED`),
+          listJobs(`contractorId=${contractorId}&status=ACTIVE&page=1&limit=500`),
+          listJobs(`contractorId=${contractorId}&status=COMPLETED&page=1&limit=500`),
+          listJobs(`contractorId=${contractorId}&status=CANCELLED&page=1&limit=500`),
         ]);
         if (cancelled) return;
         setAssigned([...active].sort(byDueAsc));
@@ -114,10 +115,15 @@ export default function ContractorJobHistory({ contractorId }: { contractorId: s
   }
 
   return (
-    <div className="space-y-4">
+    <Tabs defaultValue="current">
+      <TabsList>
+        <TabsTrigger value="current">Current jobs{assigned ? ` (${assigned.length})` : ""}</TabsTrigger>
+        <TabsTrigger value="history">Job history{past ? ` (${past.length})` : ""}</TabsTrigger>
+      </TabsList>
+      <TabsContent value="current">
       <Card>
         <CardContent className="p-4 space-y-3">
-          <div className="font-semibold">Assigned jobs<InfoHint text="Open jobs for this contractor, earliest deadline first." /></div>
+          <div className="font-semibold">Current jobs<InfoHint text="Open jobs for this contractor, earliest deadline first." /></div>
           {assigned === null ? (
             <p className="text-sm text-muted-foreground py-4 text-center">Loading...</p>
           ) : (
@@ -125,9 +131,11 @@ export default function ContractorJobHistory({ contractorId }: { contractorId: s
           )}
         </CardContent>
       </Card>
+      </TabsContent>
+      <TabsContent value="history">
       <Card>
         <CardContent className="p-4 space-y-3">
-          <div className="font-semibold">Past jobs<InfoHint text="Completed and cancelled jobs, most recent deadline first." /></div>
+          <div className="font-semibold">Job history<InfoHint text="Completed and cancelled jobs, most recent deadline first." /></div>
           {past === null ? (
             <p className="text-sm text-muted-foreground py-4 text-center">Loading...</p>
           ) : (
@@ -135,6 +143,7 @@ export default function ContractorJobHistory({ contractorId }: { contractorId: s
           )}
         </CardContent>
       </Card>
-    </div>
+      </TabsContent>
+    </Tabs>
   );
 }

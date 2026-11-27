@@ -100,6 +100,31 @@ const inDueWindow = (payment: Payment, window: DueWindow) => {
   return days >= 0 && days <= Number(window);
 };
 
+// Filters on the Rent due section. Overdue is the default view.
+type RentDueFilter = "overdue" | "today" | "7" | "28" | "date" | "all";
+const RENT_DUE_FILTERS: { key: RentDueFilter; label: string }[] = [
+  { key: "overdue", label: "Overdue" },
+  { key: "today", label: "Due today" },
+  { key: "7", label: "Next 1 week" },
+  { key: "28", label: "Next 28 days" },
+  { key: "date", label: "Pick a date" },
+  { key: "all", label: "All" },
+];
+const londonTodayIso = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date());
+const addDaysIso = (iso: string, days: number) => {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+};
+const inRentDueFilter = (dueDate: string, filter: RentDueFilter, pickedDate: string) => {
+  const due = String(dueDate).slice(0, 10);
+  const today = londonTodayIso();
+  if (filter === "all") return true;
+  if (filter === "overdue") return due < today;
+  if (filter === "today") return due === today;
+  if (filter === "date") return !pickedDate || due === pickedDate;
+  return due >= today && due <= addDaysIso(today, Number(filter));
+};
+
 export default function LandlordPayments() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
@@ -176,11 +201,16 @@ export default function LandlordPayments() {
     }
   };
 
-  const loadRentDue = async () => {
-    const { data } = await get<{ rows?: any[] }>("transaction/rent-due");
+  const [rentDueFilter, setRentDueFilter] = useState<RentDueFilter>("overdue");
+  const [rentDuePickedDate, setRentDuePickedDate] = useState("");
+  const loadRentDue = async (until?: string) => {
+    const { data } = await get<{ rows?: any[] }>(`transaction/rent-due${until ? `?until=${until}` : ""}`);
     setRentDue(data?.rows ?? []);
     setRentIncomplete((data as any)?.incomplete ?? []);
   };
+  const rentDueShown = rentDue
+    .filter((row) => inRentDueFilter(row.dueDate, rentDueFilter, rentDuePickedDate))
+    .sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)));
 
   useEffect(() => {
     void loadRentDue();
@@ -519,23 +549,52 @@ export default function LandlordPayments() {
 
         <div className="surface overflow-hidden">
           <div className="border-b p-4">
-            <h2 className="font-semibold">Rent due ({rentDue.length})<InfoHint text="Rent that falls due on each property's Rent Due Date and has no landlord payment yet. Overdue once the due date has passed." /></h2>
-            <p className="text-xs text-muted-foreground">Due date · property · rent. Red = overdue. Click a row to create the payment.</p>
+            <h2 className="font-semibold">Rent due ({rentDueShown.length})<InfoHint text="Rent that falls due on each property's Rent Due Date and has no landlord payment yet. Overdue once the due date has passed." /></h2>
+            <p className="text-xs text-muted-foreground">Sorted by due date. Red = overdue. Click a row to create the payment.</p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {RENT_DUE_FILTERS.map((f) => {
+                const count = f.key === "date" ? null : rentDue.filter((r) => inRentDueFilter(r.dueDate, f.key, "")).length;
+                return (
+                  <Button key={f.key} size="sm" variant={rentDueFilter === f.key ? "default" : "outline"} onClick={() => setRentDueFilter(f.key)}>
+                    {f.label}{count != null ? ` (${count})` : ""}
+                  </Button>
+                );
+              })}
+              {rentDueFilter === "date" && (
+                <Input
+                  type="date"
+                  className="w-44"
+                  value={rentDuePickedDate}
+                  onChange={(event) => {
+                    setRentDuePickedDate(event.target.value);
+                    // Dates beyond the default 28-day look-ahead need a wider fetch.
+                    void loadRentDue(event.target.value || undefined);
+                  }}
+                />
+              )}
+            </div>
           </div>
-          {rentDue.length === 0 ? (
-            <p className="p-4 text-sm text-muted-foreground">No rent is due in the next 28 days that doesn't already have a landlord payment.</p>
+          {rentDueShown.length === 0 ? (
+            <p className="p-4 text-sm text-muted-foreground">
+              {rentDueFilter === "overdue" ? "No overdue rent without a landlord payment." : "No rent due in this window that doesn't already have a landlord payment."}
+            </p>
           ) : (
             <div className="divide-y">
-              {rentDue.map((row) => (
+              <div className="grid grid-cols-[8rem_8rem_minmax(0,1fr)_minmax(0,12rem)_7rem_1rem] gap-3 bg-muted/40 px-4 py-2 text-xs font-medium text-muted-foreground">
+                <span>Due date</span><span>Period</span><span>Property</span><span>Landlord</span><span className="text-right">Rent</span><span />
+              </div>
+              {rentDueShown.map((row) => (
                 <button
                   type="button"
                   key={`${row.propertyId}:${row.period}`}
                   title="Create the landlord payment for this rent"
                   onClick={() => navigate(`/finance/landlord-payments/new?vendorId=${row.vendorId}&propertyId=${row.propertyId}&period=${row.period}&due=${row.dueDate}`)}
-                  className="grid w-full grid-cols-[8rem_minmax(0,1fr)_7rem_1rem] items-center gap-3 px-4 py-3 text-left text-sm hover:bg-muted/40"
+                  className="grid w-full grid-cols-[8rem_8rem_minmax(0,1fr)_minmax(0,12rem)_7rem_1rem] items-center gap-3 px-4 py-3 text-left text-sm hover:bg-muted/40"
                 >
                   <span className={`font-medium ${row.status === "OVERDUE" ? "text-red-600" : "text-amber-700"}`}>{new Date(row.dueDate).toLocaleDateString("en-GB")}</span>
+                  <span>{periodLabel(row.period)}</span>
                   <span className="truncate font-medium">{row.address || "Property"}</span>
+                  <span className="truncate text-muted-foreground">{row.landlordName || "-"}</span>
                   <span className="text-right font-mono">{money(row.rent)}</span>
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </button>

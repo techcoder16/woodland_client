@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { get } from "@/helper/api";
 import { openStoredFile } from "@/helper/fileUpload";
+import VendorBankAccounts from "@/components/vendors/VendorBankAccounts";
 import { useFileUrls } from "@/hooks/useFileUrls";
 import { formatPropertyReference } from "@/utils/propertyReference";
 
@@ -102,14 +103,7 @@ const VendorDetail = () => {
                 </div>
               </Card>
 
-              <Card className="p-4 space-y-3">
-                <div className="font-semibold">Bank details</div>
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="Account name" value={vendor.bankName} />
-                  <Field label="Account number" value={vendor.bankAccountNo} />
-                  <Field label="Sort code" value={vendor.bankSortCode} />
-                </div>
-              </Card>
+              <VendorBankAccounts vendorId={vendor.id} />
 
               <Card className="p-4 space-y-3">
                 <div className="font-semibold">Documents</div>

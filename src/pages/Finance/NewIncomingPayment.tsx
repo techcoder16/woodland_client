@@ -36,6 +36,8 @@ const emptyPayment = () => ({
   paymentMethod: "Bank Transfer",
   paymentReference: "",
   notes: "",
+  rentPeriodFrom: "",
+  rentPeriodTo: "",
 });
 type PaymentForm = ReturnType<typeof emptyPayment>;
 
@@ -279,6 +281,8 @@ export default function NewIncomingPayment() {
       paymentMethod: payment.paymentMethod,
       paymentReference: payment.paymentReference || undefined,
       notes: payment.notes || undefined,
+      rentPeriodFrom: payment.rentPeriodFrom || undefined,
+      rentPeriodTo: payment.rentPeriodTo || undefined,
       allocations: allocationList,
     });
     setSaving(false);
@@ -320,6 +324,12 @@ export default function NewIncomingPayment() {
       )}
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1"><Label>Payment Date *</Label><Input type="date" value={payment.paymentDate} onChange={(e) => updatePayment("paymentDate", e.target.value)} /></div>
+        <div className="space-y-1"><Label>Rent period from</Label><Input type="date" value={payment.rentPeriodFrom} onChange={(e) => updatePayment("rentPeriodFrom", e.target.value)} /></div>
+        <div className="space-y-1">
+          <Label>Rent period to</Label>
+          <Input type="date" value={payment.rentPeriodTo} min={payment.rentPeriodFrom || undefined} onChange={(e) => updatePayment("rentPeriodTo", e.target.value)} />
+          <p className="text-xs text-muted-foreground">Left blank, the period runs over the months you allocate to.</p>
+        </div>
         <div className="space-y-1"><Label>Amount Received (£) *</Label><Input type="number" min="0" step="0.01" value={payment.amount} onChange={(e) => updatePayment("amount", e.target.value)} /></div>
         <div className="space-y-1">
           <Label>Payment Method *</Label>

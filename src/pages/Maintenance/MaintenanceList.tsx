@@ -126,12 +126,14 @@ const RESPONSIBILITY_OPTIONS = [
   { value: "LANDLORD", label: "Landlord" },
   { value: "INTERNAL", label: "Internal" },
   { value: "TENANT", label: "Tenant" },
+  { value: "COUNCIL", label: "Council" },
 ];
 
 const REPORTED_BY_OPTIONS = [
   { value: "TENANT", label: "Tenant" },
   { value: "LANDLORD", label: "Landlord" },
   { value: "INTERNAL", label: "Internal" },
+  { value: "COUNCIL", label: "Council" },
 ];
 
 const PRIORITY_OPTIONS = [
@@ -290,12 +292,13 @@ const MaintenanceList = () => {
 
   const handleDelete = async (job: JobType) => {
     if (!job.id) return;
+    if (!window.confirm(`Delete this ${job.jobType || "maintenance"} job? This cannot be undone.`)) return;
     try {
-      await dispatch(deleteJobType({ id: job.id, propertyId: job.propertyId }));
+      await dispatch(deleteJobType({ id: job.id, propertyId: job.propertyId })).unwrap();
       toast.success("Maintenance job deleted successfully");
       refreshList();
     } catch (error) {
-      toast.error("Error deleting maintenance job");
+      toast.error(typeof error === "string" ? error : "Error deleting maintenance job");
     }
   };
 
@@ -537,7 +540,7 @@ const MaintenanceList = () => {
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Due<InfoHint text="When the work is due. Shown in red once it is overdue." /></th>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Address<InfoHint text="The property this job is for." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Description<InfoHint text="What needs doing." /></th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Resp.<InfoHint text="Who is responsible: L = Landlord, T = Tenant, I = Internal (Woodland)." /></th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Resp.<InfoHint text="Who is responsible: L = Landlord, T = Tenant, I = Internal (Woodland), C = Council." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Priority<InfoHint text="How urgent the job is: Critical (red), High (orange), Medium (yellow), Low (pink)." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Contractor<InfoHint text="The contractor assigned to carry out the work." /></th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Status<InfoHint text="Where the job is: Open, Awaiting Authorisation, Quoting, Assigned, In Progress, Pending (contractor finished, awaiting sign-off), Completed or Cancelled." /></th>
@@ -578,8 +581,8 @@ const MaintenanceList = () => {
                           </td>
                           <td className="px-4 py-3 text-sm text-center font-semibold">
                             {job.responsibility ? (
-                              <Hint text={({ LANDLORD: "Landlord responsible", TENANT: "Tenant responsible" } as Record<string, string>)[job.responsibility.toUpperCase()] ?? "Internal (Woodland) responsible"}>
-                                <span>{({ LANDLORD: "L", TENANT: "T" } as Record<string, string>)[job.responsibility.toUpperCase()] ?? "I"}</span>
+                              <Hint text={({ LANDLORD: "Landlord responsible", TENANT: "Tenant responsible", COUNCIL: "Council responsible" } as Record<string, string>)[job.responsibility.toUpperCase()] ?? "Internal (Woodland) responsible"}>
+                                <span>{({ LANDLORD: "L", TENANT: "T", COUNCIL: "C" } as Record<string, string>)[job.responsibility.toUpperCase()] ?? "I"}</span>
                               </Hint>
                             ) : "-"}
                           </td>

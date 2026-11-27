@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { bankAccountLabel, fetchVendorBankAccounts, type VendorBankAccount } from "@/components/vendors/VendorBankAccounts";
 import { jobRef } from "@/utils/contractorLabel";
 import { Link, useSearchParams } from "react-router-dom";
 import { AutoHint } from "@/components/ui/hint";
@@ -283,10 +284,52 @@ export default function NewLandlordPayment() {
   }, [payment.paymentDate, step]);
   const typedReference = payment.paymentReference.trim();
 
+  // The landlord's bank accounts. Preselected: the account this property's last
+  // payment went to, else the landlord's default. The choice is remembered on
+  // the property when the payment is saved.
+  const [bankAccounts, setBankAccounts] = useState<VendorBankAccount[]>([]);
+  const [bankAccountId, setBankAccountId] = useState("");
+  useEffect(() => {
+    setBankAccounts([]);
+    setBankAccountId("");
+    if (!vendorId) return;
+    let cancelled = false;
+    fetchVendorBankAccounts(vendorId).then((list) => {
+      if (!cancelled) setBankAccounts(list);
+    });
+    return () => { cancelled = true; };
+  }, [vendorId]);
+  useEffect(() => {
+    if (!bankAccounts.length) return;
+    const remembered = bankAccounts.find((a) => a.id === selectedProperty?.landlordBankAccountId);
+    setBankAccountId((remembered ?? bankAccounts.find((a) => a.isDefault) ?? bankAccounts[0]).id);
+  }, [bankAccounts, selectedProperty?.landlordBankAccountId]);
+  const selectedBankAccount = bankAccounts.find((a) => a.id === bankAccountId);
+
   // What the bank account box shows by default; saved unless the user types their own.
-  const defaultBankLabel = selectedVendor?.bankName
-    ? `${selectedVendor.bankName} (${selectedVendor.bankSortCode || ""} | ${selectedVendor.bankAccountNo || ""})`
-    : "";
+  const defaultBankLabel = selectedBankAccount
+    ? bankAccountLabel(selectedBankAccount)
+    : selectedVendor?.bankName
+      ? `${selectedVendor.bankName} (${selectedVendor.bankSortCode || ""} | ${selectedVendor.bankAccountNo || ""})`
+      : "";
+
+  // The due date comes from the property's rent schedule for the accounting
+  // period and cannot be changed by hand (the server sets it the same way).
+  const [scheduleDue, setScheduleDue] = useState<Record<string, string>>({});
+  useEffect(() => {
+    setScheduleDue({});
+    if (!propertyId) return;
+    let cancelled = false;
+    get<{ rows?: { period: string; dueDate: string }[] }>(`transaction/rent-schedule?propertyId=${propertyId}`).then(({ data }) => {
+      if (cancelled) return;
+      setScheduleDue(Object.fromEntries((data?.rows ?? []).map((r) => [r.period, String(r.dueDate).slice(0, 10)])));
+    });
+    return () => { cancelled = true; };
+  }, [propertyId]);
+  const lockedDueDate = periodKey ? scheduleDue[periodKey] : undefined;
+  useEffect(() => {
+    if (lockedDueDate) setPayment((current) => (current.expectedPaymentDate === lockedDueDate ? current : { ...current, expectedPaymentDate: lockedDueDate }));
+  }, [lockedDueDate]);
 
   // Total of the source, and what is left after this payment (carried to the next payment).
   const lineBalance = (a: Adjustment) => {
@@ -451,6 +494,7 @@ export default function NewLandlordPayment() {
         toLandlordExpenditureDescription: payment.description,
         toLandlordPaidBy: selectedVendor ? `${selectedVendor.firstName} ${selectedVendor.lastName}`.trim() : undefined,
         bankAccountLabel: payment.bankAccountLabel || defaultBankLabel || undefined,
+        bankAccountId: selectedBankAccount?.id || undefined,
         paymentReference: typedReference || undefined,
         expectedPaymentDate: payment.expectedPaymentDate || undefined,
         adjustments: adjustments.map(({ id, ...rest }) => rest),
@@ -698,13 +742,34 @@ export default function NewLandlordPayment() {
                       <div className="space-y-2"><Label>Payment method</Label><Input value={payment.paymentMethod} onChange={(event) => updatePayment("paymentMethod", event.target.value)} /></div>
                       <div className="space-y-2">
                         <Label>Bank account</Label>
-                        <Input
-                          placeholder="Landlord account"
-                          value={payment.bankAccountLabel || defaultBankLabel}
-                          onChange={(event) => updatePayment("bankAccountLabel", event.target.value)}
-                        />
+                        {bankAccounts.length > 0 ? (
+                          <select
+                            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                            value={bankAccountId}
+                            onChange={(event) => { setBankAccountId(event.target.value); updatePayment("bankAccountLabel", ""); }}
+                          >
+                            {bankAccounts.map((a) => (
+                              <option key={a.id} value={a.id}>{bankAccountLabel(a)}{a.isDefault ? " — default" : ""}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <Input
+                            placeholder="Landlord account"
+                            value={payment.bankAccountLabel || defaultBankLabel}
+                            onChange={(event) => updatePayment("bankAccountLabel", event.target.value)}
+                          />
+                        )}
+                        {selectedBankAccount && selectedProperty?.landlordBankAccountId === selectedBankAccount.id && (
+                          <p className="text-xs text-muted-foreground">Last used for this property.</p>
+                        )}
                       </div>
-                      <div className="space-y-2"><Label>Expected payment date</Label><Input type="date" value={payment.expectedPaymentDate} onChange={(event) => updatePayment("expectedPaymentDate", event.target.value)} /></div>
+                      <div className="space-y-2">
+                        <Label>Due date</Label>
+                        <Input type="date" value={payment.expectedPaymentDate} disabled={!!lockedDueDate} onChange={(event) => updatePayment("expectedPaymentDate", event.target.value)} />
+                        <p className="text-xs text-muted-foreground">
+                          {lockedDueDate ? "Set from the property's rent due date for this accounting period." : "This property has no rent schedule for this period, so enter the due date."}
+                        </p>
+                      </div>
                       <div className="space-y-2">
                         <Label>Payment reference</Label>
                         <Input
@@ -820,13 +885,14 @@ export default function NewLandlordPayment() {
               </div>
             </div>
 
-            {selectedVendor?.bankName && (
+            {(selectedBankAccount || selectedVendor?.bankName) && (
               <div className="surface p-4">
                 <h3 className="mb-3 text-sm font-semibold">Bank Details</h3>
                 <div className="space-y-1.5 text-sm">
-                  <div className="flex justify-between"><span className="text-muted-foreground">Account Name</span><span>{selectedVendor.firstName} {selectedVendor.lastName}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Sort Code</span><span>{selectedVendor.bankSortCode || "-"}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Account Number</span><span>{selectedVendor.bankAccountNo || "-"}</span></div>
+                  {selectedBankAccount?.bankName && <div className="flex justify-between"><span className="text-muted-foreground">Bank</span><span>{selectedBankAccount.bankName}</span></div>}
+                  <div className="flex justify-between"><span className="text-muted-foreground">Account Name</span><span>{selectedBankAccount?.accountName || `${selectedVendor?.firstName || ""} ${selectedVendor?.lastName || ""}`}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Sort Code</span><span>{selectedBankAccount?.sortCode || selectedVendor?.bankSortCode || "-"}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Account Number</span><span>{selectedBankAccount?.accountNumber || selectedVendor?.bankAccountNo || "-"}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Reference</span><span className="font-mono">{typedReference || referencePreview || "Auto-generated"}</span></div>
                 </div>
               </div>

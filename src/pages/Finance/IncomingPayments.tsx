@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { AutoHint } from "@/components/ui/hint";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Download, Eye, Loader2, Plus, RefreshCw, Search, Trash2 } from "lucide-react";
 import { exportIncomingPaymentToPdf } from "@/utils/incomingPaymentExport";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -12,7 +12,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { del, get } from "@/helper/api";
 import { formatPropertyReference } from "@/utils/propertyReference";
-import { formatPeriod, IncomingPayment, money, PAYER_TABS } from "./incomingPaymentShared";
+import { formatPeriod, IncomingPayment, money, PAYER_TABS, rentPeriodRange } from "./incomingPaymentShared";
 
 type ListResponse = { items: IncomingPayment[]; total: number; page: number; totalPages: number };
 
@@ -32,6 +32,13 @@ export default function IncomingPayments() {
   const [data, setData] = useState<ListResponse>({ items: [], total: 0, page: 1, totalPages: 1 });
   const [loading, setLoading] = useState(false);
   const [viewing, setViewing] = useState<IncomingPayment | null>(null);
+  // ?payment=<id> (from a property's Rent Received list) opens that payment.
+  const [searchParams] = useSearchParams();
+  const linkedPaymentId = searchParams.get("payment");
+  useEffect(() => {
+    if (!linkedPaymentId) return;
+    get<IncomingPayment>(`incoming-payments/${linkedPaymentId}`).then(({ data }) => { if (data?.id) setViewing(data); });
+  }, [linkedPaymentId]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -118,7 +125,7 @@ export default function IncomingPayments() {
                   <th className="px-4 py-2.5 font-medium">Payer</th>
                   <th className="px-4 py-2.5 font-medium">Property</th>
                   <th className="px-4 py-2.5 font-medium">Occupancy Ref</th>
-                  <th className="px-4 py-2.5 font-medium">Period<AutoHint for="Period" /></th>
+                  <th className="px-4 py-2.5 font-medium">Rent period (from – to)<AutoHint for="Period" /></th>
                   <th className="px-4 py-2.5 text-right font-medium">Amount<AutoHint for="Amount" /></th>
                   <th className="px-4 py-2.5 font-medium">Method</th>
                   <th className="px-4 py-2.5 text-right font-medium">Actions<AutoHint for="Actions" /></th>
@@ -139,7 +146,7 @@ export default function IncomingPayments() {
                       </td>
                       <td className="px-4 py-2.5">{single ? single.property?.addressLine1 || "-" : `Multiple (${payment.allocations.length})`}</td>
                       <td className="px-4 py-2.5 font-mono text-xs">{single ? single.occupancy?.reference : "-"}</td>
-                      <td className="px-4 py-2.5">{periods.length === 1 ? formatPeriod(periods[0]) : `${periods.length} periods`}</td>
+                      <td className="px-4 py-2.5 whitespace-nowrap">{payment.rentPeriodFrom ? rentPeriodRange(payment) : periods.length === 1 ? formatPeriod(periods[0]) : `${periods.length} periods`}</td>
                       <td className="px-4 py-2.5 text-right font-medium">{money(payment.amount)}</td>
                       <td className="px-4 py-2.5 text-muted-foreground">{payment.paymentMethod}</td>
                       <td className="px-4 py-2.5 text-right">
@@ -180,6 +187,7 @@ export default function IncomingPayments() {
               <div className="grid gap-3 sm:grid-cols-3">
                 <div><p className="text-xs text-muted-foreground">Payer</p><p className="font-medium">{viewing.payerName}</p></div>
                 <div><p className="text-xs text-muted-foreground">Payment date</p><p className="font-medium">{new Date(viewing.paymentDate).toLocaleDateString("en-GB")}</p></div>
+                <div><p className="text-xs text-muted-foreground">Rent period</p><p className="font-medium">{rentPeriodRange(viewing)}</p></div>
                 <div><p className="text-xs text-muted-foreground">Amount received</p><p className="font-semibold text-emerald-700">{money(viewing.amount)}</p></div>
                 <div><p className="text-xs text-muted-foreground">Method</p><p className="font-medium">{viewing.paymentMethod}</p></div>
                 <div><p className="text-xs text-muted-foreground">Payment reference</p><p className="font-mono font-medium">{viewing.paymentReference || "-"}</p></div>

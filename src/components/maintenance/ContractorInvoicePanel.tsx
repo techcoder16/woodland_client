@@ -84,7 +84,9 @@ function useInvoicePanel({ job, canManage, onChanged }: ContractorInvoicePanelPr
 
   const landlordEmail = job.property?.vendor?.email;
   const landlordName = [job.property?.vendor?.firstName, job.property?.vendor?.lastName].filter(Boolean).join(" ") || "Landlord";
-  const disabled = !canManage;
+  // A completed or cancelled job is read only: costs, markup and the deduct flag are locked.
+  const isClosed = job.status === "COMPLETED" || job.status === "CANCELLED";
+  const disabled = !canManage || isClosed;
 
   // Without the job markup, what the landlord pays = totalCharged minus the job-level markup.
   const base = Number(job.totalCost ?? 0) + Number(job.otherCost ?? 0);
@@ -218,7 +220,7 @@ function useInvoicePanel({ job, canManage, onChanged }: ContractorInvoicePanelPr
         <label className="flex items-start gap-3">
           <Checkbox
             checked={job.showOnLandlordPortal === true}
-            disabled={disabled}
+            disabled={!canManage || job.status === "CANCELLED"}
             onCheckedChange={(v) => void toggle({ showOnLandlordPortal: v === true }, v === true ? "Shown on the landlord portal" : "Hidden from the landlord portal")}
           />
           <span>
@@ -267,7 +269,7 @@ function useInvoicePanel({ job, canManage, onChanged }: ContractorInvoicePanelPr
               value={markupValue}
               onChange={(e) => setMarkupValue(e.target.value)}
             />
-            {canManage && (
+            {!disabled && (
               <Button type="button" disabled={saving || !isDirty} onClick={() => void saveMarkup()}>
                 {saving ? "Saving…" : "Save"}
               </Button>
@@ -341,7 +343,7 @@ export default function ContractorInvoicePanel(props: ContractorInvoicePanelProp
   return (
     <div className="space-y-4">
       {parts.settings}
-      <JobPaymentsPanel job={props.job} canManage={props.canManage} onChanged={props.onChanged} />
+      <JobPaymentsPanel job={props.job} canManage={props.canManage && props.job.status !== "COMPLETED" && props.job.status !== "CANCELLED"} onChanged={props.onChanged} />
       {parts.total}
       {parts.invoices}
     </div>
