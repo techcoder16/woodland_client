@@ -39,6 +39,7 @@ export interface JobType {
   dueDate: string;
   schedule?: string;
   time?: string;
+  visitTimeTo?: string;
   startDate?: string;
   endDate?: string;
   thingsToDo?: string;
@@ -238,6 +239,9 @@ export const deleteJobType = createAsyncThunk(
       };
 
       const res = await post(`property-management/job-type/${id}/delete`, {}, headers);
+      // post() reports failures in res.error rather than throwing; without this a
+      // blocked delete (e.g. the job is billed on a landlord payment) looked successful.
+      if ((res as any)?.error) return rejectWithValue((res as any).error.message || "Failed to delete job type");
       
       // Refresh the job types list
       await (dispatch as AppDispatch)(fetchJobTypes({

@@ -231,14 +231,6 @@ export default function OccupancyDetail() {
             </dl>
           </Card>
 
-          <Card icon={CalendarDays} title="Booking-In Appointment">
-            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-              <Row label="Assigned To" value={staffName(o.bookingAssignedTo) || "Unassigned"} />
-              <Row label="Date" value={fmtDate(o.bookingDate)} />
-              <Row label="Time" value={o.bookingTime} />
-              <Row label="Notes" value={o.bookingNotes} />
-            </dl>
-          </Card>
 
         </div>
 

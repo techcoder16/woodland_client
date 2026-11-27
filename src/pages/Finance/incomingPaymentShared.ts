@@ -23,9 +23,19 @@ export type IncomingPayment = {
   paymentMethod: string;
   paymentReference?: string | null;
   notes?: string | null;
+  rentPeriodFrom?: string | null;
+  rentPeriodTo?: string | null;
   createdByName?: string | null;
   allocations: Allocation[];
 };
+
+/** "01/11/2026 – 30/11/2026", or the allocation months when the dates are missing. */
+export function rentPeriodRange(p: Pick<IncomingPayment, "rentPeriodFrom" | "rentPeriodTo" | "allocations">): string {
+  const d = (v: string) => new Date(v).toLocaleDateString("en-GB", { timeZone: "UTC" });
+  if (p.rentPeriodFrom && p.rentPeriodTo) return `${d(p.rentPeriodFrom)} – ${d(p.rentPeriodTo)}`;
+  const months = [...new Set(p.allocations.map((a) => a.period))].sort();
+  return months.length ? (months.length === 1 ? months[0] : `${months[0]} – ${months[months.length - 1]}`) : "-";
+}
 
 // One row of GET incoming-payments/occupancies — an occupancy the payer can
 // allocate to, with the selected period's figures.

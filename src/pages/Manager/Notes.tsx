@@ -1,5 +1,6 @@
 // src/pages/Manager/Notes.tsx
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -90,6 +91,7 @@ interface NotesProps {
 }
 
 const Notes = ({ propertyId, property, view = "notes" }: NotesProps) => {
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { user } = useAuth();
   const activeTab = view;
@@ -295,13 +297,13 @@ const Notes = ({ propertyId, property, view = "notes" }: NotesProps) => {
 
   // Delete handlers
   const handleDeleteJobType = async (jobType: JobType) => {
-    if (jobType.id) {
-      try {
-        await dispatch(deleteJobType({ id: jobType.id, propertyId }));
-        toast.success("Job type deleted successfully");
-      } catch (error) {
-        toast.error("Error deleting job type");
-      }
+    if (!jobType.id) return;
+    if (!window.confirm(`Delete this ${jobType.jobType || "maintenance"} job? This cannot be undone.`)) return;
+    try {
+      await dispatch(deleteJobType({ id: jobType.id, propertyId })).unwrap();
+      toast.success("Maintenance job deleted");
+    } catch (error) {
+      toast.error(typeof error === "string" ? error : "Error deleting maintenance job");
     }
   };
 
@@ -543,7 +545,8 @@ const Notes = ({ propertyId, property, view = "notes" }: NotesProps) => {
                       options={[
                         { value: "TENANT", label: "Tenant" },
                         { value: "LANDLORD", label: "Landlord" },
-                        { value: "INTERNAL", label: "Internal" }
+                        { value: "INTERNAL", label: "Internal" },
+                        { value: "COUNCIL", label: "Council" }
                       ]}
                     />
                     <SelectField
@@ -554,7 +557,8 @@ const Notes = ({ propertyId, property, view = "notes" }: NotesProps) => {
                       watch={watchJobType}
                       options={[
                         { value: "LANDLORD", label: "Landlord" },
-                        { value: "INTERNAL", label: "Internal" }
+                        { value: "INTERNAL", label: "Internal" },
+                        { value: "COUNCIL", label: "Council" }
                       ]}
                     />
                   </div>
@@ -683,8 +687,8 @@ const Notes = ({ propertyId, property, view = "notes" }: NotesProps) => {
                     </TableRow>
                   ) : (
                     jobTypes.map((jobType) => (
-                      <TableRow key={jobType.id}>
-                        <TableCell className="font-medium">{jobType.jobType}</TableCell>
+                      <TableRow key={jobType.id} className="cursor-pointer hover:bg-muted/40" onClick={() => navigate(`/maintenance/${jobType.id}`)}>
+                        <TableCell className="font-medium text-primary">{jobType.jobType}</TableCell>
                         <TableCell className="max-w-xs truncate">{stripHtml(jobType.description)}</TableCell>
                         <TableCell>{jobType.dueDate}</TableCell>
                         <TableCell>
@@ -706,18 +710,23 @@ const Notes = ({ propertyId, property, view = "notes" }: NotesProps) => {
                           </Badge>
                         </TableCell>
                         <TableCell>{jobType.dateDone || "-"}</TableCell>
-                        <TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
                           <div className="flex space-x-2">
+                            {jobType.status !== "COMPLETED" && jobType.status !== "CANCELLED" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                title="Edit"
+                                onClick={() => navigate(`/maintenance/${jobType.id}?edit=1`)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            )}
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleEditJobType(jobType)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
+                              title="Delete"
+                              className="text-red-600 hover:text-red-700"
                               onClick={() => handleDeleteJobType(jobType)}
                             >
                               <Trash2 className="h-4 w-4" />

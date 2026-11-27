@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect } from "react";
 import { contractorLabel, jobRef, jobStatusLabel } from "@/utils/contractorLabel";
 import StoredFilePreview from "@/components/StoredFilePreview";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -92,12 +92,14 @@ const RESPONSIBILITY_OPTIONS = [
   { value: "LANDLORD", label: "Landlord" },
   { value: "INTERNAL", label: "Internal" },
   { value: "TENANT", label: "Tenant" },
+  { value: "COUNCIL", label: "Council" },
 ];
 
 const REPORTED_BY_OPTIONS = [
   { value: "TENANT", label: "Tenant" },
   { value: "LANDLORD", label: "Landlord" },
   { value: "INTERNAL", label: "Internal" },
+  { value: "COUNCIL", label: "Council" },
 ];
 
 /** Stored values are upper case; show them as words. */
@@ -122,7 +124,8 @@ const MaintenanceDetail = () => {
   const { isDepartmentAdmin } = useAuth();
   const canManageMaintenance = isDepartmentAdmin(Department.Maintenance);
 
-  const [isEditing, setIsEditing] = useState(false);
+  const [searchParams] = useSearchParams();
+  const [isEditing, setIsEditing] = useState(searchParams.get("edit") === "1");
   const [history, setHistory] = useState<HistoryEntry[] | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [notes, setNotes] = useState<JobNote[] | null>(null);
@@ -197,12 +200,11 @@ const MaintenanceDetail = () => {
     }
   }, [job, reset]);
 
-  // Once a contractor is assigned, reassigning is locked until the job is
-  // awaiting review/completed, or its due time has passed — mirrors the
-  // backend rule in job-type-note.service.ts exactly.
   const isOverdue = !!job && isJobOverdue(job);
-  const isAwaitingReviewOrDone = job?.status === "CONTRACTOR_DONE" || job?.status === "COMPLETED";
-  const canReassignContractor = !job?.contractorId || isAwaitingReviewOrDone || isOverdue;
+  // ?edit=1 (from the property's Maintenance tab) never opens the form on a closed job.
+  useEffect(() => {
+    if (job && (job.status === "COMPLETED" || job.status === "CANCELLED")) setIsEditing(false);
+  }, [job?.status]);
   // COMPLETED/CANCELLED are terminal — mirrors the backend's hard lock in
   // updateJobType, which now rejects any edit to a closed job outright.
   const isJobClosed = job?.status === "COMPLETED" || job?.status === "CANCELLED";
@@ -214,6 +216,7 @@ const MaintenanceDetail = () => {
   const [visitFormOpen, setVisitFormOpen] = useState(false);
   const [visitDay, setVisitDay] = useState("");
   const [visitTime, setVisitTime] = useState("");
+  const [visitTimeTo, setVisitTimeTo] = useState("");
   const needsLandlordOk = (job?.responsibility || "").toUpperCase() === "LANDLORD";
   const canScheduleVisit = !needsLandlordOk || job?.landlordAuthorised === true;
   const authorisedLabel = job?.landlordAuthorised === true ? "Yes" : job?.landlordAuthorised === false ? "No" : "";
@@ -230,7 +233,7 @@ const MaintenanceDetail = () => {
     try {
       await dispatch(updateJobType({ id: job.id, jobTypeData: { propertyId: job.propertyId, contractorId: pendingContractorId } })).unwrap();
       await dispatch(fetchJobTypeById(job.id));
-      toast.success("Contractor assigned");
+      toast.success(job.contractorId ? "Job reassigned" : "Contractor assigned");
     } catch (error) {
       toast.error(typeof error === "string" ? error : error?.message || "Failed to assign contractor");
     } finally {
@@ -635,6 +638,7 @@ const MaintenanceDetail = () => {
                       onClick={() => {
                         setVisitDay(job.visitDate ? String(job.visitDate).slice(0, 10) : "");
                         setVisitTime(job.time || "");
+                        setVisitTimeTo(job.visitTimeTo || "");
                         setVisitFormOpen(true);
                       }}
                     >
@@ -649,21 +653,25 @@ const MaintenanceDetail = () => {
                       <Input type="date" value={visitDay} onChange={(e) => setVisitDay(e.target.value)} className="w-44" />
                     </label>
                     <label className="text-sm">
-                      <span className="block text-xs text-muted-foreground mb-1">Time</span>
+                      <span className="block text-xs text-muted-foreground mb-1">From</span>
                       <Input type="time" value={visitTime} onChange={(e) => setVisitTime(e.target.value)} className="w-32" />
+                    </label>
+                    <label className="text-sm">
+                      <span className="block text-xs text-muted-foreground mb-1">To</span>
+                      <Input type="time" value={visitTimeTo} onChange={(e) => setVisitTimeTo(e.target.value)} className="w-32" />
                     </label>
                     <Button
                       type="button"
                       size="sm"
-                      disabled={isActing || !visitDay}
-                      onClick={() => runAction(async () => { await setVisit(job, visitDay, visitTime); setVisitFormOpen(false); }, "Visit scheduled")}
+                      disabled={isActing || !visitDay || (!!visitTime && !!visitTimeTo && visitTimeTo <= visitTime)}
+                      onClick={() => runAction(async () => { await setVisit(job, visitDay, visitTime, visitTimeTo); setVisitFormOpen(false); }, "Visit scheduled")}
                     >
                       Save
                     </Button>
                     <Button type="button" size="sm" variant="ghost" onClick={() => setVisitFormOpen(false)}>Cancel</Button>
                   </div>
                 ) : (
-                  <p className="text-sm">{job.visitDate ? <>Visit scheduled at <span className="font-medium">{formatVisit(job)}</span></> : <span className="text-muted-foreground">No visit scheduled yet.</span>}</p>
+                  <p className="text-sm">{job.visitDate ? <>Visit scheduled for <span className="font-medium">{formatVisit(job)}</span></> : <span className="text-muted-foreground">No visit scheduled yet.</span>}</p>
                 )}
               </Card>
             )}
@@ -741,14 +749,10 @@ const MaintenanceDetail = () => {
 
             {canManageMaintenance && (
               <Card className="p-4">
-                <div className="font-semibold mb-3">Assign contractor</div>
+                <div className="font-semibold mb-3">{job.contractorId ? "Reassign job" : "Assign contractor"}{job.contractorId && <InfoHint text="Move this job to a different contractor. The change is kept in the job's history and on both contractors' job history." />}</div>
                 {isJobClosed ? (
                   <p className="text-sm text-muted-foreground">
                     This job is {job.status === "COMPLETED" ? "completed" : "cancelled"} and can no longer be edited.
-                  </p>
-                ) : !canReassignContractor ? (
-                  <p className="text-sm text-muted-foreground">
-                    A contractor is already assigned. Reassignment is disabled until the job is submitted as done or its due date passes.
                   </p>
                 ) : (
                   <div className="flex items-end gap-2">
@@ -761,7 +765,7 @@ const MaintenanceDetail = () => {
                         clearErrors={() => undefined}
                       />
                     </div>
-                    <Button disabled={isAssigning || !pendingContractorId} onClick={handleAssignContractor}>
+                    <Button disabled={isAssigning || !pendingContractorId || pendingContractorId === job.contractorId} onClick={handleAssignContractor}>
                       {job.contractorId ? "Reassign" : "Assign"}
                     </Button>
                   </div>
@@ -769,7 +773,7 @@ const MaintenanceDetail = () => {
               </Card>
             )}
 
-            <JobMediaPanel job={job} canManage={canManageMaintenance} />
+            <JobMediaPanel job={job} canManage={canManageMaintenance && !isJobClosed} />
           </>
         )}
           </TabsContent>

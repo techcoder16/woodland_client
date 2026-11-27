@@ -11,6 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import StandardInfo from './Vendor/StandardInfo';
 import BankDetails from './Vendor/BankDetails';
+import VendorBankAccounts from '@/components/vendors/VendorBankAccounts';
 import Documents from './Vendor/Documents';
 
 import LoadingBar from "react-top-loading-bar";
@@ -201,7 +202,11 @@ const EditVendor = () => {
                   <StandardInfo watch={watch} register={register} errors={activeErrors} setValue={setValue} clearErrors={form.clearErrors} isEdit />
                 </TabsContent>
                 <TabsContent value="bank" className="mt-0">
-                  <BankDetails watch={watch} register={register} errors={activeErrors} setValue={setValue} clearErrors={form.clearErrors} />
+                  {vendor?.id ? (
+                    <div className="p-4"><VendorBankAccounts vendorId={vendor.id} /></div>
+                  ) : (
+                    <BankDetails watch={watch} register={register} errors={activeErrors} setValue={setValue} clearErrors={form.clearErrors} />
+                  )}
                 </TabsContent>
                 <TabsContent value="documents" className="mt-0">
                   <Documents watch={watch} register={register} setValue={setValue} errors={activeErrors} vendorId={vendor?.id} />

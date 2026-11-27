@@ -28,6 +28,22 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Pages each role can always open (prefix match), mirroring what the server
+// already lets that role do. Extra screens can still be granted per user.
+const DEPARTMENT_ROUTES: Record<Department, string[]> = {
+  [Department.Maintenance]: ["/maintenance", "/contractors"],
+  [Department.Properties]: ["/properties", "/property", "/property-management"],
+  [Department.Lettings]: ["/occupancy", "/tenants"],
+  [Department.Vendors]: ["/vendors"],
+  [Department.Other]: [],
+};
+
+function roleDefaultRoutes(role: StaffRole, department?: Department | null): string[] {
+  if (role === StaffRole.FinanceUser) return ["/dashboard", "/finance"];
+  if (role === StaffRole.DepartmentAdmin && department) return ["/dashboard", ...(DEPARTMENT_ROUTES[department] ?? [])];
+  return [];
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [permissions, setPermissions] = useState<UserPermission[]>([]);
@@ -103,6 +119,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) return false;
 
     if (user.role === StaffRole.SuperUser) return true; // Super User can access everything
+
+    // A role always opens its own area, even before any screen has been ticked
+    // for the user — otherwise a Maintenance Admin was denied /maintenance and a
+    // Finance user was denied the Finance pages until each screen was granted.
+    if (roleDefaultRoutes(user.role, user.department).some((p) => screen === p || screen.startsWith(`${p}/`))) return true;
 
     return permissions.some(p =>
       p.screen.route === screen &&

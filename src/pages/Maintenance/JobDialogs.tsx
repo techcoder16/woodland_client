@@ -22,12 +22,14 @@ export function VisitTimeDialog({ job, disabled, size = "sm", onSaved }: VisitTi
   const [open, setOpen] = useState(false);
   const [visitDate, setVisitDate] = useState("");
   const [time, setTime] = useState("");
+  const [timeTo, setTimeTo] = useState("");
   const [saving, setSaving] = useState(false);
 
   const handleOpenChange = (next: boolean) => {
     if (next) {
       setVisitDate(job.visitDate ? String(job.visitDate).slice(0, 10) : "");
       setTime(job.time || "");
+      setTimeTo(job.visitTimeTo || "");
     }
     setOpen(next);
   };
@@ -37,9 +39,13 @@ export function VisitTimeDialog({ job, disabled, size = "sm", onSaved }: VisitTi
       toast.error("Pick a visit date");
       return;
     }
+    if (time && timeTo && timeTo <= time) {
+      toast.error("The 'to' time must be after the 'from' time");
+      return;
+    }
     setSaving(true);
     try {
-      await setVisit(job, visitDate, time);
+      await setVisit(job, visitDate, time, timeTo);
       toast.success("Visit date saved");
       setOpen(false);
       onSaved();
@@ -59,17 +65,21 @@ export function VisitTimeDialog({ job, disabled, size = "sm", onSaved }: VisitTi
       </DialogTrigger>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>Visit date and time</DialogTitle>
+          <DialogTitle>Visit date and time window</DialogTitle>
           <DialogDescription>When the contractor is due at the property.</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-2">
+          <div className="space-y-2 col-span-2">
             <Label htmlFor="visitDate">Date</Label>
             <Input id="visitDate" type="date" value={visitDate} onChange={(e) => setVisitDate(e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="visitTime">Time</Label>
+            <Label htmlFor="visitTime">From</Label>
             <Input id="visitTime" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="visitTimeTo">To</Label>
+            <Input id="visitTimeTo" type="time" value={timeTo} onChange={(e) => setTimeTo(e.target.value)} />
           </div>
         </div>
         <DialogFooter>

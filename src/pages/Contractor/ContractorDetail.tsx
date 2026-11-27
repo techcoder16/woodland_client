@@ -6,10 +6,8 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import StoredImage from "@/components/StoredImage";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { get } from "@/helper/api";
-import { statusBadgeClass } from "@/utils/priorityStyle";
-import { formatLondonDateTime } from "@/utils/maintenanceSla";
+import ContractorJobHistory from "@/components/maintenance/ContractorJobHistory";
 
 const Field = ({ label, value }: { label: string; value?: string | null }) => (
   <div className="space-y-0.5">
@@ -18,20 +16,11 @@ const Field = ({ label, value }: { label: string; value?: string | null }) => (
   </div>
 );
 
-interface Job {
-  id: string;
-  jobType?: string;
-  status: string;
-  dueAt?: string | null;
-  property?: { addressLine1?: string; town?: string };
-}
-
 const ContractorDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [contractor, setContractor] = useState<any>(null);
-  const [jobs, setJobs] = useState<Job[]>([]);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -42,9 +31,6 @@ const ContractorDetail = () => {
       if (cancelled) return;
       if (error || !data) setError(error?.message || "Contractor not found");
       else setContractor(data);
-    });
-    get<{ jobTypes?: Job[] }>(`property-management/job-type?contractorId=${id}&page=1&limit=50`).then(({ data }) => {
-      if (!cancelled) setJobs(data?.jobTypes ?? []);
     });
     return () => {
       cancelled = true;
@@ -106,23 +92,7 @@ const ContractorDetail = () => {
               </Card>
             </div>
 
-            <Card className="p-4 space-y-3">
-              <div className="font-semibold">Jobs</div>
-              {jobs.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No jobs assigned.</p>
-              ) : (
-                <div className="divide-y">
-                  {jobs.map((j) => (
-                    <button key={j.id} type="button" className="flex w-full flex-wrap items-center gap-3 py-2 text-left text-sm hover:text-primary" onClick={() => navigate(`/maintenance/${j.id}`)}>
-                      <span className="font-medium">{j.jobType || "Job"}</span>
-                      <span className="text-muted-foreground truncate max-w-xs">{[j.property?.addressLine1, j.property?.town].filter(Boolean).join(", ")}</span>
-                      <span className="text-muted-foreground">{j.dueAt ? `Due ${formatLondonDateTime(j.dueAt)}` : ""}</span>
-                      <Badge variant="outline" className={`ml-auto ${statusBadgeClass(j.status)}`}>{j.status.replace(/_/g, " ")}</Badge>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </Card>
+            <ContractorJobHistory contractorId={contractor.id} />
           </>
         )}
       </div>

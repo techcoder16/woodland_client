@@ -43,8 +43,8 @@ export async function cancelJob(job: JobType) {
   return patchJob(job, { status: "CANCELLED" });
 }
 
-export async function setVisit(job: JobType, visitDate: string, time: string) {
-  return patchJob(job, { visitDate, time });
+export async function setVisit(job: JobType, visitDate: string, time: string, visitTimeTo = "") {
+  return patchJob(job, { visitDate, time, visitTimeTo });
 }
 
 export async function emailLandlord(jobId: string, invoicePdfBase64?: string, message?: string) {
@@ -71,9 +71,10 @@ export async function markLandlordReplyRead(jobId: string) {
 }
 
 /** "Tue 24 Nov 2026 at 10:00", or "Not scheduled". */
-export function formatVisit(job: Pick<JobType, "visitDate" | "time">): string {
+export function formatVisit(job: Pick<JobType, "visitDate" | "time" | "visitTimeTo">): string {
   if (!job.visitDate) return "Not scheduled";
   const date = formatLondonDate(job.visitDate);
+  if (job.time && job.visitTimeTo) return `${date}, ${job.time} – ${job.visitTimeTo}`;
   return job.time ? `${date} at ${job.time}` : date;
 }
 

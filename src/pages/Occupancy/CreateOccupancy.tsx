@@ -55,7 +55,7 @@ import {
   typeOf,
 } from "./occupancyShared";
 
-const STEPS = ["Property", "Occupancy Type", "Customer & Occupier", "Dates & Rate", "Handover", "Review & Create"];
+const STEPS = ["Property", "Occupancy Type", "Customer & Occupier", "Dates & Rate", "Review & Create"];
 
 interface FormState {
   propertyId: string;
@@ -337,11 +337,6 @@ export default function CreateOccupancy() {
       if (form.expectedMoveOutDate && form.moveInDate && form.expectedMoveOutDate <= form.moveInDate) e.expectedMoveOutDate = "Must be after the move-in date";
       if (!(Number(form.rateAmount) > 0)) e.rateAmount = "Enter an amount greater than 0";
     }
-    if (s === 4) {
-      if (!form.bookingAssignedToId) e.bookingAssignedToId = "Assign a staff member";
-      if (!form.bookingDate) e.bookingDate = "Required";
-      if (!form.bookingTime) e.bookingTime = "Required";
-    }
     return e;
   };
 
@@ -352,8 +347,6 @@ export default function CreateOccupancy() {
       toast.error("Please complete the highlighted fields");
       return;
     }
-    // Booking-in defaults to the move-in day.
-    if (step === 3 && !form.bookingDate) set("bookingDate", form.moveInDate);
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -361,7 +354,7 @@ export default function CreateOccupancy() {
   const back = () => setStep((s) => Math.max(s - 1, 0));
 
   const submit = async () => {
-    for (let s = 0; s < 5; s++) {
+    for (let s = 0; s < STEPS.length - 1; s++) {
       const e = validate(s);
       if (Object.values(e).some(Boolean)) {
         setErrors(e);
@@ -379,10 +372,6 @@ export default function CreateOccupancy() {
       expectedMoveOutDate: clean(form.expectedMoveOutDate),
       rateAmount: Number(form.rateAmount),
       rateFrequency: form.rateFrequency || undefined,
-      bookingAssignedToId: form.bookingAssignedToId,
-      bookingDate: form.bookingDate,
-      bookingTime: form.bookingTime,
-      bookingNotes: clean(form.bookingNotes),
       additionalOccupiers: form.additionalOccupiers,
     };
     if (form.type === "COUNCIL") {
@@ -438,7 +427,6 @@ export default function CreateOccupancy() {
 
   const occupierDisplay =
     form.occupierMode === "existing" ? fullName(selectedOccupier) : [form.occTitle, form.occFirstName, form.occSurname].filter(Boolean).join(" ");
-  const assignedStaff = staff.find((u) => u.id === form.bookingAssignedToId);
   const payerDisplay =
     form.type === "COUNCIL"
       ? selectedCouncil?.name
@@ -780,6 +768,21 @@ export default function CreateOccupancy() {
                             ))
                           )}
                         </div>
+                        {selectedOccupier && form.occupierId === selectedOccupier.id && (
+                          <div className="mt-3 space-y-3 rounded-md border bg-muted/30 p-3">
+                            <p className="text-xs font-medium text-muted-foreground">Selected occupier (details are edited on the occupier's own page)</p>
+                            <div className="grid gap-3 sm:grid-cols-[100px_1fr_1fr]">
+                              <Field label="Title"><Input disabled value={selectedOccupier.title || ""} /></Field>
+                              <Field label="First Name"><Input disabled value={selectedOccupier.FirstName || ""} /></Field>
+                              <Field label="Last Name"><Input disabled value={selectedOccupier.SureName || ""} /></Field>
+                            </div>
+                            <div className="grid gap-3 sm:grid-cols-3">
+                              <Field label="Date of Birth"><Input disabled value={selectedOccupier.dateOfBirth ? fmtDate(selectedOccupier.dateOfBirth) : ""} /></Field>
+                              <Field label="Contact Number"><Input disabled value={selectedOccupier.MobileNo || ""} /></Field>
+                              <Field label="Email Address"><Input disabled value={selectedOccupier.Email || ""} /></Field>
+                            </div>
+                          </div>
+                        )}
                       </Field>
                     ) : (
                       <>
@@ -950,35 +953,7 @@ export default function CreateOccupancy() {
             </div>
           )}
 
-          {/* Step 5 — Handover */}
           {step === 4 && (
-            <div className="grid gap-6">
-              <Panel title="Booking-In Appointment" subtitle="Assign a booking-in appointment for key handover and initial checks.">
-                <div className="grid gap-4 sm:grid-cols-[1fr_150px_120px]">
-                  <Field label="Assign To" required error={errors.bookingAssignedToId}>
-                    <Select value={form.bookingAssignedToId} onValueChange={(v) => set("bookingAssignedToId", v)}>
-                      <SelectTrigger><SelectValue placeholder="Select staff member" /></SelectTrigger>
-                      <SelectContent>
-                        {staff.map((u) => <SelectItem key={u.id} value={u.id}>{staffName(u)}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                  <Field label="Date" required error={errors.bookingDate}>
-                    <Input type="date" value={form.bookingDate} onChange={(e) => set("bookingDate", e.target.value)} />
-                  </Field>
-                  <Field label="Time" required error={errors.bookingTime}>
-                    <Input type="time" value={form.bookingTime} onChange={(e) => set("bookingTime", e.target.value)} />
-                  </Field>
-                </div>
-                <Field label="Notes (Optional)">
-                  <Textarea rows={4} placeholder="Add any notes for the booking-in appointment..." value={form.bookingNotes} onChange={(e) => set("bookingNotes", e.target.value)} />
-                </Field>
-              </Panel>
-            </div>
-          )}
-
-          {/* Step 6 — Review */}
-          {step === 5 && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">Review the details below and create the occupancy.</p>
               <div className="grid gap-4 lg:grid-cols-3">
@@ -1023,20 +998,11 @@ export default function CreateOccupancy() {
                     ["Estimated Income", income != null ? money(income) : "-"],
                   ]}
                 />
-                <ReviewBlock
-                  title="Booking-In Appointment"
-                  rows={[
-                    ["Assigned To", staffName(assignedStaff)],
-                    ["Date", fmtDate(form.bookingDate)],
-                    ["Time", form.bookingTime],
-                  ]}
-                />
                 <div className="surface p-4 text-sm space-y-2">
                   <h4 className="font-semibold">What happens next</h4>
                   <ul className="list-disc pl-5 text-muted-foreground space-y-1">
                     <li>The occupancy is created as <strong>{meta?.statuses.find((s) => s.value === "ACTIVE")?.label}</strong>.</li>
                     {(form.occupierMode === "new" ? form.occEmail : selectedOccupier?.Email) && <li>The occupier is emailed their {typeMeta?.label.toLowerCase()} occupancy details and portal access.</li>}
-                    <li>{staffName(assignedStaff) || "The assigned staff member"} is emailed the booking-in details.</li>
                     <li>Woodland's team inbox is notified.</li>
                   </ul>
                 </div>
