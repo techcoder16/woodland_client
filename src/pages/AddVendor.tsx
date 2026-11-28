@@ -36,6 +36,9 @@ const formSchema = z.object({
 
   bankName: z.string().nullable().optional(),
   bankBankName: z.string().nullable().optional(),
+  extraBankAccounts: z
+    .array(z.object({ bankName: z.string().optional(), accountName: z.string().optional(), sortCode: z.string().optional(), accountNumber: z.string().optional() }))
+    .optional(),
   bankAccountNo: z.string().nullable().optional(),
   bankSortCode: z.string().nullable().optional(),
 
@@ -163,7 +166,7 @@ const AddVendor = () => {
                   <StandardInfo watch={watch} register={register} errors={activeErrors} setValue={setValue} clearErrors={form.clearErrors} />
                 </TabsContent>
                 <TabsContent value="bank" className="mt-0">
-                  <BankDetails watch={watch} register={register} errors={activeErrors} setValue={setValue} clearErrors={form.clearErrors} />
+                  <BankDetails watch={watch} register={register} errors={activeErrors} setValue={setValue} clearErrors={form.clearErrors} allowExtra />
                 </TabsContent>
                 <TabsContent value="documents" className="mt-0">
                   <Documents watch={watch} register={register} setValue={setValue} errors={activeErrors} />
