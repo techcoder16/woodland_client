@@ -289,6 +289,7 @@ export default function NewLandlordPayment() {
   // the property when the payment is saved.
   const [bankAccounts, setBankAccounts] = useState<VendorBankAccount[]>([]);
   const [bankAccountId, setBankAccountId] = useState("");
+  const [makePropertyDefault, setMakePropertyDefault] = useState(false);
   useEffect(() => {
     setBankAccounts([]);
     setBankAccountId("");
@@ -328,8 +329,24 @@ export default function NewLandlordPayment() {
   }, [propertyId]);
   const lockedDueDate = periodKey ? scheduleDue[periodKey] : undefined;
   useEffect(() => {
+    // The rent due date comes from the property; the payment date stays the user's own.
     if (lockedDueDate) setPayment((current) => (current.expectedPaymentDate === lockedDueDate ? current : { ...current, expectedPaymentDate: lockedDueDate }));
   }, [lockedDueDate]);
+  // The rent period the payment covers: this period's due date up to the day before the next one.
+  const nextPeriodKey = periodKey
+    ? (() => {
+        const [y, m] = periodKey.split("-").map(Number);
+        return `${m === 12 ? y + 1 : y}-${String(m === 12 ? 1 : m + 1).padStart(2, "0")}`;
+      })()
+    : "";
+  const rentPeriodEnd = (() => {
+    if (!lockedDueDate) return "";
+    const next = scheduleDue[nextPeriodKey];
+    const base = next ? new Date(`${next}T00:00:00Z`) : (() => { const d = new Date(`${lockedDueDate}T00:00:00Z`); d.setUTCMonth(d.getUTCMonth() + 1); return d; })();
+    base.setUTCDate(base.getUTCDate() - 1);
+    return base.toISOString().slice(0, 10);
+  })();
+  const dmyIso = (iso: string) => (iso ? iso.split("-").reverse().join("/") : "");
 
   // Total of the source, and what is left after this payment (carried to the next payment).
   const lineBalance = (a: Adjustment) => {
@@ -495,6 +512,7 @@ export default function NewLandlordPayment() {
         toLandlordPaidBy: selectedVendor ? `${selectedVendor.firstName} ${selectedVendor.lastName}`.trim() : undefined,
         bankAccountLabel: payment.bankAccountLabel || defaultBankLabel || undefined,
         bankAccountId: selectedBankAccount?.id || undefined,
+        setPropertyDefaultBank: selectedBankAccount && makePropertyDefault ? true : undefined,
         paymentReference: typedReference || undefined,
         expectedPaymentDate: payment.expectedPaymentDate || undefined,
         adjustments: adjustments.map(({ id, ...rest }) => rest),
@@ -620,6 +638,13 @@ export default function NewLandlordPayment() {
                   )}
                   <div className="grid gap-4 sm:grid-cols-2 border-t pt-5">
                     <div className="space-y-2"><Label>Payment date *</Label><Input type="date" value={payment.paymentDate} onChange={(event) => updatePayment("paymentDate", event.target.value)} /></div>
+                    <div className="space-y-2">
+                      <Label>Rent due date</Label>
+                      <Input type="date" value={payment.expectedPaymentDate} disabled={!!lockedDueDate} onChange={(event) => updatePayment("expectedPaymentDate", event.target.value)} />
+                      <p className="text-xs text-muted-foreground">
+                        {lockedDueDate ? <>From the property's rent due date. Rent period {dmyIso(lockedDueDate)} – {dmyIso(rentPeriodEnd)}.</> : "No rent schedule for this period, so enter it."}
+                      </p>
+                    </div>
                     <div className="space-y-2"><Label>Accounting period *</Label><MonthYearPicker value={payment.accountingPeriod} onChange={(value) => updatePayment("accountingPeriod", value)} /></div>
                     <div className="space-y-2 sm:col-span-2">
                       <Label>Description / notes</Label>
@@ -759,16 +784,14 @@ export default function NewLandlordPayment() {
                             onChange={(event) => updatePayment("bankAccountLabel", event.target.value)}
                           />
                         )}
-                        {selectedBankAccount && selectedProperty?.landlordBankAccountId === selectedBankAccount.id && (
-                          <p className="text-xs text-muted-foreground">Last used for this property.</p>
-                        )}
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Due date</Label>
-                        <Input type="date" value={payment.expectedPaymentDate} disabled={!!lockedDueDate} onChange={(event) => updatePayment("expectedPaymentDate", event.target.value)} />
-                        <p className="text-xs text-muted-foreground">
-                          {lockedDueDate ? "Set from the property's rent due date for this accounting period." : "This property has no rent schedule for this period, so enter the due date."}
-                        </p>
+                        {selectedBankAccount && selectedProperty?.landlordBankAccountId === selectedBankAccount.id ? (
+                          <p className="text-xs text-emerald-700">Default bank for this property.</p>
+                        ) : selectedBankAccount ? (
+                          <label className="flex items-center gap-2 text-xs">
+                            <input type="checkbox" checked={makePropertyDefault} onChange={(event) => setMakePropertyDefault(event.target.checked)} />
+                            Make this the default bank for this property (used on every payment for it)
+                          </label>
+                        ) : null}
                       </div>
                       <div className="space-y-2">
                         <Label>Payment reference</Label>

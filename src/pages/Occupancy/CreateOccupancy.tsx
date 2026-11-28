@@ -465,7 +465,7 @@ export default function CreateOccupancy() {
 
   return (
     <DashboardLayout>
-      <div className="mx-auto max-w-6xl space-y-6">
+      <div className="w-full space-y-6">
         <div>
           <button className="text-sm text-muted-foreground hover:text-foreground" onClick={() => navigate("/occupancy")}>
             Occupancy
@@ -597,7 +597,7 @@ export default function CreateOccupancy() {
                     : "Enter the details of the private customer and the occupier who will live at the property."}
                 </p>
               </div>
-              <div className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+              <div className="grid gap-5">
                 <div className="space-y-5">
                   {form.type === "COUNCIL" ? (
                     <Panel icon={Building2} title="Council Customer (Payer)" subtitle="Select the council paying for this occupancy.">
@@ -769,17 +769,24 @@ export default function CreateOccupancy() {
                           )}
                         </div>
                         {selectedOccupier && form.occupierId === selectedOccupier.id && (
-                          <div className="mt-3 space-y-3 rounded-md border bg-muted/30 p-3">
-                            <p className="text-xs font-medium text-muted-foreground">Selected occupier (details are edited on the occupier's own page)</p>
-                            <div className="grid gap-3 sm:grid-cols-[100px_1fr_1fr]">
+                          <div className="mt-4 space-y-4 rounded-md border bg-muted/20 p-4">
+                            <p className="text-xs font-medium text-muted-foreground">Selected occupier, read only. Change these on the occupier's own page.</p>
+                            <div className="grid gap-4 sm:grid-cols-[100px_1fr_1fr]">
                               <Field label="Title"><Input disabled value={selectedOccupier.title || ""} /></Field>
                               <Field label="First Name"><Input disabled value={selectedOccupier.FirstName || ""} /></Field>
                               <Field label="Last Name"><Input disabled value={selectedOccupier.SureName || ""} /></Field>
                             </div>
-                            <div className="grid gap-3 sm:grid-cols-3">
+                            <div className="grid gap-4 sm:grid-cols-2">
                               <Field label="Date of Birth"><Input disabled value={selectedOccupier.dateOfBirth ? fmtDate(selectedOccupier.dateOfBirth) : ""} /></Field>
                               <Field label="Contact Number"><Input disabled value={selectedOccupier.MobileNo || ""} /></Field>
+                              <Field label="Home Phone"><Input disabled value={selectedOccupier.HomePhone || ""} /></Field>
+                              <Field label="Work Phone"><Input disabled value={selectedOccupier.WorkPhone || ""} /></Field>
                               <Field label="Email Address"><Input disabled value={selectedOccupier.Email || ""} /></Field>
+                              <Field label="Second Email"><Input disabled value={selectedOccupier.Email2 || ""} /></Field>
+                              <Field label="Address Line 1"><Input disabled value={selectedOccupier.addressLine1 || ""} /></Field>
+                              <Field label="Address Line 2"><Input disabled value={selectedOccupier.addressLine2 || ""} /></Field>
+                              <Field label="Town"><Input disabled value={selectedOccupier.town || ""} /></Field>
+                              <Field label="Post Code"><Input disabled value={selectedOccupier.postCode || ""} /></Field>
                             </div>
                           </div>
                         )}

@@ -406,33 +406,48 @@ export default function NewIncomingPayment() {
             </div>
 
             {!isBulk ? (
-              <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+              <div className="space-y-5">
                 <div className="space-y-2">
-                  {councils.length > 0 && <div className="pb-2">{councilPicker}</div>}
+                  {councils.length > 0 && <div className="pb-2 max-w-xl">{councilPicker}</div>}
                   <Label>Search Occupancy *</Label>
-                  <div className="relative">
+                  <div className="relative max-w-xl">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input className="pl-8" placeholder="Tenant, property, council, company or OCC ref" value={occSearch} onChange={(e) => setOccSearch(e.target.value)} />
                   </div>
-                  <div className="max-h-96 overflow-y-auto rounded-lg border">
-                    {individual.options.map((o) => (
-                      <button
-                        key={o.id}
-                        type="button"
-                        onClick={() => setOccupancy(o)}
-                        className={`flex w-full items-center justify-between gap-2 border-b px-3 py-2 text-left text-sm last:border-0 ${occupancy?.id === o.id ? "bg-primary/10" : "hover:bg-muted/40"}`}
-                      >
-                        <span className="min-w-0">
-                          <span className="block truncate font-medium">{o.tenantName}</span>
-                          <span className="block truncate text-xs text-muted-foreground">{o.property.addressLine1} · {o.reference} · {o.tenancyType}</span>
-                        </span>
-                        <span className="shrink-0 text-right text-xs">
-                          <span className="block font-medium">{money(o.outstanding)}</span>
-                          <span className="text-muted-foreground">due {formatPeriod(period).split(" ")[0]}</span>
-                          {o.arrears > 0 && <span className="block text-destructive">+{money(o.arrears)} arrears</span>}
-                        </span>
-                      </button>
-                    ))}
+                  {/* Full-width list: every occupancy with its whole record, click a row to select it. */}
+                  <div className="max-h-[28rem] overflow-auto rounded-lg border">
+                    {individual.options.length > 0 && (
+                      <table className="w-full min-w-[960px] text-sm">
+                        <thead className="sticky top-0 bg-muted/60 text-left text-xs text-muted-foreground">
+                          <tr>
+                            {["Occupancy Ref", "Tenant", "Property", "Paid By", "Start", "Rent", `Due ${formatPeriod(period)}`, "Received", "Outstanding", "Arrears"].map((h) => (
+                              <th key={h} className="px-3 py-2 font-medium whitespace-nowrap">{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {individual.options.map((o) => (
+                            <tr
+                              key={o.id}
+                              onClick={() => setOccupancy(o)}
+                              aria-selected={occupancy?.id === o.id}
+                              className={`cursor-pointer border-t ${occupancy?.id === o.id ? "bg-primary/10 font-medium" : "hover:bg-muted/40"}`}
+                            >
+                              <td className="px-3 py-2 font-mono text-xs whitespace-nowrap">{o.reference}</td>
+                              <td className="px-3 py-2">{o.tenantName}</td>
+                              <td className="px-3 py-2">{[o.property.addressLine1, o.property.town, o.property.postCode].filter(Boolean).join(", ")}</td>
+                              <td className="px-3 py-2">{o.tenancyType === "Private" ? o.payerName : o.tenancyType}</td>
+                              <td className="px-3 py-2 whitespace-nowrap">{new Date(o.moveInDate).toLocaleDateString("en-GB")}</td>
+                              <td className="px-3 py-2 whitespace-nowrap">{money(o.rateAmount)} {RATE_SHORT[o.rateFrequency]}</td>
+                              <td className="px-3 py-2 whitespace-nowrap">{money(o.rentDue)}</td>
+                              <td className="px-3 py-2 whitespace-nowrap">{money(o.previouslyReceived)}</td>
+                              <td className="px-3 py-2 whitespace-nowrap font-semibold">{money(o.outstanding)}</td>
+                              <td className={`px-3 py-2 whitespace-nowrap ${o.arrears > 0 ? "text-destructive" : "text-muted-foreground"}`}>{o.arrears > 0 ? money(o.arrears) : "-"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
                     {!individual.options.length && (
                       <div className="space-y-2 p-4 text-center text-sm text-muted-foreground">
                         {individual.loading ? <Loader2 className="mx-auto h-5 w-5 animate-spin" />
@@ -452,18 +467,24 @@ export default function NewIncomingPayment() {
                 <div className="rounded-lg border p-4">
                   <h3 className="mb-3 font-semibold">Occupancy Details</h3>
                   {occupancy ? (
-                    <div className="flex flex-col gap-4 sm:flex-row">
-                      {photoBox("h-32 w-full shrink-0 sm:w-44")}
-                      <div className="flex-1 text-sm">
-                        <Detail label="Property" value={[occupancy.property.addressLine1, occupancy.property.town, occupancy.property.postCode].filter(Boolean).join(", ")} />
+                    <div className="flex flex-col gap-4 md:flex-row">
+                      {photoBox("h-40 w-full shrink-0 md:w-56")}
+                      <div className="grid flex-1 gap-x-8 text-sm sm:grid-cols-2 lg:grid-cols-3">
                         <Detail label="Occupancy Ref" value={occupancy.reference} />
+                        <Detail label="Status" value={occupancy.status} />
                         <Detail label="Tenant" value={occupancy.tenantName} />
-                        <Detail label="Paid By" value={occupancy.tenancyType === "Private" ? occupancy.payerName : occupancy.tenancyType} />
+                        <Detail label="Property" value={[occupancy.property.addressLine1, occupancy.property.town, occupancy.property.postCode].filter(Boolean).join(", ")} />
+                        <Detail label="Occupancy Type" value={occupancy.tenancyType} />
+                        <Detail label="Paid By" value={occupancy.payerName} />
                         <Detail label="Occupancy Start" value={new Date(occupancy.moveInDate).toLocaleDateString("en-GB")} />
                         <Detail label="Rent" value={`${money(occupancy.rateAmount)} ${RATE_SHORT[occupancy.rateFrequency]}`} strong />
+                        <Detail label={`Rent due (${formatPeriod(period)})`} value={money(occupancy.rentDue)} />
+                        <Detail label="Already received" value={money(occupancy.previouslyReceived)} />
+                        <Detail label="Outstanding this period" value={money(occupancy.outstanding)} strong />
+                        <Detail label="Arrears (earlier periods)" value={occupancy.arrears > 0 ? money(occupancy.arrears) : "None"} />
                       </div>
                     </div>
-                  ) : <p className="text-sm text-muted-foreground">Select an occupancy to see its details.</p>}
+                  ) : <p className="text-sm text-muted-foreground">Click an occupancy above to see its full record.</p>}
                 </div>
               </div>
             ) : (

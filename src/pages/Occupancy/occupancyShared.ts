@@ -32,6 +32,13 @@ export interface Occupier {
   MobileNo?: string;
   dateOfBirth?: string;
   occupierType?: OccupancyType | null;
+  HomePhone?: string;
+  WorkPhone?: string;
+  Email2?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  town?: string;
+  postCode?: string;
 }
 
 export interface CouncilCustomer {

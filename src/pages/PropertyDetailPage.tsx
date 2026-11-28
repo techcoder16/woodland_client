@@ -167,8 +167,9 @@ export default function PropertyDetailPage() {
         {tab === "licences" && <LicencesSection propertyId={property.id} />}
         {tab === "documents" && (
           <div className="space-y-8">
-            <PropertyFiles property={property} />
+            {/* Management agreement and other documents first; photos and plans further down. */}
             <GeneralDocumentsSection propertyId={property.id} />
+            <PropertyFiles property={property} />
           </div>
         )}
         {tab === "finance" &&
