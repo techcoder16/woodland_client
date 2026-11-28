@@ -15,9 +15,12 @@ import { openStoredFile, uploadFileOnce } from "@/helper/fileUpload";
 const INSPECTION_TYPES = [
   { value: "ROUTINE", label: "Routine", className: "bg-slate-100 text-slate-700" },
   { value: "COMPLIANCE", label: "Compliance", className: "bg-blue-100 text-blue-700" },
-  { value: "COUNCIL_WARNING", label: "Council warning", className: "bg-red-100 text-red-700" },
+  { value: "COUNCIL", label: "Council", className: "bg-violet-100 text-violet-700" },
+  { value: "WARNING", label: "Warning", className: "bg-red-100 text-red-700" },
 ];
-const typeOf = (v: string) => INSPECTION_TYPES.find((t) => t.value === v);
+// Older inspections were saved as one combined type.
+const LEGACY_TYPES = [{ value: "COUNCIL_WARNING", label: "Council warning", className: "bg-red-100 text-red-700" }];
+const typeOf = (v: string) => [...INSPECTION_TYPES, ...LEGACY_TYPES].find((t) => t.value === v);
 
 type Inspection = {
   id: string;
@@ -86,7 +89,7 @@ export default function PropertyInspections({ propertyId }: { propertyId: string
       <div className="flex items-start justify-between gap-4">
         <div>
           <h3 className="text-lg font-semibold">Inspections</h3>
-          <p className="text-sm text-muted-foreground">Routine, compliance and council-warning inspections, with the inspection report.</p>
+          <p className="text-sm text-muted-foreground">Routine, compliance, council and warning inspections, with the inspection report.</p>
         </div>
         <Button onClick={() => setOpen(true)}><Plus className="mr-2 h-4 w-4" />Upload inspection report</Button>
       </div>
@@ -142,7 +145,7 @@ export default function PropertyInspections({ propertyId }: { propertyId: string
             <div className="space-y-1">
               <Label>Inspection type *</Label>
               <Select value={form.inspectionType || undefined} onValueChange={(v) => setForm((f) => ({ ...f, inspectionType: v }))}>
-                <SelectTrigger><SelectValue placeholder="Routine, Compliance or Council warning" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Routine, Compliance, Council or Warning" /></SelectTrigger>
                 <SelectContent>{INSPECTION_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
               </Select>
             </div>
