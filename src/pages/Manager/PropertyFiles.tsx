@@ -108,8 +108,8 @@ export default function PropertyFiles({ property }: Props) {
           )}
           <Group title="Attachments" ids={others} hint="Management agreement, landlord ID and other uploaded files." />
           <Group title="Fire risk assessment" ids={fire} hint="Only needed for communal properties." />
-          <Group title="Photographs" ids={photos} hint="The first photograph is the cover image shown in the page header." />
           <Group title="Floor plans" ids={plans} hint="Plans of the property layout." />
+          <Group title="Photographs" ids={photos} hint="The first photograph is the cover image shown in the page header." />
         </>
       )}
     </div>
